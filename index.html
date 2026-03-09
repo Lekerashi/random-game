@@ -1142,9 +1142,10 @@ function onStationSelected(name) {
   document.getElementById('reroll-platform-btn').style.display = 'none';
   document.getElementById('reroll-stops-btn').style.display = 'none';
 
-  // Compute platforms + add drink-here as last option
-  state.platforms = [...getPlatforms(name), { drinkHere: true }];
-  const lineCount = state.platforms.length - 1;
+  // Compute platforms + add drink-here as last option (not if last roll was already a drink)
+  const canDrinkHere = !state.selectedPlatform?.drinkHere;
+  state.platforms = [...getPlatforms(name), ...(canDrinkHere ? [{ drinkHere: true }] : [])];
+  const lineCount = canDrinkHere ? state.platforms.length - 1 : state.platforms.length;
   const total     = state.platforms.length;
 
   // Render platform grid
