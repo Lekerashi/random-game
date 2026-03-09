@@ -515,6 +515,9 @@ const LINE_NAME_FIXES = {
   'Nagareyama Nagareyama line': 'Ryutetsu Nagareyama Line', // 流鉄流山線
   'Nippori · Territor Liner':   'Nippori-Toneri Liner',   // 日暮里・舎人ライナー
 
+  'JR Chuo Sobu Line':          'JR Chuo-Sobu Line',      // add hyphen
+  'JR Chuo Line (fast)':        'JR Chuo Line (Rapid)',   // capitalise
+
   // Fixes identified via station name sampling
   'Upper bristle electric railway cap line': 'Jomo Dentetsu Jomo Line', // 上毛電鉄上毛線
   'Eucalyptus line':            'Yukarigaoka Line',       // ユーカリが丘線
@@ -1072,6 +1075,9 @@ const STATION_NAME_FIXES = {
   'Birthplace':                       'Iriuda',                        // 入生田
   'Counterbore':                      'Koshinzuka',                    // 庚申塚
 
+  // Japanese-keyed overrides — used when the English translation collides with another station
+  '新井宿':                           'Araijuku',                      // Saitama Rapid Railway (≠ 新宿 Shinjuku)
+
   // User-flagged miscellaneous bad translations
   'Battlefield':                      'Kassemba',                      // 合戦場
   'Barley':                           'Namamugi',                      // 生麦
@@ -1339,7 +1345,7 @@ function buildIndex(lines, osmNames = {}) {
       //  2. STATION_NAME_FIXES — our manual overrides for anything OSM misses
       //  3. Raw dataset name  — fallback (may be a machine translation)
       const osmEn = osmNames[stn.ja];
-      const fixEn = STATION_NAME_FIXES[stn.name];
+      const fixEn = STATION_NAME_FIXES[stn.ja] ?? STATION_NAME_FIXES[stn.name];
       stn.name = osmEn ?? fixEn ?? stn.name;
 
       const key = normalize(stn.name);
