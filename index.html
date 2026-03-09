@@ -377,7 +377,10 @@
       <div class="die-face" id="die-stops">?</div>
       <div class="die-label" id="die-stops-label">Roll to pick how many stops</div>
     </div>
-    <button class="btn btn-roll" id="roll-stops-btn">ROLL STOPS</button>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-roll" id="roll-stops-btn" style="flex:1;margin-top:0">ROLL STOPS</button>
+      <button class="btn btn-secondary" id="reroll-stops-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll stops">🔁 Reroll</button>
+    </div>
   </div>
 
   <!-- Destination -->
@@ -847,6 +850,7 @@ function onStationSelected(name) {
   document.getElementById('roll-platform-btn').disabled = false;
   document.getElementById('roll-stops-btn').disabled = true;
   document.getElementById('reroll-platform-btn').style.display = 'none';
+  document.getElementById('reroll-stops-btn').style.display = 'none';
 
   // Compute platforms
   state.platforms = getPlatforms(name);
@@ -910,7 +914,19 @@ function rerollPlatform() {
   document.getElementById('die-platform-label').innerHTML = 'Roll to pick a platform';
   document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
   document.getElementById('roll-stops-btn').disabled = true;
+  document.getElementById('reroll-stops-btn').style.display = 'none';
   rollPlatform();
+}
+
+function rerollStops() {
+  document.getElementById('reroll-stops-btn').style.display = 'none';
+  document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('map-card').style.display = 'none';
+  document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('die-stops').textContent = '?';
+  document.getElementById('die-stops').className = 'die-face';
+  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
+  rollStops();
 }
 
 function rollStops() {
@@ -927,6 +943,7 @@ function rollStops() {
     state.destination = dest;
 
     lbl.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
+    document.getElementById('reroll-stops-btn').style.display = '';
 
     // Show destination
     document.getElementById('dest-name').textContent = dest.name;
@@ -1096,6 +1113,7 @@ function rollAgainFromHere() {
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
   document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
   document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
+  document.getElementById('reroll-stops-btn').addEventListener('click', rerollStops);
   document.getElementById('show-map-btn').addEventListener('click', showMap);
   document.getElementById('show-bars-btn').addEventListener('click', showBars);
   document.getElementById('roll-again-btn').addEventListener('click', rollAgainFromHere);
