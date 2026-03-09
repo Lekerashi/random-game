@@ -413,6 +413,7 @@
     <div class="action-row">
       <button class="btn btn-ghost" id="show-map-btn">🗺 Map</button>
       <button class="btn btn-ghost" id="show-bars-btn">🏮 Nearby Bars</button>
+      <button class="btn btn-ghost" id="show-cafes-btn">☕ Nearby Cafes</button>
       <button class="btn btn-primary" id="roll-again-btn">▶ Roll Again From Here</button>
     </div>
   </div>
@@ -427,6 +428,12 @@
   <div class="card" id="bars-card" style="display:none">
     <div class="card-title">Nearby Bars, Pubs &amp; Izakayas</div>
     <div id="bars-content"></div>
+  </div>
+
+  <!-- Cafes -->
+  <div class="card" id="cafes-card" style="display:none">
+    <div class="card-title">Nearby Cafes</div>
+    <div id="cafes-content"></div>
   </div>
 
   <!-- History -->
@@ -1097,6 +1104,7 @@ function onStationSelected(name) {
   document.getElementById('destination-card').classList.remove('active');
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('cafes-card').style.display = 'none';
   document.getElementById('die-platform').textContent = '?';
   document.getElementById('die-platform').className = 'die-face';
   document.getElementById('die-stops').textContent = '?';
@@ -1163,6 +1171,7 @@ function rerollPlatform() {
   document.getElementById('destination-card').classList.remove('active');
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('cafes-card').style.display = 'none';
   document.getElementById('die-platform').textContent = '?';
   document.getElementById('die-platform').className = 'die-face';
   document.getElementById('die-stops').textContent = '?';
@@ -1179,6 +1188,7 @@ function rerollStops() {
   document.getElementById('destination-card').classList.remove('active');
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('cafes-card').style.display = 'none';
   document.getElementById('die-stops').textContent = '?';
   document.getElementById('die-stops').className = 'die-face';
   document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
@@ -1306,6 +1316,52 @@ async function showBars() {
   }
 }
 
+// ── Cafes (HERE Maps) ─────────────────────────────────────────────────────
+async function showCafes() {
+  const card    = document.getElementById('cafes-card');
+  const content = document.getElementById('cafes-content');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  content.innerHTML = '<div class="bars-empty">Searching for nearby cafes…</div>';
+
+  const { lat, lng } = state.destination;
+  const circle = `circle:${lat},${lng};r=500`;
+
+  try {
+    // 100-1100-0010 = Coffee/Tea shop (HERE category)
+    const res = await fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=100-1100-0010&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`);
+    if (!res.ok) throw new Error(`HERE HTTP ${res.status}`);
+    const data = await res.json();
+
+    const cafes = (data.items || [])
+      .map(p => {
+        const vLat = p.position?.lat;
+        const vLng = p.position?.lng;
+        return {
+          name:    p.title,
+          dist:    p.distance,
+          mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z`,
+        };
+      })
+      .sort((a, b) => a.dist - b.dist);
+
+    if (cafes.length === 0) {
+      content.innerHTML = '<div class="bars-empty">No cafes found within 500 m — try exploring!</div>';
+      return;
+    }
+
+    content.innerHTML = `<div class="bars-list">${cafes.map(c =>
+      `<div class="bar-item">
+        <span class="bar-icon">☕</span>
+        <span class="bar-name"><a href="${c.mapsUrl}" target="_blank" rel="noopener">${c.name}</a></span>
+        <span class="bar-dist">${Math.round(c.dist)} m</span>
+      </div>`
+    ).join('')}</div>`;
+  } catch (err) {
+    content.innerHTML = `<div class="bars-empty">Could not fetch cafe data: ${err.message}</div>`;
+  }
+}
+
 // ── History ───────────────────────────────────────────────────────────────
 function addHistory() {
   const entry = {
@@ -1425,6 +1481,7 @@ function rollAgainFromHere() {
   // Reset UI
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('cafes-card').style.display = 'none';
   document.getElementById('destination-card').classList.remove('active');
 
   // Set current station to destination
@@ -1447,6 +1504,7 @@ function rollAgainFromHere() {
   document.getElementById('reroll-stops-btn').addEventListener('click', rerollStops);
   document.getElementById('show-map-btn').addEventListener('click', showMap);
   document.getElementById('show-bars-btn').addEventListener('click', showBars);
+  document.getElementById('show-cafes-btn').addEventListener('click', showCafes);
   document.getElementById('roll-again-btn').addEventListener('click', rollAgainFromHere);
   document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
 
