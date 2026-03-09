@@ -441,7 +441,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
-const CACHE_KEY = 'random_game_v5';
+const CACHE_KEY = 'random_game_v6';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Greater Tokyo bounding box (line center coordinates)
@@ -757,12 +757,16 @@ async function loadData() {
 }
 
 function filterTokyoLines(prefectures) {
-  const lines = [];
+  const lines  = [];
+  const seenJa = new Set(); // source dataset repeats many lines 2-4× — deduplicate
   for (const pref of prefectures) {
     for (const line of (pref.lines || [])) {
       // Check if line center is within Greater Tokyo bounds
       if (line.lat < BOUNDS.minLat || line.lat > BOUNDS.maxLat ||
           line.lng < BOUNDS.minLng || line.lng > BOUNDS.maxLng) continue;
+      const lineJa = line.name?.ja || line.name?.en || '';
+      if (seenJa.has(lineJa)) continue;
+      seenJa.add(lineJa);
 
       // Build simplified station list
       const stations = (line.stations || [])
