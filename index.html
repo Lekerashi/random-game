@@ -238,7 +238,7 @@
     .destination-name {
       font-size: 2rem;
       font-weight: 800;
-      margin: 6px 0;
+      margin: 6px 0 12px;
       color: inherit;
       text-decoration: underline;
       text-decoration-color: rgba(255,255,255,0.3);
@@ -1885,7 +1885,7 @@ function rollPlatform() {
 
       const destNameEl = document.getElementById('dest-name');
       destNameEl.textContent = state.currentStation.name;
-      destNameEl.href = `https://www.google.com/maps/dir/?api=1&destination=${state.currentStation.lat},${state.currentStation.lng}`;
+      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       document.getElementById('dest-sub').innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`;
       const destCard = document.getElementById('destination-card');
@@ -1966,7 +1966,7 @@ function rollStops() {
     // Show destination
     const destNameEl = document.getElementById('dest-name');
     destNameEl.textContent = dest.name;
-    destNameEl.href = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`;
+    destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     document.getElementById('dest-sub').innerHTML =
       `${dest.ja} &nbsp;·&nbsp; ${state.selectedPlatform.lineName} &nbsp;·&nbsp; ${roll} stop${roll !== 1 ? 's' : ''} from ${state.currentStation.name}`;
     const destCard = document.getElementById('destination-card');
