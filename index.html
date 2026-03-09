@@ -275,6 +275,11 @@
     .bar-item:last-child { border-bottom: none; }
     .bar-icon { font-size: 1.3rem; }
     .bar-name { flex: 1; }
+    .bar-name a {
+      color: var(--accent2);
+      text-decoration: none;
+    }
+    .bar-name a:hover { text-decoration: underline; }
     .bar-dist { color: var(--muted); font-size: .8rem; }
     .bars-empty { color: var(--muted); font-size: .88rem; margin-top: 12px; }
 
@@ -1268,6 +1273,7 @@ out body;`;
         return {
           name: e.tags['name:en'] || e.tags.name || `Unnamed ${type}`,
           dist: haversineM(lat, lng, e.lat, e.lon),
+          mapsUrl: `https://maps.google.com/?q=${e.lat},${e.lon}`,
           icon, type,
         };
       })
@@ -1281,7 +1287,7 @@ out body;`;
     content.innerHTML = `<div class="bars-list">${bars.map(b =>
       `<div class="bar-item">
         <span class="bar-icon">${b.icon}</span>
-        <span class="bar-name">${b.name}<small style="color:var(--muted);margin-left:6px">${b.type}</small></span>
+        <span class="bar-name"><a href="${b.mapsUrl}" target="_blank" rel="noopener">${b.name}</a><small style="color:var(--muted);margin-left:6px">${b.type}</small></span>
         <span class="bar-dist">${Math.round(b.dist)} m</span>
       </div>`
     ).join('')}</div>`;
