@@ -328,6 +328,31 @@
       display: none;
     }
 
+    /* ── Last train warning ──────────────────────────── */
+    .last-train-warning {
+      background: rgba(255,170,0,0.12);
+      border: 1px solid rgba(255,170,0,0.35);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: .85rem;
+      color: var(--text);
+    }
+    .last-train-dismiss {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1rem;
+      padding: 0 2px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
     /* ── 23 Wards toggle ─────────────────────────────── */
     .wards-toggle-row {
       display: flex;
@@ -347,6 +372,17 @@
       width: 15px; height: 15px;
       cursor: pointer;
       accent-color: var(--accent);
+    }
+    .stops-cap-input {
+      width: 44px;
+      margin-left: 6px;
+      padding: 1px 5px;
+      font-size: .82rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      text-align: center;
     }
 
     /* ── Location hint ───────────────────────────────── */
@@ -389,6 +425,12 @@
 
   <div id="error-banner"></div>
 
+  <!-- Last train warning -->
+  <div id="last-train-warning" class="last-train-warning" style="display:none">
+    <span>🚃 Last train is soon — check schedules before your next hop!</span>
+    <button class="last-train-dismiss" id="dismiss-train-warning" title="Dismiss">✕</button>
+  </div>
+
   <!-- Station picker -->
   <div class="card" id="station-card">
     <div class="card-title">Starting Station</div>
@@ -405,6 +447,13 @@
         <input type="checkbox" id="wards23-check">
         <span>23 Wards only</span>
       </label>
+      <span style="margin-left:16px;display:flex;align-items:center">
+        <label class="wards-toggle">
+          <input type="checkbox" id="stops-cap-check">
+          <span>Cap stops at</span>
+        </label>
+        <input type="number" id="stops-cap-value" class="stops-cap-input" min="1" max="99" value="10">
+      </span>
     </div>
     <div id="location-hint"></div>
   </div>
@@ -477,7 +526,10 @@
   <div class="card" id="history-card">
     <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
       <span>Session History</span>
-      <button class="btn btn-ghost" id="clear-history-btn" style="font-size:.75rem;padding:4px 10px">Clear</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost" id="copy-route-btn" style="font-size:.75rem;padding:4px 10px">Copy route</button>
+        <button class="btn btn-ghost" id="clear-history-btn" style="font-size:.75rem;padding:4px 10px">Clear</button>
+      </div>
     </div>
     <div id="history-empty" class="bars-empty">No rounds yet — start rolling!</div>
     <div class="history-list" id="history-list"></div>
@@ -1310,6 +1362,8 @@ const state = {
   stationNames: [],   // unique English names sorted (all)
   stationNames23: [], // unique English names within 23 wards
   wards23Only: false, // restrict to 23 special wards
+  stopsCap: false,    // cap maximum stops rolled
+  stopsCapValue: 10,  // cap value
   currentStation: null,    // {name, ja, lat, lng}
   platforms: [],           // [{label, line, lineColor, direction, fromIdx, maxStops}]
   selectedPlatform: null,
@@ -1902,8 +1956,9 @@ function rollPlatform() {
       <br><small style="color:var(--muted)">Max stops: ${p.maxStops}</small>`;
 
     // Activate stops step
+    const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
     document.getElementById('stops-range-text').textContent =
-      `Rolling 1–${p.maxStops} stops`;
+      `Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
 
     // Show which platform was rolled
     document.getElementById('selected-platform-dot').style.background = p.lineColor;
@@ -1947,11 +2002,21 @@ function rerollStops() {
   rollStops();
 }
 
+function refreshStopsLabel() {
+  if (!state.selectedPlatform) return;
+  const max = state.stopsCap
+    ? Math.min(state.selectedPlatform.maxStops, state.stopsCapValue)
+    : state.selectedPlatform.maxStops;
+  document.getElementById('stops-range-text').textContent =
+    `Rolling 1–${max} stop${max !== 1 ? 's' : ''}`;
+}
+
 function rollStops() {
   const btn = document.getElementById('roll-stops-btn');
   btn.disabled = true;
-  const max  = state.selectedPlatform.maxStops;
-  const roll = Math.floor(Math.random() * max) + 1;
+  const rawMax = state.selectedPlatform.maxStops;
+  const max    = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
+  const roll   = Math.floor(Math.random() * max) + 1;
   const die  = document.getElementById('die-stops');
   const lbl  = document.getElementById('die-stops-label');
 
@@ -2266,6 +2331,52 @@ function rollAgainFromHere() {
   onStationSelected(dest.name);
 }
 
+// ── Last train warning ────────────────────────────────────────────────────
+function checkLastTrainWarning() {
+  const h     = new Date().getHours();
+  const today = new Date().toDateString();
+  const el    = document.getElementById('last-train-warning');
+  if (!el) return;
+  if (h >= 23 && localStorage.getItem('ltw_dismissed') !== today) {
+    el.style.display = '';
+  } else if (h < 23) {
+    el.style.display = 'none'; // reset before 11pm so it can show again tonight
+  }
+}
+
+// ── Copy route ────────────────────────────────────────────────────────────
+function copyRoute() {
+  if (state.history.length === 0) return;
+  const date = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const lines = [`🗼 Tokyo Random Game — ${date}`, ''];
+  state.history.forEach((e, i) => {
+    if (e.drinkHere) {
+      lines.push(`${i + 1}. ${e.from} 🍻 stayed for a drink`);
+    } else {
+      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stops}) → ${e.to}`);
+    }
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = document.getElementById('copy-route-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => {
+    // Fallback: select from a textarea
+    const ta = document.createElement('textarea');
+    ta.value = lines.join('\n');
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copy-route-btn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
   setupAutocomplete();
@@ -2299,6 +2410,22 @@ function rollAgainFromHere() {
   document.getElementById('show-cafes-btn').addEventListener('click', showCafes);
   document.getElementById('roll-again-btn').addEventListener('click', rollAgainFromHere);
   document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
+  document.getElementById('copy-route-btn').addEventListener('click', copyRoute);
+  document.getElementById('dismiss-train-warning').addEventListener('click', () => {
+    document.getElementById('last-train-warning').style.display = 'none';
+    localStorage.setItem('ltw_dismissed', new Date().toDateString());
+  });
+  document.getElementById('stops-cap-check').addEventListener('change', e => {
+    state.stopsCap = e.target.checked;
+    refreshStopsLabel();
+  });
+  document.getElementById('stops-cap-value').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v) && v >= 1) { state.stopsCapValue = v; refreshStopsLabel(); }
+  });
+
+  checkLastTrainWarning();
+  setInterval(checkLastTrainWarning, 5 * 60 * 1000); // re-check every 5 min
 
   await loadData();
   detectLocation(); // auto-detect on boot; silently ignored if denied
