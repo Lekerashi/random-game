@@ -427,6 +427,13 @@ const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 // Lines to treat as circular loops
 const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
 
+// Known romanization fixes in the source dataset (wrong → correct)
+// Add entries here whenever you spot a bad name from the source dataset
+const STATION_NAME_FIXES = {
+  'Mizokuchi':         'Mizonokuchi',
+  'Musashi Mizokuchi': 'Musashi-Mizonokuchi',
+};
+
 // Line color palette (keyword → color)
 const LINE_COLORS = {
   'Yamanote':   '#9ACD32', 'Chuo':       '#E85B0B', 'Sobu':       '#FFD400',
@@ -549,12 +556,15 @@ function filterTokyoLines(prefectures) {
       // Build simplified station list
       const stations = (line.stations || [])
         .filter(s => s.location && s.location.lat && s.location.lng)
-        .map(s => ({
-          name: s.name.en || s.name.ja,
-          ja:   s.name.ja || s.name.en,
-          lat:  s.location.lat,
-          lng:  s.location.lng,
-        }));
+        .map(s => {
+          const raw = s.name.en || s.name.ja;
+          return {
+            name: STATION_NAME_FIXES[raw] ?? raw,
+            ja:   s.name.ja || s.name.en,
+            lat:  s.location.lat,
+            lng:  s.location.lng,
+          };
+        });
 
       if (stations.length < 2) continue;
 
