@@ -1649,7 +1649,18 @@ function rollAgainFromHere() {
   document.getElementById('locate-btn').addEventListener('click', detectLocation);
   document.getElementById('wards23-check').addEventListener('change', e => {
     state.wards23Only = e.target.checked;
-    if (state.currentStation) onStationSelected(state.currentStation.name);
+    if (state.currentStation) {
+      if (state.wards23Only && !isIn23Wards(state.currentStation.lat, state.currentStation.lng)) {
+        // Current station is outside the wards — clear it and prompt to pick again
+        state.currentStation = null;
+        const input = document.getElementById('station-input');
+        input.value = '';
+        input.classList.remove('selected');
+        setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
+      } else {
+        onStationSelected(state.currentStation.name);
+      }
+    }
   });
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
   document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
