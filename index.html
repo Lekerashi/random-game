@@ -1688,7 +1688,6 @@ function onStationSelected(name) {
   const rBtn = document.getElementById('random-station-btn');
   rBtn.textContent = '🔄 New Game';
   rBtn.title = 'Start a new game';
-  rBtn.onclick = resetGame;
 
   // Capture whether the last roll was a drink before resetting
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
@@ -2065,7 +2064,6 @@ function resetGame() {
   const rBtn = document.getElementById('random-station-btn');
   rBtn.textContent = '🎲 Random';
   rBtn.title       = 'Pick random station';
-  rBtn.onclick     = pickRandomStation;
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
@@ -2145,7 +2143,9 @@ function rollAgainFromHere() {
 (async function init() {
   setupAutocomplete();
 
-  document.getElementById('random-station-btn').addEventListener('click', pickRandomStation);
+  document.getElementById('random-station-btn').addEventListener('click', () => {
+    if (state.currentStation) resetGame(); else pickRandomStation();
+  });
   document.getElementById('locate-btn').addEventListener('click', detectLocation);
   document.getElementById('wards23-check').addEventListener('change', e => {
     state.wards23Only = e.target.checked;
