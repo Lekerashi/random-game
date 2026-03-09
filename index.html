@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Game — Tokyo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --surface2:  #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #e94560;
+      --accent2:   #58a6ff;
+      --green:     #3fb950;
+      --radius:    10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Loading Overlay ─────────────────────────────── */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px; z-index: 9999;
+    }
+    #loading-overlay h1 { font-size: 1.8rem; letter-spacing: .05em; }
+    #loading-status { color: var(--muted); font-size: .9rem; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay.hidden { display: none; }
+
+    /* ── Layout ──────────────────────────────────────── */
+    #app { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+    header {
+      text-align: center;
+      padding: 24px 0 8px;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    header p { color: var(--muted); font-size: .85rem; margin-top: 4px; }
+
+    /* ── Cards ───────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Station Picker ──────────────────────────────── */
+    .station-row {
+      display: flex;
+      gap: 10px;
+      position: relative;
+    }
+    .station-input-wrap { flex: 1; position: relative; }
+    #station-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    #station-input:focus { border-color: var(--accent2); }
+    #station-input.selected { border-color: var(--green); }
+
+    #autocomplete-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+    }
+    #autocomplete-list.open { display: block; }
+    .autocomplete-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      font-size: .9rem;
+      transition: background .1s;
+    }
+    .autocomplete-item:hover,
+    .autocomplete-item.active { background: var(--surface); }
+    .autocomplete-item .station-sub {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    /* ── Buttons ─────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      border: none; border-radius: 8px;
+      font-size: .9rem; font-weight: 600;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      padding: 10px 18px;
+    }
+    .btn-secondary {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+    }
+    .btn-ghost {
+      background: transparent; color: var(--accent2);
+      border: 1px solid var(--accent2);
+      padding: 8px 14px; font-size: .82rem;
+    }
+    .btn-roll {
+      background: var(--accent); color: #fff;
+      padding: 14px 28px;
+      font-size: 1rem; border-radius: 10px;
+      width: 100%; margin-top: 10px;
+      letter-spacing: .06em;
+    }
+    .btn-roll:disabled { background: var(--border); color: var(--muted); }
+
+    /* ── Step Sections ───────────────────────────────── */
+    .step-card { display: none; }
+    .step-card.active { display: block; }
+
+    .platform-count {
+      font-size: .9rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .roll-die-display {
+      display: flex; align-items: center; gap: 14px;
+      margin: 14px 0 4px;
+    }
+    .die-face {
+      width: 70px; height: 70px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      transition: border-color .2s;
+      flex-shrink: 0;
+    }
+    .die-face.rolling { border-color: var(--accent); animation: pulse .3s infinite alternate; }
+    .die-face.landed  { border-color: var(--green); color: var(--green); }
+    @keyframes pulse { to { box-shadow: 0 0 14px var(--accent); } }
+
+    .die-label {
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .die-label strong { color: var(--text); display: block; font-size: 1.05rem; }
+
+    /* ── Platform List ───────────────────────────────── */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .platform-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .78rem;
+    }
+    .line-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .platform-num {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-right: 2px;
+      font-weight: 700;
+    }
+
+    /* ── Destination ─────────────────────────────────── */
+    #destination-card { display: none; }
+    #destination-card.active { display: block; }
+
+    .destination-name {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 6px 0;
+    }
+    .destination-sub {
+      color: var(--muted);
+      font-size: .85rem;
+      margin-bottom: 14px;
+    }
+    .action-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    /* ── Collapsible Sections ────────────────────────── */
+    .collapsible { display: none; }
+    .collapsible.open { display: block; }
+
+    details summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    details summary::-webkit-details-marker { display: none; }
+    details summary .chevron {
+      transition: transform .2s;
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    details[open] summary .chevron { transform: rotate(90deg); }
+
+    /* ── Map ─────────────────────────────────────────── */
+    #map { height: 320px; border-radius: 8px; margin-top: 12px; overflow: hidden; }
+
+    /* ── Bars List ───────────────────────────────────── */
+    .bars-list { margin-top: 12px; }
+    .bar-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+    }
+    .bar-item:last-child { border-bottom: none; }
+    .bar-icon { font-size: 1.3rem; }
+    .bar-name { flex: 1; }
+    .bar-dist { color: var(--muted); font-size: .8rem; }
+    .bars-empty { color: var(--muted); font-size: .88rem; margin-top: 12px; }
+
+    /* ── History ─────────────────────────────────────── */
+    .history-list { margin-top: 12px; }
+    .history-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .85rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-num {
+      color: var(--muted);
+      min-width: 22px;
+      font-weight: 700;
+    }
+    .history-text { flex: 1; line-height: 1.6; }
+    .history-line-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    #history-empty { color: var(--muted); font-size: .88rem; margin-top: 12px; }
+
+    /* ── Error banner ────────────────────────────────── */
+    #error-banner {
+      background: #2d1117;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: .88rem;
+      display: none;
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 480px) {
+      .die-face { width: 56px; height: 56px; font-size: 1.8rem; }
+      .destination-name { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <h1>🎲 Random Game</h1>
+  <div id="loading-status">Loading Tokyo train data…</div>
+</div>
+
+<!-- Main app -->
+<div id="app" style="display:none">
+  <header>
+    <h1>🎲 Random Game — Tokyo</h1>
+    <p>Roll a platform, roll the stops, see where you end up.</p>
+  </header>
+
+  <div id="error-banner"></div>
+
+  <!-- Station picker -->
+  <div class="card" id="station-card">
+    <div class="card-title">Starting Station</div>
+    <div class="station-row">
+      <div class="station-input-wrap">
+        <input id="station-input" type="text" placeholder="Search for a station…" autocomplete="off">
+        <div id="autocomplete-list"></div>
+      </div>
+      <button class="btn btn-secondary" id="random-station-btn" title="Pick random station">🎲 Random</button>
+    </div>
+  </div>
+
+  <!-- Step 1: Roll Platform -->
+  <div class="card step-card" id="step-platforms">
+    <div class="card-title">Step 1 — Roll a Platform</div>
+    <div class="platform-count" id="platform-count-text"></div>
+    <div class="platform-grid" id="platform-grid"></div>
+    <div class="roll-die-display">
+      <div class="die-face" id="die-platform">?</div>
+      <div class="die-label" id="die-platform-label">Roll to pick a platform</div>
+    </div>
+    <button class="btn btn-roll" id="roll-platform-btn">ROLL PLATFORM</button>
+  </div>
+
+  <!-- Step 2: Roll Stops -->
+  <div class="card step-card" id="step-stops">
+    <div class="card-title">Step 2 — Roll Stops</div>
+    <div id="selected-platform-banner" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.88rem;line-height:1.5">
+      <span id="selected-platform-dot" class="line-dot"></span>
+      <span id="selected-platform-text"></span>
+    </div>
+    <div class="platform-count" id="stops-range-text"></div>
+    <div class="roll-die-display">
+      <div class="die-face" id="die-stops">?</div>
+      <div class="die-label" id="die-stops-label">Roll to pick how many stops</div>
+    </div>
+    <button class="btn btn-roll" id="roll-stops-btn">ROLL STOPS</button>
+  </div>
+
+  <!-- Destination -->
+  <div class="card" id="destination-card">
+    <div class="card-title">Destination</div>
+    <div class="destination-name" id="dest-name"></div>
+    <div class="destination-sub" id="dest-sub"></div>
+    <div class="action-row">
+      <button class="btn btn-ghost" id="show-map-btn">🗺 Map</button>
+      <button class="btn btn-ghost" id="show-bars-btn">🍺 Nearby Bars</button>
+      <button class="btn btn-primary" id="roll-again-btn">▶ Roll Again From Here</button>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="card" id="map-card" style="display:none">
+    <div class="card-title">Map</div>
+    <div id="map"></div>
+  </div>
+
+  <!-- Bars -->
+  <div class="card" id="bars-card" style="display:none">
+    <div class="card-title">Nearby Bars &amp; Pubs</div>
+    <div id="bars-content"></div>
+  </div>
+
+  <!-- History -->
+  <div class="card" id="history-card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Session History</span>
+      <button class="btn btn-ghost" id="clear-history-btn" style="font-size:.75rem;padding:4px 10px">Clear</button>
+    </div>
+    <div id="history-empty" class="bars-empty">No rounds yet — start rolling!</div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const DATA_URL  = 'https://raw.githubusercontent.com/adieuadieu/japan-train-data/master/data/raw-data.json';
+const CACHE_KEY = 'random_game_v3';
+const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// Greater Tokyo bounding box (line center coordinates)
+const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
+
+// Lines to treat as circular loops
+const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
+
+// Line color palette (keyword → color)
+const LINE_COLORS = {
+  'Yamanote':   '#9ACD32', 'Chuo':       '#E85B0B', 'Sobu':       '#FFD400',
+  'Keihin':     '#00B2E5', 'Tōkaidō':    '#F7A600', 'Tokaido':    '#F7A600',
+  'Jōban':      '#009BBF', 'Joban':      '#009BBF', 'Saikyō':     '#007540',
+  'Saikyo':     '#007540', 'Shōnan':     '#E9003F', 'Shonan':     '#E9003F',
+  'Keiyo':      '#DC143C', 'Nambu':      '#F7A600', 'Yokohama':   '#00AD53',
+  'Hachikō':    '#996633', 'Hachiko':    '#996633', 'Ōme':        '#00AD53',
+  'Ome':        '#00AD53', 'Itsukaichi': '#00AD53',
+  // Tokyo Metro
+  'Ginza':      '#F39700', 'Marunouchi': '#E60012', 'Hibiya':     '#9B7A00',
+  'Tōzai':      '#009BBF', 'Tozai':      '#009BBF', 'Chiyoda':    '#00BB85',
+  'Yūrakuchō':  '#C9A800', 'Yurakucho':  '#C9A800', 'Hanzōmon':   '#8F76D6',
+  'Hanzomon':   '#8F76D6', 'Namboku':    '#00AC9B', 'Fukutoshin': '#9C5E31',
+  // Toei
+  'Asakusa':    '#EE0011', 'Mita':       '#2B50A1', 'Shinjuku':   '#6CBB5A',
+  'Ōedo':       '#B6007A', 'Oedo':       '#B6007A',
+  // Private railways
+  'Tokyu':      '#0066B3', 'Odakyu':     '#0099DD', 'Keio':       '#800080',
+  'Keisei':     '#FF4400', 'Seibu':      '#009944', 'Tobu':       '#003087',
+  'Sotetsu':    '#003087', 'Sagami':     '#003087',
+};
+
+// ── State ─────────────────────────────────────────────────────────────────
+const state = {
+  lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
+  stationIndex: {},   // {normalizedName: [{lineName, lineColor, lineIdx, stationIdx}]}
+  stationNames: [],   // unique English names sorted
+  currentStation: null,    // {name, ja, lat, lng}
+  platforms: [],           // [{label, line, lineColor, direction, fromIdx, maxStops}]
+  selectedPlatform: null,
+  rolledStops: null,
+  destination: null,       // {name, ja, lat, lng}
+  history: [],
+  leafletMap: null,
+  mapMarker: null,
+};
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function normalize(s) {
+  return (s || '').toLowerCase()
+    .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
+    .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i');
+}
+
+function getLineColor(name) {
+  for (const [key, color] of Object.entries(LINE_COLORS)) {
+    if (name.includes(key)) return color;
+  }
+  // deterministic fallback color
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffff;
+  return '#' + (h | 0x404040).toString(16).slice(-6);
+}
+
+function isCircular(lineName) {
+  return CIRCULAR_KEYWORDS.some(k => lineName.includes(k));
+}
+
+function haversineM(lat1, lng1, lat2, lng2) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── Data Loading ──────────────────────────────────────────────────────────
+async function loadData() {
+  setLoadingStatus('Checking cache…');
+
+  // Try localStorage cache
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { timestamp, lines } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_TTL && lines && lines.length > 0) {
+        setLoadingStatus('Loading from cache…');
+        buildIndex(lines);
+        return;
+      }
+    }
+  } catch (_) { /* ignore */ }
+
+  // Fetch fresh
+  setLoadingStatus('Fetching Tokyo train data… (first load ~10 MB)');
+  let raw;
+  try {
+    const res = await fetch(DATA_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    raw = await res.json();
+  } catch (err) {
+    showError(`Failed to load train data: ${err.message}. Check your internet connection and reload.`);
+    return;
+  }
+
+  setLoadingStatus('Processing lines…');
+  const lines = filterTokyoLines(raw);
+
+  if (lines.length === 0) {
+    showError('Could not find Tokyo-area lines in data. Please reload.');
+    return;
+  }
+
+  // Cache the filtered result
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines }));
+  } catch (_) { /* storage full — no problem */ }
+
+  buildIndex(lines);
+}
+
+function filterTokyoLines(prefectures) {
+  const lines = [];
+  for (const pref of prefectures) {
+    for (const line of (pref.lines || [])) {
+      // Check if line center is within Greater Tokyo bounds
+      if (line.lat < BOUNDS.minLat || line.lat > BOUNDS.maxLat ||
+          line.lng < BOUNDS.minLng || line.lng > BOUNDS.maxLng) continue;
+
+      // Build simplified station list
+      const stations = (line.stations || [])
+        .filter(s => s.location && s.location.lat && s.location.lng)
+        .map(s => ({
+          name: s.name.en || s.name.ja,
+          ja:   s.name.ja || s.name.en,
+          lat:  s.location.lat,
+          lng:  s.location.lng,
+        }));
+
+      if (stations.length < 2) continue;
+
+      const name     = line.name.en || line.name.ja;
+      const circular = isCircular(name);
+      const color    = getLineColor(name);
+
+      lines.push({ id: line.id, name, ja: line.name.ja, color, circular, stations });
+    }
+  }
+  return lines;
+}
+
+function buildIndex(lines) {
+  state.lines = lines;
+  const nameSet = new Set();
+
+  for (let li = 0; li < lines.length; li++) {
+    for (let si = 0; si < lines[li].stations.length; si++) {
+      const stn = lines[li].stations[si];
+      const key = normalize(stn.name);
+      nameSet.add(stn.name);
+
+      if (!state.stationIndex[key]) state.stationIndex[key] = [];
+      state.stationIndex[key].push({ lineName: lines[li].name, lineColor: lines[li].color, lineIdx: li, stationIdx: si });
+    }
+  }
+
+  state.stationNames = Array.from(nameSet).sort();
+  setLoadingStatus('');
+  hideLoading();
+}
+
+// ── Platform Logic ────────────────────────────────────────────────────────
+function getPlatforms(stationName) {
+  const key = normalize(stationName);
+  const entries = state.stationIndex[key] || [];
+  const platforms = [];
+
+  for (const entry of entries) {
+    const line   = state.lines[entry.lineIdx];
+    const si     = entry.stationIdx;
+    const N      = line.stations.length;
+
+    if (line.circular) {
+      // Both directions always available; max = N-1 (go almost all the way around)
+      const nextA = line.stations[(si - 1 + N) % N].name;
+      const nextB = line.stations[(si + 1) % N].name;
+
+      platforms.push({
+        label:    `${line.name} — toward ${line.stations[0].name} (Direction A)`,
+        hint:     `← next: ${nextA}`,
+        lineColor: line.color,
+        lineName:  line.name,
+        circular:  true,
+        direction: 'A',    // decreasing index
+        fromIdx:   si,
+        lineIdx:   entry.lineIdx,
+        maxStops:  N - 1,
+      });
+      platforms.push({
+        label:    `${line.name} — toward ${line.stations[Math.floor(N/2)].name} (Direction B)`,
+        hint:     `→ next: ${nextB}`,
+        lineColor: line.color,
+        lineName:  line.name,
+        circular:  true,
+        direction: 'B',    // increasing index
+        fromIdx:   si,
+        lineIdx:   entry.lineIdx,
+        maxStops:  N - 1,
+      });
+    } else {
+      // Linear: add platform toward start (if not already at start)
+      if (si > 0) {
+        platforms.push({
+          label:    `${line.name} — toward ${line.stations[0].name}`,
+          hint:     `← next: ${line.stations[si - 1].name}`,
+          lineColor: line.color,
+          lineName:  line.name,
+          circular:  false,
+          direction: 'start',
+          fromIdx:   si,
+          lineIdx:   entry.lineIdx,
+          maxStops:  si,
+        });
+      }
+      // Add platform toward end (if not already at end)
+      if (si < N - 1) {
+        platforms.push({
+          label:    `${line.name} — toward ${line.stations[N - 1].name}`,
+          hint:     `→ next: ${line.stations[si + 1].name}`,
+          lineColor: line.color,
+          lineName:  line.name,
+          circular:  false,
+          direction: 'end',
+          fromIdx:   si,
+          lineIdx:   entry.lineIdx,
+          maxStops:  N - 1 - si,
+        });
+      }
+    }
+  }
+
+  return platforms;
+}
+
+function getDestination(platform, stops) {
+  const line = state.lines[platform.lineIdx];
+  const N    = line.stations.length;
+  let destIdx;
+
+  if (platform.circular) {
+    if (platform.direction === 'A') {
+      destIdx = ((platform.fromIdx - stops) % N + N) % N;
+    } else {
+      destIdx = (platform.fromIdx + stops) % N;
+    }
+  } else {
+    if (platform.direction === 'start') {
+      destIdx = platform.fromIdx - stops;
+    } else {
+      destIdx = platform.fromIdx + stops;
+    }
+    destIdx = Math.max(0, Math.min(N - 1, destIdx));
+  }
+
+  return line.stations[destIdx];
+}
+
+// ── Roll Animation ────────────────────────────────────────────────────────
+function animateRoll(min, max, finalValue, el, onComplete) {
+  const steps   = [50, 70, 100, 140, 200, 280, 380, 500];
+  let stepIdx   = 0;
+
+  function tick() {
+    el.textContent = Math.floor(Math.random() * (max - min + 1)) + min;
+    el.classList.add('rolling');
+    el.classList.remove('landed');
+
+    if (stepIdx < steps.length) {
+      setTimeout(tick, steps[stepIdx++]);
+    } else {
+      el.textContent = finalValue;
+      el.classList.remove('rolling');
+      el.classList.add('landed');
+      onComplete();
+    }
+  }
+  tick();
+}
+
+// ── UI Helpers ────────────────────────────────────────────────────────────
+function setLoadingStatus(msg) {
+  document.getElementById('loading-status').textContent = msg;
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('app').style.display = '';
+}
+
+function showError(msg) {
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('app').style.display = '';
+  const banner = document.getElementById('error-banner');
+  banner.textContent = '⚠ ' + msg;
+  banner.style.display = 'block';
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step-card').forEach(el => el.classList.remove('active'));
+  if (id) document.getElementById(id).classList.add('active');
+}
+
+// ── Autocomplete ──────────────────────────────────────────────────────────
+function setupAutocomplete() {
+  const input    = document.getElementById('station-input');
+  const list     = document.getElementById('autocomplete-list');
+  let activeIdx  = -1;
+  let currentItems = [];
+
+  function close() {
+    list.classList.remove('open');
+    list.innerHTML = '';
+    activeIdx = -1;
+    currentItems = [];
+  }
+
+  function openWith(names) {
+    currentItems = names;
+    list.innerHTML = names.map((n, i) => {
+      const entries = state.stationIndex[normalize(n)] || [];
+      const lineNames = [...new Set(entries.map(e => state.lines[e.lineIdx].name))].slice(0, 3).join(', ');
+      return `<div class="autocomplete-item" data-idx="${i}">
+        ${n}<span class="station-sub">${lineNames}</span>
+      </div>`;
+    }).join('');
+    list.classList.add('open');
+  }
+
+  function select(name) {
+    input.value = name;
+    input.classList.add('selected');
+    close();
+    onStationSelected(name);
+  }
+
+  input.addEventListener('input', () => {
+    input.classList.remove('selected');
+    const q = normalize(input.value.trim());
+    if (q.length < 1) { close(); return; }
+    const matches = state.stationNames
+      .filter(n => normalize(n).includes(q))
+      .sort((a, b) => {
+        const ai = normalize(a).indexOf(q), bi = normalize(b).indexOf(q);
+        return ai - bi || a.localeCompare(b);
+      })
+      .slice(0, 50);
+    if (matches.length === 0) { close(); return; }
+    openWith(matches);
+  });
+
+  input.addEventListener('keydown', e => {
+    if (!list.classList.contains('open')) return;
+    const items = list.querySelectorAll('.autocomplete-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      select(currentItems[activeIdx]);
+      return;
+    } else if (e.key === 'Escape') {
+      close(); return;
+    }
+    items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+  });
+
+  list.addEventListener('mousedown', e => {
+    const item = e.target.closest('.autocomplete-item');
+    if (!item) return;
+    e.preventDefault();
+    select(currentItems[+item.dataset.idx]);
+  });
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('station-card').contains(e.target)) close();
+  });
+}
+
+// ── Handlers ──────────────────────────────────────────────────────────────
+function onStationSelected(name) {
+  const key   = normalize(name);
+  const first = (state.stationIndex[key] || [])[0];
+  if (!first) return;
+
+  // Get representative lat/lng from the first occurrence
+  const stn   = state.lines[first.lineIdx].stations[first.stationIdx];
+  state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
+
+  // Reset downstream steps
+  state.selectedPlatform = null;
+  state.rolledStops = null;
+  state.destination = null;
+  document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('map-card').style.display = 'none';
+  document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('die-platform').textContent = '?';
+  document.getElementById('die-platform').className = 'die-face';
+  document.getElementById('die-stops').textContent = '?';
+  document.getElementById('die-stops').className = 'die-face';
+  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a platform';
+  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
+  document.getElementById('roll-platform-btn').disabled = false;
+  document.getElementById('roll-stops-btn').disabled = true;
+
+  // Compute platforms
+  state.platforms = getPlatforms(name);
+
+  // Render platform grid
+  const grid = document.getElementById('platform-grid');
+  grid.innerHTML = state.platforms.map((p, i) =>
+    `<div class="platform-pill">
+      <span class="platform-num">${i + 1}</span>
+      <span class="line-dot" style="background:${p.lineColor}"></span>
+      <span>${p.lineName}<br><small style="color:var(--muted)">${p.hint}</small></span>
+    </div>`
+  ).join('');
+
+  document.getElementById('platform-count-text').textContent =
+    `${state.platforms.length} platform${state.platforms.length !== 1 ? 's' : ''} at ${name} — rolling 1–${state.platforms.length}`;
+
+  showStep('step-platforms');
+}
+
+function rollPlatform() {
+  const btn = document.getElementById('roll-platform-btn');
+  btn.disabled = true;
+  const n    = state.platforms.length;
+  const roll = Math.floor(Math.random() * n) + 1; // 1-indexed
+  const die  = document.getElementById('die-platform');
+  const lbl  = document.getElementById('die-platform-label');
+
+  animateRoll(1, n, roll, die, () => {
+    state.selectedPlatform = state.platforms[roll - 1];
+    const p = state.selectedPlatform;
+    lbl.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
+      <br><small style="color:var(--muted)">Max stops: ${p.maxStops}</small>`;
+
+    // Activate stops step
+    document.getElementById('stops-range-text').textContent =
+      `Rolling 1–${p.maxStops} stops`;
+
+    // Show which platform was rolled
+    document.getElementById('selected-platform-dot').style.background = p.lineColor;
+    document.getElementById('selected-platform-text').innerHTML =
+      `<strong>#${roll} — ${p.lineName}</strong><br><span style="color:var(--muted)">${p.label.split('—').slice(1).join('—').trim()}</span>`;
+
+    document.getElementById('roll-stops-btn').disabled = false;
+    showStep('step-stops');
+  });
+}
+
+function rollStops() {
+  const btn = document.getElementById('roll-stops-btn');
+  btn.disabled = true;
+  const max  = state.selectedPlatform.maxStops;
+  const roll = Math.floor(Math.random() * max) + 1;
+  const die  = document.getElementById('die-stops');
+  const lbl  = document.getElementById('die-stops-label');
+
+  animateRoll(1, max, roll, die, () => {
+    state.rolledStops = roll;
+    const dest = getDestination(state.selectedPlatform, roll);
+    state.destination = dest;
+
+    lbl.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
+
+    // Show destination
+    document.getElementById('dest-name').textContent = dest.name;
+    document.getElementById('dest-sub').innerHTML =
+      `${dest.ja} &nbsp;·&nbsp; ${state.selectedPlatform.lineName} &nbsp;·&nbsp; ${roll} stop${roll !== 1 ? 's' : ''} from ${state.currentStation.name}`;
+    const destCard = document.getElementById('destination-card');
+    destCard.classList.add('active');
+    destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Add to history
+    addHistory();
+  });
+}
+
+// ── Map ───────────────────────────────────────────────────────────────────
+function showMap() {
+  const card = document.getElementById('map-card');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  const { lat, lng, name } = state.destination;
+
+  if (!state.leafletMap) {
+    state.leafletMap = L.map('map', { zoomControl: true }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
+      maxZoom: 19,
+    }).addTo(state.leafletMap);
+  } else {
+    state.leafletMap.setView([lat, lng], 15);
+    if (state.mapMarker) state.leafletMap.removeLayer(state.mapMarker);
+  }
+
+  state.mapMarker = L.marker([lat, lng])
+    .addTo(state.leafletMap)
+    .bindPopup(`<strong>${name}</strong>`)
+    .openPopup();
+}
+
+// ── Bars (Overpass API) ───────────────────────────────────────────────────
+async function showBars() {
+  const card    = document.getElementById('bars-card');
+  const content = document.getElementById('bars-content');
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  content.innerHTML = '<div class="bars-empty">Searching for nearby bars…</div>';
+
+  const { lat, lng } = state.destination;
+  const query = `[out:json][timeout:15];
+node["amenity"~"^(bar|pub)$"](around:500,${lat},${lng});
+out body;`;
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+    });
+    if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
+    const data = await res.json();
+    const bars = (data.elements || [])
+      .filter(e => e.lat && e.lon)
+      .map(e => ({
+        name: e.tags.name || e.tags['name:en'] || 'Unnamed bar',
+        dist: haversineM(lat, lng, e.lat, e.lon),
+        amenity: e.tags.amenity,
+      }))
+      .sort((a, b) => a.dist - b.dist);
+
+    if (bars.length === 0) {
+      content.innerHTML = '<div class="bars-empty">No bars found within 500 m. There might be izakayas tagged differently — try exploring!</div>';
+      return;
+    }
+
+    content.innerHTML = `<div class="bars-list">${bars.map(b =>
+      `<div class="bar-item">
+        <span class="bar-icon">🍺</span>
+        <span class="bar-name">${b.name}</span>
+        <span class="bar-dist">${Math.round(b.dist)} m</span>
+      </div>`
+    ).join('')}</div>`;
+  } catch (err) {
+    content.innerHTML = `<div class="bars-empty">Could not fetch bar data: ${err.message}</div>`;
+  }
+}
+
+// ── History ───────────────────────────────────────────────────────────────
+function addHistory() {
+  const entry = {
+    from:     state.currentStation.name,
+    line:     state.selectedPlatform.lineName,
+    color:    state.selectedPlatform.lineColor,
+    dir:      state.selectedPlatform.label.split('—')[1]?.trim() || '',
+    stops:    state.rolledStops,
+    to:       state.destination.name,
+    toJa:     state.destination.ja,
+  };
+  state.history.push(entry);
+  renderHistory();
+}
+
+function renderHistory() {
+  const list  = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+
+  if (state.history.length === 0) {
+    empty.style.display = '';
+    list.innerHTML = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  list.innerHTML = state.history.slice().reverse().map((e, i) => {
+    const num = state.history.length - i;
+    return `<div class="history-item">
+      <span class="history-num">${num}.</span>
+      <span class="history-text">
+        <strong>${e.from}</strong>
+        &rarr;
+        <span class="history-line-dot" style="background:${e.color}"></span>
+        ${e.line} (${e.stops} stop${e.stops !== 1 ? 's' : ''})
+        &rarr;
+        <strong>${e.to}</strong>
+        <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function clearHistory() {
+  state.history = [];
+  renderHistory();
+}
+
+// ── Random Station ────────────────────────────────────────────────────────
+function pickRandomStation() {
+  if (state.stationNames.length === 0) return;
+  const name  = state.stationNames[Math.floor(Math.random() * state.stationNames.length)];
+  const input = document.getElementById('station-input');
+  input.value = name;
+  input.classList.add('selected');
+  onStationSelected(name);
+}
+
+// ── Roll Again ────────────────────────────────────────────────────────────
+function rollAgainFromHere() {
+  const dest = state.destination;
+  if (!dest) return;
+
+  // Reset UI
+  document.getElementById('map-card').style.display = 'none';
+  document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('destination-card').classList.remove('active');
+
+  // Set current station to destination
+  const input = document.getElementById('station-input');
+  input.value = dest.name;
+  input.classList.add('selected');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  onStationSelected(dest.name);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async function init() {
+  setupAutocomplete();
+
+  document.getElementById('random-station-btn').addEventListener('click', pickRandomStation);
+  document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
+  document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
+  document.getElementById('show-map-btn').addEventListener('click', showMap);
+  document.getElementById('show-bars-btn').addEventListener('click', showBars);
+  document.getElementById('roll-again-btn').addEventListener('click', rollAgainFromHere);
+  document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
+
+  await loadData();
+})();
+</script>
+</body>
+</html>
