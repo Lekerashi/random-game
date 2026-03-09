@@ -313,6 +313,21 @@
       display: none;
     }
 
+    /* ── Location hint ───────────────────────────────── */
+    #location-hint {
+      font-size: .8rem;
+      margin-top: 8px;
+      min-height: 1.1em;
+      color: var(--accent2);
+    }
+    #locate-btn.locating {
+      animation: locpulse 1s ease-in-out infinite;
+    }
+    @keyframes locpulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .35; }
+    }
+
     /* ── Responsive ──────────────────────────────────── */
     @media (max-width: 480px) {
       .die-face { width: 56px; height: 56px; font-size: 1.8rem; }
@@ -346,8 +361,10 @@
         <input id="station-input" type="text" placeholder="Search for a station…" autocomplete="off">
         <div id="autocomplete-list"></div>
       </div>
+      <button class="btn btn-secondary" id="locate-btn" title="Use my current location">📍</button>
       <button class="btn btn-secondary" id="random-station-btn" title="Pick random station">🎲 Random</button>
     </div>
+    <div id="location-hint"></div>
   </div>
 
   <!-- Step 1: Roll Train Line -->
@@ -1262,6 +1279,59 @@ function pickRandomStation() {
   onStationSelected(name);
 }
 
+// ── Geolocation ───────────────────────────────────────────────────────────
+function findNearestStation(lat, lng) {
+  let bestName = null;
+  let bestDist = Infinity;
+  for (const line of state.lines) {
+    for (const stn of line.stations) {
+      const d = haversineM(lat, lng, stn.lat, stn.lng);
+      if (d < bestDist) { bestDist = d; bestName = stn.name; }
+    }
+  }
+  return { name: bestName, dist: Math.round(bestDist) };
+}
+
+function setLocationHint(msg, isError = false) {
+  const el = document.getElementById('location-hint');
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--muted)' : 'var(--accent2)';
+}
+
+function detectLocation() {
+  const btn = document.getElementById('locate-btn');
+  if (!navigator.geolocation) {
+    setLocationHint('📍 Geolocation not supported by this browser', true);
+    return;
+  }
+  btn.disabled = true;
+  btn.classList.add('locating');
+  setLocationHint('📍 Detecting your location…');
+
+  navigator.geolocation.getCurrentPosition(
+    ({ coords }) => {
+      btn.disabled = false;
+      btn.classList.remove('locating');
+      const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
+      if (!name) { setLocationHint('📍 No station found nearby', true); return; }
+      setLocationHint(`📍 Nearest station: ${name} (${dist} m away)`);
+      const input = document.getElementById('station-input');
+      input.value = name;
+      input.classList.add('selected');
+      onStationSelected(name);
+    },
+    (err) => {
+      btn.disabled = false;
+      btn.classList.remove('locating');
+      const msg = err.code === 1 ? 'Location access denied — search manually'
+                : err.code === 2 ? 'Location unavailable — search manually'
+                :                  'Location timed out — search manually';
+      setLocationHint(`📍 ${msg}`, true);
+    },
+    { timeout: 10000, maximumAge: 60000 }
+  );
+}
+
 // ── Roll Again ────────────────────────────────────────────────────────────
 function rollAgainFromHere() {
   const dest = state.destination;
@@ -1285,6 +1355,7 @@ function rollAgainFromHere() {
   setupAutocomplete();
 
   document.getElementById('random-station-btn').addEventListener('click', pickRandomStation);
+  document.getElementById('locate-btn').addEventListener('click', detectLocation);
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
   document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
   document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
@@ -1295,6 +1366,7 @@ function rollAgainFromHere() {
   document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
 
   await loadData();
+  detectLocation(); // auto-detect on boot; silently ignored if denied
 })();
 </script>
 </body>
