@@ -1385,11 +1385,16 @@ function findMajorStation(line, fromIdx, direction) {
     if (entries.length >= HUB_THRESHOLD) return stn.name;
   }
 
-  // Fallback: immediate neighbour
-  const fallback = line.circular
-    ? ((fromIdx + step) % N + N) % N
-    : fromIdx + step;
-  return (fallback >= 0 && fallback < N) ? line.stations[fallback].name : null;
+  // Fallback: terminus (end of line in this direction)
+  if (line.circular) {
+    const fallback = ((fromIdx + step) % N + N) % N;
+    return line.stations[fallback].name;
+  }
+  const terminus = step === -1 ? 0 : N - 1;
+  if (terminus !== fromIdx) return line.stations[terminus].name;
+  // Already at terminus — show immediate neighbour as last resort
+  const nb = fromIdx + step;
+  return (nb >= 0 && nb < N) ? line.stations[nb].name : null;
 }
 
 // In 23-wards mode: count how many consecutive stops from fromIdx in the given
