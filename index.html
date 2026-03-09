@@ -225,6 +225,11 @@
       font-weight: 700;
     }
 
+    .platform-pill.drink-here {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
     /* ── Destination ─────────────────────────────────── */
     #destination-card { display: none; }
     #destination-card.active { display: block; }
@@ -1116,21 +1121,29 @@ function onStationSelected(name) {
   document.getElementById('reroll-platform-btn').style.display = 'none';
   document.getElementById('reroll-stops-btn').style.display = 'none';
 
-  // Compute platforms
-  state.platforms = getPlatforms(name);
+  // Compute platforms + add drink-here as last option
+  state.platforms = [...getPlatforms(name), { drinkHere: true }];
+  const lineCount = state.platforms.length - 1;
+  const total     = state.platforms.length;
 
   // Render platform grid
   const grid = document.getElementById('platform-grid');
   grid.innerHTML = state.platforms.map((p, i) =>
-    `<div class="platform-pill">
-      <span class="platform-num">${i + 1}</span>
-      <span class="line-dot" style="background:${p.lineColor}"></span>
-      <span>${p.lineName}<br><small style="color:var(--muted)">${p.hint}</small></span>
-    </div>`
+    p.drinkHere
+      ? `<div class="platform-pill drink-here">
+           <span class="platform-num">${i + 1}</span>
+           <span>🍻</span>
+           <span>Drink here!</span>
+         </div>`
+      : `<div class="platform-pill">
+           <span class="platform-num">${i + 1}</span>
+           <span class="line-dot" style="background:${p.lineColor}"></span>
+           <span>${p.lineName}<br><small style="color:var(--muted)">${p.hint}</small></span>
+         </div>`
   ).join('');
 
   document.getElementById('platform-count-text').textContent =
-    `${state.platforms.length} train lines at ${name} — rolling 1–${state.platforms.length}`;
+    `${lineCount} train line${lineCount !== 1 ? 's' : ''} at ${name} — rolling 1–${total}`;
 
   showStep('step-platforms');
 }
@@ -1146,6 +1159,29 @@ function rollPlatform() {
   animateRoll(1, n, roll, die, () => {
     state.selectedPlatform = state.platforms[roll - 1];
     const p = state.selectedPlatform;
+
+    // ── Drink here! ──────────────────────────────────────────────────────
+    if (p.drinkHere) {
+      lbl.innerHTML = `<strong>#${roll} → 🍻 Drink here!</strong>`;
+      document.getElementById('reroll-platform-btn').style.display = '';
+
+      // Use current station as destination
+      state.destination = state.currentStation;
+      state.rolledStops = 0;
+
+      document.getElementById('dest-name').textContent = state.currentStation.name;
+      document.getElementById('dest-sub').innerHTML =
+        `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`;
+      const destCard = document.getElementById('destination-card');
+      destCard.classList.add('active');
+      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      addHistory();
+      showBars();
+      return;
+    }
+
+    // ── Normal train line ─────────────────────────────────────────────────
     lbl.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
       <br><small style="color:var(--muted)">Max stops: ${p.maxStops}</small>`;
 
@@ -1364,14 +1400,15 @@ async function showCafes() {
 
 // ── History ───────────────────────────────────────────────────────────────
 function addHistory() {
+  const drinkHere = state.selectedPlatform?.drinkHere;
   const entry = {
-    from:     state.currentStation.name,
-    line:     state.selectedPlatform.lineName,
-    color:    state.selectedPlatform.lineColor,
-    dir:      state.selectedPlatform.label.split('—')[1]?.trim() || '',
-    stops:    state.rolledStops,
-    to:       state.destination.name,
-    toJa:     state.destination.ja,
+    from:      state.currentStation.name,
+    drinkHere: drinkHere || false,
+    line:      drinkHere ? null : state.selectedPlatform.lineName,
+    color:     drinkHere ? null : state.selectedPlatform.lineColor,
+    stops:     drinkHere ? 0   : state.rolledStops,
+    to:        state.destination.name,
+    toJa:      state.destination.ja,
   };
   state.history.push(entry);
   renderHistory();
@@ -1390,17 +1427,12 @@ function renderHistory() {
   empty.style.display = 'none';
   list.innerHTML = state.history.slice().reverse().map((e, i) => {
     const num = state.history.length - i;
+    const body = e.drinkHere
+      ? `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`
+      : `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
     return `<div class="history-item">
       <span class="history-num">${num}.</span>
-      <span class="history-text">
-        <strong>${e.from}</strong>
-        &rarr;
-        <span class="history-line-dot" style="background:${e.color}"></span>
-        ${e.line} (${e.stops} stop${e.stops !== 1 ? 's' : ''})
-        &rarr;
-        <strong>${e.to}</strong>
-        <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>
-      </span>
+      <span class="history-text">${body}</span>
     </div>`;
   }).join('');
 }
