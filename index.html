@@ -424,7 +424,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = 'https://raw.githubusercontent.com/adieuadieu/japan-train-data/master/data/raw-data.json';
-const CACHE_KEY = 'random_game_v3';
+const CACHE_KEY = 'random_game_v4';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Greater Tokyo bounding box (line center coordinates)
@@ -434,10 +434,155 @@ const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
 
 // Known romanization fixes in the source dataset (wrong → correct)
-// Add entries here whenever you spot a bad name from the source dataset
+// The source data uses machine-translated English names for many stations.
+// Add entries here whenever you spot a bad name from the source dataset.
 const STATION_NAME_FIXES = {
-  'Mizokuchi':         'Mizonokuchi',
-  'Musashi Mizokuchi': 'Musashi-Mizonokuchi',
+  // Previous fixes
+  'Mizokuchi':                    'Mizonokuchi',
+  'Musashi Mizokuchi':            'Musashi-Mizonokuchi',
+
+  // JR Ito Line
+  'Visiting Palace':              'Kinomiya',                  // 来宮
+  'Izu Tiger':                    'Izu-Taga',                  // 伊豆多賀
+  'Age':                          'Ajiro',                     // 網代
+
+  // Keikyu Main Line
+  'A censure':                    'Henmi',                     // 逸見
+  'A door':                       'Tobe',                      // 戸部
+
+  // JR Narita Line
+  'A cheap meal':                 'Ajiki',                     // 安食
+  'A new tree':                   'Araki',                     // 新木
+  'A waterfall':                  'Suigo',                     // 水郷
+
+  // JR Sagami Line
+  'A company':                    'Shake',                     // 社家
+  'Aiba-dori under':              'Sobudai-shita',             // 相武台下
+
+  // JR Yokohama Line
+  'A desk':                       'Kozukue',                   // 小机
+
+  // Hakone Tozan Railway
+  'A festival':                   'Kazamatsuri',               // 風祭
+
+  // JR Kawagoe Line
+  'A finger fan':                 'Sashiogi',                  // 指扇
+
+  // JR Mito Line
+  'A friend':                     'Tomobe',                    // 友部
+  'Tozyou Castle':                'Higashi-Yuki',              // 東結城
+
+  // Yokohama Blue Line
+  'A landing area':               'Odoriba',                   // 踊場
+
+  // Tobu Isesaki Line
+  'A large bag':                  'Obukuro',                   // 大袋
+  'A ship':                       'Hikifune',                  // 曳舟
+  'Oshigami <before sky tree>':   'Oshiage (Skytree Mae)',     // 押上〈スカイツリー前〉
+  'Tokyo Sky Tree':               'Tokyo Skytree',             // とうきょうスカイツリー
+
+  // New Shuttle (Saitama)
+  'A lodging house':              'Uchijuku',                  // 内宿
+
+  // Tobu Tojo Line
+  'A man':                        'Obusuma',                   // 男衾
+
+  // Shin-Keisei Line
+  'A picnic room':                'Yakuendai',                 // 薬園台
+
+  // Nippori-Toneri Liner
+  'A rookie':                     'Toneri',                    // 舎人
+  'Temple Park':                  'Toneri Koen',               // 舎人公園
+
+  // Seibu Shinjuku Line
+  'A sack':                       'Numabukuro',                // 沼袋
+
+  // Utsunomiya Line
+  'A shogunyu':                   'Suzumenomiya',              // 雀宮
+  'A tree':                       'Nogi',                      // 野木
+  'A family house':               'Ujiie',                     // 氏家
+  'Eastern Washi Palace':         'Higashi-Washimiya',         // 東鷲宮
+
+  // Joshin Electric Railway
+  'A base store':                 'Nekoya',                    // 根小屋
+  'Shrine farmland':              'Kannohara',                 // 神農原
+
+  // Akita area railway
+  'A shop':                       'Araya',                     // 新屋
+
+  // Tobu Kiryu Line
+  'The age':                      'Aio',                       // 相老
+
+  // JR Minobu Line
+  'A well bore':                  'Tatebori',                  // 竪堀
+  'Genji temple':                 'Gendoji',                   // 源道寺
+
+  // Seibu Tamaegawa Line
+  'In front of the racecourse':   'Kyoteijomae',               // 競艇場前
+
+  // Tokyu Setagaya Line
+  'In front of Matsuo Shrine':    'Shoin-jinja Mae',           // 松陰神社前
+
+  // Tokyo Metro Marunouchi Line
+  'In front of the National Assembly building': 'Kokkai-Gijidomae', // 国会議事堂前
+
+  // Toei Oedo Line
+  'In front of Tokyo':            'Tochomae',                  // 都庁前
+
+  // Hakone Toyama Cable Car
+  'Under the park':               'Koen-shita',                // 公園下
+  'On the park':                  'Koen-ue',                   // 公園上
+
+  // Arakawa Tram (Aritogawa Line)
+  'Under the Gakushuin':          'Gakushuin-shita',           // 学習院下
+
+  // Fuji Express Line
+  'In front of Ikei Onsen':       'Yoshiike Onsen Mae',        // 葭池温泉前
+  'Before Toryi University of Science': 'Tsuru Bunkadaigakumae', // 都留文科大学前
+
+  // Keisei Oshiage Line
+  'Oshigami (before the sky tree)': 'Oshiage (Skytree Mae)',   // 押上（スカイツリー前）
+
+  // JR Chuo Main Line
+  'Dragon King':                  'Ryuo',                      // 竜王
+
+  // Odakyu Line
+  'Front of Aiba-dai':            'Sobudaimae',                // 相武台前
+  'Before Tokai University':      'Tokai-Daigakumae',          // 東海大学前
+  'Before Yomiuri Land':          'Yomiuriland-mae',           // 読売ランド前
+
+  // Tokyo Metro Chiyoda Line
+  'Front of Nijigyo Bashi':       'Nijubashimae',              // 二重橋前
+
+  // Tokyo Metro Hanzomon Line (dataset says "Imperial Palace" — wrong! it's Suitengu shrine)
+  'Imperial Palace':              'Suitengumae',               // 水天宮前
+
+  // Tokyo Metro Namboku Line
+  'University of Tokyo':          'Todaimae',                  // 東大前
+
+  // Toei Mita Line
+  'The gate':                     'Onarimon',                  // 御成門
+
+  // Yurikamome
+  'Before market':                'Shijomae',                  // 市場前
+
+  // Tokyo Metro Ginza Line
+  'Before Mitsukoshi':            'Mitsukoshimae',             // 三越前
+
+  // JR Kashima Line
+  'Kashima Shrine':               'Kashima Jingu',             // 鹿島神宮
+
+  // Keisei Main Line
+  'Okami Shrine':                 'Daijingu-shita',            // 大神宮下
+
+  // Keisei Chihara Line
+  'In front of the school':       'Gakuenmae',                 // 学園前
+
+  // Keio Line
+  'Hirayama Castle Ruins Park':   'Hirayamajoshi Koen',        // 平山城址公園
+
+  // Ganan Railway
+  'Before Jatco (before Jatco 1 district)': 'Jatco-mae (Jatco 1-chiku-mae)', // ジヤトコ前
 };
 
 // Line color palette (keyword → color)
