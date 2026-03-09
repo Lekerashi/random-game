@@ -829,9 +829,10 @@ function filterTokyoLines(prefectures) {
 }
 
 function buildIndex(lines, osmNames = {}) {
-  // Apply line name fixes
+  // Apply line name fixes, then strip route-span parentheticals e.g. "(Tokyo ~ Shiojiri)"
   for (const line of lines) {
     if (LINE_NAME_FIXES[line.name]) line.name = LINE_NAME_FIXES[line.name];
+    line.name = line.name.replace(/\s*\(.*?\)\s*$/, '').trim();
   }
 
   state.lines = lines;
