@@ -1640,6 +1640,10 @@ function onStationSelected(name) {
   const stn   = state.lines[first.lineIdx].stations[first.stationIdx];
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
 
+  // Clear any ward-restriction warning now that a valid station is chosen
+  const hint = document.getElementById('location-hint');
+  if (hint.textContent.includes('outside the 23 wards')) hint.textContent = '';
+
   // Capture whether the last roll was a drink before resetting
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
 
