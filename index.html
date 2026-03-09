@@ -449,6 +449,9 @@ const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.j
 const CACHE_KEY = 'random_game_v6';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
+// ← Paste your HERE Maps API key here (free at developer.here.com)
+const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
+
 // Greater Tokyo bounding box (line center coordinates)
 const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
@@ -1236,7 +1239,7 @@ function showMap() {
     .openPopup();
 }
 
-// ── Bars (Overpass API) ───────────────────────────────────────────────────
+// ── Bars (HERE Maps Discover API) ─────────────────────────────────────────
 async function showBars() {
   const card    = document.getElementById('bars-card');
   const content = document.getElementById('bars-content');
@@ -1245,35 +1248,42 @@ async function showBars() {
   content.innerHTML = '<div class="bars-empty">Searching for nearby bars & izakayas…</div>';
 
   const { lat, lng } = state.destination;
-  // Union query: bars/pubs + anything tagged cuisine=izakaya
-  const query = `[out:json][timeout:15];
-(
-  node["amenity"~"^(bar|pub)$"](around:500,${lat},${lng});
-  node["cuisine"~"izakaya"](around:500,${lat},${lng});
-);
-out body;`;
+  const circle = `circle:${lat},${lng};r=500`;
 
   try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      body: 'data=' + encodeURIComponent(query),
-    });
-    if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
-    const data = await res.json();
+    // Two parallel queries: 200-2000-0011 = Bar/Pub/Izakaya (HERE Japan category)
+    // + discover for 居酒屋 to catch izakayas miscategorised as restaurants
+    const [browseRes, izakayaRes] = await Promise.all([
+      fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=200-2000-0011&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
+      fetch(`https://discover.search.hereapi.com/v1/discover?at=${lat},${lng}&q=%E5%B1%85%E9%85%92%E5%B1%8B&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
+    ]);
 
-    // Deduplicate by OSM id (union query can return the same node twice)
+    if (!browseRes.ok) throw new Error(`HERE HTTP ${browseRes.status}`);
+    const [browseData, izakayaData] = await Promise.all([
+      browseRes.json(),
+      izakayaRes.ok ? izakayaRes.json() : { items: [] },
+    ]);
+
+    // Merge and deduplicate by name+position
     const seen = new Set();
-    const bars = (data.elements || [])
-      .filter(e => e.lat && e.lon && !seen.has(e.id) && seen.add(e.id))
-      .map(e => {
-        const isIzakaya = (e.tags.cuisine || '').includes('izakaya');
-        const isPub     = e.tags.amenity === 'pub';
+    const bars = [...(browseData.items || []), ...(izakayaData.items || [])]
+      .filter(p => {
+        const key = `${p.title}|${p.position?.lat?.toFixed(4)}|${p.position?.lng?.toFixed(4)}`;
+        return !seen.has(key) && seen.add(key);
+      })
+      .map(p => {
+        const catName   = (p.categories?.[0]?.name || '').toLowerCase();
+        const nameLow   = p.title.toLowerCase();
+        const isIzakaya = nameLow.includes('izakaya') || p.title.includes('居酒屋') || catName.includes('izakaya');
+        const isPub     = catName.includes('pub');
         const icon      = isIzakaya ? '🏮' : isPub ? '🍻' : '🍺';
         const type      = isIzakaya ? 'Izakaya' : isPub ? 'Pub' : 'Bar';
+        const vLat      = p.position?.lat;
+        const vLng      = p.position?.lng;
         return {
-          name: e.tags['name:en'] || e.tags.name || `Unnamed ${type}`,
-          dist: haversineM(lat, lng, e.lat, e.lon),
-          mapsUrl: `https://maps.google.com/?q=${e.lat},${e.lon}`,
+          name:    p.title,
+          dist:    p.distance,
+          mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z`,
           icon, type,
         };
       })
