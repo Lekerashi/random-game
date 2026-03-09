@@ -509,9 +509,11 @@ const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
 // The source data uses machine-translated English names for many stations.
 // Add entries here whenever you spot a bad name from the source dataset.
 const LINE_NAME_FIXES = {
-  'Keisei Keeping Line':  'Keisei Oshiage Line',  // 京成押上線 — 押上 is a place name, not "keeping"
-  'Yurikamigame':         'Yurikamome',            // ゆりかもめ
-  'JR double capital line': 'JR Ryomo Line',       // JR両毛線
+  'Keisei Keeping Line':        'Keisei Oshiage Line',    // 京成押上線
+  'Yurikamigame':               'Yurikamome',             // ゆりかもめ
+  'JR double capital line':     'JR Ryomo Line',          // JR両毛線
+  'Nagareyama Nagareyama line': 'Ryutetsu Nagareyama Line', // 流鉄流山線
+  'Nippori · Territor Liner':   'Nippori-Toneri Liner',   // 日暮里・舎人ライナー
 };
 
 const STATION_NAME_FIXES = {
@@ -922,6 +924,10 @@ const STATION_NAME_FIXES = {
   'Wilderness bed':                   'Koyadai',                // 荒野台
   'Young leaves':                     'Wakaba',                 // 若葉
   'Yoyogi park':                      'Yoyogi-Koen',            // 代々木公園
+
+  // User-reported
+  'Fascia':                           'Hiregasaki',             // 鰭ヶ崎 — Ryutetsu Nagareyama Line
+  'Fan Bridge':                       'Ogi-ohashi',             // 扇大橋 — Nippori-Toneri Liner
 
   // Previously skipped (outside original bounding box) — fixed by Japanese name lookup
   'Falling asleep':                   'Ochii',                  // 落居 — JR Minobu Line
