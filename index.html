@@ -495,6 +495,11 @@ const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 // Greater Tokyo bounding box (line center coordinates)
 const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
+// Lines excluded from the game (bad data or limited-express-only services)
+const EXCLUDED_LINES = new Set([
+  'JR Narita Express', // corrupted data merges Chuo Line stations into N'EX route
+]);
+
 // 23 Special Wards of Tokyo bounding box
 const WARDS_23_BOUNDS = { minLat: 35.52, maxLat: 35.83, minLng: 139.58, maxLng: 139.94 };
 function isIn23Wards(lat, lng) {
@@ -1318,6 +1323,8 @@ function filterTokyoLines(prefectures) {
       const lineJa = line.name?.ja || line.name?.en || '';
       if (seenJa.has(lineJa)) continue;
       seenJa.add(lineJa);
+      const lineEn = line.name?.en || lineJa;
+      if (EXCLUDED_LINES.has(lineEn)) continue;
 
       // Build simplified station list
       const stations = (line.stations || [])
@@ -1350,6 +1357,9 @@ function buildIndex(lines, osmNames = {}) {
     if (LINE_NAME_FIXES[line.name]) line.name = LINE_NAME_FIXES[line.name];
     line.name = line.name.replace(/\s*\(.*?\)\s*$/, '').trim();
   }
+
+  // Remove excluded lines (bad data, limited-express-only, etc.)
+  lines = lines.filter(l => !EXCLUDED_LINES.has(l.name));
 
   state.lines = lines;
   const nameSet = new Set();
