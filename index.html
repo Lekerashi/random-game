@@ -350,24 +350,27 @@
     </div>
   </div>
 
-  <!-- Step 1: Roll Platform -->
+  <!-- Step 1: Roll Train Line -->
   <div class="card step-card" id="step-platforms">
-    <div class="card-title">Step 1 — Roll a Platform</div>
+    <div class="card-title">Step 1 — Roll a Train Line</div>
     <div class="platform-count" id="platform-count-text"></div>
     <div class="platform-grid" id="platform-grid"></div>
     <div class="roll-die-display">
       <div class="die-face" id="die-platform">?</div>
       <div class="die-label" id="die-platform-label">Roll to pick a platform</div>
     </div>
-    <button class="btn btn-roll" id="roll-platform-btn">ROLL PLATFORM</button>
+    <button class="btn btn-roll" id="roll-platform-btn">ROLL TRAIN LINE</button>
   </div>
 
   <!-- Step 2: Roll Stops -->
   <div class="card step-card" id="step-stops">
     <div class="card-title">Step 2 — Roll Stops</div>
-    <div id="selected-platform-banner" style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.88rem;line-height:1.5">
-      <span id="selected-platform-dot" class="line-dot"></span>
-      <span id="selected-platform-text"></span>
+    <div style="display:flex;align-items:stretch;gap:8px;margin-bottom:12px">
+      <div id="selected-platform-banner" style="flex:1;display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.88rem;line-height:1.5">
+        <span id="selected-platform-dot" class="line-dot"></span>
+        <span id="selected-platform-text"></span>
+      </div>
+      <button class="btn btn-secondary" id="reroll-platform-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll train line">🔁 Reroll</button>
     </div>
     <div class="platform-count" id="stops-range-text"></div>
     <div class="roll-die-display">
@@ -843,6 +846,7 @@ function onStationSelected(name) {
   document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
   document.getElementById('roll-platform-btn').disabled = false;
   document.getElementById('roll-stops-btn').disabled = true;
+  document.getElementById('reroll-platform-btn').style.display = 'none';
 
   // Compute platforms
   state.platforms = getPlatforms(name);
@@ -858,7 +862,7 @@ function onStationSelected(name) {
   ).join('');
 
   document.getElementById('platform-count-text').textContent =
-    `${state.platforms.length} platform${state.platforms.length !== 1 ? 's' : ''} at ${name} — rolling 1–${state.platforms.length}`;
+    `${state.platforms.length} train lines at ${name} — rolling 1–${state.platforms.length}`;
 
   showStep('step-platforms');
 }
@@ -887,8 +891,26 @@ function rollPlatform() {
       `<strong>#${roll} — ${p.lineName}</strong><br><span style="color:var(--muted)">${p.label.split('—').slice(1).join('—').trim()}</span>`;
 
     document.getElementById('roll-stops-btn').disabled = false;
+    document.getElementById('reroll-platform-btn').style.display = '';
     showStep('step-stops');
   });
+}
+
+function rerollPlatform() {
+  // Hide reroll, reset step 2, and fire a fresh roll
+  document.getElementById('reroll-platform-btn').style.display = 'none';
+  document.getElementById('step-stops').classList.remove('active');
+  document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('map-card').style.display = 'none';
+  document.getElementById('bars-card').style.display = 'none';
+  document.getElementById('die-platform').textContent = '?';
+  document.getElementById('die-platform').className = 'die-face';
+  document.getElementById('die-stops').textContent = '?';
+  document.getElementById('die-stops').className = 'die-face';
+  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a platform';
+  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
+  document.getElementById('roll-stops-btn').disabled = true;
+  rollPlatform();
 }
 
 function rollStops() {
@@ -1072,6 +1094,7 @@ function rollAgainFromHere() {
 
   document.getElementById('random-station-btn').addEventListener('click', pickRandomStation);
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
+  document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
   document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
   document.getElementById('show-map-btn').addEventListener('click', showMap);
   document.getElementById('show-bars-btn').addEventListener('click', showBars);
