@@ -324,6 +324,27 @@
       display: none;
     }
 
+    /* ── 23 Wards toggle ─────────────────────────────── */
+    .wards-toggle-row {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .wards-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      font-size: .82rem;
+      color: var(--muted);
+      user-select: none;
+    }
+    .wards-toggle input[type="checkbox"] {
+      width: 15px; height: 15px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
     /* ── Location hint ───────────────────────────────── */
     #location-hint {
       font-size: .8rem;
@@ -374,6 +395,12 @@
       </div>
       <button class="btn btn-secondary" id="locate-btn" title="Use my current location">📍</button>
       <button class="btn btn-secondary" id="random-station-btn" title="Pick random station">🎲 Random</button>
+    </div>
+    <div class="wards-toggle-row">
+      <label class="wards-toggle">
+        <input type="checkbox" id="wards23-check">
+        <span>23 Wards only</span>
+      </label>
     </div>
     <div id="location-hint"></div>
   </div>
@@ -467,6 +494,13 @@ const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 
 // Greater Tokyo bounding box (line center coordinates)
 const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
+
+// 23 Special Wards of Tokyo bounding box
+const WARDS_23_BOUNDS = { minLat: 35.52, maxLat: 35.83, minLng: 139.58, maxLng: 139.94 };
+function isIn23Wards(lat, lng) {
+  return lat  >= WARDS_23_BOUNDS.minLat && lat  <= WARDS_23_BOUNDS.maxLat &&
+         lng >= WARDS_23_BOUNDS.minLng && lng <= WARDS_23_BOUNDS.maxLng;
+}
 
 // Lines to treat as circular loops
 const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
@@ -693,7 +727,9 @@ const LINE_COLORS = {
 const state = {
   lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
   stationIndex: {},   // {normalizedName: [{lineName, lineColor, lineIdx, stationIdx}]}
-  stationNames: [],   // unique English names sorted
+  stationNames: [],   // unique English names sorted (all)
+  stationNames23: [], // unique English names within 23 wards
+  wards23Only: false, // restrict to 23 special wards
   currentStation: null,    // {name, ja, lat, lng}
   platforms: [],           // [{label, line, lineColor, direction, fromIdx, maxStops}]
   selectedPlatform: null,
@@ -888,6 +924,12 @@ function buildIndex(lines, osmNames = {}) {
   }
 
   state.stationNames = Array.from(nameSet).sort();
+  state.stationNames23 = state.stationNames.filter(name => {
+    const entries = state.stationIndex[normalize(name)] || [];
+    if (!entries.length) return false;
+    const stn = state.lines[entries[0].lineIdx].stations[entries[0].stationIdx];
+    return isIn23Wards(stn.lat, stn.lng);
+  });
   setLoadingStatus('');
   hideLoading();
 }
@@ -1100,7 +1142,8 @@ function setupAutocomplete() {
     input.classList.remove('selected');
     const q = normalize(input.value.trim());
     if (q.length < 1) { close(); return; }
-    const matches = state.stationNames
+    const names = state.wards23Only ? state.stationNames23 : state.stationNames;
+    const matches = names
       .filter(n => normalize(n).includes(q))
       .sort((a, b) => {
         const ai = normalize(a).indexOf(q), bi = normalize(b).indexOf(q);
@@ -1498,8 +1541,9 @@ function clearHistory() {
 
 // ── Random Station ────────────────────────────────────────────────────────
 function pickRandomStation() {
-  if (state.stationNames.length === 0) return;
-  const name  = state.stationNames[Math.floor(Math.random() * state.stationNames.length)];
+  const pool = state.wards23Only ? state.stationNames23 : state.stationNames;
+  if (pool.length === 0) return;
+  const name  = pool[Math.floor(Math.random() * pool.length)];
   const input = document.getElementById('station-input');
   input.value = name;
   input.classList.add('selected');
@@ -1512,6 +1556,7 @@ function findNearestStation(lat, lng) {
   let bestDist = Infinity;
   for (const line of state.lines) {
     for (const stn of line.stations) {
+      if (state.wards23Only && !isIn23Wards(stn.lat, stn.lng)) continue;
       const d = haversineM(lat, lng, stn.lat, stn.lng);
       if (d < bestDist) { bestDist = d; bestName = stn.name; }
     }
@@ -1584,6 +1629,9 @@ function rollAgainFromHere() {
 
   document.getElementById('random-station-btn').addEventListener('click', pickRandomStation);
   document.getElementById('locate-btn').addEventListener('click', detectLocation);
+  document.getElementById('wards23-check').addEventListener('change', e => {
+    state.wards23Only = e.target.checked;
+  });
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
   document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
   document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
