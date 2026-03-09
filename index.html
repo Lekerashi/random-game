@@ -1644,6 +1644,12 @@ function onStationSelected(name) {
   const hint = document.getElementById('location-hint');
   if (hint.textContent.includes('outside the 23 wards')) hint.textContent = '';
 
+  // Switch button to "New Game" mode
+  const rBtn = document.getElementById('random-station-btn');
+  rBtn.textContent = '🔄 New Game';
+  rBtn.title = 'Start a new game';
+  rBtn.onclick = resetGame;
+
   // Capture whether the last roll was a drink before resetting
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
 
@@ -1997,6 +2003,29 @@ function pickRandomStation() {
   input.value = name;
   input.classList.add('selected');
   onStationSelected(name);
+}
+
+function resetGame() {
+  state.currentStation  = null;
+  state.platforms       = [];
+  state.selectedPlatform = null;
+  state.rolledStops     = null;
+  state.destination     = null;
+
+  const input = document.getElementById('station-input');
+  input.value = '';
+  input.classList.remove('selected');
+
+  showStep(null);
+  document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('map-card').style.display    = 'none';
+  document.getElementById('bars-card').style.display   = 'none';
+  document.getElementById('cafes-card').style.display  = 'none';
+
+  const rBtn = document.getElementById('random-station-btn');
+  rBtn.textContent = '🎲 Random';
+  rBtn.title       = 'Pick random station';
+  rBtn.onclick     = pickRandomStation;
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
