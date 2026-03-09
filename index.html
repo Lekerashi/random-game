@@ -965,6 +965,20 @@ function findMajorStation(line, fromIdx, direction) {
   return (fallback >= 0 && fallback < N) ? line.stations[fallback].name : null;
 }
 
+// In 23-wards mode: count how many consecutive stops from fromIdx in the given
+// step direction stay within the ward boundary. Returns 0 if the first stop is outside.
+function wardMaxStops(line, fromIdx, step) {
+  const N = line.stations.length;
+  for (let i = 1; i < N; i++) {
+    let idx = line.circular
+      ? ((fromIdx + step * i) % N + N) % N
+      : fromIdx + step * i;
+    if (!line.circular && (idx < 0 || idx >= N)) break;
+    if (!isIn23Wards(line.stations[idx].lat, line.stations[idx].lng)) return i - 1;
+  }
+  return N - 1;
+}
+
 function getPlatforms(stationName) {
   const key = normalize(stationName);
   const entries = state.stationIndex[key] || [];
@@ -979,8 +993,10 @@ function getPlatforms(stationName) {
       // Both directions always available; max = N-1 (go almost all the way around)
       const majorA = findMajorStation(line, si, 'A');
       const majorB = findMajorStation(line, si, 'B');
+      const maxA = state.wards23Only ? wardMaxStops(line, si, -1) : N - 1;
+      const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
 
-      platforms.push({
+      if (maxA > 0) platforms.push({
         label:    `${line.name} — toward ${line.stations[0].name} (Direction A)`,
         hint:     `← toward ${majorA}`,
         lineColor: line.color,
@@ -989,9 +1005,9 @@ function getPlatforms(stationName) {
         direction: 'A',    // decreasing index
         fromIdx:   si,
         lineIdx:   entry.lineIdx,
-        maxStops:  N - 1,
+        maxStops:  maxA,
       });
-      platforms.push({
+      if (maxB > 0) platforms.push({
         label:    `${line.name} — toward ${line.stations[Math.floor(N/2)].name} (Direction B)`,
         hint:     `→ toward ${majorB}`,
         lineColor: line.color,
@@ -1000,12 +1016,13 @@ function getPlatforms(stationName) {
         direction: 'B',    // increasing index
         fromIdx:   si,
         lineIdx:   entry.lineIdx,
-        maxStops:  N - 1,
+        maxStops:  maxB,
       });
     } else {
       // Linear: add platform toward start (if not already at start)
       if (si > 0) {
-        platforms.push({
+        const maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
+        if (maxS > 0) platforms.push({
           label:    `${line.name} — toward ${line.stations[0].name}`,
           hint:     `← toward ${findMajorStation(line, si, 'start')}`,
           lineColor: line.color,
@@ -1014,12 +1031,13 @@ function getPlatforms(stationName) {
           direction: 'start',
           fromIdx:   si,
           lineIdx:   entry.lineIdx,
-          maxStops:  si,
+          maxStops:  maxS,
         });
       }
       // Add platform toward end (if not already at end)
       if (si < N - 1) {
-        platforms.push({
+        const maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
+        if (maxE > 0) platforms.push({
           label:    `${line.name} — toward ${line.stations[N - 1].name}`,
           hint:     `→ toward ${findMajorStation(line, si, 'end')}`,
           lineColor: line.color,
@@ -1028,7 +1046,7 @@ function getPlatforms(stationName) {
           direction: 'end',
           fromIdx:   si,
           lineIdx:   entry.lineIdx,
-          maxStops:  N - 1 - si,
+          maxStops:  maxE,
         });
       }
     }
