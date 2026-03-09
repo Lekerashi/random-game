@@ -2083,6 +2083,7 @@ function rollAgainFromHere() {
         const input = document.getElementById('station-input');
         input.value = '';
         input.classList.remove('selected');
+        showStep(null);
         setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
       } else {
         onStationSelected(state.currentStation.name);
