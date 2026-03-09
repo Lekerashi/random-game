@@ -440,7 +440,7 @@
 'use strict';
 
 // ── Constants ─────────────────────────────────────────────────────────────
-const DATA_URL  = 'https://raw.githubusercontent.com/adieuadieu/japan-train-data/master/data/raw-data.json';
+const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v5';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -730,11 +730,11 @@ async function loadData() {
   }
 
   // ── Fetch everything fresh (first load) ───────────────────────────────
-  setLoadingStatus('Fetching Tokyo train data… (first load ~10 MB)');
-  let raw, osmNames;
+  setLoadingStatus('Loading train data…');
+  let lines, osmNames;
   try {
-    // Run both fetches in parallel — topology (~10 MB) + OSM names (~200 KB)
-    [raw, osmNames] = await Promise.all([
+    // Run both fetches in parallel — pre-built topology (~315 KB) + OSM names (~200 KB)
+    [lines, osmNames] = await Promise.all([
       fetch(DATA_URL).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
       fetchOSMNames().catch(e => { console.warn('OSM name fetch failed, using built-in fixes:', e); return {}; }),
     ]);
@@ -743,10 +743,8 @@ async function loadData() {
     return;
   }
 
-  setLoadingStatus('Processing lines…');
-  const lines = filterTokyoLines(raw);
-  if (lines.length === 0) {
-    showError('Could not find Tokyo-area lines in data. Please reload.');
+  if (!lines?.length) {
+    showError('Could not load train data. Please reload.');
     return;
   }
 
@@ -799,11 +797,13 @@ function buildIndex(lines, osmNames = {}) {
     for (let si = 0; si < lines[li].stations.length; si++) {
       const stn = lines[li].stations[si];
 
-      // Apply OSM name override if available — OSM names are human-curated
-      // Hepburn romanizations, more reliable than the dataset's machine translations.
-      // Falls back to whatever filterTokyoLines set (STATION_NAME_FIXES or raw dataset name).
+      // Apply name corrections in priority order:
+      //  1. OSM name:en  — human-curated Hepburn romanization (best)
+      //  2. STATION_NAME_FIXES — our manual overrides for anything OSM misses
+      //  3. Raw dataset name  — fallback (may be a machine translation)
       const osmEn = osmNames[stn.ja];
-      if (osmEn) stn.name = osmEn;
+      const fixEn = STATION_NAME_FIXES[stn.name];
+      stn.name = osmEn ?? fixEn ?? stn.name;
 
       const key = normalize(stn.name);
       nameSet.add(stn.name);
