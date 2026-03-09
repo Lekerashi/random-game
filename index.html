@@ -239,6 +239,10 @@
       font-size: 2rem;
       font-weight: 800;
       margin: 6px 0;
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-color: rgba(255,255,255,0.3);
+      text-underline-offset: 4px;
     }
     .destination-sub {
       color: var(--muted);
@@ -441,13 +445,12 @@
   <!-- Destination -->
   <div class="card" id="destination-card">
     <div class="card-title">Destination</div>
-    <div class="destination-name" id="dest-name"></div>
+    <a class="destination-name" id="dest-name" target="_blank" rel="noopener"></a>
     <div class="destination-sub" id="dest-sub"></div>
     <div class="action-row">
       <button class="btn btn-ghost" id="show-map-btn">🗺 Map</button>
       <button class="btn btn-ghost" id="show-bars-btn">🏮 Nearby Bars</button>
       <button class="btn btn-ghost" id="show-cafes-btn">☕ Nearby Cafes</button>
-      <a class="btn btn-ghost" id="gmaps-btn" target="_blank" rel="noopener">📍 Google Maps</a>
       <button class="btn btn-primary" id="roll-again-btn">▶ Roll Again From Here</button>
     </div>
   </div>
@@ -1880,11 +1883,11 @@ function rollPlatform() {
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      document.getElementById('dest-name').textContent = state.currentStation.name;
+      const destNameEl = document.getElementById('dest-name');
+      destNameEl.textContent = state.currentStation.name;
+      destNameEl.href = `https://www.google.com/maps/dir/?api=1&destination=${state.currentStation.lat},${state.currentStation.lng}`;
       document.getElementById('dest-sub').innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`;
-      document.getElementById('gmaps-btn').href =
-        `https://www.google.com/maps/dir/?api=1&destination=${state.currentStation.lat},${state.currentStation.lng}`;
       const destCard = document.getElementById('destination-card');
       destCard.classList.add('active');
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1961,11 +1964,11 @@ function rollStops() {
     document.getElementById('reroll-stops-btn').style.display = '';
 
     // Show destination
-    document.getElementById('dest-name').textContent = dest.name;
+    const destNameEl = document.getElementById('dest-name');
+    destNameEl.textContent = dest.name;
+    destNameEl.href = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`;
     document.getElementById('dest-sub').innerHTML =
       `${dest.ja} &nbsp;·&nbsp; ${state.selectedPlatform.lineName} &nbsp;·&nbsp; ${roll} stop${roll !== 1 ? 's' : ''} from ${state.currentStation.name}`;
-    document.getElementById('gmaps-btn').href =
-      `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`;
     const destCard = document.getElementById('destination-card');
     destCard.classList.add('active');
     destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
