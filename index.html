@@ -1649,6 +1649,7 @@ function rollAgainFromHere() {
   document.getElementById('locate-btn').addEventListener('click', detectLocation);
   document.getElementById('wards23-check').addEventListener('change', e => {
     state.wards23Only = e.target.checked;
+    if (state.currentStation) onStationSelected(state.currentStation.name);
   });
   document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
   document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
