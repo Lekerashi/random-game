@@ -474,6 +474,10 @@ const CIRCULAR_KEYWORDS = ['Yamanote', 'Ōedo', 'Oedo'];
 // Known romanization fixes in the source dataset (wrong → correct)
 // The source data uses machine-translated English names for many stations.
 // Add entries here whenever you spot a bad name from the source dataset.
+const LINE_NAME_FIXES = {
+  'Keisei Keeping Line':  'Keisei Oshiage Line',  // 京成押上線 — 押上 is a place name, not "keeping"
+};
+
 const STATION_NAME_FIXES = {
   // Previous fixes
   'Mizokuchi':                    'Mizonokuchi',
@@ -482,6 +486,12 @@ const STATION_NAME_FIXES = {
   // JR Chuo Main Line
   'Riverside':                    'Kawagishi',
   'Midori Lake':                  'Midoriko',
+
+  // Tobu Nikko Line
+  'Plate':                        'Itaka',               // 板荷
+
+  // JR Minobu Line
+  'Farmland':                     'Yorihata',            // 寄畑
 
   // JR Ito Line
   'Visiting Palace':              'Kinomiya',                  // 来宮
@@ -819,6 +829,11 @@ function filterTokyoLines(prefectures) {
 }
 
 function buildIndex(lines, osmNames = {}) {
+  // Apply line name fixes
+  for (const line of lines) {
+    if (LINE_NAME_FIXES[line.name]) line.name = LINE_NAME_FIXES[line.name];
+  }
+
   state.lines = lines;
   const nameSet = new Set();
 
