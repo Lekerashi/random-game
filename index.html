@@ -1082,6 +1082,13 @@ const STATION_NAME_FIXES = {
   'Birthplace':                       'Iriuda',                        // 入生田
   'Counterbore':                      'Koshinzuka',                    // 庚申塚
 
+  // Haneda Airport — merge same-terminal stations across Keikyu and Monorail
+  '羽田空港国際線ターミナル':           'Haneda Airport Terminal 3',     // Keikyu (T3, same location as Monorail)
+  '羽田空港国際線ビル':                'Haneda Airport Terminal 3',     // Monorail (T3, same location as Keikyu)
+  '羽田空港第１ビル':                  'Haneda Airport Terminal 1',     // Monorail only
+  '羽田空港第２ビル':                  'Haneda Airport Terminal 2',     // Monorail only
+  '羽田空港国内線ターミナル':           'Haneda Airport Terminal 1 & 2', // Keikyu (serves both T1 & T2 via tunnel)
+
   // Japanese-keyed overrides — used when the English translation collides with another station
   '馬込沢':                           'Magomezawa',                    // Tobu Noda Line (mistranslated as "Ma · Inosawa")
   '馬来田':                           'Makita (Kururi)',               // JR Kururi Line (≠ 蒔田 Makita on Blue Line)
