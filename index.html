@@ -407,7 +407,7 @@
     <div class="destination-sub" id="dest-sub"></div>
     <div class="action-row">
       <button class="btn btn-ghost" id="show-map-btn">🗺 Map</button>
-      <button class="btn btn-ghost" id="show-bars-btn">🍺 Nearby Bars</button>
+      <button class="btn btn-ghost" id="show-bars-btn">🏮 Nearby Bars</button>
       <button class="btn btn-primary" id="roll-again-btn">▶ Roll Again From Here</button>
     </div>
   </div>
@@ -420,7 +420,7 @@
 
   <!-- Bars -->
   <div class="card" id="bars-card" style="display:none">
-    <div class="card-title">Nearby Bars &amp; Pubs</div>
+    <div class="card-title">Nearby Bars, Pubs &amp; Izakayas</div>
     <div id="bars-content"></div>
   </div>
 
@@ -1233,11 +1233,15 @@ async function showBars() {
   const content = document.getElementById('bars-content');
   card.style.display = 'block';
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  content.innerHTML = '<div class="bars-empty">Searching for nearby bars…</div>';
+  content.innerHTML = '<div class="bars-empty">Searching for nearby bars & izakayas…</div>';
 
   const { lat, lng } = state.destination;
+  // Union query: bars/pubs + anything tagged cuisine=izakaya
   const query = `[out:json][timeout:15];
-node["amenity"~"^(bar|pub)$"](around:500,${lat},${lng});
+(
+  node["amenity"~"^(bar|pub)$"](around:500,${lat},${lng});
+  node["cuisine"~"izakaya"](around:500,${lat},${lng});
+);
 out body;`;
 
   try {
@@ -1247,24 +1251,33 @@ out body;`;
     });
     if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
     const data = await res.json();
+
+    // Deduplicate by OSM id (union query can return the same node twice)
+    const seen = new Set();
     const bars = (data.elements || [])
-      .filter(e => e.lat && e.lon)
-      .map(e => ({
-        name: e.tags.name || e.tags['name:en'] || 'Unnamed bar',
-        dist: haversineM(lat, lng, e.lat, e.lon),
-        amenity: e.tags.amenity,
-      }))
+      .filter(e => e.lat && e.lon && !seen.has(e.id) && seen.add(e.id))
+      .map(e => {
+        const isIzakaya = (e.tags.cuisine || '').includes('izakaya');
+        const isPub     = e.tags.amenity === 'pub';
+        const icon      = isIzakaya ? '🏮' : isPub ? '🍻' : '🍺';
+        const type      = isIzakaya ? 'Izakaya' : isPub ? 'Pub' : 'Bar';
+        return {
+          name: e.tags['name:en'] || e.tags.name || `Unnamed ${type}`,
+          dist: haversineM(lat, lng, e.lat, e.lon),
+          icon, type,
+        };
+      })
       .sort((a, b) => a.dist - b.dist);
 
     if (bars.length === 0) {
-      content.innerHTML = '<div class="bars-empty">No bars found within 500 m. There might be izakayas tagged differently — try exploring!</div>';
+      content.innerHTML = '<div class="bars-empty">No bars or izakayas found within 500 m — try exploring!</div>';
       return;
     }
 
     content.innerHTML = `<div class="bars-list">${bars.map(b =>
       `<div class="bar-item">
-        <span class="bar-icon">🍺</span>
-        <span class="bar-name">${b.name}</span>
+        <span class="bar-icon">${b.icon}</span>
+        <span class="bar-name">${b.name}<small style="color:var(--muted);margin-left:6px">${b.type}</small></span>
         <span class="bar-dist">${Math.round(b.dist)} m</span>
       </div>`
     ).join('')}</div>`;
