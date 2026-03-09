@@ -379,7 +379,7 @@
     <div class="platform-grid" id="platform-grid"></div>
     <div class="roll-die-display">
       <div class="die-face" id="die-platform">?</div>
-      <div class="die-label" id="die-platform-label">Roll to pick a platform</div>
+      <div class="die-label" id="die-platform-label">Roll to pick a train line</div>
     </div>
     <button class="btn btn-roll" id="roll-platform-btn">ROLL TRAIN LINE</button>
   </div>
@@ -1109,7 +1109,7 @@ function onStationSelected(name) {
   document.getElementById('die-platform').className = 'die-face';
   document.getElementById('die-stops').textContent = '?';
   document.getElementById('die-stops').className = 'die-face';
-  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a platform';
+  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a train line';
   document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
   document.getElementById('roll-platform-btn').disabled = false;
   document.getElementById('roll-stops-btn').disabled = true;
@@ -1176,7 +1176,7 @@ function rerollPlatform() {
   document.getElementById('die-platform').className = 'die-face';
   document.getElementById('die-stops').textContent = '?';
   document.getElementById('die-stops').className = 'die-face';
-  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a platform';
+  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a train line';
   document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
   document.getElementById('roll-stops-btn').disabled = true;
   document.getElementById('reroll-stops-btn').style.display = 'none';
