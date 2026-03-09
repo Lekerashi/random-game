@@ -605,6 +605,36 @@ function buildIndex(lines) {
 }
 
 // ── Platform Logic ────────────────────────────────────────────────────────
+
+// Walk ahead along a line and return the first station that's a major hub
+// (served by 4+ directional platforms, i.e. a real transfer station).
+// Falls back to the immediate next station if none found within lookahead.
+function findMajorStation(line, fromIdx, direction) {
+  const N = line.stations.length;
+  const LOOKAHEAD  = 20;
+  const HUB_THRESHOLD = 4; // entries in stationIndex = # of directional platforms
+
+  const step = (direction === 'A' || direction === 'start') ? -1 : 1;
+
+  for (let i = 1; i <= Math.min(LOOKAHEAD, N - 1); i++) {
+    let idx = line.circular
+      ? ((fromIdx + step * i) % N + N) % N
+      : fromIdx + step * i;
+
+    if (idx < 0 || idx >= N) break;
+
+    const stn     = line.stations[idx];
+    const entries = state.stationIndex[normalize(stn.name)] || [];
+    if (entries.length >= HUB_THRESHOLD) return stn.name;
+  }
+
+  // Fallback: immediate neighbour
+  const fallback = line.circular
+    ? ((fromIdx + step) % N + N) % N
+    : fromIdx + step;
+  return (fallback >= 0 && fallback < N) ? line.stations[fallback].name : null;
+}
+
 function getPlatforms(stationName) {
   const key = normalize(stationName);
   const entries = state.stationIndex[key] || [];
@@ -617,12 +647,12 @@ function getPlatforms(stationName) {
 
     if (line.circular) {
       // Both directions always available; max = N-1 (go almost all the way around)
-      const nextA = line.stations[(si - 1 + N) % N].name;
-      const nextB = line.stations[(si + 1) % N].name;
+      const majorA = findMajorStation(line, si, 'A');
+      const majorB = findMajorStation(line, si, 'B');
 
       platforms.push({
         label:    `${line.name} — toward ${line.stations[0].name} (Direction A)`,
-        hint:     `← next: ${nextA}`,
+        hint:     `← toward ${majorA}`,
         lineColor: line.color,
         lineName:  line.name,
         circular:  true,
@@ -633,7 +663,7 @@ function getPlatforms(stationName) {
       });
       platforms.push({
         label:    `${line.name} — toward ${line.stations[Math.floor(N/2)].name} (Direction B)`,
-        hint:     `→ next: ${nextB}`,
+        hint:     `→ toward ${majorB}`,
         lineColor: line.color,
         lineName:  line.name,
         circular:  true,
@@ -647,7 +677,7 @@ function getPlatforms(stationName) {
       if (si > 0) {
         platforms.push({
           label:    `${line.name} — toward ${line.stations[0].name}`,
-          hint:     `← next: ${line.stations[si - 1].name}`,
+          hint:     `← toward ${findMajorStation(line, si, 'start')}`,
           lineColor: line.color,
           lineName:  line.name,
           circular:  false,
@@ -661,7 +691,7 @@ function getPlatforms(stationName) {
       if (si < N - 1) {
         platforms.push({
           label:    `${line.name} — toward ${line.stations[N - 1].name}`,
-          hint:     `→ next: ${line.stations[si + 1].name}`,
+          hint:     `→ toward ${findMajorStation(line, si, 'end')}`,
           lineColor: line.color,
           lineName:  line.name,
           circular:  false,
