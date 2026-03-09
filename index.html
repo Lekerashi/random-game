@@ -441,7 +441,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = 'https://raw.githubusercontent.com/adieuadieu/japan-train-data/master/data/raw-data.json';
-const CACHE_KEY = 'random_game_v4';
+const CACHE_KEY = 'random_game_v5';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // Greater Tokyo bounding box (line center coordinates)
@@ -669,29 +669,75 @@ function haversineM(lat1, lng1, lat2, lng2) {
 }
 
 // ── Data Loading ──────────────────────────────────────────────────────────
+
+// Fetch human-curated station romanizations from OpenStreetMap.
+// Returns a map of { "日本語名": "Romanized Name" }.
+async function fetchOSMNames() {
+  // Query all railway stations in the Tokyo bounding box that have a name:en tag.
+  const query =
+    `[out:json][timeout:60];` +
+    `node["railway"="station"]["name:en"]` +
+    `(${BOUNDS.minLat},${BOUNDS.minLng},${BOUNDS.maxLat},${BOUNDS.maxLng});` +
+    `out body;`;
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: 'data=' + encodeURIComponent(query),
+  });
+  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
+  const data = await res.json();
+  const map = {};
+  for (const el of data.elements || []) {
+    const ja = el.tags?.['name:ja'] || el.tags?.name;
+    const en = el.tags?.['name:en'];
+    if (ja && en) map[ja] = en;
+  }
+  return map;
+}
+
 async function loadData() {
   setLoadingStatus('Checking cache…');
 
-  // Try localStorage cache
+  // ── Try localStorage cache ─────────────────────────────────────────────
+  let cachedLines = null, cachedOsmNames = null;
   try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { timestamp, lines } = JSON.parse(cached);
-      if (Date.now() - timestamp < CACHE_TTL && lines && lines.length > 0) {
-        setLoadingStatus('Loading from cache…');
-        buildIndex(lines);
-        return;
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Date.now() - parsed.timestamp < CACHE_TTL && parsed.lines?.length > 0) {
+        cachedLines    = parsed.lines;
+        cachedOsmNames = parsed.osmNames || null; // may be absent in older caches
       }
     }
   } catch (_) { /* ignore */ }
 
-  // Fetch fresh
+  if (cachedLines) {
+    // Topology is cached; fetch OSM names if they weren't cached yet
+    let osmNames = cachedOsmNames || {};
+    if (!cachedOsmNames) {
+      setLoadingStatus('Fetching station name corrections from OpenStreetMap…');
+      try {
+        osmNames = await fetchOSMNames();
+        // Patch the existing cache entry with the freshly fetched OSM names
+        const existing = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+        existing.osmNames = osmNames;
+        localStorage.setItem(CACHE_KEY, JSON.stringify(existing));
+      } catch (e) { console.warn('OSM name fetch failed, using built-in fixes:', e); }
+    } else {
+      setLoadingStatus('Loading from cache…');
+    }
+    buildIndex(cachedLines, osmNames);
+    return;
+  }
+
+  // ── Fetch everything fresh (first load) ───────────────────────────────
   setLoadingStatus('Fetching Tokyo train data… (first load ~10 MB)');
-  let raw;
+  let raw, osmNames;
   try {
-    const res = await fetch(DATA_URL);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    raw = await res.json();
+    // Run both fetches in parallel — topology (~10 MB) + OSM names (~200 KB)
+    [raw, osmNames] = await Promise.all([
+      fetch(DATA_URL).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
+      fetchOSMNames().catch(e => { console.warn('OSM name fetch failed, using built-in fixes:', e); return {}; }),
+    ]);
   } catch (err) {
     showError(`Failed to load train data: ${err.message}. Check your internet connection and reload.`);
     return;
@@ -699,18 +745,17 @@ async function loadData() {
 
   setLoadingStatus('Processing lines…');
   const lines = filterTokyoLines(raw);
-
   if (lines.length === 0) {
     showError('Could not find Tokyo-area lines in data. Please reload.');
     return;
   }
 
-  // Cache the filtered result
+  // Cache topology + OSM names together
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines, osmNames }));
   } catch (_) { /* storage full — no problem */ }
 
-  buildIndex(lines);
+  buildIndex(lines, osmNames);
 }
 
 function filterTokyoLines(prefectures) {
@@ -746,13 +791,20 @@ function filterTokyoLines(prefectures) {
   return lines;
 }
 
-function buildIndex(lines) {
+function buildIndex(lines, osmNames = {}) {
   state.lines = lines;
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
     for (let si = 0; si < lines[li].stations.length; si++) {
       const stn = lines[li].stations[si];
+
+      // Apply OSM name override if available — OSM names are human-curated
+      // Hepburn romanizations, more reliable than the dataset's machine translations.
+      // Falls back to whatever filterTokyoLines set (STATION_NAME_FIXES or raw dataset name).
+      const osmEn = osmNames[stn.ja];
+      if (osmEn) stn.name = osmEn;
+
       const key = normalize(stn.name);
       nameSet.add(stn.name);
 
