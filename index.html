@@ -805,7 +805,7 @@ function getPlatforms(stationName) {
       continue;
     }
 
-    if (line.circular) {
+    if (line.circular && !line.name.includes('Oedo') && !line.name.includes('\u014Cedo')) {
       // Both directions always available; max = N-1 (go almost all the way around)
       const majorA = findMajorStation(line, si, 'A');
       const majorB = findMajorStation(line, si, 'B');
