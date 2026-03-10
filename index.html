@@ -772,6 +772,39 @@ function getPlatforms(stationName) {
     const si     = entry.stationIdx;
     const N      = line.stations.length;
 
+    // ── Oedo lollipop: Tochomae (si=0) gets 3 directional platforms ──────────
+    if ((line.name.includes('Oedo') || line.name.includes('\u014Cedo')) && si === 0) {
+      // Data layout: 0=Tochomae, 1-28=loop stations, 29=Nakanozaka (junction), 30-37=stem→Hikarigaoka
+      const loopEnd = 29;              // Nakanozaka index
+      const loopMid = Math.floor((loopEnd - 1) / 2);  // = 14, midpoint of the loop
+      const stemLen = N - 1 - (loopEnd - 1);           // = 9 (indices 29–37)
+      const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))          : loopMid;
+      const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1))    : loopMid;
+      const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)): stemLen;
+      if (maxCCW > 0) platforms.push({
+        label:    `${line.name} — Loop Counterclockwise`,
+        hint:     `→ toward ${line.stations[1].name}`,
+        lineColor: line.color, lineName: line.name,
+        circular: false, direction: 'end',
+        fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCCW,
+      });
+      if (maxCW > 0) platforms.push({
+        label:    `${line.name} — Loop Clockwise`,
+        hint:     `← toward ${line.stations[loopEnd - 1].name}`,
+        lineColor: line.color, lineName: line.name,
+        circular: false, direction: 'start',
+        fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCW,
+      });
+      if (maxStem > 0) platforms.push({
+        label:    `${line.name} — toward Hikarigaoka`,
+        hint:     `→ toward ${line.stations[N - 1].name}`,
+        lineColor: line.color, lineName: line.name,
+        circular: false, direction: 'end',
+        fromIdx: loopEnd - 1, lineIdx: entry.lineIdx, maxStops: maxStem,
+      });
+      continue;
+    }
+
     if (line.circular) {
       // Both directions always available; max = N-1 (go almost all the way around)
       const majorA = findMajorStation(line, si, 'A');
