@@ -780,7 +780,7 @@ function getPlatforms(stationName) {
       const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
 
       if (maxA > 0) platforms.push({
-        label:    `${line.name} — toward ${line.stations[0].name} (Direction A)`,
+        label:    `${line.name} — Clockwise`,
         hint:     `← toward ${majorA}`,
         lineColor: line.color,
         lineName:  line.name,
@@ -791,7 +791,7 @@ function getPlatforms(stationName) {
         maxStops:  maxA,
       });
       if (maxB > 0) platforms.push({
-        label:    `${line.name} — toward ${line.stations[Math.floor(N/2)].name} (Direction B)`,
+        label:    `${line.name} — Counterclockwise`,
         hint:     `→ toward ${majorB}`,
         lineColor: line.color,
         lineName:  line.name,
