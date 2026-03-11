@@ -524,7 +524,7 @@
 
   <!-- Last train warning -->
   <div id="last-train-warning" class="last-train-warning" style="display:none">
-    <span>🚃 Last train is soon — check schedules before your next hop!</span>
+    <span>🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!</span>
     <button class="last-train-dismiss" id="dismiss-train-warning" title="Dismiss">✕</button>
   </div>
 
@@ -1315,7 +1315,8 @@ function rollPlatform() {
       destNameEl.textContent = state.currentStation.name;
       destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       document.getElementById('dest-sub').innerHTML =
-        `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`;
+        `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`
+        + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
       const destCard = document.getElementById('destination-card');
       destCard.classList.add('active');
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1599,7 +1600,8 @@ function rollStops() {
       destNameEl.textContent = result.station.name;
       destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       document.getElementById('dest-sub').innerHTML =
-        `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName})`;
+        `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName})`
+        + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
       const destCard = document.getElementById('destination-card');
       destCard.classList.add('active');
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
