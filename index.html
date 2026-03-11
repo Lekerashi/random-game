@@ -673,6 +673,7 @@ const state = {
   selectedPlatform: null,
   rolledStops: null,
   destination: null,       // {name, ja, lat, lng}
+  drankAt: new Set(),          // station names where player already drank
   history: [],
   leafletMap: null,
   mapMarker: null,
@@ -1119,7 +1120,7 @@ function setupAutocomplete() {
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────
-function onStationSelected(name) {
+function onStationSelected(name, arrivedVia) {
   const key   = normalize(name);
   const first = (state.stationIndex[key] || [])[0];
   if (!first) return;
@@ -1160,9 +1161,27 @@ function onStationSelected(name) {
   document.getElementById('reroll-platform-btn').style.display = 'none';
   document.getElementById('reroll-stops-btn').style.display = 'none';
 
-  // Compute platforms + add drink-here as last option (not if last roll was already a drink)
-  const canDrinkHere = !lastWasDrink;
-  state.platforms = [...getPlatforms(name), ...(canDrinkHere ? [{ drinkHere: true }] : [])];
+  // Compute platforms + add drink-here as last option
+  // (not if last roll was already a drink, or if already drank here this session)
+  const canDrinkHere = !lastWasDrink && !state.drankAt.has(normalize(name));
+  let allPlatforms = getPlatforms(name);
+  if (arrivedVia) {
+    const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
+    if (arrivedVia.isTransfer) {
+      // Transfer: can't ride the line you just got off
+      allPlatforms = allPlatforms.filter(p => p.lineName !== arrivedVia.lineName);
+    } else if (reverseDir) {
+      // Normal arrival: can't go back the way you came (unless dead end)
+      const sameLinePlatforms = allPlatforms.filter(p => p.lineName === arrivedVia.lineName);
+      const isDeadEnd = sameLinePlatforms.length <= 1;
+      if (!isDeadEnd) {
+        allPlatforms = allPlatforms.filter(p =>
+          !(p.lineName === arrivedVia.lineName && p.direction === reverseDir)
+        );
+      }
+    }
+  }
+  state.platforms = [...allPlatforms, ...(canDrinkHere ? [{ drinkHere: true }] : [])];
   const lineCount = canDrinkHere ? state.platforms.length - 1 : state.platforms.length;
   const total     = state.platforms.length;
 
@@ -1218,6 +1237,7 @@ function rollPlatform() {
       destCard.classList.add('active');
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+      state.drankAt.add(normalize(state.currentStation.name));
       addHistory();
       return;
     }
@@ -1369,17 +1389,19 @@ async function checkTransfers(platform, rolledStops) {
     });
     inlineBtn.style.display = 'none';
 
-    // Roll a d5
+    // Roll d5 normally, or d4 if already drank at this station
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
-    const roll = Math.floor(Math.random() * 5) + 1; // 1–5
+    const alreadyDrank = state.drankAt.has(normalize(intermediates[i].name));
+    const sides = alreadyDrank ? 4 : 5;
+    const roll = Math.floor(Math.random() * sides) + 1; // 1–4 or 1–5
 
     // Animate die
     die.classList.add('rolling');
     await new Promise(resolve => {
       let count = 0;
       const interval = setInterval(() => {
-        die.textContent = Math.floor(Math.random() * 5) + 1;
+        die.textContent = Math.floor(Math.random() * sides) + 1;
         count++;
         if (count >= 8) {
           clearInterval(interval);
@@ -1465,7 +1487,7 @@ function rollStops() {
       input.value = result.station.name;
       input.classList.add('selected');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      onStationSelected(result.station.name);
+      onStationSelected(result.station.name, { lineName: state.selectedPlatform.lineName, isTransfer: true });
       return;
     }
 
@@ -1483,6 +1505,7 @@ function rollStops() {
       destCard.classList.add('active');
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+      state.drankAt.add(normalize(result.station.name));
       addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed });
       return;
     }
@@ -1693,6 +1716,7 @@ function renderHistory() {
 
 function clearHistory() {
   state.history = [];
+  state.drankAt.clear();
   renderHistory();
 }
 
@@ -1801,7 +1825,10 @@ function rollAgainFromHere() {
   input.value = dest.name;
   input.classList.add('selected');
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  onStationSelected(dest.name);
+  const via = state.selectedPlatform?.lineName
+    ? { lineName: state.selectedPlatform.lineName, direction: state.selectedPlatform.direction }
+    : null;
+  onStationSelected(dest.name, via);
 }
 
 // ── Last train warning ────────────────────────────────────────────────────
