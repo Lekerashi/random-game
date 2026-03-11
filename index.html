@@ -715,7 +715,8 @@ const state = {
 function normalize(s) {
   return (s || '').toLowerCase()
     .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
-    .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i');
+    .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i')
+    .replace(/[\s\-]+/g, '');
 }
 
 function haversineM(lat1, lng1, lat2, lng2) {
