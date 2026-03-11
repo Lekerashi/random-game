@@ -1219,7 +1219,6 @@ function rollPlatform() {
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       addHistory();
-      showBars();
       return;
     }
 
@@ -1485,7 +1484,6 @@ function rollStops() {
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed });
-      showBars();
       return;
     }
 
