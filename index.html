@@ -1923,6 +1923,11 @@ function copyRoute() {
         input.value = '';
         input.classList.remove('selected');
         showStep(null);
+        document.getElementById('journey-card').style.display = 'none';
+        document.getElementById('destination-card').classList.remove('active');
+        document.getElementById('map-card').style.display = 'none';
+        document.getElementById('bars-card').style.display = 'none';
+        document.getElementById('cafes-card').style.display = 'none';
         setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
       } else {
         onStationSelected(state.currentStation.name);
