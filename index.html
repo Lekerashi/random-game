@@ -231,6 +231,99 @@
       color: var(--primary);
     }
 
+    /* ── Journey / Transfer Check ───────────────────── */
+    #journey-card .card-title { color: var(--accent2); }
+    .journey-station {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      font-size: .84rem;
+      border-radius: 6px;
+      transition: opacity .25s, background .25s;
+    }
+    .journey-station.passed { opacity: .35; }
+    .journey-station.checking {
+      background: rgba(88,166,255,0.12);
+      border: 2px solid var(--accent2);
+      box-shadow: 0 0 12px rgba(88,166,255,0.3);
+      padding: 6px 9px;
+    }
+    .journey-station.transferred {
+      background: rgba(88,166,255,0.12);
+      border: 1px solid var(--accent2);
+    }
+    .journey-station.drink {
+      background: rgba(233,69,96,0.12);
+      border: 1px solid var(--accent);
+    }
+    .journey-num {
+      min-width: 18px;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: .75rem;
+    }
+    .journey-name { flex: 1; }
+    .transfer-badge {
+      background: var(--accent2);
+      color: #fff;
+      font-size: .65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .journey-roll-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: .78rem;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px rgba(233,69,96,0.45);
+      animation: roll-pulse 1.2s ease-in-out infinite;
+      display: none;
+    }
+    .journey-roll-btn:hover { filter: brightness(1.15); }
+    @keyframes roll-pulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(233,69,96,0.45); }
+      50% { box-shadow: 0 0 18px rgba(233,69,96,0.7); }
+    }
+    .journey-die {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px; height: 30px;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 7px;
+      font-size: .95rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      transition: border-color .2s, color .2s;
+    }
+    .journey-die.rolling { border-color: var(--accent2); }
+    .journey-die.stay { color: var(--muted); border-color: var(--border); }
+    .journey-die.transfer { color: var(--accent2); border-color: var(--accent2); }
+    .journey-die.drink-roll { color: var(--accent); border-color: var(--accent); }
+    .journey-result {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      flex-shrink: 0;
+    }
+    .journey-result.stay-label { color: var(--muted); }
+    .journey-result.transfer-label { color: var(--accent2); }
+    .journey-result.drink-label { color: var(--accent); }
+
     /* ── Destination ─────────────────────────────────── */
     #destination-card { display: none; }
     #destination-card.active { display: block; }
@@ -489,6 +582,12 @@
       <button class="btn btn-roll" id="roll-stops-btn" style="flex:1;margin-top:0">ROLL STOPS</button>
       <button class="btn btn-secondary" id="reroll-stops-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll stops">🔁 Reroll</button>
     </div>
+  </div>
+
+  <!-- Journey / Transfer Check -->
+  <div class="card" id="journey-card" style="display:none">
+    <div class="card-title">Checking Transfers</div>
+    <div id="journey-content"></div>
   </div>
 
   <!-- Destination -->
@@ -1046,6 +1145,7 @@ function onStationSelected(name) {
   state.rolledStops = null;
   state.destination = null;
   document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
   document.getElementById('cafes-card').style.display = 'none';
@@ -1148,6 +1248,7 @@ function rerollPlatform() {
   document.getElementById('reroll-platform-btn').style.display = 'none';
   document.getElementById('step-stops').classList.remove('active');
   document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
   document.getElementById('cafes-card').style.display = 'none';
@@ -1165,6 +1266,7 @@ function rerollPlatform() {
 function rerollStops() {
   document.getElementById('reroll-stops-btn').style.display = 'none';
   document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
   document.getElementById('cafes-card').style.display = 'none';
@@ -1183,6 +1285,158 @@ function refreshStopsLabel() {
     `Rolling 1–${max} stop${max !== 1 ? 's' : ''}`;
 }
 
+// ── Transfer Check ─────────────────────────────────────────────────────────
+function getStationsAlongRoute(platform, stops) {
+  const line = state.lines[platform.lineIdx];
+  const N = line.stations.length;
+  const result = [];
+  for (let i = 1; i <= stops; i++) {
+    let idx;
+    if (platform.circular) {
+      idx = platform.direction === 'A'
+        ? ((platform.fromIdx - i) % N + N) % N
+        : (platform.fromIdx + i) % N;
+    } else {
+      idx = platform.direction === 'start'
+        ? platform.fromIdx - i
+        : platform.fromIdx + i;
+      idx = Math.max(0, Math.min(N - 1, idx));
+    }
+    result.push(line.stations[idx]);
+  }
+  return result;
+}
+
+function hasTransferLines(stationName, currentLineName) {
+  const entries = state.stationIndex[normalize(stationName)] || [];
+  return entries.some(e => state.lines[e.lineIdx].name !== currentLineName);
+}
+
+async function checkTransfers(platform, rolledStops) {
+  const route = getStationsAlongRoute(platform, rolledStops);
+
+  // Only 1 stop → no intermediate stations to check
+  if (route.length <= 1) return { type: 'arrive', station: route[route.length - 1] };
+
+  // Intermediate = all except last (destination)
+  const intermediates = route.slice(0, -1);
+  const transferIndices = [];
+  for (let i = 0; i < intermediates.length; i++) {
+    if (hasTransferLines(intermediates[i].name, platform.lineName)) {
+      transferIndices.push(i);
+    }
+  }
+
+  // No transfer stations → skip journey animation
+  if (transferIndices.length === 0) return { type: 'arrive', station: route[route.length - 1] };
+
+  // Show journey card
+  const card = document.getElementById('journey-card');
+  const content = document.getElementById('journey-content');
+  card.style.display = 'block';
+
+  // Build station list
+  content.innerHTML = route.map((stn, i) => {
+    const isLast = i === route.length - 1;
+    const isTransfer = transferIndices.includes(i);
+    return `<div class="journey-station" id="jstn-${i}">
+      <span class="journey-num">${i + 1}</span>
+      <span class="journey-name">${stn.name}${stn.ja ? ` <small style="color:var(--muted)">${stn.ja}</small>` : ''}</span>
+      ${isTransfer ? '<span class="transfer-badge">Transfer</span>' : ''}
+      ${isLast ? '<span style="color:var(--green);font-size:.72rem;font-weight:700">DEST</span>' : ''}
+      ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}">ROLL</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
+    </div>`;
+  }).join('');
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Dim non-transfer stations up to the first transfer station
+  for (let i = 0; i < transferIndices[0]; i++) {
+    document.getElementById(`jstn-${i}`).classList.add('passed');
+  }
+
+  // Walk through each transfer station, waiting for user to click roll
+  for (let ti = 0; ti < transferIndices.length; ti++) {
+    const i = transferIndices[ti];
+    const el = document.getElementById(`jstn-${i}`);
+    el.classList.add('checking');
+
+    // Show inline roll button and wait for click
+    const inlineBtn = document.getElementById(`jroll-${i}`);
+    inlineBtn.style.display = 'inline-block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    await new Promise(resolve => {
+      inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+    });
+    inlineBtn.style.display = 'none';
+
+    // Roll a d5
+    const die = document.getElementById(`jdie-${i}`);
+    const res = document.getElementById(`jres-${i}`);
+    const roll = Math.floor(Math.random() * 5) + 1; // 1–5
+
+    // Animate die
+    die.classList.add('rolling');
+    await new Promise(resolve => {
+      let count = 0;
+      const interval = setInterval(() => {
+        die.textContent = Math.floor(Math.random() * 5) + 1;
+        count++;
+        if (count >= 8) {
+          clearInterval(interval);
+          die.textContent = roll;
+          die.classList.remove('rolling');
+          resolve();
+        }
+      }, 80);
+    });
+
+    if (roll <= 3) {
+      // Stay on
+      die.classList.add('stay');
+      res.textContent = 'Stay';
+      res.classList.add('stay-label');
+      el.classList.remove('checking');
+      el.classList.add('passed');
+
+      // Dim stations between this and the next transfer (or end)
+      const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : intermediates.length;
+      for (let j = i + 1; j < nextTI; j++) {
+        document.getElementById(`jstn-${j}`).classList.add('passed');
+      }
+      await new Promise(r => setTimeout(r, 300));
+    } else if (roll === 4) {
+      // Transfer!
+      die.classList.add('transfer');
+      res.textContent = 'Transfer!';
+      res.classList.add('transfer-label');
+      el.classList.remove('checking');
+      el.classList.add('transferred');
+      await new Promise(r => setTimeout(r, 700));
+      for (let j = i + 1; j < route.length; j++) {
+        document.getElementById(`jstn-${j}`).classList.add('passed');
+      }
+      return { type: 'transfer', station: intermediates[i], stopsUsed: i + 1 };
+    } else {
+      // Drink here!
+      die.classList.add('drink-roll');
+      res.textContent = 'Drink!';
+      res.classList.add('drink-label');
+      el.classList.remove('checking');
+      el.classList.add('drink');
+      await new Promise(r => setTimeout(r, 700));
+      for (let j = i + 1; j < route.length; j++) {
+        document.getElementById(`jstn-${j}`).classList.add('passed');
+      }
+      return { type: 'drink', station: intermediates[i], stopsUsed: i + 1 };
+    }
+  }
+
+  // No transfer triggered — arrive at destination
+  await new Promise(r => setTimeout(r, 200));
+  return { type: 'arrive', station: route[route.length - 1] };
+}
+
 function rollStops() {
   const btn = document.getElementById('roll-stops-btn');
   btn.disabled = true;
@@ -1192,15 +1446,53 @@ function rollStops() {
   const die  = document.getElementById('die-stops');
   const lbl  = document.getElementById('die-stops-label');
 
-  animateRoll(1, max, roll, die, () => {
+  animateRoll(1, max, roll, die, async () => {
     state.rolledStops = roll;
-    const dest = getDestination(state.selectedPlatform, roll);
-    state.destination = dest;
 
     lbl.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
     document.getElementById('reroll-stops-btn').style.display = '';
 
-    // Show destination
+    // Check for transfers along the route
+    const result = await checkTransfers(state.selectedPlatform, roll);
+
+    if (result.type === 'transfer') {
+      // Transfer: record history hop, then restart at transfer station
+      state.destination = result.station;
+      addHistory({ transferred: true, stopsUsed: result.stopsUsed });
+
+      // Brief pause then set up new station
+      await new Promise(r => setTimeout(r, 400));
+      const input = document.getElementById('station-input');
+      input.value = result.station.name;
+      input.classList.add('selected');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      onStationSelected(result.station.name);
+      return;
+    }
+
+    if (result.type === 'drink') {
+      // Drink at transfer station
+      state.destination = result.station;
+      state.selectedPlatform = { ...state.selectedPlatform, drinkHere: true };
+
+      const destNameEl = document.getElementById('dest-name');
+      destNameEl.textContent = result.station.name;
+      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
+      document.getElementById('dest-sub').innerHTML =
+        `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName})`;
+      const destCard = document.getElementById('destination-card');
+      destCard.classList.add('active');
+      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed });
+      showBars();
+      return;
+    }
+
+    // Normal arrival
+    const dest = result.station;
+    state.destination = dest;
+
     const destNameEl = document.getElementById('dest-name');
     destNameEl.textContent = dest.name;
     destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
@@ -1210,7 +1502,6 @@ function rollStops() {
     destCard.classList.add('active');
     destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    // Add to history
     addHistory();
   });
 }
@@ -1354,8 +1645,8 @@ async function showCafes() {
 }
 
 // ── History ───────────────────────────────────────────────────────────────
-function addHistory() {
-  const drinkHere = state.selectedPlatform?.drinkHere;
+function addHistory(transferInfo) {
+  const drinkHere = state.selectedPlatform?.drinkHere && !transferInfo;
   const entry = {
     from:      state.currentStation.name,
     drinkHere: drinkHere || false,
@@ -1364,6 +1655,9 @@ function addHistory() {
     stops:     drinkHere ? 0   : state.rolledStops,
     to:        state.destination.name,
     toJa:      state.destination.ja,
+    transferred:    transferInfo?.transferred || false,
+    drinkAtTransfer: transferInfo?.drinkAtTransfer || false,
+    stopsUsed:      transferInfo?.stopsUsed || null,
   };
   state.history.push(entry);
   renderHistory();
@@ -1382,9 +1676,16 @@ function renderHistory() {
   empty.style.display = 'none';
   list.innerHTML = state.history.slice().reverse().map((e, i) => {
     const num = state.history.length - i;
-    const body = e.drinkHere
-      ? `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`
-      : `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
+    let body;
+    if (e.drinkHere) {
+      body = `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`;
+    } else if (e.drinkAtTransfer) {
+      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent)">🍻 drink roll</span>`;
+    } else if (e.transferred) {
+      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent2)">🔀 transfer</span>`;
+    } else {
+      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
+    }
     return `<div class="history-item">
       <span class="history-num">${num}.</span>
       <span class="history-text">${body}</span>
@@ -1421,6 +1722,7 @@ function resetGame() {
 
   showStep(null);
   document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display    = 'none';
   document.getElementById('bars-card').style.display   = 'none';
   document.getElementById('cafes-card').style.display  = 'none';
@@ -1490,6 +1792,7 @@ function rollAgainFromHere() {
   if (!dest) return;
 
   // Reset UI
+  document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
   document.getElementById('cafes-card').style.display = 'none';
@@ -1524,6 +1827,10 @@ function copyRoute() {
   state.history.forEach((e, i) => {
     if (e.drinkHere) {
       lines.push(`${i + 1}. ${e.from} 🍻 stayed for a drink`);
+    } else if (e.drinkAtTransfer) {
+      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stopsUsed}) → ${e.to} 🍻 drink roll`);
+    } else if (e.transferred) {
+      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stopsUsed}) → ${e.to} 🔀 transfer`);
     } else {
       lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stops}) → ${e.to}`);
     }
