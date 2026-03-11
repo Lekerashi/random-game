@@ -641,7 +641,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
-const CACHE_KEY = 'random_game_v8';
+const CACHE_KEY = 'random_game_v9';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ← Paste your HERE Maps API key here (free at developer.here.com)
@@ -651,11 +651,30 @@ const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
 
-// 23 Special Wards of Tokyo bounding box
-const WARDS_23_BOUNDS = { minLat: 35.52, maxLat: 35.83, minLng: 139.58, maxLng: 139.94 };
+// 23 Special Wards of Tokyo — polygon approximation
+// The SW boundary follows the Tama River (Tokyo/Kanagawa border) which
+// curves from Futako-tamagawa SE toward Tokyo Bay.  A simple bounding box
+// incorrectly includes Kawasaki stations, so we use a piecewise-linear
+// southern boundary for lng < 139.72.
+const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
+const TAMA_RIVER_BORDER = [
+  [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
+  [139.695, 35.565], [139.71, 35.535], [139.72, 35.53],
+];
 function isIn23Wards(lat, lng) {
-  return lat  >= WARDS_23_BOUNDS.minLat && lat  <= WARDS_23_BOUNDS.maxLat &&
-         lng >= WARDS_23_BOUNDS.minLng && lng <= WARDS_23_BOUNDS.maxLng;
+  if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
+      lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
+  // Refined southern boundary in the SW (Tama River)
+  if (lng < 139.72 && lat < 35.62) {
+    for (let i = 0; i < TAMA_RIVER_BORDER.length - 1; i++) {
+      if (lng >= TAMA_RIVER_BORDER[i][0] && lng < TAMA_RIVER_BORDER[i + 1][0]) {
+        const t = (lng - TAMA_RIVER_BORDER[i][0]) / (TAMA_RIVER_BORDER[i + 1][0] - TAMA_RIVER_BORDER[i][0]);
+        const minLat = TAMA_RIVER_BORDER[i][1] + t * (TAMA_RIVER_BORDER[i + 1][1] - TAMA_RIVER_BORDER[i][1]);
+        return lat >= minLat;
+      }
+    }
+  }
+  return true;
 }
 
 

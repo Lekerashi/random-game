@@ -80,8 +80,10 @@ const LINE_NAME_FIXES = {
 };
 
 const STATION_NAME_FIXES = {
-  // Truncated names
+  // Truncated / mistranslated Japanese names
   '新代田':                        'Shindaita',
+  'あざみ野':                      'Azamino',
+  '新丸子':                        'Shin-Maruko',
   // Previous fixes
   'Mizokuchi':                    'Mizonokuchi',
   'Musashi Mizokuchi':            'Musashi-Mizonokuchi',
