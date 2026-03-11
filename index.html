@@ -652,27 +652,39 @@ const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
 
 // 23 Special Wards of Tokyo — polygon approximation
-// The SW boundary follows the Tama River (Tokyo/Kanagawa border) which
-// curves from Futako-tamagawa SE toward Tokyo Bay.  A simple bounding box
-// incorrectly includes Kawasaki stations, so we use a piecewise-linear
-// southern boundary for lng < 139.76.
+// Simple bounding box incorrectly includes Kawasaki/Saitama stations.
+// We use piecewise-linear borders: south follows the Tama River,
+// north follows the Arakawa River / Saitama prefectural border.
 const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
-const TAMA_RIVER_BORDER = [
+const SOUTH_BORDER = [  // Tama River (Kanagawa border)
   [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
   [139.695, 35.565], [139.71, 35.535], [139.76, 35.545],
 ];
+const NORTH_BORDER = [  // Arakawa / Saitama border
+  [139.58, 35.78], [139.65, 35.795], [139.73, 35.795],
+  [139.77, 35.82], [139.80, 35.80], [139.94, 35.80],
+];
+function _borderCheck(border, lng) {
+  for (let i = 0; i < border.length - 1; i++) {
+    if (lng >= border[i][0] && lng < border[i + 1][0]) {
+      const t = (lng - border[i][0]) / (border[i + 1][0] - border[i][0]);
+      return border[i][1] + t * (border[i + 1][1] - border[i][1]);
+    }
+  }
+  return null;
+}
 function isIn23Wards(lat, lng) {
   if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
       lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
-  // Refined southern boundary (Tama River → Tokyo Bay)
+  // Southern boundary (Tama River → Tokyo Bay)
   if (lng < 139.76 && lat < 35.62) {
-    for (let i = 0; i < TAMA_RIVER_BORDER.length - 1; i++) {
-      if (lng >= TAMA_RIVER_BORDER[i][0] && lng < TAMA_RIVER_BORDER[i + 1][0]) {
-        const t = (lng - TAMA_RIVER_BORDER[i][0]) / (TAMA_RIVER_BORDER[i + 1][0] - TAMA_RIVER_BORDER[i][0]);
-        const minLat = TAMA_RIVER_BORDER[i][1] + t * (TAMA_RIVER_BORDER[i + 1][1] - TAMA_RIVER_BORDER[i][1]);
-        return lat >= minLat;
-      }
-    }
+    const minLat = _borderCheck(SOUTH_BORDER, lng);
+    if (minLat !== null) return lat >= minLat;
+  }
+  // Northern boundary (Saitama border)
+  if (lat > 35.77) {
+    const maxLat = _borderCheck(NORTH_BORDER, lng);
+    if (maxLat !== null) return lat <= maxLat;
   }
   return true;
 }
