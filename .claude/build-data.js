@@ -80,6 +80,8 @@ const LINE_NAME_FIXES = {
 };
 
 const STATION_NAME_FIXES = {
+  // Truncated names
+  '新代田':                        'Shindaita',
   // Previous fixes
   'Mizokuchi':                    'Mizonokuchi',
   'Musashi Mizokuchi':            'Musashi-Mizonokuchi',
