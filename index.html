@@ -655,17 +655,17 @@ const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 // The SW boundary follows the Tama River (Tokyo/Kanagawa border) which
 // curves from Futako-tamagawa SE toward Tokyo Bay.  A simple bounding box
 // incorrectly includes Kawasaki stations, so we use a piecewise-linear
-// southern boundary for lng < 139.72.
+// southern boundary for lng < 139.76.
 const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
 const TAMA_RIVER_BORDER = [
   [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
-  [139.695, 35.565], [139.71, 35.535], [139.72, 35.53],
+  [139.695, 35.565], [139.71, 35.535], [139.76, 35.545],
 ];
 function isIn23Wards(lat, lng) {
   if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
       lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
-  // Refined southern boundary in the SW (Tama River)
-  if (lng < 139.72 && lat < 35.62) {
+  // Refined southern boundary (Tama River → Tokyo Bay)
+  if (lng < 139.76 && lat < 35.62) {
     for (let i = 0; i < TAMA_RIVER_BORDER.length - 1; i++) {
       if (lng >= TAMA_RIVER_BORDER[i][0] && lng < TAMA_RIVER_BORDER[i + 1][0]) {
         const t = (lng - TAMA_RIVER_BORDER[i][0]) / (TAMA_RIVER_BORDER[i + 1][0] - TAMA_RIVER_BORDER[i][0]);
