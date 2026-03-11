@@ -674,6 +674,7 @@ const state = {
   rolledStops: null,
   destination: null,       // {name, ja, lat, lng}
   drankAt: new Set(),          // station names where player already drank
+  stationsSinceDrink: 0,       // thirst counter: stations passed since last drink
   history: [],
   leafletMap: null,
   mapMarker: null,
@@ -1181,16 +1182,19 @@ function onStationSelected(name, arrivedVia) {
       }
     }
   }
+  // Thirst: after 5 stations without drinking, extra roll numbers map to drink
+  const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - 5) : 0;
   state.platforms = [...allPlatforms, ...(canDrinkHere ? [{ drinkHere: true }] : [])];
+  state.extraDrinkNums = extraDrinkNums;
   const lineCount = canDrinkHere ? state.platforms.length - 1 : state.platforms.length;
-  const total     = state.platforms.length;
+  const total     = state.platforms.length + extraDrinkNums;
 
   // Render platform grid
   const grid = document.getElementById('platform-grid');
   grid.innerHTML = state.platforms.map((p, i) =>
     p.drinkHere
       ? `<div class="platform-pill drink-here">
-           <span class="platform-num">${i + 1}</span>
+           <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
            <span>🍻</span>
            <span>Drink here!</span>
          </div>`
@@ -1210,13 +1214,15 @@ function onStationSelected(name, arrivedVia) {
 function rollPlatform() {
   const btn = document.getElementById('roll-platform-btn');
   btn.disabled = true;
-  const n    = state.platforms.length;
+  const n    = state.platforms.length + (state.extraDrinkNums || 0);
   const roll = Math.floor(Math.random() * n) + 1; // 1-indexed
   const die  = document.getElementById('die-platform');
   const lbl  = document.getElementById('die-platform-label');
 
   animateRoll(1, n, roll, die, () => {
-    state.selectedPlatform = state.platforms[roll - 1];
+    // Extra drink numbers map to the drink-here platform
+    const idx = roll > state.platforms.length ? state.platforms.length - 1 : roll - 1;
+    state.selectedPlatform = state.platforms[idx];
     const p = state.selectedPlatform;
 
     // ── Drink here! ──────────────────────────────────────────────────────
@@ -1238,6 +1244,7 @@ function rollPlatform() {
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       state.drankAt.add(normalize(state.currentStation.name));
+      state.stationsSinceDrink = 0;
       addHistory();
       return;
     }
@@ -1335,7 +1342,10 @@ async function checkTransfers(platform, rolledStops) {
   const route = getStationsAlongRoute(platform, rolledStops);
 
   // Only 1 stop → no intermediate stations to check
-  if (route.length <= 1) return { type: 'arrive', station: route[route.length - 1] };
+  if (route.length <= 1) {
+    state.stationsSinceDrink += route.length;
+    return { type: 'arrive', station: route[route.length - 1] };
+  }
 
   // Intermediate = all except last (destination)
   const intermediates = route.slice(0, -1);
@@ -1347,7 +1357,10 @@ async function checkTransfers(platform, rolledStops) {
   }
 
   // No transfer stations → skip journey animation
-  if (transferIndices.length === 0) return { type: 'arrive', station: route[route.length - 1] };
+  if (transferIndices.length === 0) {
+    state.stationsSinceDrink += route.length;
+    return { type: 'arrive', station: route[route.length - 1] };
+  }
 
   // Show journey card
   const card = document.getElementById('journey-card');
@@ -1389,23 +1402,30 @@ async function checkTransfers(platform, rolledStops) {
     });
     inlineBtn.style.display = 'none';
 
-    // Roll d5 normally, or d4 if already drank at this station
+    // Count stations passed since last transfer check (including non-transfer ones)
+    const prevTransferIdx = ti > 0 ? transferIndices[ti - 1] : -1;
+    state.stationsSinceDrink += (i - prevTransferIdx);
+
+    // Thirst: after 5 stations, each extra station adds a drink number
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
     const alreadyDrank = state.drankAt.has(normalize(intermediates[i].name));
-    const sides = alreadyDrank ? 4 : 5;
-    const roll = Math.floor(Math.random() * sides) + 1; // 1–4 or 1–5
+    const extraDrink = Math.max(0, state.stationsSinceDrink - 5);
+    const sides = alreadyDrank ? 4 : 5 + extraDrink;
+    const roll = Math.floor(Math.random() * sides) + 1;
 
-    // Animate die
+    // Animate die with emojis
+    const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
+    const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
     die.classList.add('rolling');
     await new Promise(resolve => {
       let count = 0;
       const interval = setInterval(() => {
-        die.textContent = Math.floor(Math.random() * sides) + 1;
+        die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
         count++;
         if (count >= 8) {
           clearInterval(interval);
-          die.textContent = roll;
+          die.textContent = resultEmoji;
           die.classList.remove('rolling');
           resolve();
         }
@@ -1453,7 +1473,9 @@ async function checkTransfers(platform, rolledStops) {
     }
   }
 
-  // No transfer triggered — arrive at destination
+  // No transfer triggered — count remaining stations to destination
+  const lastChecked = transferIndices[transferIndices.length - 1];
+  state.stationsSinceDrink += (route.length - 1 - lastChecked);
   await new Promise(r => setTimeout(r, 200));
   return { type: 'arrive', station: route[route.length - 1] };
 }
@@ -1506,6 +1528,7 @@ function rollStops() {
       destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       state.drankAt.add(normalize(result.station.name));
+      state.stationsSinceDrink = 0;
       addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed });
       return;
     }
@@ -1717,6 +1740,7 @@ function renderHistory() {
 function clearHistory() {
   state.history = [];
   state.drankAt.clear();
+  state.stationsSinceDrink = 0;
   renderHistory();
 }
 
