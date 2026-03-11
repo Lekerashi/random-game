@@ -230,6 +230,10 @@
       border-color: var(--primary);
       color: var(--primary);
     }
+    .platform-pill.take-flight {
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
 
     /* ── Journey / Transfer Check ───────────────────── */
     #journey-card .card-title { color: var(--accent2); }
@@ -1179,6 +1183,9 @@ function onStationSelected(name, arrivedVia) {
   state.rolledStops = null;
   state.destination = null;
   document.getElementById('destination-card').classList.remove('active');
+  document.getElementById('roll-again-btn').style.display = '';
+  document.getElementById('show-bars-btn').style.display = '';
+  document.getElementById('show-cafes-btn').style.display = '';
   document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
@@ -1216,7 +1223,14 @@ function onStationSelected(name, arrivedVia) {
   }
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - 5) : 0;
-  state.platforms = [...allPlatforms, ...(canDrinkHere ? [{ drinkHere: true }] : [])];
+  // Easter egg: ~5% chance of a flight option at airport stations
+  const isAirport = /airport/i.test(name);
+  const flightAppears = isAirport && Math.random() < 0.05;
+  state.platforms = [
+    ...allPlatforms,
+    ...(canDrinkHere ? [{ drinkHere: true }] : []),
+    ...(flightAppears ? [{ takeFlight: true }] : []),
+  ];
   state.extraDrinkNums = extraDrinkNums;
   const lineCount = canDrinkHere ? state.platforms.length - 1 : state.platforms.length;
   const total     = state.platforms.length + extraDrinkNums;
@@ -1229,6 +1243,12 @@ function onStationSelected(name, arrivedVia) {
            <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
            <span>🍻</span>
            <span>Drink here!</span>
+         </div>`
+      : p.takeFlight
+      ? `<div class="platform-pill take-flight">
+           <span class="platform-num">${i + 1}</span>
+           <span>✈️</span>
+           <span>Take a flight!</span>
          </div>`
       : `<div class="platform-pill">
            <span class="platform-num">${i + 1}</span>
@@ -1256,6 +1276,31 @@ function rollPlatform() {
     const idx = roll > state.platforms.length ? state.platforms.length - 1 : roll - 1;
     state.selectedPlatform = state.platforms[idx];
     const p = state.selectedPlatform;
+
+    // ── Take a flight! ────────────────────────────────────────────────────
+    if (p.takeFlight) {
+      lbl.innerHTML = `<strong>#${roll} → ✈️ Take a flight!</strong>`;
+      // No reroll — game over!
+
+      state.destination = state.currentStation;
+      state.rolledStops = 0;
+
+      const destNameEl = document.getElementById('dest-name');
+      destNameEl.textContent = state.currentStation.name;
+      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
+      document.getElementById('dest-sub').innerHTML =
+        `${state.currentStation.ja}<br>` +
+        `<span style="color:#f59e0b;font-size:1.1em">✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!</span>`;
+      // Hide all action buttons — no rolling from here
+      document.getElementById('roll-again-btn').style.display = 'none';
+      document.getElementById('show-bars-btn').style.display = 'none';
+      document.getElementById('show-cafes-btn').style.display = 'none';
+      const destCard = document.getElementById('destination-card');
+      destCard.classList.add('active');
+      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      addHistory({ flight: true });
+      return;
+    }
 
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
@@ -1723,12 +1768,14 @@ async function showCafes() {
 // ── History ───────────────────────────────────────────────────────────────
 function addHistory(transferInfo) {
   const drinkHere = state.selectedPlatform?.drinkHere && !transferInfo;
+  const flight    = transferInfo?.flight || false;
   const entry = {
     from:      state.currentStation.name,
     drinkHere: drinkHere || false,
-    line:      drinkHere ? null : state.selectedPlatform.lineName,
-    color:     drinkHere ? null : state.selectedPlatform.lineColor,
-    stops:     drinkHere ? 0   : state.rolledStops,
+    flight:    flight,
+    line:      (drinkHere || flight) ? null : state.selectedPlatform.lineName,
+    color:     (drinkHere || flight) ? null : state.selectedPlatform.lineColor,
+    stops:     (drinkHere || flight) ? 0   : state.rolledStops,
     to:        state.destination.name,
     toJa:      state.destination.ja,
     transferred:    transferInfo?.transferred || false,
@@ -1753,7 +1800,9 @@ function renderHistory() {
   list.innerHTML = state.history.slice().reverse().map((e, i) => {
     const num = state.history.length - i;
     let body;
-    if (e.drinkHere) {
+    if (e.flight) {
+      body = `<strong>${e.from}</strong> <span style="color:#f59e0b">✈️ took a flight — bon voyage!</span>`;
+    } else if (e.drinkHere) {
       body = `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`;
     } else if (e.drinkAtTransfer) {
       body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent)">🍻 drink roll</span>`;
@@ -1906,7 +1955,9 @@ function copyRoute() {
   const date = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const lines = [`🗼 Tokyo Random Game — ${date}`, ''];
   state.history.forEach((e, i) => {
-    if (e.drinkHere) {
+    if (e.flight) {
+      lines.push(`${i + 1}. ${e.from} ✈️ took a flight — bon voyage!`);
+    } else if (e.drinkHere) {
       lines.push(`${i + 1}. ${e.from} 🍻 stayed for a drink`);
     } else if (e.drinkAtTransfer) {
       lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stopsUsed}) → ${e.to} 🍻 drink roll`);
