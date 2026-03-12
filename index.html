@@ -2439,8 +2439,17 @@ function copyRoute() {
         document.getElementById('bars-card').style.display = 'none';
         document.getElementById('cafes-card').style.display = 'none';
         setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
-      } else {
+      } else if (!state.selectedPlatform) {
         onStationSelected(state.currentStation.name);
+      } else if (state.wards23Only) {
+        // Check if the current platform still has stops within 23 wards
+        const p = state.selectedPlatform;
+        const line = state.lines[p.lineIdx];
+        const step = (p.direction === 'A' || p.direction === 'start') ? -1 : 1;
+        const maxW = wardMaxStops(line, p.fromIdx, step);
+        if (maxW <= 0) {
+          onStationSelected(state.currentStation.name);
+        }
       }
     }
   });
