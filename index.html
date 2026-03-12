@@ -1010,8 +1010,10 @@ const state = {
   stationIndex: {},   // {normalizedName: [{lineName, lineColor, lineIdx, stationIdx}]}
   stationNames: [],       // unique English names sorted (all)
   stationNamesNorm: [],   // pre-normalized parallel to stationNames
+  stationNamesJa: [],     // parallel Japanese names for search
   stationNames23: [],     // unique English names within 23 wards
   stationNames23Norm: [], // pre-normalized parallel to stationNames23
+  stationNames23Ja: [],   // parallel Japanese names for 23-ward search
   wards23Only: false, // restrict to 23 special wards
   stopsCap: false,    // cap maximum stops rolled
   stopsCapValue: 10,  // cap value
@@ -1803,6 +1805,11 @@ function buildIndex(lines, osmNames = {}) {
 
   state.stationNames = Array.from(nameSet).sort();
   state.stationNamesNorm = state.stationNames.map(normalize);
+  state.stationNamesJa = state.stationNames.map(name => {
+    const entries = state.stationIndex[normalize(name)] || [];
+    if (!entries.length) return '';
+    return state.lines[entries[0].lineIdx].stations[entries[0].stationIdx].ja || '';
+  });
   state.stationNames23 = state.stationNames.filter(name => {
     const entries = state.stationIndex[normalize(name)] || [];
     if (!entries.length) return false;
@@ -1810,6 +1817,11 @@ function buildIndex(lines, osmNames = {}) {
     return isIn23Wards(stn.lat, stn.lng);
   });
   state.stationNames23Norm = state.stationNames23.map(normalize);
+  state.stationNames23Ja = state.stationNames23.map(name => {
+    const entries = state.stationIndex[normalize(name)] || [];
+    if (!entries.length) return '';
+    return state.lines[entries[0].lineIdx].stations[entries[0].stationIdx].ja || '';
+  });
   buildSpatialIndex();
   setLoadingStatus('');
   hideLoading();
@@ -2122,8 +2134,9 @@ function setupAutocomplete() {
       const entries = [...(state.stationIndex[normalize(n)] || [])];
       for (const ak of getAliasKeys(n)) for (const e of (state.stationIndex[ak] || [])) entries.push(e);
       const lineNames = [...new Set(entries.map(e => state.lines[e.lineIdx].name))].slice(0, 4).join(', ');
+      const ja = stationJa(n);
       return `<div class="autocomplete-item" data-idx="${i}">
-        ${n}<span class="station-sub">${lineNames}</span>
+        ${n}${ja ? ` <small class="text-muted">${ja}</small>` : ''}<span class="station-sub">${lineNames}</span>
       </div>`;
     }).join('');
     list.classList.add('open');
@@ -2144,10 +2157,14 @@ function setupAutocomplete() {
     debounceTimer = setTimeout(() => {
       const names = state.wards23Only ? state.stationNames23 : state.stationNames;
       const norms = state.wards23Only ? state.stationNames23Norm : state.stationNamesNorm;
+      const jaNames = state.wards23Only ? state.stationNames23Ja : state.stationNamesJa;
+      const raw = input.value.trim();
       const matched = [];
       for (let i = 0; i < names.length; i++) {
-        const pos = norms[i].indexOf(q);
-        if (pos !== -1) matched.push({ name: names[i], pos });
+        const posEn = norms[i].indexOf(q);
+        const posJa = jaNames[i] ? jaNames[i].indexOf(raw) : -1;
+        if (posEn !== -1) matched.push({ name: names[i], pos: posEn });
+        else if (posJa !== -1) matched.push({ name: names[i], pos: posJa });
       }
       matched.sort((a, b) => a.pos - b.pos || a.name.localeCompare(b.name));
       const matches = matched.slice(0, 50).map(m => m.name);
