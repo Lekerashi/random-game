@@ -1840,7 +1840,7 @@ function showTrainTypeButtons(p) {
     return false;
   }
   dom.rollStopsRow.style.display = 'none';
-  dom.trainTypeRow.style.display = '';
+  dom.trainTypeRow.style.display = 'flex';
   dom.trainTypeRow.innerHTML = trainTypes.map(t => {
     const ei = t.expressIndices;
     const maxS = ei ? getExpressMaxStops(p, ei) : p.maxStops;
