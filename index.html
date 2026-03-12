@@ -1445,6 +1445,14 @@ function hideLoading() {
   dom.app.style.display = '';
 }
 
+function hideAllCards() {
+  dom.destCard.classList.remove('active');
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display     = 'none';
+  dom.barsCard.style.display    = 'none';
+  dom.cafesCard.style.display   = 'none';
+}
+
 function showError(msg) {
   dom.loadingOverlay.classList.add('hidden');
   dom.app.style.display = '';
@@ -1568,16 +1576,12 @@ function onStationSelected(name, arrivedVia) {
   state.selectedTrainType = null;
   state.rolledStops = null;
   state.destination = null;
-  dom.destCard.classList.remove('active');
+  hideAllCards();
   dom.rollAgainBtn.style.display = '';
   dom.showBarsBtn.style.display = '';
   dom.showCafesBtn.style.display = '';
   dom.trainTypeRow.style.display = 'none';
   dom.rollStopsRow.style.display = 'flex';
-  dom.journeyCard.style.display = 'none';
-  dom.mapCard.style.display = 'none';
-  dom.barsCard.style.display = 'none';
-  dom.cafesCard.style.display = 'none';
   dom.diePlatform.textContent = '?';
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
@@ -1733,11 +1737,7 @@ function rollPlatform() {
 function rerollPlatform() {
   // Hide reroll, reset step 2 content, and fire a fresh roll
   dom.rerollPlatformBtn.style.display = 'none';
-  dom.destCard.classList.remove('active');
-  dom.journeyCard.style.display = 'none';
-  dom.mapCard.style.display = 'none';
-  dom.barsCard.style.display = 'none';
-  dom.cafesCard.style.display = 'none';
+  hideAllCards();
   dom.diePlatform.textContent = '?';
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
@@ -1757,11 +1757,7 @@ function rerollStops() {
   dom.rollStopsBtn.style.display = '';
   dom.rollStopsBtn.style.flex = '1';
   dom.rollStopsBtn.style.width = '';
-  dom.destCard.classList.remove('active');
-  dom.journeyCard.style.display = 'none';
-  dom.mapCard.style.display = 'none';
-  dom.barsCard.style.display = 'none';
-  dom.cafesCard.style.display = 'none';
+  hideAllCards();
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
   dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
@@ -2135,114 +2131,80 @@ function showMap() {
     .openPopup();
 }
 
-// ── Bars (HERE Maps Discover API) ─────────────────────────────────────────
-async function showBars() {
-  dom.barsCard.style.display = 'block';
-  dom.barsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  const content = dom.barsContent;
-  content.innerHTML = '<div class="bars-empty">Searching for nearby bars & izakayas…</div>';
+// ── Bars & Cafes (HERE Maps) ──────────────────────────────────────────────
+async function showPlaces(mode) {
+  const isBars  = mode === 'bars';
+  const card    = isBars ? dom.barsCard    : dom.cafesCard;
+  const content = isBars ? dom.barsContent : dom.cafesContent;
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  content.innerHTML = `<div class="bars-empty">Searching for nearby ${isBars ? 'bars & izakayas' : 'cafes'}…</div>`;
 
   const { lat, lng } = state.destination;
   const circle = `circle:${lat},${lng};r=500`;
 
   try {
-    // Two parallel queries: 200-2000-0011 = Bar/Pub/Izakaya (HERE Japan category)
-    // + discover for 居酒屋 to catch izakayas miscategorised as restaurants
-    const [browseRes, izakayaRes] = await Promise.all([
-      fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=200-2000-0011&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
-      fetch(`https://discover.search.hereapi.com/v1/discover?at=${lat},${lng}&q=%E5%B1%85%E9%85%92%E5%B1%8B&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
-    ]);
+    let items;
+    if (isBars) {
+      // Two parallel queries: 200-2000-0011 = Bar/Pub/Izakaya (HERE Japan category)
+      // + discover for 居酒屋 to catch izakayas miscategorised as restaurants
+      const [browseRes, izakayaRes] = await Promise.all([
+        fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=200-2000-0011&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
+        fetch(`https://discover.search.hereapi.com/v1/discover?at=${lat},${lng}&q=%E5%B1%85%E9%85%92%E5%B1%8B&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
+      ]);
+      if (!browseRes.ok) throw new Error(`HERE HTTP ${browseRes.status}`);
+      const [browseData, izakayaData] = await Promise.all([
+        browseRes.json(),
+        izakayaRes.ok ? izakayaRes.json() : { items: [] },
+      ]);
+      const seen = new Set();
+      items = [...(browseData.items || []), ...(izakayaData.items || [])]
+        .filter(p => {
+          const key = `${p.title}|${p.position?.lat?.toFixed(4)}|${p.position?.lng?.toFixed(4)}`;
+          return !seen.has(key) && seen.add(key);
+        })
+        .map(p => {
+          const catName    = (p.categories?.[0]?.name || '').toLowerCase();
+          const nameLow    = p.title.toLowerCase();
+          const isIzakaya  = nameLow.includes('izakaya') || p.title.includes('居酒屋') || catName.includes('izakaya');
+          const isPub      = catName.includes('pub');
+          const icon       = isIzakaya ? '🏮' : isPub ? '🍻' : '🍺';
+          const placeType  = isIzakaya ? 'Izakaya' : isPub ? 'Pub' : 'Bar';
+          const vLat = p.position?.lat;
+          const vLng = p.position?.lng;
+          return { name: p.title, dist: p.distance, icon, placeType,
+                   mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z` };
+        })
+        .sort((a, b) => a.dist - b.dist);
+    } else {
+      // 100-1100-0010 = Coffee/Tea shop (HERE category)
+      const res = await fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=100-1100-0010&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`);
+      if (!res.ok) throw new Error(`HERE HTTP ${res.status}`);
+      const data = await res.json();
+      items = (data.items || [])
+        .map(p => {
+          const vLat = p.position?.lat;
+          const vLng = p.position?.lng;
+          return { name: p.title, dist: p.distance, icon: '☕',
+                   mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z` };
+        })
+        .sort((a, b) => a.dist - b.dist);
+    }
 
-    if (!browseRes.ok) throw new Error(`HERE HTTP ${browseRes.status}`);
-    const [browseData, izakayaData] = await Promise.all([
-      browseRes.json(),
-      izakayaRes.ok ? izakayaRes.json() : { items: [] },
-    ]);
-
-    // Merge and deduplicate by name+position
-    const seen = new Set();
-    const bars = [...(browseData.items || []), ...(izakayaData.items || [])]
-      .filter(p => {
-        const key = `${p.title}|${p.position?.lat?.toFixed(4)}|${p.position?.lng?.toFixed(4)}`;
-        return !seen.has(key) && seen.add(key);
-      })
-      .map(p => {
-        const catName   = (p.categories?.[0]?.name || '').toLowerCase();
-        const nameLow   = p.title.toLowerCase();
-        const isIzakaya = nameLow.includes('izakaya') || p.title.includes('居酒屋') || catName.includes('izakaya');
-        const isPub     = catName.includes('pub');
-        const icon      = isIzakaya ? '🏮' : isPub ? '🍻' : '🍺';
-        const type      = isIzakaya ? 'Izakaya' : isPub ? 'Pub' : 'Bar';
-        const vLat      = p.position?.lat;
-        const vLng      = p.position?.lng;
-        return {
-          name:    p.title,
-          dist:    p.distance,
-          mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z`,
-          icon, type,
-        };
-      })
-      .sort((a, b) => a.dist - b.dist);
-
-    if (bars.length === 0) {
-      content.innerHTML = '<div class="bars-empty">No bars or izakayas found within 500 m — try exploring!</div>';
+    if (items.length === 0) {
+      content.innerHTML = `<div class="bars-empty">No ${isBars ? 'bars or izakayas' : 'cafes'} found within 500 m — try exploring!</div>`;
       return;
     }
 
-    content.innerHTML = `<div class="bars-list">${bars.map(b =>
+    content.innerHTML = `<div class="bars-list">${items.map(p =>
       `<div class="bar-item">
-        <span class="bar-icon">${b.icon}</span>
-        <span class="bar-name"><a href="${b.mapsUrl}" target="_blank" rel="noopener">${b.name}</a><small style="color:var(--muted);margin-left:6px">${b.type}</small></span>
-        <span class="bar-dist">${Math.round(b.dist)} m</span>
+        <span class="bar-icon">${p.icon}</span>
+        <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small style="color:var(--muted);margin-left:6px">${p.placeType}</small>` : ''}</span>
+        <span class="bar-dist">${Math.round(p.dist)} m</span>
       </div>`
     ).join('')}</div>`;
   } catch (err) {
-    content.innerHTML = `<div class="bars-empty">Could not fetch bar data: ${err.message}</div>`;
-  }
-}
-
-// ── Cafes (HERE Maps) ─────────────────────────────────────────────────────
-async function showCafes() {
-  dom.cafesCard.style.display = 'block';
-  dom.cafesCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  const content = dom.cafesContent;
-  content.innerHTML = '<div class="bars-empty">Searching for nearby cafes…</div>';
-
-  const { lat, lng } = state.destination;
-  const circle = `circle:${lat},${lng};r=500`;
-
-  try {
-    // 100-1100-0010 = Coffee/Tea shop (HERE category)
-    const res = await fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=100-1100-0010&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`);
-    if (!res.ok) throw new Error(`HERE HTTP ${res.status}`);
-    const data = await res.json();
-
-    const cafes = (data.items || [])
-      .map(p => {
-        const vLat = p.position?.lat;
-        const vLng = p.position?.lng;
-        return {
-          name:    p.title,
-          dist:    p.distance,
-          mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(p.title)}/@${vLat},${vLng},17z`,
-        };
-      })
-      .sort((a, b) => a.dist - b.dist);
-
-    if (cafes.length === 0) {
-      content.innerHTML = '<div class="bars-empty">No cafes found within 500 m — try exploring!</div>';
-      return;
-    }
-
-    content.innerHTML = `<div class="bars-list">${cafes.map(c =>
-      `<div class="bar-item">
-        <span class="bar-icon">☕</span>
-        <span class="bar-name"><a href="${c.mapsUrl}" target="_blank" rel="noopener">${c.name}</a></span>
-        <span class="bar-dist">${Math.round(c.dist)} m</span>
-      </div>`
-    ).join('')}</div>`;
-  } catch (err) {
-    content.innerHTML = `<div class="bars-empty">Could not fetch cafe data: ${err.message}</div>`;
+    content.innerHTML = `<div class="bars-empty">Could not fetch ${isBars ? 'bar' : 'cafe'} data: ${err.message}</div>`;
   }
 }
 
@@ -2338,11 +2300,7 @@ function resetGame() {
   dom.stationInput.classList.remove('selected');
 
   showStep(null);
-  dom.destCard.classList.remove('active');
-  dom.journeyCard.style.display = 'none';
-  dom.mapCard.style.display    = 'none';
-  dom.barsCard.style.display   = 'none';
-  dom.cafesCard.style.display  = 'none';
+  hideAllCards();
 
   dom.randomStationBtn.textContent = '🎲 Random';
   dom.randomStationBtn.title       = 'Pick random station';
@@ -2406,11 +2364,7 @@ function rollAgainFromHere() {
   if (!dest) return;
 
   // Reset UI
-  dom.journeyCard.style.display = 'none';
-  dom.mapCard.style.display = 'none';
-  dom.barsCard.style.display = 'none';
-  dom.cafesCard.style.display = 'none';
-  dom.destCard.classList.remove('active');
+  hideAllCards();
 
   // Set current station to destination
   dom.stationInput.value = dest.name;
@@ -2459,16 +2413,8 @@ function copyRoute() {
     dom.copyRouteBtn.textContent = 'Copied!';
     setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   }).catch(() => {
-    // Fallback: select from a textarea
-    const ta = document.createElement('textarea');
-    ta.value = lines.join('\n');
-    ta.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
     const orig = dom.copyRouteBtn.textContent;
-    dom.copyRouteBtn.textContent = 'Copied!';
+    dom.copyRouteBtn.textContent = 'Copy failed';
     setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   });
 }
@@ -2489,12 +2435,10 @@ function copyRoute() {
         state.currentStation = null;
         dom.stationInput.value = '';
         dom.stationInput.classList.remove('selected');
+        dom.randomStationBtn.textContent = '🎲 Random';
+        dom.randomStationBtn.title       = 'Pick random station';
         showStep(null);
-        dom.journeyCard.style.display = 'none';
-        dom.destCard.classList.remove('active');
-        dom.mapCard.style.display = 'none';
-        dom.barsCard.style.display = 'none';
-        dom.cafesCard.style.display = 'none';
+        hideAllCards();
         setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
       } else if (!state.selectedPlatform) {
         onStationSelected(state.currentStation.name);
@@ -2515,8 +2459,8 @@ function copyRoute() {
   dom.rollStopsBtn.addEventListener('click', rollStops);
   dom.rerollStopsBtn.addEventListener('click', rerollStops);
   dom.showMapBtn.addEventListener('click', showMap);
-  dom.showBarsBtn.addEventListener('click', showBars);
-  dom.showCafesBtn.addEventListener('click', showCafes);
+  dom.showBarsBtn.addEventListener('click', () => showPlaces('bars'));
+  dom.showCafesBtn.addEventListener('click', () => showPlaces('cafes'));
   dom.rollAgainBtn.addEventListener('click', rollAgainFromHere);
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
   dom.copyRouteBtn.addEventListener('click', copyRoute);
