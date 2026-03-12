@@ -919,6 +919,19 @@ const EXPRESS_SERVICES = {
   ],
 };
 
+// ── Station Aliases (physically connected stations with different names) ──
+const STATION_ALIASES = {
+  "Mizonokuchi":                ["Musashi-Mizonokuchi"],
+  "Musashi-Mizonokuchi":        ["Mizonokuchi"],
+  "Harajuku":                   ["Meiji-jingumae 'Harajuku'"],
+  "Meiji-jingumae 'Harajuku'":  ["Harajuku"],
+};
+
+function getAliasKeys(stationName) {
+  const aliases = STATION_ALIASES[stationName];
+  return aliases ? aliases.map(a => normalize(a)) : [];
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 const state = {
   lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
@@ -1174,7 +1187,11 @@ function wardMaxStops(line, fromIdx, step) {
 
 function getPlatforms(stationName) {
   const key = normalize(stationName);
-  const entries = state.stationIndex[key] || [];
+  const entries = [...(state.stationIndex[key] || [])];
+  // Also include platforms from aliased stations (connected stations with different names)
+  for (const aliasKey of getAliasKeys(stationName)) {
+    for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
+  }
   const platforms = [];
 
   for (const entry of entries) {
@@ -1379,8 +1396,9 @@ function setupAutocomplete() {
   function openWith(names) {
     currentItems = names;
     list.innerHTML = names.map((n, i) => {
-      const entries = state.stationIndex[normalize(n)] || [];
-      const lineNames = [...new Set(entries.map(e => state.lines[e.lineIdx].name))].slice(0, 3).join(', ');
+      const entries = [...(state.stationIndex[normalize(n)] || [])];
+      for (const ak of getAliasKeys(n)) for (const e of (state.stationIndex[ak] || [])) entries.push(e);
+      const lineNames = [...new Set(entries.map(e => state.lines[e.lineIdx].name))].slice(0, 4).join(', ');
       return `<div class="autocomplete-item" data-idx="${i}">
         ${n}<span class="station-sub">${lineNames}</span>
       </div>`;
