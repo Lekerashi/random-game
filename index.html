@@ -2291,15 +2291,15 @@ function onStationSelected(name, arrivedVia) {
 function rollPlatform() {
   dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
-  let roll = Math.floor(Math.random() * n) + 1; // 1-indexed
-
-  // Flight: silently reroll unless 5% check passes
+  // Flight: 5% of all rolls at airport stations trigger the flight
   const flightIdx = state.platforms.findIndex(p => p.takeFlight);
-  if (flightIdx !== -1 && roll === flightIdx + 1 && Math.random() >= 0.05) {
-    // Reroll to a non-flight number
-    const nonFlight = [];
-    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1) nonFlight.push(i);
-    roll = nonFlight[Math.floor(Math.random() * nonFlight.length)];
+  let roll;
+  if (flightIdx !== -1 && Math.random() < 0.05) {
+    roll = flightIdx + 1;
+  } else {
+    const pool = [];
+    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1) pool.push(i);
+    roll = pool.length ? pool[Math.floor(Math.random() * pool.length)] : Math.floor(Math.random() * n) + 1;
   }
 
   animateRoll(1, n, roll, dom.diePlatform, () => {
