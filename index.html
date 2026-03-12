@@ -1108,9 +1108,21 @@ async function loadData() {
 
 const LINE_NAME_FIXES = { 'Tokyu Oimacho Line': 'Tokyu Oimachi Line' };
 
+// Stations missing from upstream data that we append to lines
+const LINE_EXTRA_STATIONS = {
+  'JR Tokaido Main Line': [
+    { name: 'Kannami',  ja: '函南',  lat: 35.0873, lng: 139.0044 },
+    { name: 'Mishima',  ja: '三島',  lat: 35.1276, lng: 138.9110 },
+    { name: 'Numazu',   ja: '沼津',  lat: 35.1015, lng: 138.8635 },
+  ],
+};
+
 function buildIndex(lines, osmNames = {}) {
   state.lines = lines;
-  for (const l of lines) if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
+  for (const l of lines) {
+    if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
+    if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
+  }
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
