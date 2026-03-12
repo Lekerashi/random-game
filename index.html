@@ -1294,6 +1294,7 @@ const translations = {
     drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
     stayingForDrink:      '🍻 Staying for a drink',
     drinkAtTransfer:      '🍻 Drink here! (transfer roll on {line}{type})',
+    noValidStops:         'All stops already visited! Reroll the platform.',
     // Platform pills
     drinkHereLabel:       'Drink here!',
     takeFlightLabel:      'Take a flight!',
@@ -1312,6 +1313,7 @@ const translations = {
     tookFlight:           '✈️ took a flight — bon voyage!',
     stayedForDrink:       '🍻 stayed for a drink',
     drinkRollHistory:     '🍻 drink roll',
+    drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 transfer',
     // How to play
     howToPlay:            'How to Play',
@@ -1405,6 +1407,7 @@ const translations = {
     drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
     stayingForDrink:      '🍻 ここで一杯',
     drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
+    noValidStops:         '全ての駅を訪問済み！路線を振り直してください。',
     drinkHereLabel:       'ここで飲もう！',
     takeFlightLabel:      'フライトに乗ろう！',
     loopCCW:              '反時計回り',
@@ -1419,6 +1422,7 @@ const translations = {
     tookFlight:           '✈️ フライトに乗った — 良い旅を！',
     stayedForDrink:       '🍻 ここで一杯',
     drinkRollHistory:     '🍻 飲みロール',
+    drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 乗り換え',
     howToPlay:            '遊び方',
     htpStep1:             '<strong>出発駅を選ぶ</strong> — 現在地を使うか、検索するか、ランダムで。',
@@ -1504,8 +1508,9 @@ function switchLang(lang) {
       const pLabel = platformLabel(p);
       const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
       const ln = lineDisplayName(p.lineName);
+      const effectiveHint = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
       dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-        <br><small class="text-muted">${t('maxStopsHint', { n: p.maxStops })}</small>`;
+        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
       dom.selectedPlatformText.innerHTML =
         `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
     }
@@ -1530,7 +1535,8 @@ function switchLang(lang) {
     } else {
       const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
       dom.destSub.innerHTML =
-        `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`;
+        `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
+        + `<div class="drink-hint"><span style="font-size:1.1rem">🍻</span> ${t('drinkHint')}</div>`;
     }
   }
   // Re-render history
@@ -2362,8 +2368,9 @@ function rollPlatform() {
     const pLabel = platformLabel(p);
     const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
     const ln = lineDisplayName(p.lineName);
+    const effectiveHintMax = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
     dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-      <br><small class="text-muted">${t('maxStopsHint', { n: p.maxStops })}</small>`;
+      <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
 
     // Show which platform was rolled
     dom.selectedPlatformDot.style.background = p.lineColor;
@@ -2375,8 +2382,9 @@ function rollPlatform() {
 
     // Check for express services — show type buttons or normal ROLL STOPS
     if (!showTrainTypeButtons(p)) {
-      const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-      dom.stopsRangeText.textContent = t('rollingStops', { max: cappedMax, s: pl(cappedMax) });
+      const cappedPhys = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
+      const effectiveMax = getValidRouteInfo(p, null, cappedPhys).validCount;
+      dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
       dom.rollStopsBtn.disabled = false;
     }
 
@@ -2437,8 +2445,10 @@ function showTrainTypeButtons(p) {
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
   const allMax1 = trainTypes.every(t => {
-    const m = t.expressIndices ? getExpressMaxStops(p, t.expressIndices) : p.maxStops;
-    return m <= 1;
+    const ei = t.expressIndices;
+    const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
+    const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+    return getValidRouteInfo(p, ei || null, cappedPhys).validCount <= 1;
   });
   if (allMax1) {
     dom.trainTypeRow.style.display = 'none';
@@ -2449,49 +2459,52 @@ function showTrainTypeButtons(p) {
   dom.trainTypeRow.style.display = 'flex';
   dom.trainTypeRow.innerHTML = trainTypes.map((t, i) => {
     const ei = t.expressIndices;
-    const maxS = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-    const cappedS = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
+    const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
+    const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+    const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
     // Local (first) button gets full width when there are exactly 3 types
     const fullWidth = i === 0 && trainTypes.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${t.color};${fullWidth}"
-      data-type-name="${t.name}" data-max="${maxS}">
-      ${t.name}<small>${t.ja} · 1–${cappedS}</small>
+      data-type-name="${t.name}" data-max="${physMax}"${effectiveMax === 0 ? ' disabled' : ''}>
+      ${t.name}<small>${t.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>
     </button>`;
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       state.selectedTrainType = trainTypes[i];
-      const maxS = trainTypes[i].expressIndices
-        ? getExpressMaxStops(p, trainTypes[i].expressIndices) : p.maxStops;
-      const cappedMax = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
-      dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: cappedMax, s: pl(cappedMax) });
+      const ei = trainTypes[i].expressIndices;
+      const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
+      const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+      const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
+      dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
   });
-  const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-  dom.stopsRangeText.textContent = t('selectTrainType', { max: cappedMax });
+  const localEffective = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
+  dom.stopsRangeText.textContent = t('selectTrainType', { max: localEffective });
   return true;
 }
 
 function refreshStopsLabel() {
   if (!state.selectedPlatform) return;
   const ei = state.selectedTrainType?.expressIndices;
-  const rawMax = ei
+  const rawPhysMax = ei
     ? getExpressMaxStops(state.selectedPlatform, ei)
     : state.selectedPlatform.maxStops;
-  const max = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
+  const cappedPhys = state.stopsCap ? Math.min(rawPhysMax, state.stopsCapValue) : rawPhysMax;
+  const max = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhys).validCount;
   dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
 }
 
 // ── Transfer Check ─────────────────────────────────────────────────────────
-function getStationsAlongRoute(platform, stops) {
+function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   const line = state.lines[platform.lineIdx];
   const N = line.stations.length;
   const result = [];
 
   // Express routing: only include express stop stations
-  const ei = state.selectedTrainType?.expressIndices;
+  const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : state.selectedTrainType?.expressIndices;
   if (ei) {
     const pos = ei.indexOf(platform.fromIdx);
     if (pos !== -1) {
@@ -2521,6 +2534,26 @@ function getStationsAlongRoute(platform, stops) {
     result.push(line.stations[idx]);
   }
   return result;
+}
+
+// Given a platform and optional express indices, compute the valid (non-drunk-at)
+// destinations along the route. Returns { validCount, physicalStopsMap } where
+// physicalStopsMap[i] = physical stop number for the ith valid destination.
+function getValidRouteInfo(platform, expressIndices, maxPhysical) {
+  if (maxPhysical === undefined) {
+    maxPhysical = expressIndices
+      ? getExpressMaxStops(platform, expressIndices)
+      : platform.maxStops;
+  }
+  if (maxPhysical === 0) return { validCount: 0, physicalStopsMap: [] };
+  const fullRoute = getStationsAlongRoute(platform, maxPhysical, expressIndices || null);
+  const physicalStopsMap = [];
+  for (let i = 0; i < fullRoute.length; i++) {
+    if (!state.drankAt.has(normalize(fullRoute[i].name))) {
+      physicalStopsMap.push(i + 1);
+    }
+  }
+  return { validCount: physicalStopsMap.length, physicalStopsMap };
 }
 
 function hasTransferLines(stationName, currentLineName) {
@@ -2693,13 +2726,27 @@ async function checkTransfers(platform, rolledStops) {
 
 function rollStops() {
   dom.rollStopsBtn.disabled = true;
-  const rawMax = (state.selectedTrainType?.expressIndices)
-    ? getExpressMaxStops(state.selectedPlatform, state.selectedTrainType.expressIndices)
+  const ei = state.selectedTrainType?.expressIndices;
+  const rawPhysicalMax = ei
+    ? getExpressMaxStops(state.selectedPlatform, ei)
     : state.selectedPlatform.maxStops;
-  const max  = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
+  const cappedPhysicalMax = state.stopsCap ? Math.min(rawPhysicalMax, state.stopsCapValue) : rawPhysicalMax;
+  const routeInfo = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhysicalMax);
+  const max = routeInfo.validCount;
+
+  if (max === 0) {
+    // No valid destinations (all drunk-at) — show message and allow reroll
+    dom.dieStops.textContent = '—';
+    dom.dieStopsLabel.innerHTML = `<strong>${t('noValidStops')}</strong>`;
+    dom.rollStopsBtn.disabled = false;
+    dom.rerollStopsBtn.style.display = 'block';
+    return;
+  }
+
   const roll = Math.floor(Math.random() * max) + 1;
 
   animateRoll(1, max, roll, dom.dieStops, async () => {
+    const physicalStops = routeInfo.physicalStopsMap[roll - 1];
     state.rolledStops = roll;
 
     dom.dieStopsLabel.innerHTML = `<strong>${t('stopsResult', { n: roll, s: pl(roll) })}</strong>`;
@@ -2711,8 +2758,8 @@ function rollStops() {
     dom.rollStopsRow.style.display = 'flex';
     dom.rerollStopsBtn.style.display = 'block';
 
-    // Check for transfers along the route
-    const result = await checkTransfers(state.selectedPlatform, roll);
+    // Check for transfers along the route (using physical stop count)
+    const result = await checkTransfers(state.selectedPlatform, physicalStops);
 
     if (result.type === 'transfer') {
       // Transfer: record history hop, then restart at transfer station
@@ -2748,7 +2795,7 @@ function rollStops() {
       return;
     }
 
-    // Normal arrival
+    // Normal arrival — you're drinking here!
     const dest = result.station;
     state.destination = dest;
 
@@ -2756,11 +2803,14 @@ function rollStops() {
     dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
     dom.destSub.innerHTML =
-      `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`;
+      `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
+      + `<div class="drink-hint"><span style="font-size:1.1rem">🍻</span> ${t('drinkHint')}</div>`;
     dom.destCard.classList.add('active');
     dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    addHistory();
+    state.drankAt.add(normalize(dest.name));
+    state.stationsSinceDrink = 0;
+    addHistory({ drinkAtArrival: true });
   });
 }
 
@@ -2884,7 +2934,7 @@ function buildHistoryItem(e, num) {
     body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent2">${t('transferHistory')}</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}`;
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${t('drinkAtArrivalHist')}</span>` : ''}`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -2908,6 +2958,7 @@ function addHistory(transferInfo) {
     toJa:      state.destination.ja,
     transferred:    transferInfo?.transferred || false,
     drinkAtTransfer: transferInfo?.drinkAtTransfer || false,
+    drinkAtArrival:  transferInfo?.drinkAtArrival || false,
     stopsUsed:      transferInfo?.stopsUsed || null,
   };
   state.history.push(entry);
@@ -3088,7 +3139,7 @@ function copyRoute() {
     } else if (e.transferred) {
       lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('transferHistory')}`);
     } else {
-      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${e.to}`);
+      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${e.to}${e.drinkAtArrival ? ` ${t('drinkAtArrivalHist')}` : ''}`);
     }
   });
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
