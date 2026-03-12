@@ -958,6 +958,64 @@ const state = {
   mapMarker: null,
 };
 
+// ── Cached DOM references ─────────────────────────────────────────────────
+const dom = {
+  // Loading
+  loadingOverlay:  document.getElementById('loading-overlay'),
+  loadingStatus:   document.getElementById('loading-status'),
+  app:             document.getElementById('app'),
+  errorBanner:     document.getElementById('error-banner'),
+  // Station picker
+  stationInput:    document.getElementById('station-input'),
+  locationHint:    document.getElementById('location-hint'),
+  lastTrainWarning: document.getElementById('last-train-warning'),
+  randomStationBtn: document.getElementById('random-station-btn'),
+  locateBtn:       document.getElementById('locate-btn'),
+  // Step 1
+  platformGrid:       document.getElementById('platform-grid'),
+  platformCountText:  document.getElementById('platform-count-text'),
+  diePlatform:        document.getElementById('die-platform'),
+  diePlatformLabel:   document.getElementById('die-platform-label'),
+  rollPlatformBtn:    document.getElementById('roll-platform-btn'),
+  rerollPlatformBtn:  document.getElementById('reroll-platform-btn'),
+  // Step 2
+  selectedPlatformDot:  document.getElementById('selected-platform-dot'),
+  selectedPlatformText: document.getElementById('selected-platform-text'),
+  stopsRangeText:       document.getElementById('stops-range-text'),
+  dieStops:             document.getElementById('die-stops'),
+  dieStopsLabel:        document.getElementById('die-stops-label'),
+  rollStopsBtn:         document.getElementById('roll-stops-btn'),
+  rerollStopsBtn:       document.getElementById('reroll-stops-btn'),
+  trainTypeRow:         document.getElementById('train-type-row'),
+  rollStopsRow:         document.getElementById('roll-stops-row'),
+  // Journey / Destination
+  journeyCard:    document.getElementById('journey-card'),
+  journeyContent: document.getElementById('journey-content'),
+  destCard:       document.getElementById('destination-card'),
+  destName:       document.getElementById('dest-name'),
+  destSub:        document.getElementById('dest-sub'),
+  rollAgainBtn:   document.getElementById('roll-again-btn'),
+  showBarsBtn:    document.getElementById('show-bars-btn'),
+  showCafesBtn:   document.getElementById('show-cafes-btn'),
+  // Cards
+  mapCard:      document.getElementById('map-card'),
+  barsCard:     document.getElementById('bars-card'),
+  barsContent:  document.getElementById('bars-content'),
+  cafesCard:    document.getElementById('cafes-card'),
+  cafesContent: document.getElementById('cafes-content'),
+  // History
+  historyList:  document.getElementById('history-list'),
+  historyEmpty: document.getElementById('history-empty'),
+  copyRouteBtn: document.getElementById('copy-route-btn'),
+  // Controls (used in init)
+  showMapBtn:          document.getElementById('show-map-btn'),
+  clearHistoryBtn:     document.getElementById('clear-history-btn'),
+  dismissTrainWarning: document.getElementById('dismiss-train-warning'),
+  stopsCap:            document.getElementById('stops-cap-check'),
+  stopsCapValue:       document.getElementById('stops-cap-value'),
+  wards23Check:        document.getElementById('wards23-check'),
+};
+
 // ── Utilities ─────────────────────────────────────────────────────────────
 function normalize(s) {
   return (s || '').toLowerCase()
@@ -1379,20 +1437,19 @@ function animateRoll(min, max, finalValue, el, onComplete) {
 
 // ── UI Helpers ────────────────────────────────────────────────────────────
 function setLoadingStatus(msg) {
-  document.getElementById('loading-status').textContent = msg;
+  dom.loadingStatus.textContent = msg;
 }
 
 function hideLoading() {
-  document.getElementById('loading-overlay').classList.add('hidden');
-  document.getElementById('app').style.display = '';
+  dom.loadingOverlay.classList.add('hidden');
+  dom.app.style.display = '';
 }
 
 function showError(msg) {
-  document.getElementById('loading-overlay').classList.add('hidden');
-  document.getElementById('app').style.display = '';
-  const banner = document.getElementById('error-banner');
-  banner.textContent = '⚠ ' + msg;
-  banner.style.display = 'block';
+  dom.loadingOverlay.classList.add('hidden');
+  dom.app.style.display = '';
+  dom.errorBanner.textContent = '⚠ ' + msg;
+  dom.errorBanner.style.display = 'block';
 }
 
 function showStep(id) {
@@ -1497,13 +1554,11 @@ function onStationSelected(name, arrivedVia) {
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
 
   // Clear any ward-restriction warning now that a valid station is chosen
-  const hint = document.getElementById('location-hint');
-  if (hint.textContent.includes('outside the 23 wards')) hint.textContent = '';
+  if (dom.locationHint.textContent.includes('outside the 23 wards')) dom.locationHint.textContent = '';
 
   // Switch button to "New Game" mode
-  const rBtn = document.getElementById('random-station-btn');
-  rBtn.textContent = '🔄 New Game';
-  rBtn.title = 'Start a new game';
+  dom.randomStationBtn.textContent = '🔄 New Game';
+  dom.randomStationBtn.title = 'Start a new game';
 
   // Capture whether the last roll was a drink before resetting
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
@@ -1513,26 +1568,26 @@ function onStationSelected(name, arrivedVia) {
   state.selectedTrainType = null;
   state.rolledStops = null;
   state.destination = null;
-  document.getElementById('destination-card').classList.remove('active');
-  document.getElementById('roll-again-btn').style.display = '';
-  document.getElementById('show-bars-btn').style.display = '';
-  document.getElementById('show-cafes-btn').style.display = '';
-  document.getElementById('train-type-row').style.display = 'none';
-  document.getElementById('roll-stops-row').style.display = 'flex';
-  document.getElementById('journey-card').style.display = 'none';
-  document.getElementById('map-card').style.display = 'none';
-  document.getElementById('bars-card').style.display = 'none';
-  document.getElementById('cafes-card').style.display = 'none';
-  document.getElementById('die-platform').textContent = '?';
-  document.getElementById('die-platform').className = 'die-face';
-  document.getElementById('die-stops').textContent = '?';
-  document.getElementById('die-stops').className = 'die-face';
-  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a train line';
-  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
-  document.getElementById('roll-platform-btn').disabled = false;
-  document.getElementById('roll-stops-btn').disabled = true;
-  document.getElementById('reroll-platform-btn').style.display = 'none';
-  document.getElementById('reroll-stops-btn').style.display = 'none';
+  dom.destCard.classList.remove('active');
+  dom.rollAgainBtn.style.display = '';
+  dom.showBarsBtn.style.display = '';
+  dom.showCafesBtn.style.display = '';
+  dom.trainTypeRow.style.display = 'none';
+  dom.rollStopsRow.style.display = 'flex';
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display = 'none';
+  dom.barsCard.style.display = 'none';
+  dom.cafesCard.style.display = 'none';
+  dom.diePlatform.textContent = '?';
+  dom.diePlatform.className = 'die-face';
+  dom.dieStops.textContent = '?';
+  dom.dieStops.className = 'die-face';
+  dom.diePlatformLabel.innerHTML = 'Roll to pick a train line';
+  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
+  dom.rollPlatformBtn.disabled = false;
+  dom.rollStopsBtn.disabled = true;
+  dom.rerollPlatformBtn.style.display = 'none';
+  dom.rerollStopsBtn.style.display = 'none';
 
   // Compute platforms + add drink-here as last option
   // (not if last roll was already a drink, or if already drank here this session)
@@ -1569,8 +1624,7 @@ function onStationSelected(name, arrivedVia) {
   const total     = state.platforms.length + extraDrinkNums;
 
   // Render platform grid
-  const grid = document.getElementById('platform-grid');
-  grid.innerHTML = state.platforms.map((p, i) =>
+  dom.platformGrid.innerHTML = state.platforms.map((p, i) =>
     p.drinkHere
       ? `<div class="platform-pill drink-here">
            <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
@@ -1590,21 +1644,18 @@ function onStationSelected(name, arrivedVia) {
          </div>`
   ).join('');
 
-  document.getElementById('platform-count-text').textContent =
+  dom.platformCountText.textContent =
     `${lineCount} train line${lineCount !== 1 ? 's' : ''} at ${name} — rolling 1–${total}`;
 
   showStep('step-platforms');
 }
 
 function rollPlatform() {
-  const btn = document.getElementById('roll-platform-btn');
-  btn.disabled = true;
+  dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
   const roll = Math.floor(Math.random() * n) + 1; // 1-indexed
-  const die  = document.getElementById('die-platform');
-  const lbl  = document.getElementById('die-platform-label');
 
-  animateRoll(1, n, roll, die, () => {
+  animateRoll(1, n, roll, dom.diePlatform, () => {
     // Extra drink numbers map to the drink-here platform
     const idx = roll > state.platforms.length ? state.platforms.length - 1 : roll - 1;
     state.selectedPlatform = state.platforms[idx];
@@ -1612,47 +1663,43 @@ function rollPlatform() {
 
     // ── Take a flight! ────────────────────────────────────────────────────
     if (p.takeFlight) {
-      lbl.innerHTML = `<strong>#${roll} → ✈️ Take a flight!</strong>`;
+      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ✈️ Take a flight!</strong>`;
       // No reroll — game over!
 
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      const destNameEl = document.getElementById('dest-name');
-      destNameEl.textContent = state.currentStation.name;
-      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
-      document.getElementById('dest-sub').innerHTML =
+      dom.destName.textContent = state.currentStation.name;
+      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
+      dom.destSub.innerHTML =
         `${state.currentStation.ja}<br>` +
         `<span style="color:#f59e0b;font-size:1.1em">✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!</span>`;
       // Hide all action buttons — no rolling from here
-      document.getElementById('roll-again-btn').style.display = 'none';
-      document.getElementById('show-bars-btn').style.display = 'none';
-      document.getElementById('show-cafes-btn').style.display = 'none';
-      const destCard = document.getElementById('destination-card');
-      destCard.classList.add('active');
-      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      dom.rollAgainBtn.style.display = 'none';
+      dom.showBarsBtn.style.display = 'none';
+      dom.showCafesBtn.style.display = 'none';
+      dom.destCard.classList.add('active');
+      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       addHistory({ flight: true });
       return;
     }
 
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
-      lbl.innerHTML = `<strong>#${roll} → 🍻 Drink here!</strong>`;
-      document.getElementById('reroll-platform-btn').style.display = '';
+      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → 🍻 Drink here!</strong>`;
+      dom.rerollPlatformBtn.style.display = '';
 
       // Use current station as destination
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      const destNameEl = document.getElementById('dest-name');
-      destNameEl.textContent = state.currentStation.name;
-      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
-      document.getElementById('dest-sub').innerHTML =
+      dom.destName.textContent = state.currentStation.name;
+      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
+      dom.destSub.innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`
         + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
-      const destCard = document.getElementById('destination-card');
-      destCard.classList.add('active');
-      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      dom.destCard.classList.add('active');
+      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       state.drankAt.add(normalize(state.currentStation.name));
       state.stationsSinceDrink = 0;
@@ -1661,23 +1708,22 @@ function rollPlatform() {
     }
 
     // ── Normal train line ─────────────────────────────────────────────────
-    lbl.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
+    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
       <br><small style="color:var(--muted)">Max stops: ${p.maxStops}</small>`;
 
     // Show which platform was rolled
-    document.getElementById('selected-platform-dot').style.background = p.lineColor;
-    document.getElementById('selected-platform-text').innerHTML =
+    dom.selectedPlatformDot.style.background = p.lineColor;
+    dom.selectedPlatformText.innerHTML =
       `<strong>#${roll} — ${p.lineName}</strong><br><span style="color:var(--muted)">${p.label.split('—').slice(1).join('—').trim()}</span>`;
 
-    document.getElementById('reroll-platform-btn').style.display = '';
+    dom.rerollPlatformBtn.style.display = '';
     state.selectedTrainType = null;
 
     // Check for express services — show type buttons or normal ROLL STOPS
     if (!showTrainTypeButtons(p)) {
       const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-      document.getElementById('stops-range-text').textContent =
-        `Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
-      document.getElementById('roll-stops-btn').disabled = false;
+      dom.stopsRangeText.textContent = `Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
+      dom.rollStopsBtn.disabled = false;
     }
 
     showStep('step-stops');
@@ -1686,40 +1732,39 @@ function rollPlatform() {
 
 function rerollPlatform() {
   // Hide reroll, reset step 2 content, and fire a fresh roll
-  document.getElementById('reroll-platform-btn').style.display = 'none';
-  document.getElementById('destination-card').classList.remove('active');
-  document.getElementById('journey-card').style.display = 'none';
-  document.getElementById('map-card').style.display = 'none';
-  document.getElementById('bars-card').style.display = 'none';
-  document.getElementById('cafes-card').style.display = 'none';
-  document.getElementById('die-platform').textContent = '?';
-  document.getElementById('die-platform').className = 'die-face';
-  document.getElementById('die-stops').textContent = '?';
-  document.getElementById('die-stops').className = 'die-face';
-  document.getElementById('die-platform-label').innerHTML = 'Roll to pick a train line';
-  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
-  document.getElementById('roll-stops-btn').disabled = true;
-  document.getElementById('reroll-stops-btn').style.display = 'none';
-  document.getElementById('train-type-row').style.display = 'none';
-  document.getElementById('roll-stops-row').style.display = 'flex';
+  dom.rerollPlatformBtn.style.display = 'none';
+  dom.destCard.classList.remove('active');
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display = 'none';
+  dom.barsCard.style.display = 'none';
+  dom.cafesCard.style.display = 'none';
+  dom.diePlatform.textContent = '?';
+  dom.diePlatform.className = 'die-face';
+  dom.dieStops.textContent = '?';
+  dom.dieStops.className = 'die-face';
+  dom.diePlatformLabel.innerHTML = 'Roll to pick a train line';
+  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
+  dom.rollStopsBtn.disabled = true;
+  dom.rerollStopsBtn.style.display = 'none';
+  dom.trainTypeRow.style.display = 'none';
+  dom.rollStopsRow.style.display = 'flex';
   state.selectedTrainType = null;
   rollPlatform();
 }
 
 function rerollStops() {
-  document.getElementById('reroll-stops-btn').style.display = 'none';
-  const rsBtn = document.getElementById('roll-stops-btn');
-  rsBtn.style.display = '';
-  rsBtn.style.flex = '1';
-  rsBtn.style.width = '';
-  document.getElementById('destination-card').classList.remove('active');
-  document.getElementById('journey-card').style.display = 'none';
-  document.getElementById('map-card').style.display = 'none';
-  document.getElementById('bars-card').style.display = 'none';
-  document.getElementById('cafes-card').style.display = 'none';
-  document.getElementById('die-stops').textContent = '?';
-  document.getElementById('die-stops').className = 'die-face';
-  document.getElementById('die-stops-label').innerHTML = 'Roll to pick how many stops';
+  dom.rerollStopsBtn.style.display = 'none';
+  dom.rollStopsBtn.style.display = '';
+  dom.rollStopsBtn.style.flex = '1';
+  dom.rollStopsBtn.style.width = '';
+  dom.destCard.classList.remove('active');
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display = 'none';
+  dom.barsCard.style.display = 'none';
+  dom.cafesCard.style.display = 'none';
+  dom.dieStops.textContent = '?';
+  dom.dieStops.className = 'die-face';
+  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
 
   // If express services, show type buttons again; otherwise just reroll
   state.selectedTrainType = null;
@@ -1729,18 +1774,16 @@ function rerollStops() {
 
 // Show train type buttons if express services are available. Returns true if shown.
 function showTrainTypeButtons(p) {
-  const trainTypeRow = document.getElementById('train-type-row');
-  const rollStopsRow = document.getElementById('roll-stops-row');
   if (!p || !EXPRESS_SERVICES[p.lineName]) {
-    trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = 'flex';
+    dom.trainTypeRow.style.display = 'none';
+    dom.rollStopsRow.style.display = 'flex';
     return false;
   }
   const line = state.lines[p.lineIdx];
   const trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line);
   if (!trainTypes || trainTypes.length <= 1) {
-    trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = 'flex';
+    dom.trainTypeRow.style.display = 'none';
+    dom.rollStopsRow.style.display = 'flex';
     return false;
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
@@ -1749,13 +1792,13 @@ function showTrainTypeButtons(p) {
     return m <= 1;
   });
   if (allMax1) {
-    trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = 'flex';
+    dom.trainTypeRow.style.display = 'none';
+    dom.rollStopsRow.style.display = 'flex';
     return false;
   }
-  rollStopsRow.style.display = 'none';
-  trainTypeRow.style.display = '';
-  trainTypeRow.innerHTML = trainTypes.map(t => {
+  dom.rollStopsRow.style.display = 'none';
+  dom.trainTypeRow.style.display = '';
+  dom.trainTypeRow.innerHTML = trainTypes.map(t => {
     const ei = t.expressIndices;
     const maxS = ei ? getExpressMaxStops(p, ei) : p.maxStops;
     const cappedS = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
@@ -1764,21 +1807,20 @@ function showTrainTypeButtons(p) {
       ${t.name}<small>${t.ja} · 1–${cappedS}</small>
     </button>`;
   }).join('');
-  trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
+  dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       state.selectedTrainType = trainTypes[i];
       const maxS = trainTypes[i].expressIndices
         ? getExpressMaxStops(p, trainTypes[i].expressIndices) : p.maxStops;
       const cappedMax = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
-      document.getElementById('stops-range-text').textContent =
+      dom.stopsRangeText.textContent =
         `${trainTypes[i].name} (${trainTypes[i].ja}) · Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
-      trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
+      dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
   });
   const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-  document.getElementById('stops-range-text').textContent =
-    `Select train type · Rolling 1–${cappedMax} stops (local)`;
+  dom.stopsRangeText.textContent = `Select train type · Rolling 1–${cappedMax} stops (local)`;
   return true;
 }
 
@@ -1789,8 +1831,7 @@ function refreshStopsLabel() {
     ? getExpressMaxStops(state.selectedPlatform, ei)
     : state.selectedPlatform.maxStops;
   const max = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
-  document.getElementById('stops-range-text').textContent =
-    `Rolling 1–${max} stop${max !== 1 ? 's' : ''}`;
+  dom.stopsRangeText.textContent = `Rolling 1–${max} stop${max !== 1 ? 's' : ''}`;
 }
 
 // ── Transfer Check ─────────────────────────────────────────────────────────
@@ -1882,12 +1923,10 @@ async function checkTransfers(platform, rolledStops) {
   }
 
   // Show journey card
-  const card = document.getElementById('journey-card');
-  const content = document.getElementById('journey-content');
-  card.style.display = 'block';
+  dom.journeyCard.style.display = 'block';
 
   // Build station list
-  content.innerHTML = route.map((stn, i) => {
+  dom.journeyContent.innerHTML = route.map((stn, i) => {
     const isLast = i === route.length - 1;
     const isTransfer = transferIndices.includes(i);
     return `<div class="journey-station" id="jstn-${i}">
@@ -1899,7 +1938,7 @@ async function checkTransfers(platform, rolledStops) {
     </div>`;
   }).join('');
 
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  dom.journeyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   // Dim non-transfer stations up to the first transfer station
   for (let i = 0; i < transferIndices[0]; i++) {
@@ -2000,28 +2039,24 @@ async function checkTransfers(platform, rolledStops) {
 }
 
 function rollStops() {
-  const btn = document.getElementById('roll-stops-btn');
-  btn.disabled = true;
+  dom.rollStopsBtn.disabled = true;
   const rawMax = (state.selectedTrainType?.expressIndices)
     ? getExpressMaxStops(state.selectedPlatform, state.selectedTrainType.expressIndices)
     : state.selectedPlatform.maxStops;
-  const max    = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
-  const roll   = Math.floor(Math.random() * max) + 1;
-  const die  = document.getElementById('die-stops');
-  const lbl  = document.getElementById('die-stops-label');
+  const max  = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
+  const roll = Math.floor(Math.random() * max) + 1;
 
-  animateRoll(1, max, roll, die, async () => {
+  animateRoll(1, max, roll, dom.dieStops, async () => {
     state.rolledStops = roll;
 
-    lbl.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
-    const hasExpress = document.getElementById('train-type-row').style.display !== 'none';
-    if (hasExpress) {
-      btn.style.display = 'none';
+    dom.dieStopsLabel.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
+    if (dom.trainTypeRow.style.display !== 'none') {
+      dom.rollStopsBtn.style.display = 'none';
     } else {
-      btn.style.width = 'auto';
+      dom.rollStopsBtn.style.width = 'auto';
     }
-    document.getElementById('roll-stops-row').style.display = 'flex';
-    document.getElementById('reroll-stops-btn').style.display = '';
+    dom.rollStopsRow.style.display = 'flex';
+    dom.rerollStopsBtn.style.display = '';
 
     // Check for transfers along the route
     const result = await checkTransfers(state.selectedPlatform, roll);
@@ -2033,9 +2068,8 @@ function rollStops() {
 
       // Brief pause then set up new station
       await new Promise(r => setTimeout(r, 400));
-      const input = document.getElementById('station-input');
-      input.value = result.station.name;
-      input.classList.add('selected');
+      dom.stationInput.value = result.station.name;
+      dom.stationInput.classList.add('selected');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       onStationSelected(result.station.name, { lineName: state.selectedPlatform.lineName, isTransfer: true });
       return;
@@ -2046,16 +2080,14 @@ function rollStops() {
       state.destination = result.station;
       state.selectedPlatform = { ...state.selectedPlatform, drinkHere: true };
 
-      const destNameEl = document.getElementById('dest-name');
-      destNameEl.textContent = result.station.name;
-      destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
+      dom.destName.textContent = result.station.name;
+      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
-      document.getElementById('dest-sub').innerHTML =
+      dom.destSub.innerHTML =
         `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName}${drinkTrainType})`
         + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
-      const destCard = document.getElementById('destination-card');
-      destCard.classList.add('active');
-      destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      dom.destCard.classList.add('active');
+      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       state.drankAt.add(normalize(result.station.name));
       state.stationsSinceDrink = 0;
@@ -2067,15 +2099,13 @@ function rollStops() {
     const dest = result.station;
     state.destination = dest;
 
-    const destNameEl = document.getElementById('dest-name');
-    destNameEl.textContent = dest.name;
-    destNameEl.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
+    dom.destName.textContent = dest.name;
+    dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-    document.getElementById('dest-sub').innerHTML =
+    dom.destSub.innerHTML =
       `${dest.ja} &nbsp;·&nbsp; ${state.selectedPlatform.lineName}${trainTypeLabel} &nbsp;·&nbsp; ${roll} stop${roll !== 1 ? 's' : ''} from ${state.currentStation.name}`;
-    const destCard = document.getElementById('destination-card');
-    destCard.classList.add('active');
-    destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    dom.destCard.classList.add('active');
+    dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     addHistory();
   });
@@ -2083,9 +2113,8 @@ function rollStops() {
 
 // ── Map ───────────────────────────────────────────────────────────────────
 function showMap() {
-  const card = document.getElementById('map-card');
-  card.style.display = 'block';
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  dom.mapCard.style.display = 'block';
+  dom.mapCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   const { lat, lng, name } = state.destination;
 
@@ -2108,10 +2137,9 @@ function showMap() {
 
 // ── Bars (HERE Maps Discover API) ─────────────────────────────────────────
 async function showBars() {
-  const card    = document.getElementById('bars-card');
-  const content = document.getElementById('bars-content');
-  card.style.display = 'block';
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  dom.barsCard.style.display = 'block';
+  dom.barsCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const content = dom.barsContent;
   content.innerHTML = '<div class="bars-empty">Searching for nearby bars & izakayas…</div>';
 
   const { lat, lng } = state.destination;
@@ -2175,10 +2203,9 @@ async function showBars() {
 
 // ── Cafes (HERE Maps) ─────────────────────────────────────────────────────
 async function showCafes() {
-  const card    = document.getElementById('cafes-card');
-  const content = document.getElementById('cafes-content');
-  card.style.display = 'block';
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  dom.cafesCard.style.display = 'block';
+  dom.cafesCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const content = dom.cafesContent;
   content.innerHTML = '<div class="bars-empty">Searching for nearby cafes…</div>';
 
   const { lat, lng } = state.destination;
@@ -2260,13 +2287,13 @@ function addHistory(transferInfo) {
     stopsUsed:      transferInfo?.stopsUsed || null,
   };
   state.history.push(entry);
-  document.getElementById('history-empty').style.display = 'none';
-  document.getElementById('history-list').insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
+  dom.historyEmpty.style.display = 'none';
+  dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
 }
 
 function renderHistory() {
-  const list  = document.getElementById('history-list');
-  const empty = document.getElementById('history-empty');
+  const list  = dom.historyList;
+  const empty = dom.historyEmpty;
 
   if (state.history.length === 0) {
     empty.style.display = '';
@@ -2292,9 +2319,8 @@ function pickRandomStation() {
   const pool = state.wards23Only ? state.stationNames23 : state.stationNames;
   if (pool.length === 0) return;
   const name  = pool[Math.floor(Math.random() * pool.length)];
-  const input = document.getElementById('station-input');
-  input.value = name;
-  input.classList.add('selected');
+  dom.stationInput.value = name;
+  dom.stationInput.classList.add('selected');
   onStationSelected(name);
 }
 
@@ -2308,20 +2334,18 @@ function resetGame() {
   state.stationsSinceDrink = 0;
   state.drankAt.clear();
 
-  const input = document.getElementById('station-input');
-  input.value = '';
-  input.classList.remove('selected');
+  dom.stationInput.value = '';
+  dom.stationInput.classList.remove('selected');
 
   showStep(null);
-  document.getElementById('destination-card').classList.remove('active');
-  document.getElementById('journey-card').style.display = 'none';
-  document.getElementById('map-card').style.display    = 'none';
-  document.getElementById('bars-card').style.display   = 'none';
-  document.getElementById('cafes-card').style.display  = 'none';
+  dom.destCard.classList.remove('active');
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display    = 'none';
+  dom.barsCard.style.display   = 'none';
+  dom.cafesCard.style.display  = 'none';
 
-  const rBtn = document.getElementById('random-station-btn');
-  rBtn.textContent = '🎲 Random';
-  rBtn.title       = 'Pick random station';
+  dom.randomStationBtn.textContent = '🎲 Random';
+  dom.randomStationBtn.title       = 'Pick random station';
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
@@ -2339,13 +2363,12 @@ function findNearestStation(lat, lng) {
 }
 
 function setLocationHint(msg, isError = false) {
-  const el = document.getElementById('location-hint');
-  el.textContent = msg;
-  el.style.color = isError ? 'var(--muted)' : 'var(--accent2)';
+  dom.locationHint.textContent = msg;
+  dom.locationHint.style.color = isError ? 'var(--muted)' : 'var(--accent2)';
 }
 
 function detectLocation() {
-  const btn = document.getElementById('locate-btn');
+  const btn = dom.locateBtn;
   if (!navigator.geolocation) {
     setLocationHint('📍 Geolocation not supported by this browser', true);
     return;
@@ -2361,9 +2384,8 @@ function detectLocation() {
       const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
       if (!name) { setLocationHint('📍 No station found nearby', true); return; }
       setLocationHint(`📍 Nearest station: ${name} (${dist} m away)`);
-      const input = document.getElementById('station-input');
-      input.value = name;
-      input.classList.add('selected');
+      dom.stationInput.value = name;
+      dom.stationInput.classList.add('selected');
       onStationSelected(name);
     },
     (err) => {
@@ -2384,16 +2406,15 @@ function rollAgainFromHere() {
   if (!dest) return;
 
   // Reset UI
-  document.getElementById('journey-card').style.display = 'none';
-  document.getElementById('map-card').style.display = 'none';
-  document.getElementById('bars-card').style.display = 'none';
-  document.getElementById('cafes-card').style.display = 'none';
-  document.getElementById('destination-card').classList.remove('active');
+  dom.journeyCard.style.display = 'none';
+  dom.mapCard.style.display = 'none';
+  dom.barsCard.style.display = 'none';
+  dom.cafesCard.style.display = 'none';
+  dom.destCard.classList.remove('active');
 
   // Set current station to destination
-  const input = document.getElementById('station-input');
-  input.value = dest.name;
-  input.classList.add('selected');
+  dom.stationInput.value = dest.name;
+  dom.stationInput.classList.add('selected');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const via = state.selectedPlatform?.lineName
     ? { lineName: state.selectedPlatform.lineName, direction: state.selectedPlatform.direction }
@@ -2407,13 +2428,11 @@ function checkLastTrainWarning() {
   const h     = now.getHours();
   const m     = now.getMinutes();
   const today = now.toDateString();
-  const el    = document.getElementById('last-train-warning');
-  if (!el) return;
   const past1130 = h > 23 || (h === 23 && m >= 30);
   if (past1130 && localStorage.getItem('ltw_dismissed') !== today) {
-    el.style.display = '';
+    dom.lastTrainWarning.style.display = '';
   } else if (!past1130) {
-    el.style.display = 'none'; // reset before 11:30pm so it can show again tonight
+    dom.lastTrainWarning.style.display = 'none'; // reset before 11:30pm so it can show again tonight
   }
 }
 
@@ -2436,10 +2455,9 @@ function copyRoute() {
     }
   });
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
-    const btn = document.getElementById('copy-route-btn');
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
+    const orig = dom.copyRouteBtn.textContent;
+    dom.copyRouteBtn.textContent = 'Copied!';
+    setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   }).catch(() => {
     // Fallback: select from a textarea
     const ta = document.createElement('textarea');
@@ -2449,10 +2467,9 @@ function copyRoute() {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
-    const btn = document.getElementById('copy-route-btn');
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 2000);
+    const orig = dom.copyRouteBtn.textContent;
+    dom.copyRouteBtn.textContent = 'Copied!';
+    setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   });
 }
 
@@ -2460,25 +2477,24 @@ function copyRoute() {
 (async function init() {
   setupAutocomplete();
 
-  document.getElementById('random-station-btn').addEventListener('click', () => {
+  dom.randomStationBtn.addEventListener('click', () => {
     if (state.currentStation) resetGame(); else pickRandomStation();
   });
-  document.getElementById('locate-btn').addEventListener('click', detectLocation);
-  document.getElementById('wards23-check').addEventListener('change', e => {
+  dom.locateBtn.addEventListener('click', detectLocation);
+  dom.wards23Check.addEventListener('change', e => {
     state.wards23Only = e.target.checked;
     if (state.currentStation) {
       if (state.wards23Only && !isIn23Wards(state.currentStation.lat, state.currentStation.lng)) {
         // Current station is outside the wards — clear it and prompt to pick again
         state.currentStation = null;
-        const input = document.getElementById('station-input');
-        input.value = '';
-        input.classList.remove('selected');
+        dom.stationInput.value = '';
+        dom.stationInput.classList.remove('selected');
         showStep(null);
-        document.getElementById('journey-card').style.display = 'none';
-        document.getElementById('destination-card').classList.remove('active');
-        document.getElementById('map-card').style.display = 'none';
-        document.getElementById('bars-card').style.display = 'none';
-        document.getElementById('cafes-card').style.display = 'none';
+        dom.journeyCard.style.display = 'none';
+        dom.destCard.classList.remove('active');
+        dom.mapCard.style.display = 'none';
+        dom.barsCard.style.display = 'none';
+        dom.cafesCard.style.display = 'none';
         setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
       } else if (!state.selectedPlatform) {
         onStationSelected(state.currentStation.name);
@@ -2494,25 +2510,25 @@ function copyRoute() {
       }
     }
   });
-  document.getElementById('roll-platform-btn').addEventListener('click', rollPlatform);
-  document.getElementById('reroll-platform-btn').addEventListener('click', rerollPlatform);
-  document.getElementById('roll-stops-btn').addEventListener('click', rollStops);
-  document.getElementById('reroll-stops-btn').addEventListener('click', rerollStops);
-  document.getElementById('show-map-btn').addEventListener('click', showMap);
-  document.getElementById('show-bars-btn').addEventListener('click', showBars);
-  document.getElementById('show-cafes-btn').addEventListener('click', showCafes);
-  document.getElementById('roll-again-btn').addEventListener('click', rollAgainFromHere);
-  document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
-  document.getElementById('copy-route-btn').addEventListener('click', copyRoute);
-  document.getElementById('dismiss-train-warning').addEventListener('click', () => {
-    document.getElementById('last-train-warning').style.display = 'none';
+  dom.rollPlatformBtn.addEventListener('click', rollPlatform);
+  dom.rerollPlatformBtn.addEventListener('click', rerollPlatform);
+  dom.rollStopsBtn.addEventListener('click', rollStops);
+  dom.rerollStopsBtn.addEventListener('click', rerollStops);
+  dom.showMapBtn.addEventListener('click', showMap);
+  dom.showBarsBtn.addEventListener('click', showBars);
+  dom.showCafesBtn.addEventListener('click', showCafes);
+  dom.rollAgainBtn.addEventListener('click', rollAgainFromHere);
+  dom.clearHistoryBtn.addEventListener('click', clearHistory);
+  dom.copyRouteBtn.addEventListener('click', copyRoute);
+  dom.dismissTrainWarning.addEventListener('click', () => {
+    dom.lastTrainWarning.style.display = 'none';
     localStorage.setItem('ltw_dismissed', new Date().toDateString());
   });
-  document.getElementById('stops-cap-check').addEventListener('change', e => {
+  dom.stopsCap.addEventListener('change', e => {
     state.stopsCap = e.target.checked;
     refreshStopsLabel();
   });
-  document.getElementById('stops-cap-value').addEventListener('input', e => {
+  dom.stopsCapValue.addEventListener('input', e => {
     const v = parseInt(e.target.value, 10);
     if (!isNaN(v) && v >= 1) { state.stopsCapValue = v; refreshStopsLabel(); }
   });
