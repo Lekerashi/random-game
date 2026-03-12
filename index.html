@@ -2180,14 +2180,17 @@ function rollAgainFromHere() {
 
 // ── Last train warning ────────────────────────────────────────────────────
 function checkLastTrainWarning() {
-  const h     = new Date().getHours();
-  const today = new Date().toDateString();
+  const now   = new Date();
+  const h     = now.getHours();
+  const m     = now.getMinutes();
+  const today = now.toDateString();
   const el    = document.getElementById('last-train-warning');
   if (!el) return;
-  if (h >= 23 && localStorage.getItem('ltw_dismissed') !== today) {
+  const past1130 = h > 23 || (h === 23 && m >= 30);
+  if (past1130 && localStorage.getItem('ltw_dismissed') !== today) {
     el.style.display = '';
-  } else if (h < 23) {
-    el.style.display = 'none'; // reset before 11pm so it can show again tonight
+  } else if (!past1130) {
+    el.style.display = 'none'; // reset before 11:30pm so it can show again tonight
   }
 }
 
