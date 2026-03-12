@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="html-root">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -567,6 +567,33 @@
     .htp-close                 { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888; line-height: 1; }
     .htp-close:hover           { color: var(--text); }
 
+    /* ── Language Toggle ────────────────────────────── */
+    .lang-toggle-wrap {
+      text-align: center;
+      padding: 0.75rem 1rem 0;
+    }
+    .lang-toggle {
+      display: inline-flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .lang-toggle button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .lang-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
     /* ── Template utility classes ────────────────────── */
     .text-muted   { color: var(--muted); }
     .text-accent  { color: var(--accent); }
@@ -583,45 +610,45 @@
 <!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="spinner"></div>
-  <h1>🎲 Random Game</h1>
-  <div id="loading-status">Loading Tokyo train data…</div>
+  <h1 data-i18n="loadingTitle">🎲 Random Game</h1>
+  <div id="loading-status" data-i18n="loadingData">Loading Tokyo train data…</div>
 </div>
 
 <!-- Main app -->
 <div id="app">
   <header>
-    <h1>🎲 Random Game — Tokyo</h1>
-    <p>Randomly drink your way around Tokyo</p>
+    <h1 data-i18n="headerTitle">🎲 Random Game — Tokyo</h1>
+    <p data-i18n="headerSub">Randomly drink your way around Tokyo</p>
   </header>
 
   <div id="error-banner"></div>
 
   <!-- Last train warning -->
   <div id="last-train-warning" class="last-train-warning">
-    <span>🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!</span>
-    <button class="last-train-dismiss" id="dismiss-train-warning" title="Dismiss">✕</button>
+    <span data-i18n="lastTrainWarn">🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!</span>
+    <button class="last-train-dismiss" id="dismiss-train-warning" data-i18n-title="dismiss" title="Dismiss">✕</button>
   </div>
 
   <!-- Station picker -->
   <div class="card" id="station-card">
-    <div class="card-title">Starting Station</div>
+    <div class="card-title" data-i18n="startingStation">Starting Station</div>
     <div class="station-row">
       <div class="station-input-wrap">
-        <input id="station-input" type="text" placeholder="Search for a station…" autocomplete="off">
+        <input id="station-input" type="text" data-i18n-placeholder="searchStation" placeholder="Search for a station…" autocomplete="off">
         <div id="autocomplete-list"></div>
       </div>
-      <button class="btn btn-secondary" id="locate-btn" title="Use my current location">📍</button>
-      <button class="btn btn-secondary" id="random-station-btn" title="Pick random station">🎲 Random</button>
+      <button class="btn btn-secondary" id="locate-btn" data-i18n-title="useLocation" title="Use my current location">📍</button>
+      <button class="btn btn-secondary" id="random-station-btn" data-i18n-title="pickRandom" title="Pick random station"><span data-i18n="randomBtn">🎲 Random</span></button>
     </div>
     <div class="wards-toggle-row">
       <label class="wards-toggle">
         <input type="checkbox" id="wards23-check">
-        <span>23 Wards only</span>
+        <span data-i18n="wardsOnly">23 Wards only</span>
       </label>
       <span class="stops-cap-inline">
         <label class="wards-toggle">
           <input type="checkbox" id="stops-cap-check">
-          <span>Cap stops at</span>
+          <span data-i18n="capStops">Cap stops at</span>
         </label>
         <input type="number" id="stops-cap-value" class="stops-cap-input" min="1" max="99" value="10">
       </span>
@@ -631,85 +658,85 @@
 
   <!-- Step 1: Roll Train Line -->
   <div class="card step-card" id="step-platforms">
-    <div class="card-title">Step 1 — Roll a Train Line</div>
+    <div class="card-title" data-i18n="step1Title">Step 1 — Roll a Train Line</div>
     <div class="platform-count" id="platform-count-text"></div>
     <div class="platform-grid" id="platform-grid"></div>
     <div class="roll-die-display">
       <div class="die-face" id="die-platform">?</div>
-      <div class="die-label" id="die-platform-label">Roll to pick a train line</div>
+      <div class="die-label" id="die-platform-label" data-i18n="rollTrainLabel">Roll to pick a train line</div>
     </div>
-    <button class="btn btn-roll" id="roll-platform-btn">ROLL TRAIN LINE</button>
+    <button class="btn btn-roll" id="roll-platform-btn" data-i18n="rollTrainBtn">ROLL TRAIN LINE</button>
   </div>
 
   <!-- Step 2: Roll Stops -->
   <div class="card step-card" id="step-stops">
-    <div class="card-title">Step 2 — Roll Stops</div>
+    <div class="card-title" data-i18n="step2Title">Step 2 — Roll Stops</div>
     <div class="platform-banner-row">
       <div id="selected-platform-banner">
         <span id="selected-platform-dot" class="line-dot"></span>
         <span id="selected-platform-text"></span>
       </div>
-      <button class="btn btn-secondary" id="reroll-platform-btn" title="Reroll train line">🔁 Reroll</button>
+      <button class="btn btn-secondary" id="reroll-platform-btn" data-i18n-title="rerollTrainTitle" title="Reroll train line" data-i18n="rerollText">🔁 Reroll</button>
     </div>
     <div class="platform-count" id="stops-range-text"></div>
     <div class="roll-die-display">
       <div class="die-face" id="die-stops">?</div>
-      <div class="die-label" id="die-stops-label">Roll to pick how many stops</div>
+      <div class="die-label" id="die-stops-label" data-i18n="rollStopsLabel">Roll to pick how many stops</div>
     </div>
     <div class="train-type-row" id="train-type-row"></div>
     <div id="roll-stops-row">
-      <button class="btn btn-roll" id="roll-stops-btn">ROLL STOPS</button>
-      <button class="btn btn-secondary" id="reroll-stops-btn" title="Reroll stops">🔁 Reroll</button>
+      <button class="btn btn-roll" id="roll-stops-btn" data-i18n="rollStopsBtn">ROLL STOPS</button>
+      <button class="btn btn-secondary" id="reroll-stops-btn" data-i18n-title="rerollStopsTitle" title="Reroll stops" data-i18n="rerollText">🔁 Reroll</button>
     </div>
   </div>
 
   <!-- Journey / Transfer Check -->
   <div class="card" id="journey-card">
-    <div class="card-title">Checking Transfers</div>
+    <div class="card-title" data-i18n="checkingTransfers">Checking Transfers</div>
     <div id="journey-content"></div>
   </div>
 
   <!-- Destination -->
   <div class="card" id="destination-card">
-    <div class="card-title">Destination</div>
+    <div class="card-title" data-i18n="destination">Destination</div>
     <a class="destination-name" id="dest-name" target="_blank" rel="noopener"></a>
     <div class="destination-sub" id="dest-sub"></div>
     <div class="action-row">
-      <button class="btn btn-ghost" id="show-map-btn">🗺 Map</button>
-      <button class="btn btn-ghost" id="show-bars-btn">🏮 Nearby Bars</button>
-      <button class="btn btn-ghost" id="show-cafes-btn">☕ Nearby Cafes</button>
-      <button class="btn btn-primary" id="roll-again-btn">▶ Roll Again From Here</button>
+      <button class="btn btn-ghost" id="show-map-btn" data-i18n="mapBtn">🗺 Map</button>
+      <button class="btn btn-ghost" id="show-bars-btn" data-i18n="barsBtn">🏮 Nearby Bars</button>
+      <button class="btn btn-ghost" id="show-cafes-btn" data-i18n="cafesBtn">☕ Nearby Cafes</button>
+      <button class="btn btn-primary" id="roll-again-btn" data-i18n="rollAgainBtn">▶ Roll Again From Here</button>
     </div>
   </div>
 
   <!-- Map -->
   <div class="card" id="map-card">
-    <div class="card-title">Map</div>
+    <div class="card-title" data-i18n="mapTitle">Map</div>
     <div id="map"></div>
   </div>
 
   <!-- Bars -->
   <div class="card" id="bars-card">
-    <div class="card-title">Nearby Bars, Pubs &amp; Izakayas</div>
+    <div class="card-title" data-i18n="barsTitle">Nearby Bars, Pubs &amp; Izakayas</div>
     <div id="bars-content"></div>
   </div>
 
   <!-- Cafes -->
   <div class="card" id="cafes-card">
-    <div class="card-title">Nearby Cafes</div>
+    <div class="card-title" data-i18n="cafesTitle">Nearby Cafes</div>
     <div id="cafes-content"></div>
   </div>
 
   <!-- History -->
   <div class="card" id="history-card">
     <div class="card-title history-title-row">
-      <span>Session History</span>
+      <span data-i18n="sessionHistory">Session History</span>
       <div class="history-title-btns">
-        <button class="btn btn-ghost btn-sm" id="copy-route-btn">Copy route</button>
-        <button class="btn btn-ghost btn-sm" id="clear-history-btn">Clear</button>
+        <button class="btn btn-ghost btn-sm" id="copy-route-btn" data-i18n="copyRoute">Copy route</button>
+        <button class="btn btn-ghost btn-sm" id="clear-history-btn" data-i18n="clear">Clear</button>
       </div>
     </div>
-    <div id="history-empty" class="bars-empty">No rounds yet — start rolling!</div>
+    <div id="history-empty" class="bars-empty" data-i18n="noRoundsYet">No rounds yet — start rolling!</div>
     <div class="history-list" id="history-list"></div>
   </div>
 </div>
@@ -1003,6 +1030,534 @@ const state = {
   spatialCell: 0.04,
 };
 
+// ── Internationalization ──────────────────────────────────────────────────
+let currentLang = 'en';
+
+const LINE_NAMES_JA = {
+  // JR
+  'JR Yamanote Line':          'JR山手線',
+  'JR Chuo Line':              'JR中央線（快速）',
+  'JR Chuo Main Line':         'JR中央本線',
+  'JR Chuo-Sobu Line':         'JR中央・総武線',
+  'JR Keihin Tohoku Line':     'JR京浜東北線',
+  'JR Keiyo Line':             'JR京葉線',
+  'JR Saikyo Line':            'JR埼京線',
+  'JR Shonan Shinjuku Line':   'JR湘南新宿ライン',
+  'JR Sobu Line':              'JR総武線',
+  'JR Tokaido Main Line':      'JR東海道本線',
+  'JR Yokosuka Line':          'JR横須賀線',
+  'JR Nambu Line':             'JR南武線',
+  'JR Musashino Line':         'JR武蔵野線',
+  'JR Joban Line':             'JR常磐線',
+  'JR Takasaki Line':          'JR高崎線',
+  'JR Negishi Line':           'JR根岸線',
+  'JR Yokohama Line':          'JR横浜線',
+  'JR Ome Line':               'JR青梅線',
+  'JR Sagami Line':            'JR相模線',
+  'JR Ito Line':               'JR伊東線',
+  'JR Kawagoe Line':           'JR川越線',
+  'JR Uchibo Line':            'JR内房線',
+  'JR Sotobo Line':            'JR外房線',
+  'JR Kururi Line':            'JR久留里線',
+  'JR Narita Line':            'JR成田線',
+  'JR Kashima Line':           'JR鹿島線',
+  'JR Mito Line':              'JR水戸線',
+  'JR Togane Line':            'JR東金線',
+  'JR Tsurumi Line':           'JR鶴見線',
+  'JR Ryomo Line':             'JR両毛線',
+  'JR Hachiaki Line':          'JR八高線',
+  'JR Gotemba Line':           'JR御殿場線',
+  'JR Minobu Line':            'JR身延線',
+  'JR Shinetsu main line':     'JR信越本線',
+  'JR Goto-city line':         'JR五日市線',
+  'Ueno Tokyo Line':           '上野東京ライン',
+  'Utsunomiya Line':           '宇都宮線',
+  // Tokyo Metro
+  'Tokyo Metro Ginza Line':      '東京メトロ銀座線',
+  'Tokyo Metro Marunouchi Line': '東京メトロ丸ノ内線',
+  'Tokyo Metro Hibiya Line':     '東京メトロ日比谷線',
+  'Tokyo Metro Tozai Line':      '東京メトロ東西線',
+  'Tokyo Metro Chiyoda Line':    '東京メトロ千代田線',
+  'Tokyo Metro Yurakucho Line':  '東京メトロ有楽町線',
+  'Tokyo Metro Hanzomon Line':   '東京メトロ半蔵門線',
+  'Tokyo Metro Namboku Line':    '東京メトロ南北線',
+  'Tokyo Metro Fukutoshin Line': '東京メトロ副都心線',
+  // Toei
+  'Toei Asakusa Line':    '都営浅草線',
+  'Toei Mita Line':       '都営三田線',
+  'Toei Shinjuku Line':   '都営新宿線',
+  'Toei Oedo Line':       '都営大江戸線',
+  'Toden Arakawa Line':   '都電荒川線',
+  'Nippori-Toneri Liner': '日暮里・舎人ライナー',
+  // Tokyu
+  'Tokyu Toyoko Line':         '東急東横線',
+  'Tokyu Den-en-toshi Line':   '東急田園都市線',
+  'Tokyu Meguro Line':         '東急目黒線',
+  'Tokyu Oimachi Line':        '東急大井町線',
+  'Tokyu Ikegami Line':        '東急池上線',
+  'Tokyu Tamagawa Line':       '東急多摩川線',
+  'Tokyu Setagaya Line':       '東急世田谷線',
+  'Tokyu Kodomo-no-kuni Line': '東急こどもの国線',
+  'Tokyu Shin-Yokohama Line':  '東急新横浜線',
+  // Keio
+  'Keio Line':             '京王線',
+  'Keio Inokashira line':  '京王井の頭線',
+  'Keio new line':         '京王新線',
+  'Keio Sagamihara line':  '京王相模原線',
+  'Keio Takaoka Line':     '京王高尾線',
+  'Keio Dobutsuen Line':   '京王動物園線',
+  'Keio Racecourse Line':  '京王競馬場線',
+  // Odakyu
+  'Odakyu Line':          '小田急小田原線',
+  'Odakyu Enoshima Line': '小田急江ノ島線',
+  'Odakyu Tama Line':     '小田急多摩線',
+  // Seibu
+  'Seibu Ikebukuro Line':  '西武池袋線',
+  'Seibu Shinjuku Line':   '西武新宿線',
+  'Seibu Haijima Line':    '西武拝島線',
+  'Seibu Kokubunji Line':  '西武国分寺線',
+  'Seibu Tamaegawa Line':  '西武多摩川線',
+  'Seibu Tama Lake Line':  '西武多摩湖線',
+  'Seibu Sayama Line':     '西武狭山線',
+  'Seibu Chichibu Line':   '西武秩父線',
+  'Seibu Yurakucho Line':  '西武有楽町線',
+  'Seibu Toshima Line':    '西武豊島線',
+  'Seibu Seibu-en Line':   '西武西武園線',
+  'Leo Liner':             'レオライナー',
+  // Tobu
+  'Tobu Isesaki Line':     '東武スカイツリーライン',
+  'Tobu Tojo Line':        '東武東上線',
+  'Tobu Nikko Line':       '東武日光線',
+  'Tobu Noda line':        '東武アーバンパークライン',
+  'Tobu Kameido Line':     '東武亀戸線',
+  'Tobu Daishi Line':      '東武大師線',
+  'Tobu Ogose Line':       '東武越生線',
+  'Tobu Kiryu Line':       '東武桐生線',
+  'Tobu Koizumi Line':     '東武小泉線',
+  'Tobu Sano Line':        '東武佐野線',
+  'Tobu Utsunomiya Line':  '東武宇都宮線',
+  // Keisei
+  'Keisei Main Line':      '京成本線',
+  'Keisei Oshiage Line':   '京成押上線',
+  'Keisei Kanamachi Line': '京成金町線',
+  'Keisei Chiba Line':     '京成千葉線',
+  'Keisei Chihara Line':   '京成千原線',
+  'Narita Sky Access':     '成田スカイアクセス',
+  // Keikyu
+  'Keikyu Main Line':     '京急本線',
+  'Keikyu Airport Line':  '京急空港線',
+  'Keikyu Daisen Line':   '京急大師線',
+  'Keikyu Kurihama Line': '京急久里浜線',
+  'Keikyu Zushi Line':    '京急逗子線',
+  // Sotetsu
+  'Sotetsu Main Line':           '相鉄本線',
+  'Sotetsu Izumino Line':        '相鉄いずみ野線',
+  'Sotetsu Shin-Yokohama Line':  '相鉄新横浜線',
+  // Other
+  'Rinkai Line':           'りんかい線',
+  'Tsukuba Express':       'つくばエクスプレス',
+  'Yurikamome':            'ゆりかもめ',
+  'Tokyo monorail':        '東京モノレール',
+  'Tama Monorail':         '多摩モノレール',
+  'Minato Mirai Line':     'みなとみらい線',
+  'Kanazawa Seaside Line': '金沢シーサイドライン',
+  'Hokuso Railway Hokuso Line':  '北総鉄道北総線',
+  'Shin-Keisei Line':           '新京成線',
+  'Toyo Rapid Railway Line':    '東葉高速鉄道線',
+  'Shibayama Railway Line':     '芝山鉄道線',
+  'Saitama high-speed rail line': '埼玉高速鉄道線',
+  'New shuttle':                 'ニューシャトル',
+  'Shonan Monorail':             '湘南モノレール',
+  'Enoshima Railway Line':       '江ノ島電鉄',
+  'Hakone Tozan Railway':        '箱根登山鉄道',
+  'Hakone Tozan Cable Car':      '箱根登山ケーブルカー',
+  'Blue Line':                   '横浜市営ブルーライン',
+  'Green line':                  '横浜市営グリーンライン',
+  'Chichibu Railway Chichibu Line': '秩父鉄道秩父本線',
+  'Fuji Express Line':           '富士急行線',
+  'Izuhakone Railway Sunzu Line':    '伊豆箱根鉄道駿豆線',
+  'Izuhakone Railway Daiyuzan Line': '伊豆箱根鉄道大雄山線',
+  'Gakunan Railway':              '岳南電車',
+  'Joshin Electric Railway':      '上信電鉄',
+  'Jomo Dentetsu Jomo Line':      '上毛電気鉄道上毛線',
+  'Kanto Railway Joso Line':      '関東鉄道常総線',
+  'Kanto Railway Ryugasaki Line': '関東鉄道竜ヶ崎線',
+  'Ryutetsu Nagareyama Line':     '流鉄流山線',
+  'Moka Tetsudo Moka Line':       '真岡鉄道真岡線',
+  'Hitachinaka Seaside Railway Minato Line': 'ひたちなか海浜鉄道湊線',
+  'Kashima Rinkai Railway Oarai-Kashima Line': '鹿島臨海鉄道大洗鹿島線',
+  'Chiba City Monorail 1 Line':  '千葉都市モノレール1号線',
+  'Chiba City Monorail Line 2':  '千葉都市モノレール2号線',
+  'Kominato Railroad Line':      '小湊鉄道線',
+  'Isumi Railway':               'いすみ鉄道',
+  'Choshi Electric Railway Line': '銚子電鉄',
+  'Yukarigaoka Line':            'ユーカリが丘線',
+};
+
+// Get display name for a line — Japanese when in JP mode
+function lineDisplayName(englishName) {
+  if (currentLang === 'ja' && LINE_NAMES_JA[englishName]) return LINE_NAMES_JA[englishName];
+  return englishName;
+}
+
+const translations = {
+  en: {
+    // Page / loading
+    pageTitle:            'Random Game — Tokyo',
+    loadingTitle:         '🎲 Random Game',
+    loadingData:          'Loading Tokyo train data…',
+    checkingCache:        'Checking cache…',
+    fetchingOSM:          'Fetching station name corrections from OpenStreetMap…',
+    loadingCache:         'Loading from cache…',
+    loadingTrain:         'Loading train data…',
+    // Header
+    headerTitle:          '🎲 Random Game — Tokyo',
+    headerSub:            'Randomly drink your way around Tokyo',
+    // Errors
+    errorLoad:            'Failed to load train data: {msg}. Check your internet connection and reload.',
+    errorEmpty:           'Could not load train data. Please reload.',
+    // Last train
+    lastTrainWarn:        '🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!',
+    dismiss:              'Dismiss',
+    // Station picker
+    startingStation:      'Starting Station',
+    searchStation:        'Search for a station…',
+    useLocation:          'Use my current location',
+    pickRandom:           'Pick random station',
+    wardsOnly:            '23 Wards only',
+    capStops:             'Cap stops at',
+    // Step 1
+    step1Title:           'Step 1 — Roll a Train Line',
+    rollTrainLabel:       'Roll to pick a train line',
+    rollTrainBtn:         'ROLL TRAIN LINE',
+    rerollTrainTitle:     'Reroll train line',
+    // Step 2
+    step2Title:           'Step 2 — Roll Stops',
+    rollStopsLabel:       'Roll to pick how many stops',
+    rollStopsBtn:         'ROLL STOPS',
+    rerollStopsTitle:     'Reroll stops',
+    // Journey
+    checkingTransfers:    'Checking Transfers',
+    transferBadge:        'Transfer',
+    destBadge:             'DEST',
+    rollBtnLabel:         'ROLL',
+    stayResult:           'Stay',
+    transferResult:       'Transfer!',
+    drinkResult:          'Drink!',
+    // Destination
+    destination:          'Destination',
+    mapBtn:               '🗺 Map',
+    barsBtn:              '🏮 Nearby Bars',
+    cafesBtn:             '☕ Nearby Cafes',
+    rollAgainBtn:         '▶ Roll Again From Here',
+    // Map / Bars / Cafes
+    mapTitle:             'Map',
+    barsTitle:            'Nearby Bars, Pubs & Izakayas',
+    cafesTitle:           'Nearby Cafes',
+    searchingBars:        'Searching for nearby bars & izakayas…',
+    searchingCafes:       'Searching for nearby cafes…',
+    noBars:               'No bars or izakayas found within 500 m — try exploring!',
+    noCafes:              'No cafes found within 500 m — try exploring!',
+    fetchBarFail:         'Could not fetch bar data: {msg}',
+    fetchCafeFail:        'Could not fetch cafe data: {msg}',
+    // History
+    sessionHistory:       'Session History',
+    copyRoute:            'Copy route',
+    clear:                'Clear',
+    noRoundsYet:          'No rounds yet — start rolling!',
+    copied:               'Copied!',
+    copyFailed:           'Copy failed',
+    // Dynamic labels
+    platformCount:        '{n} train line{s} at {name} — rolling 1–{total}',
+    rollingStops:         'Rolling 1–{max} stop{s}',
+    selectTrainType:      'Select train type · Rolling 1–{max} stops (local)',
+    trainTypeStops:       '{name} ({ja}) · Rolling 1–{max} stop{s}',
+    stopsResult:          '{n} stop{s}',
+    stopsFrom:            '{n} stop{s} from {station}',
+    maxStopsHint:         'Max stops: {n}',
+    platformsAvail:       '{n} platform{s} available',
+    // Geolocation
+    geoNotSupported:      '📍 Geolocation not supported by this browser',
+    geoDetecting:         '📍 Detecting your location…',
+    geoNoStation:         '📍 No station found nearby',
+    geoNearest:           '📍 Nearest station: {name} ({dist} m away)',
+    geoDenied:            'Location access denied — search manually',
+    geoUnavailable:       'Location unavailable — search manually',
+    geoTimeout:           'Location timed out — search manually',
+    outsideWards:         'Current station is outside the 23 wards — please pick a new one.',
+    // Special rolls
+    flightRoll:           '#{n} → ✈️ Take a flight!',
+    drinkRoll:            '#{n} → 🍻 Drink here!',
+    flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
+    drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
+    stayingForDrink:      '🍻 Staying for a drink',
+    drinkAtTransfer:      '🍻 Drink here! (transfer roll on {line}{type})',
+    // Platform pills
+    drinkHereLabel:       'Drink here!',
+    takeFlightLabel:      'Take a flight!',
+    // Directions
+    loopCCW:              'Loop Counterclockwise',
+    loopCW:               'Loop Clockwise',
+    towardStation:        'toward {name}',
+    clockwise:            'Clockwise',
+    counterclockwise:     'Counterclockwise',
+    // Button states
+    newGame:              '🔄 New Game',
+    newGameTitle:         'Start a new game',
+    randomBtn:            '🎲 Random',
+    // Copy route header
+    copyRouteHeader:      '🗼 Tokyo Random Game — {date}',
+    tookFlight:           '✈️ took a flight — bon voyage!',
+    stayedForDrink:       '🍻 stayed for a drink',
+    drinkRollHistory:     '🍻 drink roll',
+    transferHistory:      '🔀 transfer',
+    // How to play
+    howToPlay:            'How to Play',
+    htpStep1:             '<strong>Pick your starting station</strong> — use your location, search for one, or go random.',
+    htpStep2:             '<strong>Roll a train</strong> — you\'ll get a random line and direction.',
+    htpStep3:             '<strong>Go to the platform</strong> and board the next train that arrives.',
+    htpStep4:             '<strong>Roll for stops</strong> — ride that many stations.',
+    htpStep5:             '<strong>Roll for transfers</strong> — as you ride, if a station has transfers, roll to see if you transfer or stay on.',
+    htpStep6:             '<strong>Get off and drink!</strong>',
+    htpStep7:             '<strong>Go back to the station</strong> and do it all again!',
+    htpGoal:              'The goal of the game is simply to explore Tokyo and drink in new places!',
+    // Footer
+    footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
+    // Reroll button text
+    rerollText:           '🔁 Reroll',
+  },
+  ja: {
+    pageTitle:            'ランダムゲーム — 東京',
+    loadingTitle:         '🎲 ランダムゲーム',
+    loadingData:          '東京の鉄道データを読み込み中…',
+    checkingCache:        'キャッシュを確認中…',
+    fetchingOSM:          'OpenStreetMapから駅名を取得中…',
+    loadingCache:         'キャッシュから読み込み中…',
+    loadingTrain:         '鉄道データを読み込み中…',
+    headerTitle:          '🎲 ランダムゲーム — 東京',
+    headerSub:            '東京をランダムに飲み歩こう',
+    errorLoad:            '鉄道データの読み込みに失敗しました: {msg}。ネット接続を確認してリロードしてください。',
+    errorEmpty:           '鉄道データを読み込めませんでした。ページをリロードしてください。',
+    lastTrainWarn:        '🚃 終電が近いです — 次の移動前にスケジュールを確認するか、始発までバーで過ごしましょう！',
+    dismiss:              '閉じる',
+    startingStation:      '出発駅',
+    searchStation:        '駅を検索…',
+    useLocation:          '現在地を使用',
+    pickRandom:           'ランダムに選ぶ',
+    wardsOnly:            '23区内のみ',
+    capStops:             '最大駅数',
+    step1Title:           'ステップ1 — 路線を引く',
+    rollTrainLabel:       'サイコロを振って路線を選ぶ',
+    rollTrainBtn:         '路線を振る',
+    rerollTrainTitle:     '路線を振り直す',
+    step2Title:           'ステップ2 — 駅数を引く',
+    rollStopsLabel:       'サイコロを振って駅数を選ぶ',
+    rollStopsBtn:         '駅数を振る',
+    rerollStopsTitle:     '駅数を振り直す',
+    checkingTransfers:    '乗り換えチェック',
+    transferBadge:        '乗換',
+    destBadge:            '目的地',
+    rollBtnLabel:         '振る',
+    stayResult:           'そのまま',
+    transferResult:       '乗り換え！',
+    drinkResult:          '飲む！',
+    destination:          '目的地',
+    mapBtn:               '🗺 地図',
+    barsBtn:              '🏮 近くのバー',
+    cafesBtn:             '☕ 近くのカフェ',
+    rollAgainBtn:         '▶ ここからもう一度',
+    mapTitle:             '地図',
+    barsTitle:            '近くのバー・居酒屋',
+    cafesTitle:           '近くのカフェ',
+    searchingBars:        '近くのバー・居酒屋を検索中…',
+    searchingCafes:       '近くのカフェを検索中…',
+    noBars:               '500m以内にバー・居酒屋が見つかりませんでした — 探検してみてください！',
+    noCafes:              '500m以内にカフェが見つかりませんでした — 探検してみてください！',
+    fetchBarFail:         'バーデータの取得に失敗しました: {msg}',
+    fetchCafeFail:        'カフェデータの取得に失敗しました: {msg}',
+    sessionHistory:       'セッション履歴',
+    copyRoute:            'ルートをコピー',
+    clear:                'クリア',
+    noRoundsYet:          'まだラウンドなし — さあ振ろう！',
+    copied:               'コピー完了！',
+    copyFailed:           'コピー失敗',
+    platformCount:        '{name}で{n}路線 — 1〜{total}を振る',
+    rollingStops:         '1〜{max}駅を振る',
+    selectTrainType:      '種別を選択 · 1〜{max}駅（各停）',
+    trainTypeStops:       '{name}（{ja}）· 1〜{max}駅',
+    stopsResult:          '{n}駅',
+    stopsFrom:            '{station}から{n}駅',
+    maxStopsHint:         '最大駅数: {n}',
+    platformsAvail:       '{n}ホーム',
+    geoNotSupported:      '📍 このブラウザはジオロケーションに対応していません',
+    geoDetecting:         '📍 現在地を検出中…',
+    geoNoStation:         '📍 近くに駅が見つかりませんでした',
+    geoNearest:           '📍 最寄り駅: {name}（{dist}m先）',
+    geoDenied:            '位置情報のアクセスが拒否されました — 手動で検索してください',
+    geoUnavailable:       '位置情報が利用できません — 手動で検索してください',
+    geoTimeout:           '位置情報の取得がタイムアウトしました — 手動で検索してください',
+    outsideWards:         '現在の駅は23区外です — 別の駅を選んでください。',
+    flightRoll:           '#{n} → ✈️ フライトに乗ろう！',
+    drinkRoll:            '#{n} → 🍻 ここで飲もう！',
+    flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
+    drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
+    stayingForDrink:      '🍻 ここで一杯',
+    drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
+    drinkHereLabel:       'ここで飲もう！',
+    takeFlightLabel:      'フライトに乗ろう！',
+    loopCCW:              '反時計回り',
+    loopCW:               '時計回り',
+    towardStation:        '{name}方面',
+    clockwise:            '時計回り',
+    counterclockwise:     '反時計回り',
+    newGame:              '🔄 ニューゲーム',
+    newGameTitle:         '新しいゲームを始める',
+    randomBtn:            '🎲 ランダム',
+    copyRouteHeader:      '🗼 東京ランダムゲーム — {date}',
+    tookFlight:           '✈️ フライトに乗った — 良い旅を！',
+    stayedForDrink:       '🍻 ここで一杯',
+    drinkRollHistory:     '🍻 飲みロール',
+    transferHistory:      '🔀 乗り換え',
+    howToPlay:            '遊び方',
+    htpStep1:             '<strong>出発駅を選ぶ</strong> — 現在地を使うか、検索するか、ランダムで。',
+    htpStep2:             '<strong>路線を振る</strong> — ランダムな路線と方向が決まります。',
+    htpStep3:             '<strong>ホームに行って</strong>、次に来る電車に乗りましょう。',
+    htpStep4:             '<strong>駅数を振る</strong> — その数だけ乗ります。',
+    htpStep5:             '<strong>乗り換えを振る</strong> — 乗り換え駅では、サイコロで乗り換えるかそのまま乗るか決めます。',
+    htpStep6:             '<strong>降りて飲もう！</strong>',
+    htpStep7:             '<strong>駅に戻って</strong>、もう一度始めましょう！',
+    htpGoal:              'ゲームの目的は、東京を探検して新しい場所で飲むことです！',
+    footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
+    rerollText:           '🔁 振り直し',
+  },
+};
+
+function t(key, params) {
+  let str = translations[currentLang]?.[key] || translations.en[key] || key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+    }
+  }
+  return str;
+}
+
+// Pluralization helper — returns '' or 's' based on n (only needed for EN)
+function pl(n) { return currentLang === 'en' && n !== 1 ? 's' : ''; }
+
+function applyLang() {
+  // Static elements with data-i18n attribute
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    el.innerHTML = t(key);
+  });
+  // Placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  // Title attributes
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  // Page title
+  document.title = t('pageTitle');
+  // HTML lang
+  document.getElementById('html-root').lang = currentLang === 'ja' ? 'ja' : 'en';
+  // Update toggle buttons
+  document.querySelectorAll('.lang-toggle button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === currentLang);
+  });
+}
+
+function switchLang(lang) {
+  if (lang === currentLang) return;
+  currentLang = lang;
+  applyLang();
+  // Refresh New Game / Random button
+  if (state.currentStation) {
+    dom.randomStationBtn.innerHTML = t('newGame');
+    dom.randomStationBtn.title = t('newGameTitle');
+  } else {
+    dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
+    dom.randomStationBtn.title = t('pickRandom');
+  }
+  // Re-render dynamic content that's currently visible
+  if (state.currentStation && state.platforms.length > 0) {
+    // Refresh platform count text
+    const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight).length;
+    const total = state.platforms.length + (state.extraDrinkNums || 0);
+    dom.platformCountText.textContent = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
+    // Refresh platform grid labels
+    refreshPlatformGrid();
+  }
+  // Refresh selected platform display
+  if (state.selectedPlatform && state.rolledPlatformNum) {
+    const p = state.selectedPlatform;
+    const roll = state.rolledPlatformNum;
+    if (p.drinkHere) {
+      dom.diePlatformLabel.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
+    } else if (p.takeFlight) {
+      dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
+    } else {
+      const pLabel = platformLabel(p);
+      const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+      const ln = lineDisplayName(p.lineName);
+      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
+        <br><small class="text-muted">${t('maxStopsHint', { n: p.maxStops })}</small>`;
+      dom.selectedPlatformText.innerHTML =
+        `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+    }
+  }
+  // Refresh stops range if visible
+  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
+    refreshStopsLabel();
+  }
+  // Refresh stops die label
+  if (state.rolledStops != null) {
+    dom.dieStopsLabel.innerHTML = `<strong>${t('stopsResult', { n: state.rolledStops, s: pl(state.rolledStops) })}</strong>`;
+  }
+  // Refresh destination subtitle
+  if (state.destination && state.selectedPlatform) {
+    const p = state.selectedPlatform;
+    if (p.takeFlight) {
+      dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
+    } else if (p.drinkHere) {
+      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}<div class="drink-hint">${t('drinkHint')}</div>`;
+    } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
+      // drink at transfer — handled above
+    } else {
+      const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
+      dom.destSub.innerHTML =
+        `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`;
+    }
+  }
+  // Re-render history
+  renderHistory();
+}
+
+function refreshPlatformGrid() {
+  const extraDrinkNums = state.extraDrinkNums || 0;
+  dom.platformGrid.innerHTML = state.platforms.map((p, i) =>
+    p.drinkHere
+      ? `<div class="platform-pill drink-here">
+           <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
+           <span>🍻</span>
+           <span>${t('drinkHereLabel')}</span>
+         </div>`
+      : p.takeFlight
+      ? `<div class="platform-pill take-flight">
+           <span class="platform-num">${i + 1}</span>
+           <span>✈️</span>
+           <span>${t('takeFlightLabel')}</span>
+         </div>`
+      : `<div class="platform-pill">
+           <span class="platform-num">${i + 1}</span>
+           <span class="line-dot" style="background:${p.lineColor}"></span>
+           <span>${lineDisplayName(p.lineName)}<br><small class="text-muted">${platformHint(p)}</small></span>
+         </div>`
+  ).join('');
+}
+
 // ── Cached DOM references ─────────────────────────────────────────────────
 const dom = {
   // Loading
@@ -1150,7 +1705,7 @@ async function fetchOSMNames() {
 }
 
 async function loadData() {
-  setLoadingStatus('Checking cache…');
+  setLoadingStatus(t('checkingCache'));
 
   // ── Try localStorage cache ─────────────────────────────────────────────
   let cachedLines = null, cachedOsmNames = null;
@@ -1169,7 +1724,7 @@ async function loadData() {
     // Topology is cached; fetch OSM names if they weren't cached yet
     let osmNames = cachedOsmNames || {};
     if (!cachedOsmNames) {
-      setLoadingStatus('Fetching station name corrections from OpenStreetMap…');
+      setLoadingStatus(t('fetchingOSM'));
       try {
         osmNames = await fetchOSMNames();
         // Patch the existing cache entry with the freshly fetched OSM names
@@ -1178,14 +1733,14 @@ async function loadData() {
         localStorage.setItem(CACHE_KEY, JSON.stringify(existing));
       } catch (e) { console.warn('OSM name fetch failed, using built-in fixes:', e); }
     } else {
-      setLoadingStatus('Loading from cache…');
+      setLoadingStatus(t('loadingCache'));
     }
     buildIndex(cachedLines, osmNames);
     return;
   }
 
   // ── Fetch everything fresh (first load) ───────────────────────────────
-  setLoadingStatus('Loading train data…');
+  setLoadingStatus(t('loadingTrain'));
   let lines, osmNames;
   try {
     // Run both fetches in parallel — pre-built topology (~315 KB) + OSM names (~200 KB)
@@ -1194,12 +1749,12 @@ async function loadData() {
       fetchOSMNames().catch(e => { console.warn('OSM name fetch failed, using built-in fixes:', e); return {}; }),
     ]);
   } catch (err) {
-    showError(`Failed to load train data: ${err.message}. Check your internet connection and reload.`);
+    showError(t('errorLoad', { msg: err.message }));
     return;
   }
 
   if (!lines?.length) {
-    showError('Could not load train data. Please reload.');
+    showError(t('errorEmpty'));
     return;
   }
 
@@ -1323,6 +1878,35 @@ function wardMaxStops(line, fromIdx, step) {
   return N - 1;
 }
 
+// Look up the Japanese name of a station from its English name
+function stationJa(englishName) {
+  const entries = state.stationIndex[normalize(englishName)];
+  if (!entries || !entries.length) return englishName;
+  return state.lines[entries[0].lineIdx].stations[entries[0].stationIdx].ja || englishName;
+}
+
+// Display name for a station — Japanese when in JP mode, English otherwise
+function stationDisplayName(englishName) {
+  if (currentLang === 'ja') return stationJa(englishName);
+  return englishName;
+}
+
+// Compute display label and hint for a platform using i18n
+function platformLabel(p) {
+  const ln = lineDisplayName(p.lineName);
+  if (p.dirKey === 'loopCCW')         return `${ln} — ${t('loopCCW')}`;
+  if (p.dirKey === 'loopCW')          return `${ln} — ${t('loopCW')}`;
+  if (p.dirKey === 'clockwise')       return `${ln} — ${t('clockwise')}`;
+  if (p.dirKey === 'counterclockwise') return `${ln} — ${t('counterclockwise')}`;
+  if (p.dirKey === 'toward')          return `${ln} — ${t('towardStation', { name: stationDisplayName(p.dirStation) })}`;
+  return ln;
+}
+function platformHint(p) {
+  const arrow = (p.direction === 'start' || p.direction === 'A') ? '←' : '→';
+  const target = p.hintStation || p.dirStation;
+  return `${arrow} ${t('towardStation', { name: stationDisplayName(target) })}`;
+}
+
 function getPlatforms(stationName) {
   const key = normalize(stationName);
   const entries = [...(state.stationIndex[key] || [])];
@@ -1347,22 +1931,19 @@ function getPlatforms(stationName) {
       const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1))    : loopMid;
       const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)): stemLen;
       if (maxCCW > 0) platforms.push({
-        label:    `${line.name} — Loop Counterclockwise`,
-        hint:     `→ toward ${line.stations[1].name}`,
+        dirKey: 'loopCCW', dirStation: line.stations[1].name,
         lineColor: line.color, lineName: line.name,
         circular: false, direction: 'end',
         fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCCW,
       });
       if (maxCW > 0) platforms.push({
-        label:    `${line.name} — Loop Clockwise`,
-        hint:     `← toward ${line.stations[loopEnd - 1].name}`,
+        dirKey: 'loopCW', dirStation: line.stations[loopEnd - 1].name,
         lineColor: line.color, lineName: line.name,
         circular: false, direction: 'start',
         fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCW,
       });
       if (maxStem > 0) platforms.push({
-        label:    `${line.name} — toward Hikarigaoka`,
-        hint:     `→ toward ${line.stations[N - 1].name}`,
+        dirKey: 'toward', dirStation: 'Hikarigaoka', hintStation: line.stations[N - 1].name,
         lineColor: line.color, lineName: line.name,
         circular: false, direction: 'end',
         fromIdx: loopEnd - 1, lineIdx: entry.lineIdx, maxStops: maxStem,
@@ -1378,8 +1959,7 @@ function getPlatforms(stationName) {
       const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
 
       if (maxA > 0) platforms.push({
-        label:    `${line.name} — Clockwise`,
-        hint:     `← toward ${majorA}`,
+        dirKey: 'clockwise', dirStation: majorA,
         lineColor: line.color,
         lineName:  line.name,
         circular:  true,
@@ -1389,8 +1969,7 @@ function getPlatforms(stationName) {
         maxStops:  maxA,
       });
       if (maxB > 0) platforms.push({
-        label:    `${line.name} — Counterclockwise`,
-        hint:     `→ toward ${majorB}`,
+        dirKey: 'counterclockwise', dirStation: majorB,
         lineColor: line.color,
         lineName:  line.name,
         circular:  true,
@@ -1404,8 +1983,7 @@ function getPlatforms(stationName) {
       if (si > 0) {
         const maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
         if (maxS > 0) platforms.push({
-          label:    `${line.name} — toward ${line.stations[0].name}`,
-          hint:     `← toward ${findMajorStation(line, si, 'start')}`,
+          dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
           lineColor: line.color,
           lineName:  line.name,
           circular:  false,
@@ -1419,8 +1997,7 @@ function getPlatforms(stationName) {
       if (si < N - 1) {
         const maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
         if (maxE > 0) platforms.push({
-          label:    `${line.name} — toward ${line.stations[N - 1].name}`,
-          hint:     `→ toward ${findMajorStation(line, si, 'end')}`,
+          dirKey: 'toward', dirStation: line.stations[N - 1].name, hintStation: findMajorStation(line, si, 'end'),
           lineColor: line.color,
           lineName:  line.name,
           circular:  false,
@@ -1621,11 +2198,11 @@ function onStationSelected(name, arrivedVia) {
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
 
   // Clear any ward-restriction warning now that a valid station is chosen
-  if (dom.locationHint.textContent.includes('outside the 23 wards')) dom.locationHint.textContent = '';
+  if (dom.locationHint.textContent.includes('23') && (dom.locationHint.textContent.includes('wards') || dom.locationHint.textContent.includes('区'))) dom.locationHint.textContent = '';
 
   // Switch button to "New Game" mode
-  dom.randomStationBtn.textContent = '🔄 New Game';
-  dom.randomStationBtn.title = 'Start a new game';
+  dom.randomStationBtn.innerHTML = t('newGame');
+  dom.randomStationBtn.title = t('newGameTitle');
 
   // Capture whether the last roll was a drink before resetting
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
@@ -1634,6 +2211,7 @@ function onStationSelected(name, arrivedVia) {
   state.selectedPlatform = null;
   state.selectedTrainType = null;
   state.rolledStops = null;
+  state.rolledPlatformNum = null;
   state.destination = null;
   hideAllCards();
   dom.rollAgainBtn.style.display = '';
@@ -1645,8 +2223,8 @@ function onStationSelected(name, arrivedVia) {
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
-  dom.diePlatformLabel.innerHTML = 'Roll to pick a train line';
-  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
+  dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
+  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollPlatformBtn.disabled = false;
   dom.rollStopsBtn.disabled = true;
   dom.rerollPlatformBtn.style.display = 'none';
@@ -1687,28 +2265,9 @@ function onStationSelected(name, arrivedVia) {
   const total     = state.platforms.length + extraDrinkNums;
 
   // Render platform grid
-  dom.platformGrid.innerHTML = state.platforms.map((p, i) =>
-    p.drinkHere
-      ? `<div class="platform-pill drink-here">
-           <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
-           <span>🍻</span>
-           <span>Drink here!</span>
-         </div>`
-      : p.takeFlight
-      ? `<div class="platform-pill take-flight">
-           <span class="platform-num">${i + 1}</span>
-           <span>✈️</span>
-           <span>Take a flight!</span>
-         </div>`
-      : `<div class="platform-pill">
-           <span class="platform-num">${i + 1}</span>
-           <span class="line-dot" style="background:${p.lineColor}"></span>
-           <span>${p.lineName}<br><small class="text-muted">${p.hint}</small></span>
-         </div>`
-  ).join('');
+  refreshPlatformGrid();
 
-  dom.platformCountText.textContent =
-    `${lineCount} train line${lineCount !== 1 ? 's' : ''} at ${name} — rolling 1–${total}`;
+  dom.platformCountText.textContent = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(name), total });
 
   showStep('step-platforms');
 }
@@ -1722,11 +2281,12 @@ function rollPlatform() {
     // Extra drink numbers map to the drink-here platform
     const idx = roll > state.platforms.length ? state.platforms.length - 1 : roll - 1;
     state.selectedPlatform = state.platforms[idx];
+    state.rolledPlatformNum = roll;
     const p = state.selectedPlatform;
 
     // ── Take a flight! ────────────────────────────────────────────────────
     if (p.takeFlight) {
-      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ✈️ Take a flight!</strong>`;
+      dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
       // No reroll — game over!
 
       state.destination = state.currentStation;
@@ -1736,7 +2296,7 @@ function rollPlatform() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       dom.destSub.innerHTML =
         `${state.currentStation.ja}<br>` +
-        `<span class="flight-msg">✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!</span>`;
+        `<span class="flight-msg">${t('flightMsg')}</span>`;
       // Hide all action buttons — no rolling from here
       dom.rollAgainBtn.style.display = 'none';
       dom.showBarsBtn.style.display = 'none';
@@ -1749,7 +2309,7 @@ function rollPlatform() {
 
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
-      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → 🍻 Drink here!</strong>`;
+      dom.diePlatformLabel.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
       dom.rerollPlatformBtn.style.display = 'block';
 
       // Use current station as destination
@@ -1759,8 +2319,8 @@ function rollPlatform() {
       dom.destName.textContent = state.currentStation.name;
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       dom.destSub.innerHTML =
-        `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`
-        + `<div class="drink-hint">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
+        `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}`
+        + `<div class="drink-hint">${t('drinkHint')}</div>`;
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -1771,13 +2331,16 @@ function rollPlatform() {
     }
 
     // ── Normal train line ─────────────────────────────────────────────────
-    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
-      <br><small class="text-muted">Max stops: ${p.maxStops}</small>`;
+    const pLabel = platformLabel(p);
+    const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+    const ln = lineDisplayName(p.lineName);
+    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
+      <br><small class="text-muted">${t('maxStopsHint', { n: p.maxStops })}</small>`;
 
     // Show which platform was rolled
     dom.selectedPlatformDot.style.background = p.lineColor;
     dom.selectedPlatformText.innerHTML =
-      `<strong>#${roll} — ${p.lineName}</strong><br><span class="text-muted">${p.label.split('—').slice(1).join('—').trim()}</span>`;
+      `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
 
     dom.rerollPlatformBtn.style.display = 'block';
     state.selectedTrainType = null;
@@ -1785,7 +2348,7 @@ function rollPlatform() {
     // Check for express services — show type buttons or normal ROLL STOPS
     if (!showTrainTypeButtons(p)) {
       const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-      dom.stopsRangeText.textContent = `Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
+      dom.stopsRangeText.textContent = t('rollingStops', { max: cappedMax, s: pl(cappedMax) });
       dom.rollStopsBtn.disabled = false;
     }
 
@@ -1801,8 +2364,8 @@ function rerollPlatform() {
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
-  dom.diePlatformLabel.innerHTML = 'Roll to pick a train line';
-  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
+  dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
+  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollStopsBtn.disabled = true;
   dom.rerollStopsBtn.style.display = 'none';
   dom.trainTypeRow.style.display = 'none';
@@ -1819,7 +2382,7 @@ function rerollStops() {
   hideAllCards();
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
-  dom.dieStopsLabel.innerHTML = 'Roll to pick how many stops';
+  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
 
   // If express services, show type buttons again; otherwise just reroll
   state.selectedTrainType = null;
@@ -1868,14 +2431,13 @@ function showTrainTypeButtons(p) {
       const maxS = trainTypes[i].expressIndices
         ? getExpressMaxStops(p, trainTypes[i].expressIndices) : p.maxStops;
       const cappedMax = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
-      dom.stopsRangeText.textContent =
-        `${trainTypes[i].name} (${trainTypes[i].ja}) · Rolling 1–${cappedMax} stop${cappedMax !== 1 ? 's' : ''}`;
+      dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: cappedMax, s: pl(cappedMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
   });
   const cappedMax = state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops;
-  dom.stopsRangeText.textContent = `Select train type · Rolling 1–${cappedMax} stops (local)`;
+  dom.stopsRangeText.textContent = t('selectTrainType', { max: cappedMax });
   return true;
 }
 
@@ -1886,7 +2448,7 @@ function refreshStopsLabel() {
     ? getExpressMaxStops(state.selectedPlatform, ei)
     : state.selectedPlatform.maxStops;
   const max = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
-  dom.stopsRangeText.textContent = `Rolling 1–${max} stop${max !== 1 ? 's' : ''}`;
+  dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
 }
 
 // ── Transfer Check ─────────────────────────────────────────────────────────
@@ -1987,9 +2549,9 @@ async function checkTransfers(platform, rolledStops) {
     return `<div class="journey-station" id="jstn-${i}">
       <span class="journey-num">${i + 1}</span>
       <span class="journey-name">${stn.name}${stn.ja ? ` <small class="text-muted">${stn.ja}</small>` : ''}</span>
-      ${isTransfer ? '<span class="transfer-badge">Transfer</span>' : ''}
-      ${isLast ? '<span class="dest-badge">DEST</span>' : ''}
-      ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}">ROLL</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
+      ${isTransfer ? `<span class="transfer-badge" data-i18n="transferBadge">${t('transferBadge')}</span>` : ''}
+      ${isLast ? `<span class="dest-badge" data-i18n="destBadge">${t('destBadge')}</span>` : ''}
+      ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}" data-i18n="rollBtnLabel">${t('rollBtnLabel')}</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
     </div>`;
   }).join('');
 
@@ -2048,7 +2610,8 @@ async function checkTransfers(platform, rolledStops) {
     if (roll <= 3) {
       // Stay on
       die.classList.add('stay');
-      res.textContent = 'Stay';
+      res.textContent = t('stayResult');
+      res.setAttribute('data-i18n', 'stayResult');
       res.classList.add('stay-label');
       el.classList.remove('checking');
       el.classList.add('passed');
@@ -2062,7 +2625,8 @@ async function checkTransfers(platform, rolledStops) {
     } else if (roll === 4) {
       // Transfer!
       die.classList.add('transfer');
-      res.textContent = 'Transfer!';
+      res.textContent = t('transferResult');
+      res.setAttribute('data-i18n', 'transferResult');
       res.classList.add('transfer-label');
       el.classList.remove('checking');
       el.classList.add('transferred');
@@ -2074,7 +2638,8 @@ async function checkTransfers(platform, rolledStops) {
     } else {
       // Drink here!
       die.classList.add('drink-roll');
-      res.textContent = 'Drink!';
+      res.textContent = t('drinkResult');
+      res.setAttribute('data-i18n', 'drinkResult');
       res.classList.add('drink-label');
       el.classList.remove('checking');
       el.classList.add('drink');
@@ -2104,7 +2669,7 @@ function rollStops() {
   animateRoll(1, max, roll, dom.dieStops, async () => {
     state.rolledStops = roll;
 
-    dom.dieStopsLabel.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
+    dom.dieStopsLabel.innerHTML = `<strong>${t('stopsResult', { n: roll, s: pl(roll) })}</strong>`;
     if (dom.trainTypeRow.style.display !== 'none') {
       dom.rollStopsBtn.style.display = 'none';
     } else {
@@ -2139,8 +2704,8 @@ function rollStops() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
       dom.destSub.innerHTML =
-        `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName}${drinkTrainType})`
-        + `<div class="drink-hint">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
+        `${result.station.ja} &nbsp;·&nbsp; ${t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType })}`
+        + `<div class="drink-hint">${t('drinkHint')}</div>`;
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -2158,7 +2723,7 @@ function rollStops() {
     dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
     dom.destSub.innerHTML =
-      `${dest.ja} &nbsp;·&nbsp; ${state.selectedPlatform.lineName}${trainTypeLabel} &nbsp;·&nbsp; ${roll} stop${roll !== 1 ? 's' : ''} from ${state.currentStation.name}`;
+      `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`;
     dom.destCard.classList.add('active');
     dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -2197,7 +2762,7 @@ async function showPlaces(mode) {
   const content = isBars ? dom.barsContent : dom.cafesContent;
   card.style.display = 'block';
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  content.innerHTML = `<div class="bars-empty">Searching for nearby ${isBars ? 'bars & izakayas' : 'cafes'}…</div>`;
+  content.innerHTML = `<div class="bars-empty">${isBars ? t('searchingBars') : t('searchingCafes')}</div>`;
 
   const { lat, lng } = state.destination;
   const circle = `circle:${lat},${lng};r=500`;
@@ -2251,7 +2816,7 @@ async function showPlaces(mode) {
     }
 
     if (items.length === 0) {
-      content.innerHTML = `<div class="bars-empty">No ${isBars ? 'bars or izakayas' : 'cafes'} found within 500 m — try exploring!</div>`;
+      content.innerHTML = `<div class="bars-empty">${isBars ? t('noBars') : t('noCafes')}</div>`;
       return;
     }
 
@@ -2263,26 +2828,30 @@ async function showPlaces(mode) {
       </div>`
     ).join('')}</div>`;
   } catch (err) {
-    content.innerHTML = `<div class="bars-empty">Could not fetch ${isBars ? 'bar' : 'cafe'} data: ${err.message}</div>`;
+    content.innerHTML = `<div class="bars-empty">${isBars ? t('fetchBarFail', { msg: err.message }) : t('fetchCafeFail', { msg: err.message })}</div>`;
   }
 }
 
 // ── History ───────────────────────────────────────────────────────────────
 function buildHistoryItem(e, num) {
   let body;
+  const from = currentLang === 'ja' && e.fromJa ? e.fromJa : e.from;
+  const to   = currentLang === 'ja' && e.toJa   ? e.toJa   : e.to;
+  const fromSub = currentLang === 'ja' ? '' : (e.fromJa ? ` <small class="dest-ja">${e.fromJa}</small>` : '');
+  const toSub   = currentLang === 'ja' ? '' : (e.toJa   ? ` <small class="dest-ja">${e.toJa}</small>`   : '');
   if (e.flight) {
-    body = `<strong>${e.from}</strong> <span class="text-flight">✈️ took a flight — bon voyage!</span>`;
+    body = `<strong>${from}</strong>${fromSub} <span class="text-flight">${t('tookFlight')}</span>`;
   } else if (e.drinkHere) {
-    body = `<strong>${e.from}</strong> <span class="text-muted">🍻 stayed for a drink</span>`;
+    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t('stayedForDrink')}</span>`;
   } else if (e.drinkAtTransfer) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small> <span class="text-accent">🍻 drink roll</span>`;
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent">${t('drinkRollHistory')}</span>`;
   } else if (e.transferred) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small> <span class="text-accent2">🔀 transfer</span>`;
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent2">${t('transferHistory')}</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small>`;
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -2295,6 +2864,7 @@ function addHistory(transferInfo) {
   const flight    = transferInfo?.flight || false;
   const entry = {
     from:      state.currentStation.name,
+    fromJa:    state.currentStation.ja || '',
     drinkHere: drinkHere || false,
     flight:    flight,
     line:      (drinkHere || flight) ? null : state.selectedPlatform.lineName,
@@ -2351,6 +2921,7 @@ function resetGame() {
   state.selectedPlatform = null;
   state.selectedTrainType = null;
   state.rolledStops     = null;
+  state.rolledPlatformNum = null;
   state.destination     = null;
   state.stationsSinceDrink = 0;
   state.drankAt.clear();
@@ -2361,8 +2932,8 @@ function resetGame() {
   showStep(null);
   hideAllCards();
 
-  dom.randomStationBtn.textContent = '🎲 Random';
-  dom.randomStationBtn.title       = 'Pick random station';
+  dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
+  dom.randomStationBtn.title     = t('pickRandom');
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
@@ -2406,20 +2977,20 @@ function setLocationHint(msg, isError = false) {
 function detectLocation() {
   const btn = dom.locateBtn;
   if (!navigator.geolocation) {
-    setLocationHint('📍 Geolocation not supported by this browser', true);
+    setLocationHint(t('geoNotSupported'), true);
     return;
   }
   btn.disabled = true;
   btn.classList.add('locating');
-  setLocationHint('📍 Detecting your location…');
+  setLocationHint(t('geoDetecting'));
 
   navigator.geolocation.getCurrentPosition(
     ({ coords }) => {
       btn.disabled = false;
       btn.classList.remove('locating');
       const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
-      if (!name) { setLocationHint('📍 No station found nearby', true); return; }
-      setLocationHint(`📍 Nearest station: ${name} (${dist} m away)`);
+      if (!name) { setLocationHint(t('geoNoStation'), true); return; }
+      setLocationHint(t('geoNearest', { name, dist }));
       dom.stationInput.value = name;
       dom.stationInput.classList.add('selected');
       onStationSelected(name);
@@ -2427,9 +2998,9 @@ function detectLocation() {
     (err) => {
       btn.disabled = false;
       btn.classList.remove('locating');
-      const msg = err.code === 1 ? 'Location access denied — search manually'
-                : err.code === 2 ? 'Location unavailable — search manually'
-                :                  'Location timed out — search manually';
+      const msg = err.code === 1 ? t('geoDenied')
+                : err.code === 2 ? t('geoUnavailable')
+                :                  t('geoTimeout');
       setLocationHint(`📍 ${msg}`, true);
     },
     { timeout: 20000, maximumAge: 300000, enableHighAccuracy: false }
@@ -2471,28 +3042,29 @@ function checkLastTrainWarning() {
 // ── Copy route ────────────────────────────────────────────────────────────
 function copyRoute() {
   if (state.history.length === 0) return;
-  const date = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const lines = [`🗼 Tokyo Random Game — ${date}`, ''];
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  const date = new Date().toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+  const lines = [t('copyRouteHeader', { date }), ''];
   state.history.forEach((e, i) => {
     if (e.flight) {
-      lines.push(`${i + 1}. ${e.from} ✈️ took a flight — bon voyage!`);
+      lines.push(`${i + 1}. ${e.from} ${t('tookFlight')}`);
     } else if (e.drinkHere) {
-      lines.push(`${i + 1}. ${e.from} 🍻 stayed for a drink`);
+      lines.push(`${i + 1}. ${e.from} ${t('stayedForDrink')}`);
     } else if (e.drinkAtTransfer) {
-      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stopsUsed}) → ${e.to} 🍻 drink roll`);
+      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('drinkRollHistory')}`);
     } else if (e.transferred) {
-      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stopsUsed}) → ${e.to} 🔀 transfer`);
+      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('transferHistory')}`);
     } else {
-      lines.push(`${i + 1}. ${e.from} → ${e.line} (+${e.stops}) → ${e.to}`);
+      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${e.to}`);
     }
   });
   navigator.clipboard.writeText(lines.join('\n')).then(() => {
     const orig = dom.copyRouteBtn.textContent;
-    dom.copyRouteBtn.textContent = 'Copied!';
+    dom.copyRouteBtn.textContent = t('copied');
     setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   }).catch(() => {
     const orig = dom.copyRouteBtn.textContent;
-    dom.copyRouteBtn.textContent = 'Copy failed';
+    dom.copyRouteBtn.textContent = t('copyFailed');
     setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
   });
 }
@@ -2513,11 +3085,11 @@ function copyRoute() {
         state.currentStation = null;
         dom.stationInput.value = '';
         dom.stationInput.classList.remove('selected');
-        dom.randomStationBtn.textContent = '🎲 Random';
-        dom.randomStationBtn.title       = 'Pick random station';
+        dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
+        dom.randomStationBtn.title     = t('pickRandom');
         showStep(null);
         hideAllCards();
-        setLocationHint('Current station is outside the 23 wards — please pick a new one.', true);
+        setLocationHint(t('outsideWards'), true);
       } else if (!state.selectedPlatform) {
         onStationSelected(state.currentStation.name);
       } else if (state.wards23Only) {
@@ -2563,28 +3135,35 @@ function copyRoute() {
 })();
 </script>
 <div class="how-to-play-wrap">
-  <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')">How to Play</button>
+  <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')" data-i18n="howToPlay">How to Play</button>
 </div>
 
 <div id="htp-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
   <div class="htp-card">
     <button class="htp-close" onclick="document.getElementById('htp-overlay').classList.add('hidden')">&times;</button>
-    <h3>How to Play</h3>
+    <h3 data-i18n="howToPlay">How to Play</h3>
     <ol>
-      <li><strong>Pick your starting station</strong> &mdash; use your location, search for one, or go random.</li>
-      <li><strong>Roll a train</strong> &mdash; you'll get a random line and direction.</li>
-      <li><strong>Go to the platform</strong> and board the next train that arrives.</li>
-      <li><strong>Roll for stops</strong> &mdash; ride that many stations.</li>
-      <li><strong>Roll for transfers</strong> &mdash; as you ride, if a station has transfers, roll to see if you transfer or stay on.</li>
-      <li><strong>Get off and drink!</strong></li>
-      <li><strong>Go back to the station</strong> and do it all again!</li>
+      <li data-i18n="htpStep1"><strong>Pick your starting station</strong> &mdash; use your location, search for one, or go random.</li>
+      <li data-i18n="htpStep2"><strong>Roll a train</strong> &mdash; you'll get a random line and direction.</li>
+      <li data-i18n="htpStep3"><strong>Go to the platform</strong> and board the next train that arrives.</li>
+      <li data-i18n="htpStep4"><strong>Roll for stops</strong> &mdash; ride that many stations.</li>
+      <li data-i18n="htpStep5"><strong>Roll for transfers</strong> &mdash; as you ride, if a station has transfers, roll to see if you transfer or stay on.</li>
+      <li data-i18n="htpStep6"><strong>Get off and drink!</strong></li>
+      <li data-i18n="htpStep7"><strong>Go back to the station</strong> and do it all again!</li>
     </ol>
-    <p class="htp-goal">The goal of the game is simply to explore Tokyo and drink in new places!</p>
+    <p class="htp-goal" data-i18n="htpGoal">The goal of the game is simply to explore Tokyo and drink in new places!</p>
   </div>
 </div>
 
+<div class="lang-toggle-wrap">
+  <span class="lang-toggle">
+    <button data-lang="en" class="active" onclick="switchLang('en')">EN</button>
+    <button data-lang="ja" onclick="switchLang('ja')">JP</button>
+  </span>
+</div>
+
 <footer>
-  Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens
+  <span data-i18n="footer">Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens</span>
 </footer>
 </body>
 </html>
