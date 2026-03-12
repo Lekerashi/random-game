@@ -3007,7 +3007,7 @@ function detectLocation() {
       btn.classList.remove('locating');
       const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
       if (!name) { setLocationHint(t('geoNoStation'), true); return; }
-      setLocationHint(t('geoNearest', { name, dist }));
+      setLocationHint(t('geoNearest', { name: stationDisplayName(name), dist }));
       dom.stationInput.value = name;
       dom.stationInput.classList.add('selected');
       onStationSelected(name);
