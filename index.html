@@ -535,6 +535,35 @@
       .die-face { width: 56px; height: 56px; font-size: 1.8rem; }
       .destination-name { font-size: 1.5rem; }
     }
+
+    /* ── Initial hidden states (JS-toggled) ──────────── */
+    #app                { display: none; }
+    #last-train-warning { display: none; }
+    #journey-card, #map-card, #bars-card, #cafes-card { display: none; }
+    #train-type-row     { display: none; }
+    #reroll-platform-btn,
+    #reroll-stops-btn   { display: none; padding: 10px 14px; font-size: .85rem; }
+
+    /* ── Structural layout (moved from HTML) ─────────── */
+    .platform-banner-row      { display: flex; align-items: stretch; gap: 8px; margin-bottom: 12px; }
+    #selected-platform-banner { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: .88rem; line-height: 1.5; }
+    #roll-stops-row            { display: flex; gap: 8px; margin-top: 10px; }
+    #roll-stops-btn            { flex: 1; margin-top: 0; }
+    .history-title-row         { display: flex; align-items: center; justify-content: space-between; }
+    .history-title-btns        { display: flex; gap: 6px; }
+    .btn-sm                    { font-size: .75rem; padding: 4px 10px; }
+    .stops-cap-inline          { margin-left: 16px; display: flex; align-items: center; }
+    footer                     { text-align: center; padding: 2rem 1rem 3rem; color: #555; font-size: 0.75rem; }
+
+    /* ── Template utility classes ────────────────────── */
+    .text-muted   { color: var(--muted); }
+    .text-accent  { color: var(--accent); }
+    .text-accent2 { color: var(--accent2); }
+    .text-flight  { color: #f59e0b; }
+    .dest-badge   { color: var(--green); font-size: .72rem; font-weight: 700; }
+    .drink-hint   { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+    .flight-msg   { color: #f59e0b; font-size: 1.1em; }
+    .dest-ja      { color: var(--muted); margin-left: 4px; }
   </style>
 </head>
 <body>
@@ -547,7 +576,7 @@
 </div>
 
 <!-- Main app -->
-<div id="app" style="display:none">
+<div id="app">
   <header>
     <h1>🎲 Random Game — Tokyo</h1>
     <p>Randomly drink your way around Tokyo</p>
@@ -556,7 +585,7 @@
   <div id="error-banner"></div>
 
   <!-- Last train warning -->
-  <div id="last-train-warning" class="last-train-warning" style="display:none">
+  <div id="last-train-warning" class="last-train-warning">
     <span>🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!</span>
     <button class="last-train-dismiss" id="dismiss-train-warning" title="Dismiss">✕</button>
   </div>
@@ -577,7 +606,7 @@
         <input type="checkbox" id="wards23-check">
         <span>23 Wards only</span>
       </label>
-      <span style="margin-left:16px;display:flex;align-items:center">
+      <span class="stops-cap-inline">
         <label class="wards-toggle">
           <input type="checkbox" id="stops-cap-check">
           <span>Cap stops at</span>
@@ -603,27 +632,27 @@
   <!-- Step 2: Roll Stops -->
   <div class="card step-card" id="step-stops">
     <div class="card-title">Step 2 — Roll Stops</div>
-    <div style="display:flex;align-items:stretch;gap:8px;margin-bottom:12px">
-      <div id="selected-platform-banner" style="flex:1;display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:.88rem;line-height:1.5">
+    <div class="platform-banner-row">
+      <div id="selected-platform-banner">
         <span id="selected-platform-dot" class="line-dot"></span>
         <span id="selected-platform-text"></span>
       </div>
-      <button class="btn btn-secondary" id="reroll-platform-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll train line">🔁 Reroll</button>
+      <button class="btn btn-secondary" id="reroll-platform-btn" title="Reroll train line">🔁 Reroll</button>
     </div>
     <div class="platform-count" id="stops-range-text"></div>
     <div class="roll-die-display">
       <div class="die-face" id="die-stops">?</div>
       <div class="die-label" id="die-stops-label">Roll to pick how many stops</div>
     </div>
-    <div class="train-type-row" id="train-type-row" style="display:none"></div>
-    <div id="roll-stops-row" style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn btn-roll" id="roll-stops-btn" style="flex:1;margin-top:0">ROLL STOPS</button>
-      <button class="btn btn-secondary" id="reroll-stops-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll stops">🔁 Reroll</button>
+    <div class="train-type-row" id="train-type-row"></div>
+    <div id="roll-stops-row">
+      <button class="btn btn-roll" id="roll-stops-btn">ROLL STOPS</button>
+      <button class="btn btn-secondary" id="reroll-stops-btn" title="Reroll stops">🔁 Reroll</button>
     </div>
   </div>
 
   <!-- Journey / Transfer Check -->
-  <div class="card" id="journey-card" style="display:none">
+  <div class="card" id="journey-card">
     <div class="card-title">Checking Transfers</div>
     <div id="journey-content"></div>
   </div>
@@ -642,30 +671,30 @@
   </div>
 
   <!-- Map -->
-  <div class="card" id="map-card" style="display:none">
+  <div class="card" id="map-card">
     <div class="card-title">Map</div>
     <div id="map"></div>
   </div>
 
   <!-- Bars -->
-  <div class="card" id="bars-card" style="display:none">
+  <div class="card" id="bars-card">
     <div class="card-title">Nearby Bars, Pubs &amp; Izakayas</div>
     <div id="bars-content"></div>
   </div>
 
   <!-- Cafes -->
-  <div class="card" id="cafes-card" style="display:none">
+  <div class="card" id="cafes-card">
     <div class="card-title">Nearby Cafes</div>
     <div id="cafes-content"></div>
   </div>
 
   <!-- History -->
   <div class="card" id="history-card">
-    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="card-title history-title-row">
       <span>Session History</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost" id="copy-route-btn" style="font-size:.75rem;padding:4px 10px">Copy route</button>
-        <button class="btn btn-ghost" id="clear-history-btn" style="font-size:.75rem;padding:4px 10px">Clear</button>
+      <div class="history-title-btns">
+        <button class="btn btn-ghost btn-sm" id="copy-route-btn">Copy route</button>
+        <button class="btn btn-ghost btn-sm" id="clear-history-btn">Clear</button>
       </div>
     </div>
     <div id="history-empty" class="bars-empty">No rounds yet — start rolling!</div>
@@ -675,59 +704,6 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
 <script>
-'use strict';
-
-// ── Constants ─────────────────────────────────────────────────────────────
-const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
-const CACHE_KEY = 'random_game_v9';
-const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-// ← Paste your HERE Maps API key here (free at developer.here.com)
-const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
-
-// Greater Tokyo bounding box (line center coordinates)
-const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
-
-
-// 23 Special Wards of Tokyo — polygon approximation
-// Simple bounding box incorrectly includes Kawasaki/Saitama stations.
-// We use piecewise-linear borders: south follows the Tama River,
-// north follows the Arakawa River / Saitama prefectural border.
-const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
-const SOUTH_BORDER = [  // Tama River (Kanagawa border)
-  [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
-  [139.695, 35.565], [139.71, 35.535], [139.76, 35.545],
-];
-const NORTH_BORDER = [  // Arakawa / Saitama border
-  [139.58, 35.78], [139.65, 35.795], [139.73, 35.795],
-  [139.77, 35.82], [139.80, 35.80], [139.94, 35.80],
-];
-function _borderCheck(border, lng) {
-  for (let i = 0; i < border.length - 1; i++) {
-    if (lng >= border[i][0] && lng < border[i + 1][0]) {
-      const t = (lng - border[i][0]) / (border[i + 1][0] - border[i][0]);
-      return border[i][1] + t * (border[i + 1][1] - border[i][1]);
-    }
-  }
-  return null;
-}
-function isIn23Wards(lat, lng) {
-  if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
-      lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
-  // Southern boundary (Tama River → Tokyo Bay)
-  if (lng < 139.76 && lat < 35.62) {
-    const minLat = _borderCheck(SOUTH_BORDER, lng);
-    if (minLat !== null) return lat >= minLat;
-  }
-  // Northern boundary (Saitama border)
-  if (lat > 35.77) {
-    const maxLat = _borderCheck(NORTH_BORDER, lng);
-    if (maxLat !== null) return lat <= maxLat;
-  }
-  return true;
-}
-
-
 // ── Express Services (no-extra-fare only) ─────────────────────────────────
 // stops: null = all stations (local); array = station names that this type stops at
 const EXPRESS_SERVICES = {
@@ -928,6 +904,61 @@ const STATION_ALIASES = {
   "Harajuku":                   ["Meiji-jingumae 'Harajuku'"],
   "Meiji-jingumae 'Harajuku'":  ["Harajuku"],
 };
+</script>
+<script>
+'use strict';
+
+// ── Constants ─────────────────────────────────────────────────────────────
+const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
+const CACHE_KEY = 'random_game_v9';
+const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// ← Paste your HERE Maps API key here (free at developer.here.com)
+const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
+
+// Greater Tokyo bounding box (line center coordinates)
+const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
+
+
+// 23 Special Wards of Tokyo — polygon approximation
+// Simple bounding box incorrectly includes Kawasaki/Saitama stations.
+// We use piecewise-linear borders: south follows the Tama River,
+// north follows the Arakawa River / Saitama prefectural border.
+const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
+const SOUTH_BORDER = [  // Tama River (Kanagawa border)
+  [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
+  [139.695, 35.565], [139.71, 35.535], [139.76, 35.545],
+];
+const NORTH_BORDER = [  // Arakawa / Saitama border
+  [139.58, 35.78], [139.65, 35.795], [139.73, 35.795],
+  [139.77, 35.82], [139.80, 35.80], [139.94, 35.80],
+];
+function _borderCheck(border, lng) {
+  for (let i = 0; i < border.length - 1; i++) {
+    if (lng >= border[i][0] && lng < border[i + 1][0]) {
+      const t = (lng - border[i][0]) / (border[i + 1][0] - border[i][0]);
+      return border[i][1] + t * (border[i + 1][1] - border[i][1]);
+    }
+  }
+  return null;
+}
+function isIn23Wards(lat, lng) {
+  if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
+      lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
+  // Southern boundary (Tama River → Tokyo Bay)
+  if (lng < 139.76 && lat < 35.62) {
+    const minLat = _borderCheck(SOUTH_BORDER, lng);
+    if (minLat !== null) return lat >= minLat;
+  }
+  // Northern boundary (Saitama border)
+  if (lat > 35.77) {
+    const maxLat = _borderCheck(NORTH_BORDER, lng);
+    if (maxLat !== null) return lat <= maxLat;
+  }
+  return true;
+}
+
+
 
 function getAliasKeys(stationName) {
   const aliases = STATION_ALIASES[stationName];
@@ -956,6 +987,8 @@ const state = {
   history: [],
   leafletMap: null,
   mapMarker: null,
+  spatialGrid: null,
+  spatialCell: 0.04,
 };
 
 // ── Cached DOM references ─────────────────────────────────────────────────
@@ -1210,8 +1243,22 @@ function buildIndex(lines, osmNames = {}) {
     return isIn23Wards(stn.lat, stn.lng);
   });
   state.stationNames23Norm = state.stationNames23.map(normalize);
+  buildSpatialIndex();
   setLoadingStatus('');
   hideLoading();
+}
+
+function buildSpatialIndex() {
+  const CELL = state.spatialCell;
+  const grid = new Map();
+  for (const line of state.lines) {
+    for (const stn of line.stations) {
+      const key = `${Math.floor(stn.lat / CELL)},${Math.floor(stn.lng / CELL)}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push({ name: stn.name, lat: stn.lat, lng: stn.lng });
+    }
+  }
+  state.spatialGrid = grid;
 }
 
 // ── Platform Logic ────────────────────────────────────────────────────────
@@ -1442,7 +1489,7 @@ function setLoadingStatus(msg) {
 
 function hideLoading() {
   dom.loadingOverlay.classList.add('hidden');
-  dom.app.style.display = '';
+  dom.app.style.display = 'block';
 }
 
 function hideAllCards() {
@@ -1455,7 +1502,7 @@ function hideAllCards() {
 
 function showError(msg) {
   dom.loadingOverlay.classList.add('hidden');
-  dom.app.style.display = '';
+  dom.app.style.display = 'block';
   dom.errorBanner.textContent = '⚠ ' + msg;
   dom.errorBanner.style.display = 'block';
 }
@@ -1644,7 +1691,7 @@ function onStationSelected(name, arrivedVia) {
       : `<div class="platform-pill">
            <span class="platform-num">${i + 1}</span>
            <span class="line-dot" style="background:${p.lineColor}"></span>
-           <span>${p.lineName}<br><small style="color:var(--muted)">${p.hint}</small></span>
+           <span>${p.lineName}<br><small class="text-muted">${p.hint}</small></span>
          </div>`
   ).join('');
 
@@ -1677,7 +1724,7 @@ function rollPlatform() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       dom.destSub.innerHTML =
         `${state.currentStation.ja}<br>` +
-        `<span style="color:#f59e0b;font-size:1.1em">✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!</span>`;
+        `<span class="flight-msg">✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!</span>`;
       // Hide all action buttons — no rolling from here
       dom.rollAgainBtn.style.display = 'none';
       dom.showBarsBtn.style.display = 'none';
@@ -1691,7 +1738,7 @@ function rollPlatform() {
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
       dom.diePlatformLabel.innerHTML = `<strong>#${roll} → 🍻 Drink here!</strong>`;
-      dom.rerollPlatformBtn.style.display = '';
+      dom.rerollPlatformBtn.style.display = 'block';
 
       // Use current station as destination
       state.destination = state.currentStation;
@@ -1701,7 +1748,7 @@ function rollPlatform() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       dom.destSub.innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; 🍻 Staying for a drink`
-        + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
+        + `<div class="drink-hint">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -1713,14 +1760,14 @@ function rollPlatform() {
 
     // ── Normal train line ─────────────────────────────────────────────────
     dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${p.lineName}</strong>${p.label.split('—')[1] || ''}
-      <br><small style="color:var(--muted)">Max stops: ${p.maxStops}</small>`;
+      <br><small class="text-muted">Max stops: ${p.maxStops}</small>`;
 
     // Show which platform was rolled
     dom.selectedPlatformDot.style.background = p.lineColor;
     dom.selectedPlatformText.innerHTML =
-      `<strong>#${roll} — ${p.lineName}</strong><br><span style="color:var(--muted)">${p.label.split('—').slice(1).join('—').trim()}</span>`;
+      `<strong>#${roll} — ${p.lineName}</strong><br><span class="text-muted">${p.label.split('—').slice(1).join('—').trim()}</span>`;
 
-    dom.rerollPlatformBtn.style.display = '';
+    dom.rerollPlatformBtn.style.display = 'block';
     state.selectedTrainType = null;
 
     // Check for express services — show type buttons or normal ROLL STOPS
@@ -1927,9 +1974,9 @@ async function checkTransfers(platform, rolledStops) {
     const isTransfer = transferIndices.includes(i);
     return `<div class="journey-station" id="jstn-${i}">
       <span class="journey-num">${i + 1}</span>
-      <span class="journey-name">${stn.name}${stn.ja ? ` <small style="color:var(--muted)">${stn.ja}</small>` : ''}</span>
+      <span class="journey-name">${stn.name}${stn.ja ? ` <small class="text-muted">${stn.ja}</small>` : ''}</span>
       ${isTransfer ? '<span class="transfer-badge">Transfer</span>' : ''}
-      ${isLast ? '<span style="color:var(--green);font-size:.72rem;font-weight:700">DEST</span>' : ''}
+      ${isLast ? '<span class="dest-badge">DEST</span>' : ''}
       ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}">ROLL</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
     </div>`;
   }).join('');
@@ -2052,7 +2099,7 @@ function rollStops() {
       dom.rollStopsBtn.style.width = 'auto';
     }
     dom.rollStopsRow.style.display = 'flex';
-    dom.rerollStopsBtn.style.display = '';
+    dom.rerollStopsBtn.style.display = 'block';
 
     // Check for transfers along the route
     const result = await checkTransfers(state.selectedPlatform, roll);
@@ -2081,7 +2128,7 @@ function rollStops() {
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
       dom.destSub.innerHTML =
         `${result.station.ja} &nbsp;·&nbsp; 🍻 Drink here! (transfer roll on ${state.selectedPlatform.lineName}${drinkTrainType})`
-        + `<div style="color:var(--muted);font-size:.85rem;margin-top:6px">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
+        + `<div class="drink-hint">Explore without a map and find a place for a drink! Use the buttons below if you can't find one.</div>`;
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -2199,7 +2246,7 @@ async function showPlaces(mode) {
     content.innerHTML = `<div class="bars-list">${items.map(p =>
       `<div class="bar-item">
         <span class="bar-icon">${p.icon}</span>
-        <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small style="color:var(--muted);margin-left:6px">${p.placeType}</small>` : ''}</span>
+        <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small class="text-muted" style="margin-left:6px">${p.placeType}</small>` : ''}</span>
         <span class="bar-dist">${Math.round(p.dist)} m</span>
       </div>`
     ).join('')}</div>`;
@@ -2212,18 +2259,18 @@ async function showPlaces(mode) {
 function buildHistoryItem(e, num) {
   let body;
   if (e.flight) {
-    body = `<strong>${e.from}</strong> <span style="color:#f59e0b">✈️ took a flight — bon voyage!</span>`;
+    body = `<strong>${e.from}</strong> <span class="text-flight">✈️ took a flight — bon voyage!</span>`;
   } else if (e.drinkHere) {
-    body = `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`;
+    body = `<strong>${e.from}</strong> <span class="text-muted">🍻 stayed for a drink</span>`;
   } else if (e.drinkAtTransfer) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent)">🍻 drink roll</span>`;
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small> <span class="text-accent">🍻 drink roll</span>`;
   } else if (e.transferred) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent2)">🔀 transfer</span>`;
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small> <span class="text-accent2">🔀 transfer</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small class="dest-ja">${e.toJa}</small>`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -2308,13 +2355,32 @@ function resetGame() {
 
 // ── Geolocation ───────────────────────────────────────────────────────────
 function findNearestStation(lat, lng) {
+  const CELL = state.spatialCell;
+  const grid = state.spatialGrid;
+  const cx = Math.floor(lat / CELL);
+  const cy = Math.floor(lng / CELL);
   let bestName = null;
   let bestDist = Infinity;
-  for (const line of state.lines) {
-    for (const stn of line.stations) {
-      if (state.wards23Only && !isIn23Wards(stn.lat, stn.lng)) continue;
-      const d = haversineM(lat, lng, stn.lat, stn.lng);
-      if (d < bestDist) { bestDist = d; bestName = stn.name; }
+  // Check 3×3 neighbourhood of grid cells
+  for (let dx = -1; dx <= 1; dx++) {
+    for (let dy = -1; dy <= 1; dy++) {
+      const candidates = grid.get(`${cx + dx},${cy + dy}`);
+      if (!candidates) continue;
+      for (const stn of candidates) {
+        if (state.wards23Only && !isIn23Wards(stn.lat, stn.lng)) continue;
+        const d = haversineM(lat, lng, stn.lat, stn.lng);
+        if (d < bestDist) { bestDist = d; bestName = stn.name; }
+      }
+    }
+  }
+  // Fallback to brute force if grid had no candidates (shouldn't happen in practice)
+  if (!bestName) {
+    for (const line of state.lines) {
+      for (const stn of line.stations) {
+        if (state.wards23Only && !isIn23Wards(stn.lat, stn.lng)) continue;
+        const d = haversineM(lat, lng, stn.lat, stn.lng);
+        if (d < bestDist) { bestDist = d; bestName = stn.name; }
+      }
     }
   }
   return { name: bestName, dist: Math.round(bestDist) };
@@ -2384,7 +2450,7 @@ function checkLastTrainWarning() {
   const today = now.toDateString();
   const past1130 = h > 23 || (h === 23 && m >= 30);
   if (past1130 && localStorage.getItem('ltw_dismissed') !== today) {
-    dom.lastTrainWarning.style.display = '';
+    dom.lastTrainWarning.style.display = 'block';
   } else if (!past1130) {
     dom.lastTrainWarning.style.display = 'none'; // reset before 11:30pm so it can show again tonight
   }
@@ -2484,7 +2550,7 @@ function copyRoute() {
   detectLocation(); // auto-detect on boot; silently ignored if denied
 })();
 </script>
-<footer style="text-align:center;padding:2rem 1rem 3rem;color:#555;font-size:0.75rem;">
+<footer>
   Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens
 </footer>
 </body>
