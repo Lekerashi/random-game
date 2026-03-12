@@ -1289,6 +1289,7 @@ const translations = {
     outsideWards:         'Current station is outside the 23 wards — please pick a new one.',
     // Special rolls
     flightRoll:           '#{n} → ✈️ Take a flight!',
+    flightMiss:           'Flight delayed! Rerolling…',
     drinkRoll:            '#{n} → 🍻 Drink here!',
     flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
     drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
@@ -1400,6 +1401,7 @@ const translations = {
     geoTimeout:           '位置情報の取得がタイムアウトしました — 手動で検索してください',
     outsideWards:         '現在の駅は23区外です — 別の駅を選んでください。',
     flightRoll:           '#{n} → ✈️ フライトに乗ろう！',
+    flightMiss:           'フライト遅延！振り直し…',
     drinkRoll:            '#{n} → 🍻 ここで飲もう！',
     flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
     drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
@@ -2269,16 +2271,15 @@ function onStationSelected(name, arrivedVia) {
   }
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - 5) : 0;
-  // Easter egg: ~5% chance of a flight option at airport stations
+  // Airport stations always show a flight option (5% chance when rolled)
   const isAirport = /airport/i.test(name);
-  const flightAppears = isAirport && Math.random() < 0.05;
   state.platforms = [
     ...allPlatforms,
     ...(canDrinkHere ? [{ drinkHere: true }] : []),
-    ...(flightAppears ? [{ takeFlight: true }] : []),
+    ...(isAirport ? [{ takeFlight: true }] : []),
   ];
   state.extraDrinkNums = extraDrinkNums;
-  const lineCount = canDrinkHere ? state.platforms.length - 1 : state.platforms.length;
+  const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight).length;
   const total     = state.platforms.length + extraDrinkNums;
 
   // Render platform grid
@@ -2301,8 +2302,15 @@ function rollPlatform() {
     state.rolledPlatformNum = roll;
     const p = state.selectedPlatform;
 
-    // ── Take a flight! ────────────────────────────────────────────────────
+    // ── Take a flight! (5% chance when rolled) ─────────────────────────────
     if (p.takeFlight) {
+      if (Math.random() >= 0.05) {
+        // Missed the flight — auto-reroll
+        dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ✈️ …${t('flightMiss')}</strong>`;
+        dom.rollPlatformBtn.disabled = false;
+        setTimeout(() => dom.rollPlatformBtn.click(), 800);
+        return;
+      }
       dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
       // No reroll — game over!
 
