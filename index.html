@@ -2244,6 +2244,9 @@ function onStationSelected(name, arrivedVia) {
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollPlatformBtn.disabled = false;
   dom.rollStopsBtn.disabled = true;
+  dom.rollStopsBtn.style.display = '';
+  dom.rollStopsBtn.style.flex = '';
+  dom.rollStopsBtn.style.width = '';
   dom.rerollPlatformBtn.style.display = 'none';
   dom.rerollStopsBtn.style.display = 'none';
 
@@ -2392,6 +2395,9 @@ function rerollPlatform() {
   dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollStopsBtn.disabled = true;
+  dom.rollStopsBtn.style.display = '';
+  dom.rollStopsBtn.style.flex = '';
+  dom.rollStopsBtn.style.width = '';
   dom.rerollStopsBtn.style.display = 'none';
   dom.trainTypeRow.style.display = 'none';
   dom.rollStopsRow.style.display = 'flex';
