@@ -2235,6 +2235,8 @@ function onStationSelected(name, arrivedVia) {
   state.selectedTrainType = null;
   state.rolledStops = null;
   state.rolledPlatformNum = null;
+  state._rerollExcludePlatform = null;
+  state._rerollExcludeStops = null;
   state.destination = null;
   hideAllCards();
   dom.rollAgainBtn.style.display = '';
@@ -2307,9 +2309,11 @@ function rollPlatform() {
     roll = flightIdx + 1;
   } else {
     const pool = [];
-    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1) pool.push(i);
+    const excludeRoll = state._rerollExcludePlatform;
+    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1 && i !== excludeRoll) pool.push(i);
     roll = pool.length ? pool[Math.floor(Math.random() * pool.length)] : Math.floor(Math.random() * n) + 1;
   }
+  state._rerollExcludePlatform = null;
 
   animateRoll(1, n, roll, dom.diePlatform, () => {
     // Extra drink numbers map to the drink-here platform
@@ -2393,6 +2397,8 @@ function rollPlatform() {
 }
 
 function rerollPlatform() {
+  // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
+  state._rerollExcludePlatform = state.rolledPlatformNum;
   // Hide reroll, reset step 2 content, and fire a fresh roll
   dom.rerollPlatformBtn.style.display = 'none';
   hideAllCards();
@@ -2414,6 +2420,8 @@ function rerollPlatform() {
 }
 
 function rerollStops() {
+  // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
+  state._rerollExcludeStops = state.rolledStops;
   dom.rerollStopsBtn.style.display = 'none';
   dom.rollStopsBtn.style.display = '';
   dom.rollStopsBtn.style.flex = '1';
@@ -2743,7 +2751,16 @@ function rollStops() {
     return;
   }
 
-  const roll = Math.floor(Math.random() * max) + 1;
+  let roll;
+  const excludeStop = state._rerollExcludeStops;
+  state._rerollExcludeStops = null;
+  if (excludeStop != null && max > 1) {
+    const pool = [];
+    for (let i = 1; i <= max; i++) if (i !== excludeStop) pool.push(i);
+    roll = pool[Math.floor(Math.random() * pool.length)];
+  } else {
+    roll = Math.floor(Math.random() * max) + 1;
+  }
 
   animateRoll(1, max, roll, dom.dieStops, async () => {
     const physicalStops = routeInfo.physicalStopsMap[roll - 1];
@@ -3006,6 +3023,8 @@ function resetGame() {
   state.selectedTrainType = null;
   state.rolledStops     = null;
   state.rolledPlatformNum = null;
+  state._rerollExcludePlatform = null;
+  state._rerollExcludeStops = null;
   state.destination     = null;
   state.stationsSinceDrink = 0;
   state.drankAt.clear();
