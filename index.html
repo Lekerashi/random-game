@@ -1270,7 +1270,7 @@ const translations = {
     copied:               'Copied!',
     copyFailed:           'Copy failed',
     // Dynamic labels
-    platformCount:        '{n} train line{s} at {name} — rolling 1–{total}',
+    platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
     rollingStops:         'Rolling 1–{max} stop{s}',
     selectTrainType:      'Select train type · Rolling 1–{max} stops (local)',
     trainTypeStops:       '{name} ({ja}) · Rolling 1–{max} stop{s}',
@@ -1383,7 +1383,7 @@ const translations = {
     noRoundsYet:          'まだラウンドなし — さあ振ろう！',
     copied:               'コピー完了！',
     copyFailed:           'コピー失敗',
-    platformCount:        '{name}で{n}路線 — 1〜{total}を振る',
+    platformCount:        '<strong style="color:#fff">{name}</strong>で{n}路線 — 1〜{total}を振る',
     rollingStops:         '1〜{max}駅を振る',
     selectTrainType:      '種別を選択 · 1〜{max}駅（各停）',
     trainTypeStops:       '{name}（{ja}）· 1〜{max}駅',
@@ -1488,7 +1488,7 @@ function switchLang(lang) {
     // Refresh platform count text
     const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight).length;
     const total = state.platforms.length + (state.extraDrinkNums || 0);
-    dom.platformCountText.textContent = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
+    dom.platformCountText.innerHTML = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
     // Refresh platform grid labels
     refreshPlatformGrid();
   }
@@ -2286,7 +2286,7 @@ function onStationSelected(name, arrivedVia) {
   // Render platform grid
   refreshPlatformGrid();
 
-  dom.platformCountText.textContent = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(name), total });
+  dom.platformCountText.innerHTML = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(name), total });
 
   showStep('step-platforms');
 }
