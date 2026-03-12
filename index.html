@@ -1289,7 +1289,6 @@ const translations = {
     outsideWards:         'Current station is outside the 23 wards — please pick a new one.',
     // Special rolls
     flightRoll:           '#{n} → ✈️ Take a flight!',
-    flightMiss:           'Flight delayed! Rerolling…',
     drinkRoll:            '#{n} → 🍻 Drink here!',
     flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
     drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
@@ -1401,7 +1400,6 @@ const translations = {
     geoTimeout:           '位置情報の取得がタイムアウトしました — 手動で検索してください',
     outsideWards:         '現在の駅は23区外です — 別の駅を選んでください。',
     flightRoll:           '#{n} → ✈️ フライトに乗ろう！',
-    flightMiss:           'フライト遅延！振り直し…',
     drinkRoll:            '#{n} → 🍻 ここで飲もう！',
     flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
     drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
@@ -2293,7 +2291,16 @@ function onStationSelected(name, arrivedVia) {
 function rollPlatform() {
   dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
-  const roll = Math.floor(Math.random() * n) + 1; // 1-indexed
+  let roll = Math.floor(Math.random() * n) + 1; // 1-indexed
+
+  // Flight: silently reroll unless 5% check passes
+  const flightIdx = state.platforms.findIndex(p => p.takeFlight);
+  if (flightIdx !== -1 && roll === flightIdx + 1 && Math.random() >= 0.05) {
+    // Reroll to a non-flight number
+    const nonFlight = [];
+    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1) nonFlight.push(i);
+    roll = nonFlight[Math.floor(Math.random() * nonFlight.length)];
+  }
 
   animateRoll(1, n, roll, dom.diePlatform, () => {
     // Extra drink numbers map to the drink-here platform
@@ -2302,15 +2309,8 @@ function rollPlatform() {
     state.rolledPlatformNum = roll;
     const p = state.selectedPlatform;
 
-    // ── Take a flight! (5% chance when rolled) ─────────────────────────────
+    // ── Take a flight! ────────────────────────────────────────────────────
     if (p.takeFlight) {
-      if (Math.random() >= 0.05) {
-        // Missed the flight — auto-reroll
-        dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ✈️ …${t('flightMiss')}</strong>`;
-        dom.rollPlatformBtn.disabled = false;
-        setTimeout(() => dom.rollPlatformBtn.click(), 800);
-        return;
-      }
       dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
       // No reroll — game over!
 
