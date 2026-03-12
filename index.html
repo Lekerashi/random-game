@@ -238,11 +238,13 @@
     /* ── Train Type Buttons ─────────────────────────── */
     .train-type-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       margin-top: 10px;
     }
     .train-type-btn {
-      flex: 1;
+      flex: 1 1 calc(50% - 4px);
+      min-width: calc(50% - 4px);
       border: none;
       border-radius: 10px;
       padding: 14px 10px;
@@ -613,11 +615,11 @@
       <div class="die-face" id="die-stops">?</div>
       <div class="die-label" id="die-stops-label">Roll to pick how many stops</div>
     </div>
+    <div class="train-type-row" id="train-type-row" style="display:none"></div>
     <div id="roll-stops-row" style="display:flex;gap:8px;margin-top:10px">
       <button class="btn btn-roll" id="roll-stops-btn" style="flex:1;margin-top:0">ROLL STOPS</button>
+      <button class="btn btn-secondary" id="reroll-stops-btn" style="display:none;padding:10px 14px;font-size:.85rem" title="Reroll stops">🔁 Reroll</button>
     </div>
-    <div class="train-type-row" id="train-type-row" style="display:none"></div>
-    <button class="btn btn-secondary" id="reroll-stops-btn" style="display:none;margin-top:8px;padding:10px 14px;font-size:.85rem" title="Reroll stops">🔁 Reroll</button>
   </div>
 
   <!-- Journey / Transfer Check -->
@@ -1492,7 +1494,7 @@ function onStationSelected(name, arrivedVia) {
   document.getElementById('show-bars-btn').style.display = '';
   document.getElementById('show-cafes-btn').style.display = '';
   document.getElementById('train-type-row').style.display = 'none';
-  document.getElementById('roll-stops-row').style.display = '';
+  document.getElementById('roll-stops-row').style.display = 'flex';
   document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
   document.getElementById('bars-card').style.display = 'none';
@@ -1675,13 +1677,17 @@ function rerollPlatform() {
   document.getElementById('roll-stops-btn').disabled = true;
   document.getElementById('reroll-stops-btn').style.display = 'none';
   document.getElementById('train-type-row').style.display = 'none';
-  document.getElementById('roll-stops-row').style.display = '';
+  document.getElementById('roll-stops-row').style.display = 'flex';
   state.selectedTrainType = null;
   rollPlatform();
 }
 
 function rerollStops() {
   document.getElementById('reroll-stops-btn').style.display = 'none';
+  const rsBtn = document.getElementById('roll-stops-btn');
+  rsBtn.style.display = '';
+  rsBtn.style.flex = '1';
+  rsBtn.style.width = '';
   document.getElementById('destination-card').classList.remove('active');
   document.getElementById('journey-card').style.display = 'none';
   document.getElementById('map-card').style.display = 'none';
@@ -1703,14 +1709,14 @@ function showTrainTypeButtons(p) {
   const rollStopsRow = document.getElementById('roll-stops-row');
   if (!p || !EXPRESS_SERVICES[p.lineName]) {
     trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = '';
+    rollStopsRow.style.display = 'flex';
     return false;
   }
   const line = state.lines[p.lineIdx];
   const trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line);
   if (!trainTypes || trainTypes.length <= 1) {
     trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = '';
+    rollStopsRow.style.display = 'flex';
     return false;
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
@@ -1720,7 +1726,7 @@ function showTrainTypeButtons(p) {
   });
   if (allMax1) {
     trainTypeRow.style.display = 'none';
-    rollStopsRow.style.display = '';
+    rollStopsRow.style.display = 'flex';
     return false;
   }
   rollStopsRow.style.display = 'none';
@@ -1984,6 +1990,13 @@ function rollStops() {
     state.rolledStops = roll;
 
     lbl.innerHTML = `<strong>${roll} stop${roll !== 1 ? 's' : ''}</strong>`;
+    const hasExpress = document.getElementById('train-type-row').style.display !== 'none';
+    if (hasExpress) {
+      btn.style.display = 'none';
+    } else {
+      btn.style.width = 'auto';
+    }
+    document.getElementById('roll-stops-row').style.display = 'flex';
     document.getElementById('reroll-stops-btn').style.display = '';
 
     // Check for transfers along the route
