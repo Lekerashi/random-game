@@ -1106,8 +1106,11 @@ async function loadData() {
   buildIndex(lines, osmNames);
 }
 
+const LINE_NAME_FIXES = { 'Tokyu Oimacho Line': 'Tokyu Oimachi Line' };
+
 function buildIndex(lines, osmNames = {}) {
   state.lines = lines;
+  for (const l of lines) if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
