@@ -2447,11 +2447,13 @@ function showTrainTypeButtons(p) {
   }
   dom.rollStopsRow.style.display = 'none';
   dom.trainTypeRow.style.display = 'flex';
-  dom.trainTypeRow.innerHTML = trainTypes.map(t => {
+  dom.trainTypeRow.innerHTML = trainTypes.map((t, i) => {
     const ei = t.expressIndices;
     const maxS = ei ? getExpressMaxStops(p, ei) : p.maxStops;
     const cappedS = state.stopsCap ? Math.min(maxS, state.stopsCapValue) : maxS;
-    return `<button class="train-type-btn" style="background:${t.color}"
+    // Local (first) button gets full width when there are exactly 3 types
+    const fullWidth = i === 0 && trainTypes.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    return `<button class="train-type-btn" style="background:${t.color};${fullWidth}"
       data-type-name="${t.name}" data-max="${maxS}">
       ${t.name}<small>${t.ja} · 1–${cappedS}</small>
     </button>`;
