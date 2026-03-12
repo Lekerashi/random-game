@@ -673,7 +673,7 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
 <script>
 'use strict';
 
@@ -938,8 +938,10 @@ function getAliasKeys(stationName) {
 const state = {
   lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
   stationIndex: {},   // {normalizedName: [{lineName, lineColor, lineIdx, stationIdx}]}
-  stationNames: [],   // unique English names sorted (all)
-  stationNames23: [], // unique English names within 23 wards
+  stationNames: [],       // unique English names sorted (all)
+  stationNamesNorm: [],   // pre-normalized parallel to stationNames
+  stationNames23: [],     // unique English names within 23 wards
+  stationNames23Norm: [], // pre-normalized parallel to stationNames23
   wards23Only: false, // restrict to 23 special wards
   stopsCap: false,    // cap maximum stops rolled
   stopsCapValue: 10,  // cap value
@@ -1142,12 +1144,14 @@ function buildIndex(lines, osmNames = {}) {
   }
 
   state.stationNames = Array.from(nameSet).sort();
+  state.stationNamesNorm = state.stationNames.map(normalize);
   state.stationNames23 = state.stationNames.filter(name => {
     const entries = state.stationIndex[normalize(name)] || [];
     if (!entries.length) return false;
     const stn = state.lines[entries[0].lineIdx].stations[entries[0].stationIdx];
     return isIn23Wards(stn.lat, stn.lng);
   });
+  state.stationNames23Norm = state.stationNames23.map(normalize);
   setLoadingStatus('');
   hideLoading();
 }
@@ -1402,6 +1406,7 @@ function setupAutocomplete() {
   const list     = document.getElementById('autocomplete-list');
   let activeIdx  = -1;
   let currentItems = [];
+  let debounceTimer = null;
 
   function close() {
     list.classList.remove('open');
@@ -1432,18 +1437,22 @@ function setupAutocomplete() {
 
   input.addEventListener('input', () => {
     input.classList.remove('selected');
+    clearTimeout(debounceTimer);
     const q = normalize(input.value.trim());
     if (q.length < 1) { close(); return; }
-    const names = state.wards23Only ? state.stationNames23 : state.stationNames;
-    const matches = names
-      .filter(n => normalize(n).includes(q))
-      .sort((a, b) => {
-        const ai = normalize(a).indexOf(q), bi = normalize(b).indexOf(q);
-        return ai - bi || a.localeCompare(b);
-      })
-      .slice(0, 50);
-    if (matches.length === 0) { close(); return; }
-    openWith(matches);
+    debounceTimer = setTimeout(() => {
+      const names = state.wards23Only ? state.stationNames23 : state.stationNames;
+      const norms = state.wards23Only ? state.stationNames23Norm : state.stationNamesNorm;
+      const matched = [];
+      for (let i = 0; i < names.length; i++) {
+        const pos = norms[i].indexOf(q);
+        if (pos !== -1) matched.push({ name: names[i], pos });
+      }
+      matched.sort((a, b) => a.pos - b.pos || a.name.localeCompare(b.name));
+      const matches = matched.slice(0, 50).map(m => m.name);
+      if (matches.length === 0) { close(); return; }
+      openWith(matches);
+    }, 100);
   });
 
   input.addEventListener('keydown', e => {
@@ -2211,6 +2220,28 @@ async function showCafes() {
 }
 
 // ── History ───────────────────────────────────────────────────────────────
+function buildHistoryItem(e, num) {
+  let body;
+  if (e.flight) {
+    body = `<strong>${e.from}</strong> <span style="color:#f59e0b">✈️ took a flight — bon voyage!</span>`;
+  } else if (e.drinkHere) {
+    body = `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`;
+  } else if (e.drinkAtTransfer) {
+    const tt = e.trainType ? ` ${e.trainType}` : '';
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent)">🍻 drink roll</span>`;
+  } else if (e.transferred) {
+    const tt = e.trainType ? ` ${e.trainType}` : '';
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent2)">🔀 transfer</span>`;
+  } else {
+    const tt = e.trainType ? ` ${e.trainType}` : '';
+    body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
+  }
+  return `<div class="history-item">
+      <span class="history-num">${num}.</span>
+      <span class="history-text">${body}</span>
+    </div>`;
+}
+
 function addHistory(transferInfo) {
   const drinkHere = state.selectedPlatform?.drinkHere && !transferInfo;
   const flight    = transferInfo?.flight || false;
@@ -2229,7 +2260,8 @@ function addHistory(transferInfo) {
     stopsUsed:      transferInfo?.stopsUsed || null,
   };
   state.history.push(entry);
-  renderHistory();
+  document.getElementById('history-empty').style.display = 'none';
+  document.getElementById('history-list').insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
 }
 
 function renderHistory() {
@@ -2243,28 +2275,9 @@ function renderHistory() {
   }
 
   empty.style.display = 'none';
-  list.innerHTML = state.history.slice().reverse().map((e, i) => {
-    const num = state.history.length - i;
-    let body;
-    if (e.flight) {
-      body = `<strong>${e.from}</strong> <span style="color:#f59e0b">✈️ took a flight — bon voyage!</span>`;
-    } else if (e.drinkHere) {
-      body = `<strong>${e.from}</strong> <span style="color:var(--muted)">🍻 stayed for a drink</span>`;
-    } else if (e.drinkAtTransfer) {
-      const tt = e.trainType ? ` ${e.trainType}` : '';
-      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent)">🍻 drink roll</span>`;
-    } else if (e.transferred) {
-      const tt = e.trainType ? ` ${e.trainType}` : '';
-      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stopsUsed} stop${e.stopsUsed !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small> <span style="color:var(--accent2)">🔀 transfer</span>`;
-    } else {
-      const tt = e.trainType ? ` ${e.trainType}` : '';
-      body = `<strong>${e.from}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${e.line}${tt} (${e.stops} stop${e.stops !== 1 ? 's' : ''}) &rarr; <strong>${e.to}</strong> <small style="color:var(--muted);margin-left:4px">${e.toJa}</small>`;
-    }
-    return `<div class="history-item">
-      <span class="history-num">${num}.</span>
-      <span class="history-text">${body}</span>
-    </div>`;
-  }).join('');
+  list.innerHTML = state.history.slice().reverse().map((e, i) =>
+    buildHistoryItem(e, state.history.length - i)
+  ).join('');
 }
 
 function clearHistory() {
