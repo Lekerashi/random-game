@@ -554,6 +554,18 @@
     .btn-sm                    { font-size: .75rem; padding: 4px 10px; }
     .stops-cap-inline          { margin-left: 16px; display: flex; align-items: center; }
     footer                     { text-align: center; padding: 2rem 1rem 3rem; color: #555; font-size: 0.75rem; }
+    .how-to-play-wrap          { text-align: center; padding: 0.5rem 1rem 0; }
+    .how-to-play-btn           { background: none; border: none; color: #555; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 4px 8px; }
+    .how-to-play-btn:hover     { color: #333; }
+    .htp-overlay               { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    .htp-overlay.hidden        { display: none; }
+    .htp-card                  { background: var(--surface); border: 1px solid var(--surface2); border-radius: 12px; max-width: 420px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; font-size: 0.9rem; line-height: 1.5; color: var(--muted); }
+    .htp-card h3               { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--text); }
+    .htp-card ol               { margin: 0.5rem 0; padding-left: 1.4rem; }
+    .htp-card ol li            { margin-bottom: 0.4rem; }
+    .htp-card .htp-goal        { margin-top: 0.75rem; font-style: italic; color: var(--muted); }
+    .htp-close                 { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888; line-height: 1; }
+    .htp-close:hover           { color: var(--text); }
 
     /* ── Template utility classes ────────────────────── */
     .text-muted   { color: var(--muted); }
@@ -2550,6 +2562,27 @@ function copyRoute() {
   detectLocation(); // auto-detect on boot; silently ignored if denied
 })();
 </script>
+<div class="how-to-play-wrap">
+  <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')">How to Play</button>
+</div>
+
+<div id="htp-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="htp-card">
+    <button class="htp-close" onclick="document.getElementById('htp-overlay').classList.add('hidden')">&times;</button>
+    <h3>How to Play</h3>
+    <ol>
+      <li><strong>Pick your starting station</strong> &mdash; use your location, search for one, or go random.</li>
+      <li><strong>Roll a train</strong> &mdash; you'll get a random line and direction.</li>
+      <li><strong>Go to the platform</strong> and board the next train that arrives.</li>
+      <li><strong>Roll for stops</strong> &mdash; ride that many stations.</li>
+      <li><strong>Roll for transfers</strong> &mdash; as you ride, if a station has transfers, roll to see if you transfer or stay on.</li>
+      <li><strong>Get off and drink!</strong></li>
+      <li><strong>Go back to the station</strong> and do it all again!</li>
+    </ol>
+    <p class="htp-goal">The goal of the game is simply to explore Tokyo and drink in new places!</p>
+  </div>
+</div>
+
 <footer>
   Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens
 </footer>
