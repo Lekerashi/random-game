@@ -1317,14 +1317,14 @@ const translations = {
     transferHistory:      '🔀 transfer',
     // How to play
     howToPlay:            'How to Play',
-    htpStep1:             '<strong>Pick your starting station</strong> — use your location, search for one, or go random.',
-    htpStep2:             '<strong>Roll a train</strong> — you\'ll get a random line and direction.',
-    htpStep3:             '<strong>Go to the platform</strong> and board the next train that arrives.',
-    htpStep4:             '<strong>Roll for stops</strong> — ride that many stations.',
-    htpStep5:             '<strong>Roll for transfers</strong> — as you ride, if a station has transfers, roll to see if you transfer or stay on.',
-    htpStep6:             '<strong>Get off and drink!</strong>',
-    htpStep7:             '<strong>Go back to the station</strong> and do it all again!',
-    htpGoal:              'The goal of the game is simply to explore Tokyo and drink in new places!',
+    htpStep1:             'Pick your starting station — GPS, search, or random.',
+    htpStep2:             'Roll the dice to pick a train line and direction.',
+    htpStep3:             'Head to the platform and board the next train.',
+    htpStep4:             'Roll again right away — ride that many stops.',
+    htpStep5:             'If you pass a transfer station, roll to decide: switch lines or stay on.',
+    htpStep6:             'Arrive at your stop, get off, and grab a drink!',
+    htpStep7:             'Head back to the station and go again!',
+    htpGoal:              'Explore Tokyo and discover new places to drink!',
     // Footer
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     // Reroll button text
@@ -1382,7 +1382,7 @@ const translations = {
     sessionHistory:       'セッション履歴',
     copyRoute:            'ルートをコピー',
     clear:                'クリア',
-    noRoundsYet:          'まだラウンドなし — さあ振ろう！',
+    noRoundsYet:          'ラウンドなし　ゲームを始めよう！',
     copied:               'コピー完了！',
     copyFailed:           'コピー失敗',
     platformCount:        '<strong style="color:#fff">{name}</strong>：{n}路線 — 1〜{total}を振る',
@@ -1425,14 +1425,14 @@ const translations = {
     drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 乗り換え',
     howToPlay:            '遊び方',
-    htpStep1:             '<strong>出発駅を選ぶ</strong> — 現在地を使うか、検索するか、ランダムで。',
-    htpStep2:             '<strong>サイコロを振る</strong> — ランダムな路線と方向が決まります。',
-    htpStep3:             '<strong>ホームに行って</strong>、次に来る電車に乗りましょう。',
-    htpStep4:             '<strong>サイコロを振る</strong> — その数だけ乗ります。',
-    htpStep5:             '<strong>乗り換えを振る</strong> — 乗り換え駅では、サイコロで乗り換えるかそのまま乗るか決めます。',
-    htpStep6:             '<strong>降りて飲もう！</strong>',
-    htpStep7:             '<strong>駅に戻って</strong>、もう一度始めましょう！',
-    htpGoal:              'ゲームの目的は、東京を探検して新しい場所で飲むことです！',
+    htpStep1:             '出発駅をGPS・検索・ランダムから選ぶ。',
+    htpStep2:             'サイコロを振って乗る路線と方向をランダムに決める。',
+    htpStep3:             'ホームに行って、次来た電車に乗る。',
+    htpStep4:             '電車に乗ってすぐにもう一回サイコロを振り、出た数の分だけ乗り続ける。',
+    htpStep5:             '途中で乗換駅が出てきたらサイコロを振って、乗り換えるかそのまま乗るか決める。',
+    htpStep6:             '目的地についたら、電車を降りて一杯！',
+    htpStep7:             '駅に戻って、もう一回！',
+    htpGoal:              '東京を探検しながら、知らない街で飲むのがこのゲームの楽しみ方です！',
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     rerollText:           '🔁 振り直し',
   },
@@ -1479,6 +1479,7 @@ function switchLang(lang) {
   if (lang === currentLang) return;
   currentLang = lang;
   applyLang();
+  document.getElementById('localization-credit').style.display = lang === 'ja' ? '' : 'none';
   // Refresh New Game / Random button
   if (state.currentStation) {
     dom.randomStationBtn.innerHTML = t('newGame');
@@ -3308,15 +3309,15 @@ function copyRoute() {
     <button class="htp-close" onclick="document.getElementById('htp-overlay').classList.add('hidden')">&times;</button>
     <h3 data-i18n="howToPlay">How to Play</h3>
     <ol>
-      <li data-i18n="htpStep1"><strong>Pick your starting station</strong> &mdash; use your location, search for one, or go random.</li>
-      <li data-i18n="htpStep2"><strong>Roll a train</strong> &mdash; you'll get a random line and direction.</li>
-      <li data-i18n="htpStep3"><strong>Go to the platform</strong> and board the next train that arrives.</li>
-      <li data-i18n="htpStep4"><strong>Roll for stops</strong> &mdash; ride that many stations.</li>
-      <li data-i18n="htpStep5"><strong>Roll for transfers</strong> &mdash; as you ride, if a station has transfers, roll to see if you transfer or stay on.</li>
-      <li data-i18n="htpStep6"><strong>Get off and drink!</strong></li>
-      <li data-i18n="htpStep7"><strong>Go back to the station</strong> and do it all again!</li>
+      <li data-i18n="htpStep1">Pick your starting station — GPS, search, or random.</li>
+      <li data-i18n="htpStep2">Roll the dice to pick a train line and direction.</li>
+      <li data-i18n="htpStep3">Head to the platform and board the next train.</li>
+      <li data-i18n="htpStep4">Roll again right away — ride that many stops.</li>
+      <li data-i18n="htpStep5">If you pass a transfer station, roll to decide: switch lines or stay on.</li>
+      <li data-i18n="htpStep6">Arrive at your stop, get off, and grab a drink!</li>
+      <li data-i18n="htpStep7">Head back to the station and go again!</li>
     </ol>
-    <p class="htp-goal" data-i18n="htpGoal">The goal of the game is simply to explore Tokyo and drink in new places!</p>
+    <p class="htp-goal" data-i18n="htpGoal">Explore Tokyo and discover new places to drink!</p>
   </div>
 </div>
 
@@ -3326,6 +3327,8 @@ function copyRoute() {
     <button data-lang="ja" onclick="switchLang('ja')">JP</button>
   </span>
 </div>
+
+<p id="localization-credit" style="display:none; text-align:center; color:#555; font-size:0.7rem; margin:0.5rem 0 0;">ローカライズ：優子</p>
 
 <footer>
   <span data-i18n="footer">Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens</span>
