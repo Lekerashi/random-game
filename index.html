@@ -1792,11 +1792,21 @@ const LINE_EXTRA_STATIONS = {
   ],
 };
 
+// Trim lines at a given station (inclusive) — drop everything beyond it
+const LINE_TRIM_AFTER = {
+  'JR Chuo Main Line': '甲府',
+};
+
 function buildIndex(lines, osmNames = {}) {
   state.lines = lines;
   for (const l of lines) {
     if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
     if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
+    const trimJa = LINE_TRIM_AFTER[l.name];
+    if (trimJa) {
+      const idx = l.stations.findIndex(s => s.ja === trimJa);
+      if (idx >= 0) l.stations.splice(idx + 1);
+    }
   }
   const nameSet = new Set();
 
