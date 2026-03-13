@@ -1322,6 +1322,7 @@ const translations = {
     parkHint:             'Enjoy the park! Umi-Shibaura is a Toshiba-owned station with nothing but a waterfront park.',
     kajigayaHint:         'Say "Hi" to Shane!',
     stayingForDrink:      '🍻 Staying for a drink',
+    stayingForPark:       '🌊 Enjoying the park',
     drinkAtTransfer:      '🍻 Drink here! (transfer roll on {line}{type})',
     noValidStops:         'All stops already visited! Reroll the platform.',
     // Platform pills
@@ -1342,6 +1343,7 @@ const translations = {
     copyRouteHeader:      '🗼 Tokyo Random Game — {date}',
     tookFlight:           '✈️ took a flight — bon voyage!',
     stayedForDrink:       '🍻 stayed for a drink',
+    stayedForPark:        '🌊 enjoyed the park',
     drinkRollHistory:     '🍻 drink!',
     drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 transfer',
@@ -1439,6 +1441,7 @@ const translations = {
     parkHint:             '公園を楽しもう！海芝浦は東芝の敷地内にある駅で、海辺の公園しかありません。',
     kajigayaHint:         'シェーンに向かって「乾杯！」と叫ぶ！',
     stayingForDrink:      '🍻 ここで一杯',
+    stayingForPark:       '🌊 公園を楽しもう',
     drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
     noValidStops:         '全ての駅を訪問済み！路線を振り直してください。',
     drinkHereLabel:       'ここで一杯！',
@@ -1455,6 +1458,7 @@ const translations = {
     copyRouteHeader:      '🗼 東京ランダムゲーム — {date}',
     tookFlight:           '✈️ フライトに乗った — 良い旅を！',
     stayedForDrink:       '🍻 ここで一杯',
+    stayedForPark:        '🌊 公園を楽しんだ',
     drinkRollHistory:     '🍻 ここで一杯',
     drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 乗り換え',
@@ -1567,7 +1571,7 @@ function switchLang(lang) {
     } else if (p.drinkHere) {
       const isUmiDH = state.currentStation.ja === '海芝浦';
       const isKajiDH = state.currentStation.ja === '梶が谷';
-      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
+      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmiDH ? 'stayingForPark' : 'stayingForDrink')}<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
         + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
     } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
       // drink at transfer — handled above
@@ -2504,7 +2508,7 @@ function rollPlatform() {
       const isUmiDH = state.currentStation.ja === '海芝浦';
       const isKajiDH = state.currentStation.ja === '梶が谷';
       dom.destSub.innerHTML =
-        `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}`
+        `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmiDH ? 'stayingForPark' : 'stayingForDrink')}`
         + `<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
         + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
       dom.destCard.classList.add('active');
@@ -2548,8 +2552,8 @@ function rollPlatform() {
 }
 
 function rerollPlatform() {
-  // Undo history entry if rerolling from "Drink here!"
-  if (state.selectedPlatform?.drinkHere && state.history.length > 0) {
+  // Undo history entry added by the previous roll
+  if (state.history.length > 0 && (state.selectedPlatform?.drinkHere || state.destination)) {
     state.history.pop();
     renderHistory();
   }
@@ -2578,6 +2582,11 @@ function rerollPlatform() {
 }
 
 function rerollStops() {
+  // Undo history entry added by the previous roll
+  if (state.history.length > 0 && state.destination) {
+    state.history.pop();
+    renderHistory();
+  }
   // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
   state._rerollExcludeStops = state.rolledStops;
   dom.rerollStopsBtn.style.display = 'none';
@@ -3247,7 +3256,8 @@ function buildHistoryItem(e, num) {
   if (e.flight) {
     body = `<strong>${from}</strong>${fromSub} <span class="text-flight">${t('tookFlight')}</span>`;
   } else if (e.drinkHere) {
-    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t('stayedForDrink')}</span>`;
+    const isUmiHist = e.fromJa === '海芝浦';
+    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t(isUmiHist ? 'stayedForPark' : 'stayedForDrink')}</span>`;
   } else if (e.drinkAtTransfer) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
     body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent">${t('drinkRollHistory')}</span>`;
@@ -3463,7 +3473,8 @@ function copyRoute() {
     if (e.flight) {
       lines.push(`${i + 1}. ${e.from} ${t('tookFlight')}`);
     } else if (e.drinkHere) {
-      lines.push(`${i + 1}. ${e.from} ${t('stayedForDrink')}`);
+      const isUmiExp = e.fromJa === '海芝浦';
+      lines.push(`${i + 1}. ${e.from} ${t(isUmiExp ? 'stayedForPark' : 'stayedForDrink')}`);
     } else if (e.drinkAtTransfer) {
       lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('drinkRollHistory')}`);
     } else if (e.transferred) {
