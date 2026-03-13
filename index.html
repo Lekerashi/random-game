@@ -1033,7 +1033,7 @@ const state = {
 };
 
 // ── Internationalization ──────────────────────────────────────────────────
-let currentLang = 'en';
+let currentLang = localStorage.getItem('random_game_lang') || 'en';
 
 const LINE_NAMES_JA = {
   // JR
@@ -1478,8 +1478,9 @@ function applyLang() {
 function switchLang(lang) {
   if (lang === currentLang) return;
   currentLang = lang;
+  localStorage.setItem('random_game_lang', lang);
   applyLang();
-  document.getElementById('localization-credit').style.display = lang === 'ja' ? '' : 'none';
+  document.getElementById('localization-credit').style.display = lang === 'ja' ? 'block' : 'none';
   // Refresh New Game / Random button
   if (state.currentStation) {
     dom.randomStationBtn.innerHTML = t('newGame');
@@ -3200,6 +3201,8 @@ function copyRoute() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 (async function init() {
+  // Restore saved language
+  if (currentLang !== 'en') applyLang();
   setupAutocomplete();
 
   dom.randomStationBtn.addEventListener('click', () => {
@@ -3304,6 +3307,13 @@ function copyRoute() {
 
   await loadData();
 })();
+// Re-apply language to elements parsed after the script tag
+document.addEventListener('DOMContentLoaded', () => {
+  if (currentLang !== 'en') {
+    applyLang();
+    document.getElementById('localization-credit').style.display = 'block';
+  }
+});
 </script>
 <div class="how-to-play-wrap">
   <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')" data-i18n="howToPlay">How to Play</button>
