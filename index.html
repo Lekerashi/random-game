@@ -642,7 +642,7 @@
     </div>
     <div class="wards-toggle-row">
       <label class="wards-toggle">
-        <input type="checkbox" id="wards23-check">
+        <input type="checkbox" id="wards23-check" checked>
         <span data-i18n="wardsOnly">23 Wards only</span>
       </label>
       <span class="stops-cap-inline">
@@ -1014,7 +1014,7 @@ const state = {
   stationNames23: [],     // unique English names within 23 wards
   stationNames23Norm: [], // pre-normalized parallel to stationNames23
   stationNames23Ja: [],   // parallel Japanese names for 23-ward search
-  wards23Only: false, // restrict to 23 special wards
+  wards23Only: true, // restrict to 23 special wards
   stopsCap: false,    // cap maximum stops rolled
   stopsCapValue: 10,  // cap value
   currentStation: null,    // {name, ja, lat, lng}
