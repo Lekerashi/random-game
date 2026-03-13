@@ -1890,7 +1890,7 @@ function wardMaxStops(line, fromIdx, step) {
     let idx = line.circular
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
-    if (!line.circular && (idx < 0 || idx >= N)) break;
+    if (!line.circular && (idx < 0 || idx >= N)) return i - 1;
     if (!isIn23Wards(line.stations[idx].lat, line.stations[idx].lng)) return i - 1;
   }
   return N - 1;
@@ -2521,6 +2521,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
         if (platform.direction === 'start') p = pos - i;
         else p = pos + i;
         p = Math.max(0, Math.min(ei.length - 1, p));
+        if (result.length > 0 && result[result.length - 1] === line.stations[ei[p]]) break;
         result.push(line.stations[ei[p]]);
       }
       return result;
@@ -2539,6 +2540,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
         : platform.fromIdx + i;
       idx = Math.max(0, Math.min(N - 1, idx));
     }
+    if (result.length > 0 && result[result.length - 1] === line.stations[idx]) break;
     result.push(line.stations[idx]);
   }
   return result;
