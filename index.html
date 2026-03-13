@@ -1317,6 +1317,7 @@ const translations = {
     // Special rolls
     flightRoll:           '#{n} → ✈️ Take a flight!',
     drinkRoll:            '#{n} → 🍻 Drink here!',
+    parkRoll:             '#{n} → 🌊 Enjoy the park!',
     flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
     drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
     parkHint:             'Enjoy the park! Umi-Shibaura is a Toshiba-owned station with nothing but a waterfront park.',
@@ -1436,6 +1437,7 @@ const translations = {
     outsideWards:         '現在の駅は23区外です — 別の駅を選んでください。',
     flightRoll:           '#{n} → ✈️ フライトに乗ろう！',
     drinkRoll:            '#{n} → 🍻 ここで飲もう！',
+    parkRoll:             '#{n} → 🌊 公園を楽しもう！',
     flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
     drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
     parkHint:             '公園を楽しもう！海芝浦は東芝の敷地内にある駅で、海辺の公園しかありません。',
@@ -1541,7 +1543,9 @@ function switchLang(lang) {
     const p = state.selectedPlatform;
     const roll = state.rolledPlatformNum;
     if (p.drinkHere) {
-      dom.diePlatformLabel.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
+      const rollKey = state.currentStation.ja === '海芝浦' ? 'parkRoll' : 'drinkRoll';
+      dom.diePlatformLabel.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
+      dom.selectedPlatformText.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
     } else if (p.takeFlight) {
       dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
     } else {
@@ -2488,14 +2492,15 @@ function rollPlatform() {
 
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
-      dom.diePlatformLabel.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
+      const rollKey = state.currentStation.ja === '海芝浦' ? 'parkRoll' : 'drinkRoll';
+      dom.diePlatformLabel.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
       dom.rerollPlatformBtn.style.display = 'block';
       // Hide stops UI but keep step-stops visible (reroll button lives there)
       dom.rollStopsRow.style.display = 'none';
       dom.stopsRangeText.textContent = '';
       dom.trainTypeRow.style.display = 'none';
       dom.dieStops.parentElement.style.display = 'none';
-      dom.selectedPlatformText.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
+      dom.selectedPlatformText.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
       dom.selectedPlatformDot.style.background = 'transparent';
       showStep('step-stops');
 
