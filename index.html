@@ -2592,17 +2592,10 @@ async function checkTransfers(platform, rolledStops) {
     return Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]);
   }
 
-  // Only 1 stop → no intermediate stations to check
-  if (route.length <= 1) {
-    state.stationsSinceDrink += thirstBetween(-1, route.length - 1);
-    return { type: 'arrive', station: route[route.length - 1] };
-  }
-
-  // Intermediate = all except last (destination)
-  const intermediates = route.slice(0, -1);
+  // Check all stations for transfers (including destination)
   const transferIndices = [];
-  for (let i = 0; i < intermediates.length; i++) {
-    if (hasTransferLines(intermediates[i].name, platform.lineName)) {
+  for (let i = 0; i < route.length; i++) {
+    if (hasTransferLines(route[i].name, platform.lineName)) {
       transferIndices.push(i);
     }
   }
@@ -2658,14 +2651,15 @@ async function checkTransfers(platform, rolledStops) {
     // Thirst: after 5 stations, each extra station adds a drink number
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
-    const alreadyDrank = state.drankAt.has(normalize(intermediates[i].name));
+    const isDestination = i === route.length - 1;
+    const alreadyDrank = state.drankAt.has(normalize(route[i].name));
     const extraDrink = Math.max(0, state.stationsSinceDrink - 5);
     const sides = alreadyDrank ? 4 : 5 + extraDrink;
     const roll = Math.floor(Math.random() * sides) + 1;
 
-    // Animate die with emojis
-    const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
-    const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
+    // Animate die with emojis (destination: no 🚃 stay option)
+    const emojis = isDestination ? ['🍺', '🔀'] : (alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀']);
+    const resultEmoji = isDestination ? (roll === 4 ? '🔀' : '🍺') : (roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺');
     die.classList.add('rolling');
     await new Promise(resolve => {
       let count = 0;
@@ -2681,7 +2675,17 @@ async function checkTransfers(platform, rolledStops) {
       }, 80);
     });
 
-    if (roll <= 3) {
+    // Destination: only transfer (roll 4) changes outcome; everything else = arrive
+    if (isDestination && roll !== 4) {
+      die.classList.add('drink-roll');
+      res.textContent = t('drinkResult');
+      res.setAttribute('data-i18n', 'drinkResult');
+      res.classList.add('drink-label');
+      el.classList.remove('checking');
+      el.classList.add('drink');
+      await new Promise(r => setTimeout(r, 700));
+      return { type: 'arrive', station: route[i] };
+    } else if (roll <= 3) {
       // Stay on
       die.classList.add('stay');
       res.textContent = t('stayResult');
@@ -2691,7 +2695,7 @@ async function checkTransfers(platform, rolledStops) {
       el.classList.add('passed');
 
       // Dim stations between this and the next transfer (or end)
-      const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : intermediates.length;
+      const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
       for (let j = i + 1; j < nextTI; j++) {
         document.getElementById(`jstn-${j}`).classList.add('passed');
       }
@@ -2708,7 +2712,7 @@ async function checkTransfers(platform, rolledStops) {
       for (let j = i + 1; j < route.length; j++) {
         document.getElementById(`jstn-${j}`).classList.add('passed');
       }
-      return { type: 'transfer', station: intermediates[i], stopsUsed: i + 1 };
+      return { type: 'transfer', station: route[i], stopsUsed: i + 1 };
     } else {
       // Drink here!
       die.classList.add('drink-roll');
@@ -2721,7 +2725,7 @@ async function checkTransfers(platform, rolledStops) {
       for (let j = i + 1; j < route.length; j++) {
         document.getElementById(`jstn-${j}`).classList.add('passed');
       }
-      return { type: 'drink', station: intermediates[i], stopsUsed: i + 1 };
+      return { type: 'drink', station: route[i], stopsUsed: i + 1 };
     }
   }
 
