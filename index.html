@@ -2349,6 +2349,14 @@ function rollPlatform() {
     if (p.drinkHere) {
       dom.diePlatformLabel.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
       dom.rerollPlatformBtn.style.display = 'block';
+      // Hide stops UI but keep step-stops visible (reroll button lives there)
+      dom.rollStopsRow.style.display = 'none';
+      dom.stopsRangeText.textContent = '';
+      dom.trainTypeRow.style.display = 'none';
+      dom.dieStops.parentElement.style.display = 'none';
+      dom.selectedPlatformText.innerHTML = `<strong>${t('drinkRoll', { n: roll })}</strong>`;
+      dom.selectedPlatformDot.style.background = 'transparent';
+      showStep('step-stops');
 
       // Use current station as destination
       state.destination = state.currentStation;
@@ -2397,6 +2405,11 @@ function rollPlatform() {
 }
 
 function rerollPlatform() {
+  // Undo history entry if rerolling from "Drink here!"
+  if (state.selectedPlatform?.drinkHere && state.history.length > 0) {
+    state.history.pop();
+    renderHistory();
+  }
   // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
   state._rerollExcludePlatform = state.rolledPlatformNum;
   // Hide reroll, reset step 2 content, and fire a fresh roll
@@ -2406,6 +2419,7 @@ function rerollPlatform() {
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
+  dom.dieStops.parentElement.style.display = '';
   dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollStopsBtn.disabled = true;
