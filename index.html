@@ -1056,6 +1056,7 @@ const state = {
   spatialGrid: null,
   spatialCell: 0.04,
 };
+window._state = state; // expose for debug.js
 
 // ── Internationalization ──────────────────────────────────────────────────
 let currentLang = localStorage.getItem('random_game_lang') || 'en';
@@ -2438,7 +2439,10 @@ function rollPlatform() {
   // Flight: 5% of all rolls at airport stations trigger the flight
   const flightIdx = state.platforms.findIndex(p => p.takeFlight);
   let roll;
-  if (flightIdx !== -1 && Math.random() < 0.05) {
+  if (window._forceNextRoll != null) {
+    roll = Math.max(1, Math.min(n, window._forceNextRoll));
+    window._forceNextRoll = null;
+  } else if (flightIdx !== -1 && Math.random() < 0.05) {
     roll = flightIdx + 1;
   } else {
     const pool = [];
@@ -3039,14 +3043,19 @@ function rollStops() {
   }
 
   let roll;
-  const excludeStop = state._rerollExcludeStops;
-  state._rerollExcludeStops = null;
-  if (excludeStop != null && max > 1) {
-    const pool = [];
-    for (let i = 1; i <= max; i++) if (i !== excludeStop) pool.push(i);
-    roll = pool[Math.floor(Math.random() * pool.length)];
+  if (window._forceNextRoll != null) {
+    roll = Math.max(1, Math.min(max, window._forceNextRoll));
+    window._forceNextRoll = null;
   } else {
-    roll = Math.floor(Math.random() * max) + 1;
+    const excludeStop = state._rerollExcludeStops;
+    state._rerollExcludeStops = null;
+    if (excludeStop != null && max > 1) {
+      const pool = [];
+      for (let i = 1; i <= max; i++) if (i !== excludeStop) pool.push(i);
+      roll = pool[Math.floor(Math.random() * pool.length)];
+    } else {
+      roll = Math.floor(Math.random() * max) + 1;
+    }
   }
 
   animateRoll(1, max, roll, dom.dieStops, async () => {
