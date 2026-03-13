@@ -949,7 +949,7 @@ const STATION_ALIASES = {
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
-const CACHE_KEY = 'random_game_v9';
+const CACHE_KEY = 'random_game_v10';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ← Paste your HERE Maps API key here (free at developer.here.com)
@@ -1781,9 +1781,14 @@ const LINE_NAME_FIXES = { 'Tokyu Oimacho Line': 'Tokyu Oimachi Line' };
 // Stations missing from upstream data that we append to lines
 const LINE_EXTRA_STATIONS = {
   'JR Tokaido Main Line': [
-    { name: 'Kannami',  ja: '函南',  lat: 35.0873, lng: 139.0044 },
-    { name: 'Mishima',  ja: '三島',  lat: 35.1276, lng: 138.9110 },
-    { name: 'Numazu',   ja: '沼津',  lat: 35.1015, lng: 138.8635 },
+    { name: 'Kannami',           ja: '函南',      lat: 35.0873, lng: 139.0044 },
+    { name: 'Mishima',           ja: '三島',      lat: 35.1276, lng: 138.9110 },
+    { name: 'Numazu',            ja: '沼津',      lat: 35.1015, lng: 138.8635 },
+    { name: 'Katahama',          ja: '片浜',      lat: 35.1180, lng: 138.8195 },
+    { name: 'Hara',              ja: '原',        lat: 35.1248, lng: 138.7937 },
+    { name: 'Higashi-Tagonoura', ja: '東田子の浦', lat: 35.1361, lng: 138.7461 },
+    { name: 'Yoshiwara',         ja: '吉原',      lat: 35.1439, lng: 138.7023 },
+    { name: 'Fuji',              ja: '富士',      lat: 35.1515, lng: 138.6512 },
   ],
 };
 
