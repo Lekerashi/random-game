@@ -1312,6 +1312,7 @@ const translations = {
     noValidStops:         'All stops already visited! Reroll the platform.',
     // Platform pills
     drinkHereLabel:       'Drink here!',
+    parkHereLabel:        'Enjoy the park!',
     takeFlightLabel:      'Take a flight!',
     // Directions
     loopCCW:              'Loop Counterclockwise',
@@ -1426,6 +1427,7 @@ const translations = {
     drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
     noValidStops:         '全ての駅を訪問済み！路線を振り直してください。',
     drinkHereLabel:       'ここで一杯！',
+    parkHereLabel:        '公園を楽しもう！',
     takeFlightLabel:      'フライトに乗ろう！',
     loopCCW:              '反時計回り',
     loopCW:               '時計回り',
@@ -1570,8 +1572,8 @@ function refreshPlatformGrid() {
     p.drinkHere
       ? `<div class="platform-pill drink-here">
            <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
-           <span>🍻</span>
-           <span>${t('drinkHereLabel')}</span>
+           <span>${state.currentStation?.ja === '海芝浦' ? '🌊' : '🍻'}</span>
+           <span>${state.currentStation?.ja === '海芝浦' ? t('parkHereLabel') : t('drinkHereLabel')}</span>
          </div>`
       : p.takeFlight
       ? `<div class="platform-pill take-flight">
