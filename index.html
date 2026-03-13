@@ -3388,6 +3388,11 @@ function detectLocation() {
     ({ coords }) => {
       btn.disabled = false;
       btn.classList.remove('locating');
+      // If user is outside the 23 wards with the filter on, auto-disable it
+      if (state.wards23Only && !isIn23Wards(coords.latitude, coords.longitude)) {
+        state.wards23Only = false;
+        dom.wards23Check.checked = false;
+      }
       const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
       if (!name) { setLocationHint(t('geoNoStation'), true); return; }
       setLocationHint(t('geoNearest', { name: stationDisplayName(name), dist }));
