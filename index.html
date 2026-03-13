@@ -3213,17 +3213,51 @@ function copyRoute() {
         showStep(null);
         hideAllCards();
         setLocationHint(t('outsideWards'), true);
-      } else if (!state.selectedPlatform) {
-        onStationSelected(state.currentStation.name);
-      } else if (state.wards23Only) {
-        // Check if the current platform still has stops within 23 wards
+      } else if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
+        // Platform already selected — recalculate maxStops in place
         const p = state.selectedPlatform;
         const line = state.lines[p.lineIdx];
-        const step = (p.direction === 'A' || p.direction === 'start') ? -1 : 1;
-        const maxW = wardMaxStops(line, p.fromIdx, step);
-        if (maxW <= 0) {
-          onStationSelected(state.currentStation.name);
+        const N = line.stations.length;
+        const step = (p.direction === 'start' || p.direction === 'A') ? -1 : 1;
+
+        // Recalculate maxStops using same logic as getPlatforms
+        let newMax;
+        if (line.name.includes('Oedo') || line.name.includes('\u014Cedo')) {
+          // Oedo lollipop — use original cap logic
+          const loopEnd = 29;
+          const loopMid = Math.floor((loopEnd - 1) / 2);
+          const stemLen = N - 1 - (loopEnd - 1);
+          if (p.dirKey === 'loopCCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1)) : loopMid;
+          else if (p.dirKey === 'loopCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1)) : loopMid;
+          else newMax = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)) : stemLen;
+        } else if (line.circular) {
+          newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step) : N - 1;
+        } else {
+          newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step)
+            : (p.direction === 'start' ? p.fromIdx : N - 1 - p.fromIdx);
         }
+
+        if (newMax <= 0) {
+          // Platform no longer valid — fall back to rebuilding
+          onStationSelected(state.currentStation.name);
+        } else {
+          p.maxStops = newMax;
+          // Refresh the stops label and train type buttons
+          if (!showTrainTypeButtons(p)) {
+            refreshStopsLabel();
+            dom.rollStopsBtn.disabled = false;
+          }
+          // Also rebuild platform grid to reflect updated stop counts
+          state.platforms = getPlatforms(state.currentStation.name);
+          const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
+          const isAirport = /airport/i.test(state.currentStation.name);
+          state.platforms.push(...(canDrinkHere ? [{ drinkHere: true }] : []));
+          state.platforms.push(...(isAirport ? [{ takeFlight: true }] : []));
+          refreshPlatformGrid();
+        }
+      } else {
+        // No platform selected yet, or drink/flight — rebuild from scratch
+        onStationSelected(state.currentStation.name);
       }
     }
   });
@@ -3243,11 +3277,20 @@ function copyRoute() {
   });
   dom.stopsCap.addEventListener('change', e => {
     state.stopsCap = e.target.checked;
+    if (state.selectedPlatform && !state.selectedPlatform.drinkHere) {
+      showTrainTypeButtons(state.selectedPlatform);
+    }
     refreshStopsLabel();
   });
   dom.stopsCapValue.addEventListener('input', e => {
     const v = parseInt(e.target.value, 10);
-    if (!isNaN(v) && v >= 1) { state.stopsCapValue = v; refreshStopsLabel(); }
+    if (!isNaN(v) && v >= 1) {
+      state.stopsCapValue = v;
+      if (state.selectedPlatform && !state.selectedPlatform.drinkHere) {
+        showTrainTypeButtons(state.selectedPlatform);
+      }
+      refreshStopsLabel();
+    }
   });
 
   checkLastTrainWarning();
