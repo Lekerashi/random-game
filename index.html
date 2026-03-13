@@ -946,6 +946,12 @@ const LINE_BRANCHES = {
     { name: 'Okawa', ja: '大川支線', color: '#f07000',
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'] },
   ],
+  'Tokyo Metro Marunouchi Line': [
+    { name: 'Ogikubo', ja: '荻窪方面', color: '#e60012',
+      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','新中野','東高円寺','新高円寺','南阿佐ケ谷','荻窪'] },
+    { name: 'Honancho', ja: '方南町方面', color: '#f07800',
+      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町','方南町'] },
+  ],
 };
 
 // ── Station Aliases (physically connected stations with different names) ──
@@ -2588,17 +2594,23 @@ function showBranchButtons(p) {
     return pos < b.branchIndices.length - 1;
   });
 
-  // Check if all viable branches produce the same route ahead (shared trunk)
+  // Check if all viable branches produce the same reachable route (shared trunk)
   if (viable.length > 1) {
+    // Find the max stops the player could roll (respecting cap)
+    const bestMax = Math.max(...viable.map(b => {
+      const raw = getBranchMaxStops(p, b.branchIndices);
+      return state.stopsCap ? Math.min(raw, state.stopsCapValue) : raw;
+    }));
     const getAhead = b => {
       const pos = b.branchIndices.indexOf(p.fromIdx);
-      return p.direction === 'start'
-        ? b.branchIndices.slice(0, pos).join(',')
-        : b.branchIndices.slice(pos + 1).join(',');
+      const full = p.direction === 'start'
+        ? b.branchIndices.slice(0, pos).reverse()
+        : b.branchIndices.slice(pos + 1);
+      return full.slice(0, bestMax).join(',');
     };
     const firstAhead = getAhead(viable[0]);
     if (viable.every(b => getAhead(b) === firstAhead)) {
-      // All branches lead the same way — no choice needed
+      // All branches lead the same way within rollable range — no choice needed
       state.selectedBranch = viable[0];
       return false;
     }
