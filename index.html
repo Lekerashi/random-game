@@ -2584,7 +2584,10 @@ function getValidRouteInfo(platform, expressIndices, maxPhysical) {
 }
 
 function hasTransferLines(stationName, currentLineName) {
-  const entries = state.stationIndex[normalize(stationName)] || [];
+  const entries = [...(state.stationIndex[normalize(stationName)] || [])];
+  for (const aliasKey of getAliasKeys(stationName)) {
+    for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
+  }
   return entries.some(e => state.lines[e.lineIdx].name !== currentLineName);
 }
 
