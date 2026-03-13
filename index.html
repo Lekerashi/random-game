@@ -1319,6 +1319,7 @@ const translations = {
     flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
     drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
     parkHint:             'Enjoy the park! Umi-Shibaura is a Toshiba-owned station with nothing but a waterfront park.',
+    kajigayaHint:         'Say "Hi" to Shane!',
     stayingForDrink:      '🍻 Staying for a drink',
     drinkAtTransfer:      '🍻 Drink here! (transfer roll on {line}{type})',
     noValidStops:         'All stops already visited! Reroll the platform.',
@@ -1435,6 +1436,7 @@ const translations = {
     flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
     drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
     parkHint:             '公園を楽しもう！海芝浦は東芝の敷地内にある駅で、海辺の公園しかありません。',
+    kajigayaHint:         'シェーンに「こんにちは」と言おう！',
     stayingForDrink:      '🍻 ここで一杯',
     drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
     noValidStops:         '全ての駅を訪問済み！路線を振り直してください。',
@@ -1563,15 +1565,19 @@ function switchLang(lang) {
       dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
     } else if (p.drinkHere) {
       const isUmiDH = state.currentStation.ja === '海芝浦';
-      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`;
+      const isKajiDH = state.currentStation.ja === '梶が谷';
+      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
+        + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
     } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
       // drink at transfer — handled above
     } else {
       const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
       const isUmi = state.destination.ja === '海芝浦';
+      const isKaji = state.destination.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
-        + `<div class="drink-hint"><span style="font-size:1.1rem">${isUmi ? '🌊' : '🍻'}</span> ${isUmi ? t('parkHint') : t('drinkHint')}</div>`;
+        + `<div class="drink-hint"><span style="font-size:1.1rem">${isUmi ? '🌊' : '🍻'}</span> ${isUmi ? t('parkHint') : t('drinkHint')}</div>`
+        + (isKaji ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
     }
   }
   // Re-render history
@@ -2492,9 +2498,11 @@ function rollPlatform() {
       dom.destName.textContent = state.currentStation.name;
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       const isUmiDH = state.currentStation.ja === '海芝浦';
+      const isKajiDH = state.currentStation.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; ${t('stayingForDrink')}`
-        + `<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`;
+        + `<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
+        + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -3080,9 +3088,11 @@ function rollStops() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
       const isUmiShibaura2 = result.station.ja === '海芝浦';
+      const isKajigaya2 = result.station.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${result.station.ja} &nbsp;·&nbsp; ${isUmiShibaura2 ? '🌊 ' + t('parkHint') : t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType })}`
-        + `<div class="drink-hint">${isUmiShibaura2 ? t('parkHint') : t('drinkHint')}</div>`;
+        + `<div class="drink-hint">${isUmiShibaura2 ? t('parkHint') : t('drinkHint')}</div>`
+        + (isKajigaya2 ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -3100,11 +3110,14 @@ function rollStops() {
     dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
     const isUmiShibaura = dest.ja === '海芝浦';
+    const isKajigaya = dest.ja === '梶が谷';
     const hintEmoji = isUmiShibaura ? '🌊' : '🍻';
     const hintText = isUmiShibaura ? t('parkHint') : t('drinkHint');
+    const extraHint = isKajigaya ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '';
     dom.destSub.innerHTML =
       `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
-      + `<div class="drink-hint"><span style="font-size:1.1rem">${hintEmoji}</span> ${hintText}</div>`;
+      + `<div class="drink-hint"><span style="font-size:1.1rem">${hintEmoji}</span> ${hintText}</div>`
+      + extraHint;
     dom.destCard.classList.add('active');
     dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
