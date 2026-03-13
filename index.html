@@ -1926,12 +1926,14 @@ function platformHint(p) {
   return `${arrow} ${t('towardStation', { name: stationDisplayName(target) })}`;
 }
 
-function getPlatforms(stationName) {
+function getPlatforms(stationName, includeAliases = true) {
   const key = normalize(stationName);
   const entries = [...(state.stationIndex[key] || [])];
   // Also include platforms from aliased stations (connected stations with different names)
-  for (const aliasKey of getAliasKeys(stationName)) {
-    for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
+  if (includeAliases) {
+    for (const aliasKey of getAliasKeys(stationName)) {
+      for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
+    }
   }
   const platforms = [];
 
@@ -2262,7 +2264,7 @@ function onStationSelected(name, arrivedVia) {
   // Compute platforms + add drink-here as last option
   // (not if last roll was already a drink, or if already drank here this session)
   const canDrinkHere = !lastWasDrink && !state.drankAt.has(normalize(name));
-  let allPlatforms = getPlatforms(name);
+  let allPlatforms = getPlatforms(name, !!arrivedVia);
   if (arrivedVia) {
     const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
     if (arrivedVia.isTransfer) {
