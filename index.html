@@ -1055,6 +1055,7 @@ const state = {
   mapMarker: null,
   spatialGrid: null,
   spatialCell: 0.04,
+  geoNearest: null,     // {name, dist} from last geolocation
 };
 window._state = state; // expose for debug.js
 
@@ -1588,6 +1589,10 @@ function switchLang(lang) {
         + `<div class="drink-hint"><span style="font-size:1.1rem">${isUmi ? '🌊' : '🍻'}</span> ${isUmi ? t('parkHint') : t('drinkHint')}</div>`
         + (isKaji ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
     }
+  }
+  // Refresh nearest station hint
+  if (state.geoNearest) {
+    setLocationHint(t('geoNearest', { name: stationDisplayName(state.geoNearest.name), dist: state.geoNearest.dist }));
   }
   // Re-render history
   renderHistory();
@@ -3349,6 +3354,7 @@ function resetGame() {
   state.destination     = null;
   state.stationsSinceDrink = 0;
   state.drankAt.clear();
+  state.geoNearest = null;
 
   dom.stationInput.value = '';
   dom.stationInput.classList.remove('selected');
@@ -3419,6 +3425,7 @@ function detectLocation() {
       }
       const { name, dist } = findNearestStation(coords.latitude, coords.longitude);
       if (!name) { setLocationHint(t('geoNoStation'), true); return; }
+      state.geoNearest = { name, dist };
       setLocationHint(t('geoNearest', { name: stationDisplayName(name), dist }));
       dom.stationInput.value = name;
       dom.stationInput.classList.add('selected');
