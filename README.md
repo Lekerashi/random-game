@@ -11,8 +11,6 @@ A random Tokyo train station drinking game. Roll dice to pick train lines and st
 3. **Roll stops** — dice picks how many stops to ride
 4. **Arrive & drink** — find nearby bars, izakayas, or cafes, then roll again from your new station
 
-Special rolls include "Drink here!" (stay and drink at your current station) and a rare airport easter egg.
-
 ## Features
 
 - Covers all Greater Tokyo rail lines — JR, Metro, Toei, private railways
@@ -53,8 +51,6 @@ Localized by Yuko
 2. **路線を振る** — サイコロで駅のホームから路線を決定
 3. **駅数を振る** — サイコロで何駅乗るかを決定
 4. **到着＆飲む** — 近くのバー・居酒屋・カフェを探して、新しい駅からまたサイコロを振ろう
-
-特別な出目には「ここで飲め！」（今の駅で一杯）やレアな空港イースターエッグも。
 
 ## 特徴
 
