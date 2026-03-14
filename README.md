@@ -36,3 +36,5 @@ Single-file web app (`index.html`) — no frameworks, no build step, no npm. Ope
 ## Credits
 
 Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens
+
+Localized by Yuko
