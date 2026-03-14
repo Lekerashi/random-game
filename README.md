@@ -29,7 +29,7 @@ Special rolls include "Drink here!" (stay and drink at your current station) and
 
 Single-file web app (`index.html`) — no frameworks, no build step, no npm. Opens directly in a browser.
 
-- Station data from [japan-train-data](https://github.com/nicholasgasior/japan-train-data), filtered to Greater Tokyo at runtime
+- Station data from [japan-train-data](https://github.com/adieuadieu/japan-train-data), filtered to Greater Tokyo at runtime
 - Maps via Leaflet.js + OpenStreetMap
 - Nearby venues via Overpass API
 
@@ -72,7 +72,7 @@ Localized by Yuko
 
 単一ファイルのWebアプリ（`index.html`）— フレームワークなし、ビルドなし、npmなし。ブラウザで直接開けます。
 
-- 駅データ：[japan-train-data](https://github.com/nicholasgasior/japan-train-data)（実行時に首都圏をフィルタ）
+- 駅データ：[japan-train-data](https://github.com/adieuadieu/japan-train-data)（実行時に首都圏をフィルタ）
 - 地図：Leaflet.js + OpenStreetMap
 - 周辺施設：Overpass API
 
