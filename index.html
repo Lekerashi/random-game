@@ -2895,9 +2895,9 @@ async function checkTransfers(platform, rolledStops) {
     return Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]);
   }
 
-  // Check all stations for transfers (including destination)
+  // Check intermediate stations for transfers (not the destination)
   const transferIndices = [];
-  for (let i = 0; i < route.length; i++) {
+  for (let i = 0; i < route.length - 1; i++) {
     if (hasTransferLines(route[i].name, platform.lineName)) {
       transferIndices.push(i);
     }
@@ -2954,15 +2954,14 @@ async function checkTransfers(platform, rolledStops) {
     // Thirst: after 5 stations, each extra station adds a drink number
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
-    const isDestination = i === route.length - 1;
     const alreadyDrank = state.drankAt.has(normalize(route[i].name));
     const extraDrink = Math.max(0, state.stationsSinceDrink - 5);
     const sides = alreadyDrank ? 4 : 5 + extraDrink;
     const roll = Math.floor(Math.random() * sides) + 1;
 
-    // Animate die with emojis (destination: no 🚃 stay option)
-    const emojis = isDestination ? ['🍺', '🔀'] : (alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀']);
-    const resultEmoji = isDestination ? (roll === 4 ? '🔀' : '🍺') : (roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺');
+    // Animate die with emojis
+    const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
+    const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
     die.classList.add('rolling');
     await new Promise(resolve => {
       let count = 0;
@@ -2978,17 +2977,7 @@ async function checkTransfers(platform, rolledStops) {
       }, 80);
     });
 
-    // Destination: only transfer (roll 4) changes outcome; everything else = arrive
-    if (isDestination && roll !== 4) {
-      die.classList.add('drink-roll');
-      res.textContent = t('drinkResult');
-      res.setAttribute('data-i18n', 'drinkResult');
-      res.classList.add('drink-label');
-      el.classList.remove('checking');
-      el.classList.add('drink');
-      await new Promise(r => setTimeout(r, 700));
-      return { type: 'arrive', station: route[i] };
-    } else if (roll <= 3) {
+    if (roll <= 3) {
       // Stay on
       die.classList.add('stay');
       res.textContent = t('stayResult');
