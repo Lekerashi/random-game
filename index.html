@@ -567,6 +567,14 @@
     .htp-close                 { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888; line-height: 1; }
     .htp-close:hover           { color: var(--text); }
 
+    /* ── Stats overlay (reuses htp pattern) ─────────── */
+    .stats-grid                { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .stat-box                  { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-val                  { font-size: 1.6rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .stat-label                { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+    .stats-grid .stat-box.full-width { grid-column: 1 / -1; }
+    #history-distance          { color: var(--muted); font-size: .8rem; margin-top: 10px; text-align: right; }
+
     /* ── Language Toggle ────────────────────────────── */
     .lang-toggle-wrap {
       text-align: center;
@@ -732,12 +740,14 @@
     <div class="card-title history-title-row">
       <span data-i18n="sessionHistory">Session History</span>
       <div class="history-title-btns">
+        <button class="btn btn-ghost btn-sm" id="stats-btn" data-i18n="statsBtn">Stats</button>
         <button class="btn btn-ghost btn-sm" id="copy-route-btn" data-i18n="copyRoute">Copy route</button>
         <button class="btn btn-ghost btn-sm" id="clear-history-btn" data-i18n="clear">Clear</button>
       </div>
     </div>
     <div id="history-empty" class="bars-empty" data-i18n="noRoundsYet">No rounds yet — start rolling!</div>
     <div class="history-list" id="history-list"></div>
+    <div id="history-distance"></div>
   </div>
 </div>
 
@@ -1296,6 +1306,14 @@ const translations = {
     noRoundsYet:          'No rounds yet — start rolling!',
     copied:               'Copied!',
     copyFailed:           'Copy failed',
+    statsBtn:             'Stats',
+    statsTitle:           'Session Stats',
+    statStations:         'Stations visited',
+    statLines:            'Lines ridden',
+    statStops:            'Stations ridden',
+    statDistance:          'Distance traveled',
+    statDrinks:           'Drinks',
+    distanceTraveled:     '{km} km traveled',
     // Dynamic labels
     platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
     rollingStops:         'Rolling 1–{max} stop{s}',
@@ -1414,11 +1432,19 @@ const translations = {
     fetchBarFail:         'バーデータの取得に失敗しました: {msg}',
     fetchCafeFail:        'カフェデータの取得に失敗しました: {msg}',
     sessionHistory:       'セッション履歴',
-    copyRoute:            'ルートをコピー',
+    copyRoute:            'コピー',
     clear:                'クリア',
     noRoundsYet:          'ラウンドなし　ゲームを始めよう！',
     copied:               'コピー完了！',
     copyFailed:           'コピー失敗',
+    statsBtn:             'スタッツ',
+    statsTitle:           'セッション統計',
+    statStations:         '訪問駅数',
+    statLines:            '乗車路線数',
+    statStops:            '乗車駅数',
+    statDistance:          '移動距離',
+    statDrinks:           '飲んだ回数',
+    distanceTraveled:     '{km} km 移動',
     platformCount:        '<strong style="color:#fff">{name}</strong>：{n}路線 — 1〜{total}を振る',
     rollingStops:         '1〜{max}駅を振る',
     selectBranch:         '行先を選択',
@@ -1596,6 +1622,7 @@ function switchLang(lang) {
   }
   // Re-render history
   renderHistory();
+  updateHistoryDistance();
 }
 
 function refreshPlatformGrid() {
@@ -1670,6 +1697,8 @@ const dom = {
   historyList:  document.getElementById('history-list'),
   historyEmpty: document.getElementById('history-empty'),
   copyRouteBtn: document.getElementById('copy-route-btn'),
+  statsBtn:     document.getElementById('stats-btn'),
+  historyDist:  document.getElementById('history-distance'),
   // Controls (used in init)
   showMapBtn:          document.getElementById('show-map-btn'),
   clearHistoryBtn:     document.getElementById('clear-history-btn'),
@@ -3279,6 +3308,8 @@ function addHistory(transferInfo) {
   const entry = {
     from:      state.currentStation.name,
     fromJa:    state.currentStation.ja || '',
+    fromLat:   state.currentStation.lat,
+    fromLng:   state.currentStation.lng,
     drinkHere: drinkHere || false,
     flight:    flight,
     line:      (drinkHere || flight) ? null : state.selectedPlatform.lineName,
@@ -3287,6 +3318,8 @@ function addHistory(transferInfo) {
     trainType: (drinkHere || flight) ? null : (state.selectedTrainType?.ja || null),
     to:        state.destination.name,
     toJa:      state.destination.ja,
+    toLat:     state.destination.lat,
+    toLng:     state.destination.lng,
     transferred:    transferInfo?.transferred || false,
     drinkAtTransfer: transferInfo?.drinkAtTransfer || false,
     drinkAtArrival:  transferInfo?.drinkAtArrival || false,
@@ -3295,6 +3328,7 @@ function addHistory(transferInfo) {
   state.history.push(entry);
   dom.historyEmpty.style.display = 'none';
   dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
+  updateHistoryDistance();
 }
 
 function renderHistory() {
@@ -3311,6 +3345,7 @@ function renderHistory() {
   list.innerHTML = state.history.slice().reverse().map((e, i) =>
     buildHistoryItem(e, state.history.length - i)
   ).join('');
+  updateHistoryDistance();
 }
 
 function clearHistory() {
@@ -3318,6 +3353,51 @@ function clearHistory() {
   state.drankAt.clear();
   state.stationsSinceDrink = 0;
   renderHistory();
+  updateHistoryDistance();
+}
+
+function getSessionStats() {
+  const h = state.history;
+  const stations = new Set();
+  const lines = new Set();
+  let totalStops = 0;
+  let totalDistM = 0;
+  let drinks = 0;
+
+  for (const e of h) {
+    if (e.drinkHere) stations.add(e.from);
+    else stations.add(e.to);
+    if (e.line) lines.add(e.line);
+    totalStops += e.stopsUsed || e.stops || 0;
+    if (e.drinkHere || e.drinkAtTransfer || e.drinkAtArrival) drinks++;
+    if (e.fromLat != null && e.toLat != null) {
+      totalDistM += haversineM(e.fromLat, e.fromLng, e.toLat, e.toLng);
+    }
+  }
+  return { stations: stations.size, lines: lines.size, totalStops, distKm: (totalDistM / 1000).toFixed(1), drinks };
+}
+
+function updateHistoryDistance() {
+  if (state.history.length === 0) {
+    dom.historyDist.textContent = '';
+    return;
+  }
+  const stats = getSessionStats();
+  dom.historyDist.textContent = t('distanceTraveled', { km: stats.distKm });
+}
+
+function showStats() {
+  if (state.history.length === 0) return;
+  const s = getSessionStats();
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = `
+    <div class="stat-box"><div class="stat-val">${s.stations}</div><div class="stat-label">${t('statStations')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.lines}</div><div class="stat-label">${t('statLines')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.totalStops}</div><div class="stat-label">${t('statStops')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.drinks}</div><div class="stat-label">${t('statDrinks')}</div></div>
+    <div class="stat-box full-width"><div class="stat-val">${s.distKm} km</div><div class="stat-label">${t('statDistance')}</div></div>
+  `;
+  document.getElementById('stats-overlay').classList.remove('hidden');
 }
 
 // ── Random Station ────────────────────────────────────────────────────────
@@ -3465,33 +3545,46 @@ function checkLastTrainWarning() {
 }
 
 // ── Copy route ────────────────────────────────────────────────────────────
-function copyRoute() {
+function copyRoute(feedbackBtn) {
+  feedbackBtn = feedbackBtn || dom.copyRouteBtn;
   if (state.history.length === 0) return;
   const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
   const date = new Date().toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
   const lines = [t('copyRouteHeader', { date }), ''];
   state.history.forEach((e, i) => {
+    const from = currentLang === 'ja' && e.fromJa ? e.fromJa : e.from;
+    const to   = currentLang === 'ja' && e.toJa   ? e.toJa   : e.to;
     if (e.flight) {
-      lines.push(`${i + 1}. ${e.from} ${t('tookFlight')}`);
+      lines.push(`${i + 1}. ${from} ${t('tookFlight')}`);
     } else if (e.drinkHere) {
       const isUmiExp = e.fromJa === '海芝浦';
-      lines.push(`${i + 1}. ${e.from} ${t(isUmiExp ? 'stayedForPark' : 'stayedForDrink')}`);
+      lines.push(`${i + 1}. ${from} ${t(isUmiExp ? 'stayedForPark' : 'stayedForDrink')}`);
     } else if (e.drinkAtTransfer) {
-      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('drinkRollHistory')}`);
+      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${to} ${t('drinkRollHistory')}`);
     } else if (e.transferred) {
-      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${e.to} ${t('transferHistory')}`);
+      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${to} ${t('transferHistory')}`);
     } else {
-      lines.push(`${i + 1}. ${e.from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${e.to}${e.drinkAtArrival ? ` ${t('drinkAtArrivalHist')}` : ''}`);
+      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${to}${e.drinkAtArrival ? ` ${t('drinkAtArrivalHist')}` : ''}`);
     }
   });
-  navigator.clipboard.writeText(lines.join('\n')).then(() => {
-    const orig = dom.copyRouteBtn.textContent;
-    dom.copyRouteBtn.textContent = t('copied');
-    setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
+  lines.push('', formatStatsText());
+  copyToClipboard(lines.join('\n'), feedbackBtn);
+}
+
+function formatStatsText() {
+  const s = getSessionStats();
+  return `📊 ${t('statStations')}: ${s.stations} · ${t('statLines')}: ${s.lines} · ${t('statStops')}: ${s.totalStops} · ${t('statDrinks')}: ${s.drinks} · ${t('statDistance')}: ${s.distKm} km`;
+}
+
+function copyToClipboard(text, feedbackBtn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = feedbackBtn.textContent;
+    feedbackBtn.textContent = t('copied');
+    setTimeout(() => { feedbackBtn.textContent = orig; }, 2000);
   }).catch(() => {
-    const orig = dom.copyRouteBtn.textContent;
-    dom.copyRouteBtn.textContent = t('copyFailed');
-    setTimeout(() => { dom.copyRouteBtn.textContent = orig; }, 2000);
+    const orig = feedbackBtn.textContent;
+    feedbackBtn.textContent = t('copyFailed');
+    setTimeout(() => { feedbackBtn.textContent = orig; }, 2000);
   });
 }
 
@@ -3576,6 +3669,7 @@ function copyRoute() {
   dom.rollAgainBtn.addEventListener('click', rollAgainFromHere);
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
   dom.copyRouteBtn.addEventListener('click', copyRoute);
+  dom.statsBtn.addEventListener('click', showStats);
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
     localStorage.setItem('ltw_dismissed', new Date().toDateString());
@@ -3609,8 +3703,21 @@ document.addEventListener('DOMContentLoaded', () => {
     applyLang();
     document.getElementById('localization-credit').style.display = 'block';
   }
+  const statsCopyBtn = document.getElementById('stats-copy-btn');
+  statsCopyBtn.addEventListener('click', () => copyRoute(statsCopyBtn));
 });
 </script>
+<div id="stats-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="htp-card">
+    <button class="htp-close" onclick="document.getElementById('stats-overlay').classList.add('hidden')">&times;</button>
+    <h3 data-i18n="statsTitle">Session Stats</h3>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div style="text-align:center; margin-top:12px;">
+      <button class="btn btn-ghost btn-sm" id="stats-copy-btn" data-i18n="copyRoute">Copy route</button>
+    </div>
+  </div>
+</div>
+
 <div class="how-to-play-wrap">
   <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')" data-i18n="howToPlay">How to Play</button>
 </div>
