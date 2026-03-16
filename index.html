@@ -735,6 +735,15 @@
     <div id="cafes-content"></div>
   </div>
 
+  <!-- Resume banner -->
+  <div class="card" id="resume-banner" style="display:none; text-align:center;">
+    <p id="resume-text" data-i18n="resumeSession">Resume previous session?</p>
+    <div style="display:flex; gap:8px; justify-content:center;">
+      <button class="btn btn-primary btn-sm" id="resume-btn" data-i18n="resumeBtn">Resume</button>
+      <button class="btn btn-ghost btn-sm" id="dismiss-resume-btn" data-i18n="dismissBtn">New Game</button>
+    </div>
+  </div>
+
   <!-- History -->
   <div class="card" id="history-card">
     <div class="card-title history-title-row">
@@ -1381,6 +1390,9 @@ const translations = {
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     // Reroll button text
     rerollText:           '🔁 Reroll',
+    resumeSession:        'Resume previous session?',
+    resumeBtn:            'Resume',
+    dismissBtn:           'New Game',
   },
   ja: {
     pageTitle:            'ランダムゲーム — 東京',
@@ -1502,6 +1514,9 @@ const translations = {
     htpGoal:              '東京を探検しながら、知らない街で飲むのがこのゲームの楽しみ方です！',
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     rerollText:           '🔁 振り直し',
+    resumeSession:        '前回のセッションを再開しますか？',
+    resumeBtn:            '再開',
+    dismissBtn:           '新しいゲーム',
   },
 };
 
@@ -3329,6 +3344,7 @@ function addHistory(transferInfo) {
   dom.historyEmpty.style.display = 'none';
   dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
   updateHistoryDistance();
+  saveSession();
 }
 
 function renderHistory() {
@@ -3354,6 +3370,55 @@ function clearHistory() {
   state.stationsSinceDrink = 0;
   renderHistory();
   updateHistoryDistance();
+  saveSession();
+}
+
+// ── Session save/resume ───────────────────────────────────────────────────
+const SESSION_KEY = 'random_game_session';
+const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function saveSession() {
+  if (state.history.length === 0) {
+    localStorage.removeItem(SESSION_KEY);
+    return;
+  }
+  const last = state.history[state.history.length - 1];
+  const currentStation = last.drinkHere
+    ? { name: last.from, ja: last.fromJa, lat: last.fromLat, lng: last.fromLng }
+    : { name: last.to,   ja: last.toJa,   lat: last.toLat,   lng: last.toLng };
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    timestamp: Date.now(),
+    history: state.history,
+    drankAt: [...state.drankAt],
+    stationsSinceDrink: state.stationsSinceDrink,
+    currentStation,
+  }));
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (Date.now() - data.timestamp > SESSION_TTL) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
+function resumeSession(data) {
+  state.history = data.history;
+  state.drankAt = new Set(data.drankAt);
+  state.stationsSinceDrink = data.stationsSinceDrink;
+  renderHistory();
+
+  // Set up current station so the player can roll again
+  const stn = data.currentStation;
+  dom.stationInput.value = stn.name;
+  dom.stationInput.classList.add('selected');
+  onStationSelected(stn.name);
 }
 
 function getSessionStats() {
@@ -3433,6 +3498,7 @@ function resetGame() {
 
   dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
   dom.randomStationBtn.title     = t('pickRandom');
+  localStorage.removeItem(SESSION_KEY);
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
@@ -3696,6 +3762,21 @@ function copyToClipboard(text, feedbackBtn) {
   setInterval(checkLastTrainWarning, 5 * 60 * 1000); // re-check every 5 min
 
   await loadData();
+
+  // Check for saved session to resume
+  const saved = loadSession();
+  if (saved) {
+    const banner = document.getElementById('resume-banner');
+    banner.style.display = '';
+    document.getElementById('resume-btn').addEventListener('click', () => {
+      banner.style.display = 'none';
+      resumeSession(saved);
+    }, { once: true });
+    document.getElementById('dismiss-resume-btn').addEventListener('click', () => {
+      banner.style.display = 'none';
+      localStorage.removeItem(SESSION_KEY);
+    }, { once: true });
+  }
 })();
 // Re-apply language to elements parsed after the script tag
 document.addEventListener('DOMContentLoaded', () => {
