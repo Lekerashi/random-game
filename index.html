@@ -1577,7 +1577,7 @@ function switchLang(lang) {
   }
   // Refresh search input to show station name in current language
   if (state.currentStation && dom.stationInput.classList.contains('selected')) {
-    dom.stationInput.value = stationDisplayName(state.currentStation.name);
+    setStationInput(state.currentStation.name);
   }
   // Re-render dynamic content that's currently visible
   if (state.currentStation && state.platforms.length > 0) {
@@ -2071,6 +2071,11 @@ function stationDisplayName(englishName) {
   return englishName;
 }
 
+function setStationInput(englishName) {
+  dom.stationInput.value = stationDisplayName(englishName);
+  dom.stationInput.classList.add('selected');
+}
+
 // Compute display label and hint for a platform using i18n
 function platformLabel(p) {
   const ln = lineDisplayName(p.lineName);
@@ -2347,8 +2352,7 @@ function setupAutocomplete() {
   }
 
   function select(name) {
-    input.value = stationDisplayName(name);
-    input.classList.add('selected');
+    setStationInput(name);
     close();
     onStationSelected(name);
   }
@@ -3147,8 +3151,7 @@ function rollStops() {
 
       // Brief pause then set up new station
       await new Promise(r => setTimeout(r, 400));
-      dom.stationInput.value = stationDisplayName(result.station.name);
-      dom.stationInput.classList.add('selected');
+      setStationInput(result.station.name);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       onStationSelected(result.station.name, { lineName: state.selectedPlatform.lineName, isTransfer: true });
       return;
@@ -3430,8 +3433,7 @@ function resumeSession(data) {
 
   // Set up current station so the player can roll again
   const stn = data.currentStation;
-  dom.stationInput.value = stationDisplayName(stn.name);
-  dom.stationInput.classList.add('selected');
+  setStationInput(stn.name);
   onStationSelected(stn.name);
 }
 
@@ -3484,8 +3486,7 @@ function pickRandomStation() {
   const pool = state.wards23Only ? state.stationNames23 : state.stationNames;
   if (pool.length === 0) return;
   const name  = pool[Math.floor(Math.random() * pool.length)];
-  dom.stationInput.value = stationDisplayName(name);
-  dom.stationInput.classList.add('selected');
+  setStationInput(name);
   onStationSelected(name);
 }
 
@@ -3576,8 +3577,7 @@ function detectLocation() {
       if (!name) { setLocationHint(t('geoNoStation'), true); return; }
       state.geoNearest = { name, dist };
       setLocationHint(t('geoNearest', { name: stationDisplayName(name), dist }));
-      dom.stationInput.value = stationDisplayName(name);
-      dom.stationInput.classList.add('selected');
+      setStationInput(name);
       onStationSelected(name);
     },
     (err) => {
@@ -3601,8 +3601,7 @@ function rollAgainFromHere() {
   hideAllCards();
 
   // Set current station to destination
-  dom.stationInput.value = stationDisplayName(dest.name);
-  dom.stationInput.classList.add('selected');
+  setStationInput(dest.name);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const via = state.selectedPlatform?.lineName
     ? { lineName: state.selectedPlatform.lineName, direction: state.selectedPlatform.direction }
