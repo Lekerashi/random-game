@@ -3005,7 +3005,13 @@ async function checkTransfers(platform, rolledStops) {
     const alreadyDrank = state.drankAt.has(normalize(route[i].name));
     const extraDrink = Math.max(0, state.stationsSinceDrink - 5);
     const sides = alreadyDrank ? 4 : 5 + extraDrink;
-    const roll = Math.floor(Math.random() * sides) + 1;
+    let roll;
+    if (window._forceNextRoll != null) {
+      roll = Math.max(1, Math.min(sides, window._forceNextRoll));
+      window._forceNextRoll = null;
+    } else {
+      roll = Math.floor(Math.random() * sides) + 1;
+    }
 
     // Animate die with emojis
     const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
