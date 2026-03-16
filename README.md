@@ -22,6 +22,9 @@ A random Tokyo train station drinking game. Roll dice to pick train lines and st
 - GPS-based nearest station detection
 - Late night last-train warning
 - Session history with route sharing
+- Session save & resume on page refresh
+- Installable as a PWA — add to home screen on Android/iOS
+- Works offline after first visit
 
 ## Tech
 
@@ -63,6 +66,9 @@ Localized by Yuko
 - GPSによる最寄り駅検出
 - 深夜の終電警告
 - セッション履歴とルート共有
+- ページ更新時のセッション保存・再開
+- PWAとしてインストール可能 — Android/iOSのホーム画面に追加
+- 初回アクセス後はオフラインでも動作
 
 ## 技術
 
