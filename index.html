@@ -3035,6 +3035,8 @@ async function checkTransfers(platform, rolledStops) {
     if (window._forceNextRoll != null) {
       roll = Math.max(1, Math.min(sides, window._forceNextRoll));
       window._forceNextRoll = null;
+    } else if (window._forceTransferQueue?.length) {
+      roll = Math.max(1, Math.min(sides, window._forceTransferQueue.shift()));
     } else {
       roll = Math.floor(Math.random() * sides) + 1;
     }
