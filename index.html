@@ -8,7 +8,22 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0d1117">
   <meta name="description" content="A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city. 東京の駅でサイコロを振って飲み歩く、電車すごろくゲーム。">
+  <meta name="keywords" content="tokyo, drinking game, train, station, dice, 東京, 飲み歩き, 電車, すごろく, サイコロ">
   <link rel="canonical" href="https://randomgame.tokyo/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Random Game — Tokyo",
+    "alternateName": "ランダムゲーム — 東京",
+    "url": "https://randomgame.tokyo/",
+    "description": "A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city.",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "inLanguage": ["en", "ja"],
+    "offers": { "@type": "Offer", "price": "0" }
+  }
+  </script>
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://randomgame.tokyo/">
   <meta property="og:locale" content="en_US">
@@ -1095,6 +1110,8 @@ window._state = state; // expose for debug.js
 
 // ── Internationalization ──────────────────────────────────────────────────
 let currentLang = localStorage.getItem('random_game_lang') || 'en';
+if (currentLang === 'ja') document.documentElement.lang = 'ja';
+function gc(path) { if (typeof goatcounter !== 'undefined') goatcounter.count({ path, title: path, event: true }); }
 
 const LINE_NAMES_JA = {
   // JR
@@ -1576,6 +1593,7 @@ function switchLang(lang) {
   if (lang === currentLang) return;
   currentLang = lang;
   localStorage.setItem('random_game_lang', lang);
+  document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
   applyLang();
   document.getElementById('localization-credit').style.display = lang === 'ja' ? 'block' : 'none';
   // Refresh New Game / Random button
@@ -2361,6 +2379,7 @@ function setupAutocomplete() {
   function select(name) {
     setStationInput(name);
     close();
+    gc('start-search');
     onStationSelected(name);
   }
 
@@ -2501,6 +2520,7 @@ function onStationSelected(name, arrivedVia) {
 }
 
 function rollPlatform() {
+  gc('roll-platform');
   dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
   // Flight: 5% of all rolls at airport stations trigger the flight
@@ -3386,6 +3406,8 @@ function addHistory(transferInfo) {
   dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
   updateHistoryDistance();
   saveSession();
+  const s = getSessionStats();
+  gc(`round-complete/rounds:${state.history.length}/stations:${s.stations}/lines:${s.lines}/stops:${s.totalStops}/km:${s.distKm}/drinks:${s.drinks}`);
 }
 
 function renderHistory() {
@@ -3511,6 +3533,7 @@ function pickRandomStation() {
   if (pool.length === 0) return;
   const name  = pool[Math.floor(Math.random() * pool.length)];
   setStationInput(name);
+  gc('start-random');
   onStationSelected(name);
 }
 
@@ -3595,6 +3618,7 @@ function detectLocation() {
       state.geoNearest = { name, dist };
       setLocationHint(t('geoNearest', { name: stationDisplayName(name), dist }));
       setStationInput(name);
+      gc('start-geolocate');
       onStationSelected(name);
     },
     (err) => {
