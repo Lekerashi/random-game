@@ -2404,10 +2404,12 @@ function setupAutocomplete() {
     list.innerHTML = names.map((n, i) => {
       const entries = [...(state.stationIndex[normalize(n)] || [])];
       for (const ak of getAliasKeys(n)) for (const e of (state.stationIndex[ak] || [])) entries.push(e);
-      const lineNames = [...new Set(entries.map(e => state.lines[e.lineIdx].name))].slice(0, 4).join(', ');
+      const lineNames = [...new Set(entries.map(e => lineDisplayName(state.lines[e.lineIdx].name)))].slice(0, 4).join(', ');
       const ja = stationJa(n);
+      const primary = currentLang === 'ja' && ja ? ja : n;
+      const secondary = currentLang === 'ja' ? n : ja;
       return `<div class="autocomplete-item" data-idx="${i}">
-        ${n}${ja ? ` <small class="text-muted">${ja}</small>` : ''}<span class="station-sub">${lineNames}</span>
+        ${primary}${secondary && secondary !== primary ? ` <small class="text-muted">${secondary}</small>` : ''}<span class="station-sub">${lineNames}</span>
       </div>`;
     }).join('');
     list.classList.add('open');
