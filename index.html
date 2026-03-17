@@ -1602,7 +1602,7 @@ function switchLang(lang) {
       const pLabel = platformLabel(p);
       const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
       const ln = lineDisplayName(p.lineName);
-      const effectiveHint = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
+      const effectiveHint = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
       dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
         <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
       dom.selectedPlatformText.innerHTML =
@@ -1623,20 +1623,16 @@ function switchLang(lang) {
     if (p.takeFlight) {
       dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
     } else if (p.drinkHere) {
-      const isUmiDH = state.currentStation.ja === '海芝浦';
-      const isKajiDH = state.currentStation.ja === '梶が谷';
-      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmiDH ? 'stayingForPark' : 'stayingForDrink')}<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
-        + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
+      const isUmi = state.currentStation.ja === '海芝浦';
+      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmi ? 'stayingForPark' : 'stayingForDrink')}`
+        + destSubHints(state.currentStation, 'inline');
     } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
       // drink at transfer — handled above
     } else {
       const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-      const isUmi = state.destination.ja === '海芝浦';
-      const isKaji = state.destination.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
-        + `<div class="drink-hint"><span style="font-size:1.1rem">${isUmi ? '🌊' : '🍻'}</span> ${isUmi ? t('parkHint') : t('drinkHint')}</div>`
-        + (isKaji ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
+        + destSubHints(state.destination, 'wrap');
     }
   }
   // Refresh nearest station hint
@@ -2433,14 +2429,7 @@ function onStationSelected(name, arrivedVia) {
   const lastWasDrink = state.selectedPlatform?.drinkHere || false;
 
   // Reset downstream steps
-  state.selectedPlatform = null;
-  state.selectedTrainType = null;
-  state.selectedBranch = null;
-  state.rolledStops = null;
-  state.rolledPlatformNum = null;
-  state._rerollExcludePlatform = null;
-  state._rerollExcludeStops = null;
-  state.destination = null;
+  resetRoundState();
   hideAllCards();
   dom.rollAgainBtn.style.display = '';
   dom.showBarsBtn.style.display = '';
@@ -2455,9 +2444,7 @@ function onStationSelected(name, arrivedVia) {
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollPlatformBtn.disabled = false;
   dom.rollStopsBtn.disabled = true;
-  dom.rollStopsBtn.style.display = '';
-  dom.rollStopsBtn.style.flex = '';
-  dom.rollStopsBtn.style.width = '';
+  resetStopsBtn();
   dom.rerollPlatformBtn.style.display = 'none';
   dom.rerollStopsBtn.style.display = 'none';
 
@@ -2572,11 +2559,9 @@ function rollPlatform() {
       dom.destName.textContent = state.currentStation.name;
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
       const isUmiDH = state.currentStation.ja === '海芝浦';
-      const isKajiDH = state.currentStation.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmiDH ? 'stayingForPark' : 'stayingForDrink')}`
-        + `<div class="drink-hint">${isUmiDH ? '🌊 ' + t('parkHint') : t('drinkHint')}</div>`
-        + (isKajiDH ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
+        + destSubHints(state.currentStation, 'inline');
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -2590,7 +2575,7 @@ function rollPlatform() {
     const pLabel = platformLabel(p);
     const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
     const ln = lineDisplayName(p.lineName);
-    const effectiveHintMax = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
+    const effectiveHintMax = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
     dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
       <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
 
@@ -2607,7 +2592,7 @@ function rollPlatform() {
     if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
       const bi = state.selectedBranch?.branchIndices;
       const rawMax = bi ? getBranchMaxStops(p, bi) : p.maxStops;
-      const cappedPhys = state.stopsCap ? Math.min(rawMax, state.stopsCapValue) : rawMax;
+      const cappedPhys = capStops(rawMax);
       const effectiveMax = getValidRouteInfo(p, null, cappedPhys).validCount;
       dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
       dom.rollStopsBtn.disabled = false;
@@ -2636,9 +2621,7 @@ function rerollPlatform() {
   dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollStopsBtn.disabled = true;
-  dom.rollStopsBtn.style.display = '';
-  dom.rollStopsBtn.style.flex = '';
-  dom.rollStopsBtn.style.width = '';
+  resetStopsBtn();
   dom.rerollStopsBtn.style.display = 'none';
   dom.trainTypeRow.style.display = 'none';
   dom.rollStopsRow.style.display = 'flex';
@@ -2692,7 +2675,7 @@ function showBranchButtons(p) {
     // Find the max stops the player could roll (respecting cap)
     const bestMax = Math.max(...viable.map(b => {
       const raw = getBranchMaxStops(p, b.branchIndices);
-      return state.stopsCap ? Math.min(raw, state.stopsCapValue) : raw;
+      return capStops(raw);
     }));
     const getAhead = b => {
       const pos = b.branchIndices.indexOf(p.fromIdx);
@@ -2721,7 +2704,7 @@ function showBranchButtons(p) {
   dom.trainTypeRow.style.display = 'flex';
   dom.trainTypeRow.innerHTML = viable.map((b, i) => {
     const maxOnBranch = getBranchMaxStops(p, b.branchIndices);
-    const cappedPhys = state.stopsCap ? Math.min(maxOnBranch, state.stopsCapValue) : maxOnBranch;
+    const cappedPhys = capStops(maxOnBranch);
     const effectiveMax = getValidRouteInfo(p, null, cappedPhys, b.branchIndices).validCount;
     const fullWidth = i === 0 && viable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${b.color};${fullWidth}"
@@ -2738,14 +2721,12 @@ function showBranchButtons(p) {
       if (!showTrainTypeButtons(p)) {
         const bi = state.selectedBranch.branchIndices;
         const maxOnBranch = getBranchMaxStops(p, bi);
-        const cappedPhys = state.stopsCap ? Math.min(maxOnBranch, state.stopsCapValue) : maxOnBranch;
+        const cappedPhys = capStops(maxOnBranch);
         const effectiveMax = getValidRouteInfo(p, null, cappedPhys, bi).validCount;
         dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         dom.rollStopsRow.style.display = 'flex';
-        dom.rollStopsBtn.style.display = '';
-        dom.rollStopsBtn.style.flex = '';
-        dom.rollStopsBtn.style.width = '';
+        resetStopsBtn();
         rollStops();
       }
     };
@@ -2773,7 +2754,7 @@ function showTrainTypeButtons(p) {
   const allMax1 = trainTypes.every(t => {
     const ei = t.expressIndices;
     const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-    const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+    const cappedPhys = capStops(physMax);
     return getValidRouteInfo(p, ei || null, cappedPhys).validCount <= 1;
   });
   if (allMax1) {
@@ -2786,7 +2767,7 @@ function showTrainTypeButtons(p) {
   dom.trainTypeRow.innerHTML = trainTypes.map((t, i) => {
     const ei = t.expressIndices;
     const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-    const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+    const cappedPhys = capStops(physMax);
     const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
     // Local (first) button gets full width when there are exactly 3 types
     const fullWidth = i === 0 && trainTypes.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
@@ -2800,14 +2781,14 @@ function showTrainTypeButtons(p) {
       state.selectedTrainType = trainTypes[i];
       const ei = trainTypes[i].expressIndices;
       const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-      const cappedPhys = state.stopsCap ? Math.min(physMax, state.stopsCapValue) : physMax;
+      const cappedPhys = capStops(physMax);
       const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
   });
-  const localEffective = getValidRouteInfo(p, null, state.stopsCap ? Math.min(p.maxStops, state.stopsCapValue) : p.maxStops).validCount;
+  const localEffective = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
   dom.stopsRangeText.textContent = t('selectTrainType', { max: localEffective });
   return true;
 }
@@ -2821,7 +2802,7 @@ function refreshStopsLabel() {
     : bi
       ? getBranchMaxStops(state.selectedPlatform, bi)
       : state.selectedPlatform.maxStops;
-  const cappedPhys = state.stopsCap ? Math.min(rawPhysMax, state.stopsCapValue) : rawPhysMax;
+  const cappedPhys = capStops(rawPhysMax);
   const max = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhys).validCount;
   dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
 }
@@ -2882,6 +2863,43 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
     result.push(line.stations[idx]);
   }
   return result;
+}
+
+function capStops(max) {
+  return state.stopsCap ? Math.min(max, state.stopsCapValue) : max;
+}
+
+function resetStopsBtn() {
+  dom.rollStopsBtn.style.display = '';
+  dom.rollStopsBtn.style.flex = '';
+  dom.rollStopsBtn.style.width = '';
+}
+
+function resetRoundState() {
+  state.selectedPlatform = null;
+  state.selectedTrainType = null;
+  state.selectedBranch = null;
+  state.rolledStops = null;
+  state.rolledPlatformNum = null;
+  state._rerollExcludePlatform = null;
+  state._rerollExcludeStops = null;
+  state.destination = null;
+}
+
+// emoji: 'wrap' = always show emoji in <span> (normal arrival),
+//        'inline' = 🌊 only for Umi (drinkHere), falsy = no emoji (drink at transfer)
+function destSubHints(station, emoji) {
+  const isUmi = station.ja === '海芝浦';
+  const isKaji = station.ja === '梶が谷';
+  const hintText = isUmi ? t('parkHint') : t('drinkHint');
+  let prefix = '';
+  if (emoji === 'wrap') {
+    prefix = `<span style="font-size:1.1rem">${isUmi ? '🌊' : '🍻'}</span> `;
+  } else if (emoji === 'inline' && isUmi) {
+    prefix = '🌊 ';
+  }
+  return `<div class="drink-hint">${prefix}${hintText}</div>`
+    + (isKaji ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
 }
 
 // Given a platform and optional express indices, compute the valid (non-drunk-at)
@@ -3099,7 +3117,7 @@ function rollStops() {
     : bi
       ? getBranchMaxStops(state.selectedPlatform, bi)
       : state.selectedPlatform.maxStops;
-  const cappedPhysicalMax = state.stopsCap ? Math.min(rawPhysicalMax, state.stopsCapValue) : rawPhysicalMax;
+  const cappedPhysicalMax = capStops(rawPhysicalMax);
   const routeInfo = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhysicalMax);
   const max = routeInfo.validCount;
 
@@ -3166,11 +3184,9 @@ function rollStops() {
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
       const isUmiShibaura2 = result.station.ja === '海芝浦';
-      const isKajigaya2 = result.station.ja === '梶が谷';
       dom.destSub.innerHTML =
         `${result.station.ja} &nbsp;·&nbsp; ${isUmiShibaura2 ? '🌊 ' + t('parkHint') : t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType })}`
-        + `<div class="drink-hint">${isUmiShibaura2 ? t('parkHint') : t('drinkHint')}</div>`
-        + (isKajigaya2 ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
+        + destSubHints(result.station);
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -3187,15 +3203,9 @@ function rollStops() {
     dom.destName.textContent = dest.name;
     dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-    const isUmiShibaura = dest.ja === '海芝浦';
-    const isKajigaya = dest.ja === '梶が谷';
-    const hintEmoji = isUmiShibaura ? '🌊' : '🍻';
-    const hintText = isUmiShibaura ? t('parkHint') : t('drinkHint');
-    const extraHint = isKajigaya ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '';
     dom.destSub.innerHTML =
       `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
-      + `<div class="drink-hint"><span style="font-size:1.1rem">${hintEmoji}</span> ${hintText}</div>`
-      + extraHint;
+      + destSubHints(dest, 'wrap');
     dom.destCard.classList.add('active');
     dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -3326,7 +3336,8 @@ function buildHistoryItem(e, num) {
     body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent2">${t('transferHistory')}</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${t('drinkAtArrivalHist')}</span>` : ''}`;
+    const isUmiArr = e.toJa === '海芝浦';
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${isUmiArr ? '🌊' : t('drinkAtArrivalHist')}</span>` : ''}`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -3493,14 +3504,7 @@ function pickRandomStation() {
 function resetGame() {
   state.currentStation  = null;
   state.platforms       = [];
-  state.selectedPlatform = null;
-  state.selectedTrainType = null;
-  state.selectedBranch = null;
-  state.rolledStops     = null;
-  state.rolledPlatformNum = null;
-  state._rerollExcludePlatform = null;
-  state._rerollExcludeStops = null;
-  state.destination     = null;
+  resetRoundState();
   state.stationsSinceDrink = 0;
   state.drankAt.clear();
   state.geoNearest = null;
@@ -3643,7 +3647,8 @@ function copyRoute(feedbackBtn) {
     } else if (e.transferred) {
       lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${to} ${t('transferHistory')}`);
     } else {
-      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${to}${e.drinkAtArrival ? ` ${t('drinkAtArrivalHist')}` : ''}`);
+      const isUmiCopy = e.toJa === '海芝浦';
+      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${to}${e.drinkAtArrival ? ` ${isUmiCopy ? '🌊' : t('drinkAtArrivalHist')}` : ''}`);
     }
   });
   lines.push('', formatStatsText());
