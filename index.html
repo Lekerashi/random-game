@@ -1039,6 +1039,54 @@ const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 // ← Paste your HERE Maps API key here (free at developer.here.com)
 const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 
+// ── Game logic constants ─────────────────────────────────────────────────
+const OEDO_LOOP_END     = 29;    // Nakanozaka junction index (end of loop, start of stem)
+const FLIGHT_PROBABILITY = 0.05; // 5% chance to trigger flight at airport stations
+const PLACES_RADIUS     = 500;   // meters — search radius for nearby bars/cafes
+const EARTH_RADIUS_M    = 6371000;
+const THIRST_THRESHOLD  = 5;     // stations without drinking before extra drink rolls kick in
+const TRANSFER_DIE_SIDES = 5;    // base sides: 1-3 stay, 4 transfer, 5+ drink
+const LANG_KEY           = 'random_game_lang';
+const SESSION_KEY        = 'random_game_session';
+const SESSION_TTL        = 24 * 60 * 60 * 1000; // 24 hours
+const LTW_KEY            = 'ltw_dismissed';  // last-train warning dismissal
+
+// ── Easter egg stations ──────────────────────────────────────────────────
+// Each entry defines the special behavior for a station.
+//   emoji:       replaces 🍻 in platform pills, history, copy, and arrival card
+//   hintKey:     i18n key for the hint on the arrival card (replaces drinkHint)
+//   hintEmoji:   emoji prefix for the hint line (only for append/prepend eggs)
+//   rollKey:     i18n key for the die label (replaces drinkRoll)
+//   stayingKey:  i18n key for "staying for..." subtitle (replaces stayingForDrink)
+//   stayedKey:   i18n key for history/copy text (replaces stayedForDrink)
+//   labelKey:    i18n key for platform pill label (replaces drinkHereLabel)
+//   position:    'replace' = swap the main drink hint, 'append'/'prepend' = add extra hint
+const EASTER_EGGS = {
+  '海芝浦': {  // Umi-Shibaura — waterfront park, no bars
+    emoji: '🌊', hintKey: 'parkHint', rollKey: 'parkRoll',
+    stayingKey: 'stayingForPark', stayedKey: 'stayedForPark',
+    labelKey: 'parkHereLabel', position: 'replace',
+  },
+  '舞浜': {  // Maihama — Disney Resort
+    emoji: '🏰🐭🎀👑👸🏻', position: 'replace',
+  },
+  '梶が谷': {  // Kajigaya — Say hi to Shane
+    hintKey: 'kajigayaHint', hintEmoji: '👋', position: 'append',
+  },
+  '西ケ原': {  // Nishigahara — least-used Tokyo Metro station
+    hintKey: 'nishigaharaHint', hintEmoji: '🚇', position: 'prepend',
+  },
+};
+
+function getEgg(stationJa) { return EASTER_EGGS[stationJa]; }
+function eggEmoji(stationJa) { return getEgg(stationJa)?.emoji || '🍻'; }
+function eggRollKey(stationJa) { return getEgg(stationJa)?.rollKey || 'drinkRoll'; }
+function eggStayingKey(stationJa) { return getEgg(stationJa)?.stayingKey || 'stayingForDrink'; }
+function eggStayedKey(stationJa) { return getEgg(stationJa)?.stayedKey || 'stayedForDrink'; }
+function eggLabelKey(stationJa) { return getEgg(stationJa)?.labelKey || 'drinkHereLabel'; }
+function eggHintKey(stationJa) { return getEgg(stationJa)?.hintKey; }
+function eggDrinkAtArrival(stationJa) { return getEgg(stationJa)?.emoji || t('drinkAtArrivalHist'); }
+
 // Greater Tokyo bounding box (line center coordinates)
 const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
@@ -1120,7 +1168,7 @@ const state = {
 window._state = state; // expose for debug.js
 
 // ── Internationalization ──────────────────────────────────────────────────
-let currentLang = localStorage.getItem('random_game_lang') || 'en';
+let currentLang = localStorage.getItem(LANG_KEY) || 'en';
 if (currentLang === 'ja') document.documentElement.lang = 'ja';
 function gc(path) { if (typeof goatcounter !== 'undefined') goatcounter.count({ path, title: path, event: true }); }
 
@@ -1605,7 +1653,7 @@ function applyLang() {
 function switchLang(lang) {
   if (lang === currentLang) return;
   currentLang = lang;
-  localStorage.setItem('random_game_lang', lang);
+  localStorage.setItem(LANG_KEY, lang);
   document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
   applyLang();
   document.getElementById('localization-credit').style.display = lang === 'ja' ? 'block' : 'none';
@@ -1635,16 +1683,16 @@ function switchLang(lang) {
     const p = state.selectedPlatform;
     const roll = state.rolledPlatformNum;
     if (p.drinkHere) {
-      const rollKey = state.currentStation.ja === '海芝浦' ? 'parkRoll' : 'drinkRoll';
-      dom.diePlatformLabel.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
-      dom.selectedPlatformText.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
+      const rk = eggRollKey(state.currentStation.ja);
+      dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+      dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
     } else if (p.takeFlight) {
       dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
     } else {
       const pLabel = platformLabel(p);
       const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
       const ln = lineDisplayName(p.lineName);
-      const effectiveHint = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
+      const effectiveHint = getEffectiveStops(p, { ei: null, bi: null }).validCount;
       dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
         <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
       dom.selectedPlatformText.innerHTML =
@@ -1665,8 +1713,7 @@ function switchLang(lang) {
     if (p.takeFlight) {
       dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
     } else if (p.drinkHere) {
-      const isUmi = state.currentStation.ja === '海芝浦';
-      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmi ? 'stayingForPark' : 'stayingForDrink')}`
+      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
         + destSubHints(state.currentStation, 'inline');
     } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
       // drink at transfer — handled above
@@ -1692,8 +1739,8 @@ function refreshPlatformGrid() {
     p.drinkHere
       ? `<div class="platform-pill drink-here">
            <span class="platform-num">${extraDrinkNums > 0 ? `${i + 1}–${i + 1 + extraDrinkNums}` : i + 1}</span>
-           <span>${state.currentStation?.ja === '海芝浦' ? '🌊' : state.currentStation?.ja === '舞浜' ? '🏰🐭🎀👑👸🏻' : '🍻'}</span>
-           <span>${state.currentStation?.ja === '海芝浦' ? t('parkHereLabel') : t('drinkHereLabel')}</span>
+           <span>${eggEmoji(state.currentStation?.ja)}</span>
+           <span>${t(eggLabelKey(state.currentStation?.ja))}</span>
          </div>`
       : p.takeFlight
       ? `<div class="platform-pill take-flight">
@@ -1778,7 +1825,7 @@ function normalize(s) {
 }
 
 function haversineM(lat1, lng1, lat2, lng2) {
-  const R = 6371000, toR = Math.PI / 180;
+  const R = EARTH_RADIUS_M, toR = Math.PI / 180;
   const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
@@ -2173,7 +2220,7 @@ function getPlatforms(stationName, includeAliases = true) {
     // ── Oedo lollipop: Tochomae (si=0) gets 3 directional platforms ──────────
     if ((line.name.includes('Oedo') || line.name.includes('\u014Cedo')) && si === 0) {
       // Data layout: 0=Tochomae, 1-28=loop stations, 29=Nakanozaka (junction), 30-37=stem→Hikarigaoka
-      const loopEnd = 29;              // Nakanozaka index
+      const loopEnd = OEDO_LOOP_END;
       const loopMid = Math.floor((loopEnd - 1) / 2);  // = 14, midpoint of the loop
       const stemLen = N - 1 - (loopEnd - 1);           // = 9 (indices 29–37)
       const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))          : loopMid;
@@ -2509,6 +2556,7 @@ function onStationSelected(name, arrivedVia) {
   dom.diePlatform.className = 'die-face';
   dom.dieStops.textContent = '?';
   dom.dieStops.className = 'die-face';
+  dom.dieStops.parentElement.style.display = '';
   dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
   dom.rollPlatformBtn.disabled = false;
@@ -2537,8 +2585,10 @@ function onStationSelected(name, arrivedVia) {
       }
     }
   }
+  // Filter out platforms where all destinations have been drunk-at
+  allPlatforms = allPlatforms.filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
-  const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - 5) : 0;
+  const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD) : 0;
   // Airport stations always show a flight option (5% chance when rolled)
   const isAirport = /airport/i.test(name) || stn.ja === '東成田';
   state.platforms = [
@@ -2568,7 +2618,7 @@ function rollPlatform() {
   if (window._forceNextRoll != null) {
     roll = Math.max(1, Math.min(n, window._forceNextRoll));
     window._forceNextRoll = null;
-  } else if (flightIdx !== -1 && Math.random() < 0.05) {
+  } else if (flightIdx !== -1 && Math.random() < FLIGHT_PROBABILITY) {
     roll = flightIdx + 1;
   } else {
     const pool = [];
@@ -2610,15 +2660,15 @@ function rollPlatform() {
 
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
-      const rollKey = state.currentStation.ja === '海芝浦' ? 'parkRoll' : 'drinkRoll';
-      dom.diePlatformLabel.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
+      const rk = eggRollKey(state.currentStation.ja);
+      dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
       dom.rerollPlatformBtn.style.display = 'block';
       // Hide stops UI but keep step-stops visible (reroll button lives there)
       dom.rollStopsRow.style.display = 'none';
       dom.stopsRangeText.textContent = '';
       dom.trainTypeRow.style.display = 'none';
       dom.dieStops.parentElement.style.display = 'none';
-      dom.selectedPlatformText.innerHTML = `<strong>${t(rollKey, { n: roll })}</strong>`;
+      dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
       dom.selectedPlatformDot.style.background = 'transparent';
       showStep('step-stops');
 
@@ -2628,9 +2678,8 @@ function rollPlatform() {
 
       dom.destName.textContent = state.currentStation.name;
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
-      const isUmiDH = state.currentStation.ja === '海芝浦';
       dom.destSub.innerHTML =
-        `${state.currentStation.ja} &nbsp;·&nbsp; ${t(isUmiDH ? 'stayingForPark' : 'stayingForDrink')}`
+        `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
         + destSubHints(state.currentStation, 'inline');
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2645,7 +2694,7 @@ function rollPlatform() {
     const pLabel = platformLabel(p);
     const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
     const ln = lineDisplayName(p.lineName);
-    const effectiveHintMax = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
+    const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
     dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
       <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
 
@@ -2660,10 +2709,7 @@ function rollPlatform() {
 
     // Check for branch destinations, then express services, or normal ROLL STOPS
     if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
-      const bi = state.selectedBranch?.branchIndices;
-      const rawMax = bi ? getBranchMaxStops(p, bi) : p.maxStops;
-      const cappedPhys = capStops(rawMax);
-      const effectiveMax = getValidRouteInfo(p, null, cappedPhys).validCount;
+      const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
       dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
       dom.rollStopsBtn.disabled = false;
     }
@@ -2773,9 +2819,7 @@ function showBranchButtons(p) {
   dom.rollStopsRow.style.display = 'none';
   dom.trainTypeRow.style.display = 'flex';
   dom.trainTypeRow.innerHTML = viable.map((b, i) => {
-    const maxOnBranch = getBranchMaxStops(p, b.branchIndices);
-    const cappedPhys = capStops(maxOnBranch);
-    const effectiveMax = getValidRouteInfo(p, null, cappedPhys, b.branchIndices).validCount;
+    const effectiveMax = getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount;
     const fullWidth = i === 0 && viable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${b.color};${fullWidth}"
       ${effectiveMax === 0 ? ' disabled' : ''}>
@@ -2789,10 +2833,7 @@ function showBranchButtons(p) {
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       // Check for express services on this branch, or proceed to roll
       if (!showTrainTypeButtons(p)) {
-        const bi = state.selectedBranch.branchIndices;
-        const maxOnBranch = getBranchMaxStops(p, bi);
-        const cappedPhys = capStops(maxOnBranch);
-        const effectiveMax = getValidRouteInfo(p, null, cappedPhys, bi).validCount;
+        const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
         dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         dom.rollStopsRow.style.display = 'flex';
@@ -2822,10 +2863,7 @@ function showTrainTypeButtons(p) {
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
   const allMax1 = trainTypes.every(t => {
-    const ei = t.expressIndices;
-    const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-    const cappedPhys = capStops(physMax);
-    return getValidRouteInfo(p, ei || null, cappedPhys).validCount <= 1;
+    return getEffectiveStops(p, { ei: t.expressIndices }).validCount <= 1;
   });
   if (allMax1) {
     dom.trainTypeRow.style.display = 'none';
@@ -2836,9 +2874,7 @@ function showTrainTypeButtons(p) {
   dom.trainTypeRow.style.display = 'flex';
   dom.trainTypeRow.innerHTML = trainTypes.map((t, i) => {
     const ei = t.expressIndices;
-    const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-    const cappedPhys = capStops(physMax);
-    const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
+    const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei });
     // Local (first) button gets full width when there are exactly 3 types
     const fullWidth = i === 0 && trainTypes.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${t.color};${fullWidth}"
@@ -2849,31 +2885,20 @@ function showTrainTypeButtons(p) {
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       state.selectedTrainType = trainTypes[i];
-      const ei = trainTypes[i].expressIndices;
-      const physMax = ei ? getExpressMaxStops(p, ei) : p.maxStops;
-      const cappedPhys = capStops(physMax);
-      const effectiveMax = getValidRouteInfo(p, ei || null, cappedPhys).validCount;
+      const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
   });
-  const localEffective = getValidRouteInfo(p, null, capStops(p.maxStops)).validCount;
+  const localEffective = getEffectiveStops(p, { ei: null, bi: null }).validCount;
   dom.stopsRangeText.textContent = t('selectTrainType', { max: localEffective });
   return true;
 }
 
 function refreshStopsLabel() {
   if (!state.selectedPlatform) return;
-  const ei = state.selectedTrainType?.expressIndices;
-  const bi = state.selectedBranch?.branchIndices;
-  const rawPhysMax = ei
-    ? getExpressMaxStops(state.selectedPlatform, ei)
-    : bi
-      ? getBranchMaxStops(state.selectedPlatform, bi)
-      : state.selectedPlatform.maxStops;
-  const cappedPhys = capStops(rawPhysMax);
-  const max = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhys).validCount;
+  const max = getEffectiveStops(state.selectedPlatform).validCount;
   dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
 }
 
@@ -2957,23 +2982,24 @@ function resetRoundState() {
 }
 
 // emoji: 'wrap' = always show emoji in <span> (normal arrival),
-//        'inline' = 🌊 only for Umi (drinkHere), falsy = no emoji (drink at transfer)
+//        'inline' = show egg emoji only for egg stations (drinkHere), falsy = no emoji (drink at transfer)
 function destSubHints(station, emoji) {
-  const isUmi = station.ja === '海芝浦';
-  const isKaji = station.ja === '梶が谷';
-  const isMaihama = station.ja === '舞浜';
-  const isNishigahara = station.ja === '西ケ原';
-  const hintText = isUmi ? t('parkHint') : t('drinkHint');
-  const drinkEmoji = isUmi ? '🌊' : isMaihama ? '🏰🐭🎀👑👸🏻' : '🍻';
+  const egg = getEgg(station.ja);
+  const drinkEmoji = eggEmoji(station.ja);
+  const hintText = t(egg?.position === 'replace' && egg.hintKey ? egg.hintKey : 'drinkHint');
   let prefix = '';
   if (emoji === 'wrap') {
     prefix = `<span style="font-size:1.1rem">${drinkEmoji}</span> `;
-  } else if (emoji === 'inline' && (isUmi || isMaihama)) {
+  } else if (emoji === 'inline' && egg?.emoji) {
     prefix = drinkEmoji + ' ';
   }
-  return (isNishigahara ? `<div class="drink-hint">🚇 ${t('nishigaharaHint')}</div>` : '')
+  const prepend = egg?.position === 'prepend' && egg.hintKey
+    ? `<div class="drink-hint">${egg.hintEmoji} ${t(egg.hintKey)}</div>` : '';
+  const append = egg?.position === 'append' && egg.hintKey
+    ? `<div class="drink-hint">${egg.hintEmoji} ${t(egg.hintKey)}</div>` : '';
+  return prepend
     + `<div class="drink-hint">${prefix}${hintText}</div>`
-    + (isKaji ? `<div class="drink-hint">👋 ${t('kajigayaHint')}</div>` : '');
+    + append;
 }
 
 // Given a platform and optional express indices, compute the valid (non-drunk-at)
@@ -2997,6 +3023,23 @@ function getValidRouteInfo(platform, expressIndices, maxPhysical, branchIndicesO
     }
   }
   return { validCount: physicalStopsMap.length, physicalStopsMap };
+}
+
+// Compute the effective (valid, non-drunk-at) max stops for a platform,
+// accounting for express indices, branch indices, and the stops cap setting.
+// opts: { ei, bi } — express/branch indices overrides (default: from state)
+// Returns { validCount, physicalStopsMap, rawMax, cappedMax }
+function getEffectiveStops(platform, opts = {}) {
+  const ei = opts.ei !== undefined ? opts.ei : state.selectedTrainType?.expressIndices;
+  const bi = opts.bi !== undefined ? opts.bi : state.selectedBranch?.branchIndices;
+  const rawMax = ei
+    ? getExpressMaxStops(platform, ei)
+    : bi
+      ? getBranchMaxStops(platform, bi)
+      : platform.maxStops;
+  const cappedMax = capStops(rawMax);
+  const info = getValidRouteInfo(platform, ei || null, cappedMax, bi);
+  return { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax };
 }
 
 function hasTransferLines(stationName, currentLineName) {
@@ -3103,8 +3146,8 @@ async function checkTransfers(platform, rolledStops) {
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
     const alreadyDrank = state.drankAt.has(normalize(route[i].name));
-    const extraDrink = Math.max(0, state.stationsSinceDrink - 5);
-    const sides = alreadyDrank ? 4 : 5 + extraDrink;
+    const extraDrink = Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD);
+    const sides = alreadyDrank ? (TRANSFER_DIE_SIDES - 1) : TRANSFER_DIE_SIDES + extraDrink;
     let roll;
     if (window._forceNextRoll != null) {
       roll = Math.max(1, Math.min(sides, window._forceNextRoll));
@@ -3186,15 +3229,7 @@ async function checkTransfers(platform, rolledStops) {
 
 function rollStops() {
   dom.rollStopsBtn.disabled = true;
-  const ei = state.selectedTrainType?.expressIndices;
-  const bi = state.selectedBranch?.branchIndices;
-  const rawPhysicalMax = ei
-    ? getExpressMaxStops(state.selectedPlatform, ei)
-    : bi
-      ? getBranchMaxStops(state.selectedPlatform, bi)
-      : state.selectedPlatform.maxStops;
-  const cappedPhysicalMax = capStops(rawPhysicalMax);
-  const routeInfo = getValidRouteInfo(state.selectedPlatform, ei || null, cappedPhysicalMax);
+  const routeInfo = getEffectiveStops(state.selectedPlatform);
   const max = routeInfo.validCount;
 
   if (max === 0) {
@@ -3259,9 +3294,12 @@ function rollStops() {
       dom.destName.textContent = result.station.name;
       dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
       const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
-      const isUmiShibaura2 = result.station.ja === '海芝浦';
+      const transferEgg = getEgg(result.station.ja);
+      const transferHint = transferEgg?.position === 'replace' && transferEgg.hintKey
+        ? eggEmoji(result.station.ja) + ' ' + t(transferEgg.hintKey)
+        : t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType });
       dom.destSub.innerHTML =
-        `${result.station.ja} &nbsp;·&nbsp; ${isUmiShibaura2 ? '🌊 ' + t('parkHint') : t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType })}`
+        `${result.station.ja} &nbsp;·&nbsp; ${transferHint}`
         + destSubHints(result.station);
       dom.destCard.classList.add('active');
       dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3325,7 +3363,7 @@ async function showPlaces(mode) {
   content.innerHTML = `<div class="bars-empty">${isBars ? t('searchingBars') : t('searchingCafes')}</div>`;
 
   const { lat, lng } = state.destination;
-  const circle = `circle:${lat},${lng};r=500`;
+  const circle = `circle:${lat},${lng};r=${PLACES_RADIUS}`;
 
   try {
     let items;
@@ -3402,8 +3440,7 @@ function buildHistoryItem(e, num) {
   if (e.flight) {
     body = `<strong>${from}</strong>${fromSub} <span class="text-flight">${t('tookFlight')}</span>`;
   } else if (e.drinkHere) {
-    const isUmiHist = e.fromJa === '海芝浦';
-    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t(isUmiHist ? 'stayedForPark' : 'stayedForDrink')}</span>`;
+    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t(eggStayedKey(e.fromJa))}</span>`;
   } else if (e.drinkAtTransfer) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
     body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent">${t('drinkRollHistory')}</span>`;
@@ -3412,10 +3449,7 @@ function buildHistoryItem(e, num) {
     body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent2">${t('transferHistory')}</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    const isUmiArr = e.toJa === '海芝浦';
-    const isMaihamaArr = e.toJa === '舞浜';
-    const arrEmoji = isUmiArr ? '🌊' : isMaihamaArr ? '🏰🐭🎀👑👸🏻' : t('drinkAtArrivalHist');
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${arrEmoji}</span>` : ''}`;
+    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${eggDrinkAtArrival(e.toJa)}</span>` : ''}`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -3482,8 +3516,6 @@ function clearHistory() {
 }
 
 // ── Session save/resume ───────────────────────────────────────────────────
-const SESSION_KEY = 'random_game_session';
-const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 function saveSession() {
   if (state.history.length === 0) {
@@ -3702,7 +3734,7 @@ function checkLastTrainWarning() {
   const m     = now.getMinutes();
   const today = now.toDateString();
   const past1130 = h > 23 || (h === 23 && m >= 30);
-  if (past1130 && localStorage.getItem('ltw_dismissed') !== today) {
+  if (past1130 && localStorage.getItem(LTW_KEY) !== today) {
     dom.lastTrainWarning.style.display = 'block';
   } else if (!past1130) {
     dom.lastTrainWarning.style.display = 'none'; // reset before 11:30pm so it can show again tonight
@@ -3722,17 +3754,13 @@ function copyRoute(feedbackBtn) {
     if (e.flight) {
       lines.push(`${i + 1}. ${from} ${t('tookFlight')}`);
     } else if (e.drinkHere) {
-      const isUmiExp = e.fromJa === '海芝浦';
-      lines.push(`${i + 1}. ${from} ${t(isUmiExp ? 'stayedForPark' : 'stayedForDrink')}`);
+      lines.push(`${i + 1}. ${from} ${t(eggStayedKey(e.fromJa))}`);
     } else if (e.drinkAtTransfer) {
       lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${to} ${t('drinkRollHistory')}`);
     } else if (e.transferred) {
       lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stopsUsed}) → ${to} ${t('transferHistory')}`);
     } else {
-      const isUmiCopy = e.toJa === '海芝浦';
-      const isMaihamaCopy = e.toJa === '舞浜';
-      const copyEmoji = isUmiCopy ? '🌊' : isMaihamaCopy ? '🏰🐭🎀👑👸🏻' : t('drinkAtArrivalHist');
-      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${to}${e.drinkAtArrival ? ` ${copyEmoji}` : ''}`);
+      lines.push(`${i + 1}. ${from} → ${lineDisplayName(e.line)} (+${e.stops}) → ${to}${e.drinkAtArrival ? ` ${eggDrinkAtArrival(e.toJa)}` : ''}`);
     }
   });
   lines.push('', formatStatsText());
@@ -3790,7 +3818,7 @@ function copyToClipboard(text, feedbackBtn) {
         let newMax;
         if (line.name.includes('Oedo') || line.name.includes('\u014Cedo')) {
           // Oedo lollipop — use original cap logic
-          const loopEnd = 29;
+          const loopEnd = OEDO_LOOP_END;
           const loopMid = Math.floor((loopEnd - 1) / 2);
           const stemLen = N - 1 - (loopEnd - 1);
           if (p.dirKey === 'loopCCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1)) : loopMid;
@@ -3814,7 +3842,8 @@ function copyToClipboard(text, feedbackBtn) {
             dom.rollStopsBtn.disabled = false;
           }
           // Also rebuild platform grid to reflect updated stop counts
-          state.platforms = getPlatforms(state.currentStation.name);
+          state.platforms = getPlatforms(state.currentStation.name)
+            .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
           const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
           const isAirport = /airport/i.test(state.currentStation.name);
           state.platforms.push(...(canDrinkHere ? [{ drinkHere: true }] : []));
@@ -3840,7 +3869,7 @@ function copyToClipboard(text, feedbackBtn) {
   dom.statsBtn.addEventListener('click', showStats);
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
-    localStorage.setItem('ltw_dismissed', new Date().toDateString());
+    localStorage.setItem(LTW_KEY, new Date().toDateString());
   });
   dom.stopsCap.addEventListener('change', e => {
     state.stopsCap = e.target.checked;
