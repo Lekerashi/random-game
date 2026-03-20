@@ -606,6 +606,19 @@
     .htp-close                 { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888; line-height: 1; }
     .htp-close:hover           { color: var(--text); }
 
+    /* ── RNG tool ─────────────────────────────────── */
+    .rng-wrap                  { text-align: center; padding: 0.75rem 1rem 0; }
+    .rng-btn                   { background: none; border: none; color: #555; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 4px 8px; }
+    .rng-btn:hover             { color: #333; }
+    .rng-card                  { text-align: center; }
+    .rng-card h3               { margin: 0 0 1rem; font-size: 1.1rem; color: var(--text); }
+    .rng-inputs                { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 1rem; }
+    .rng-inputs label          { font-size: 0.85rem; color: var(--muted); }
+    .rng-inputs input          { width: 70px; padding: 6px 8px; border: 1px solid var(--surface2); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 1rem; text-align: center; }
+    .rng-generate              { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 8px 24px; font-size: 1rem; cursor: pointer; }
+    .rng-generate:hover        { filter: brightness(1.1); }
+    .rng-result                { font-size: 2.5rem; font-weight: bold; color: var(--text); margin-top: 0.75rem; min-height: 3rem; }
+
     /* ── Stats overlay (reuses htp pattern) ─────────── */
     .stats-grid                { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
     .stat-box                  { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
@@ -1546,6 +1559,12 @@ const translations = {
     htpStep6:             'Arrive at your stop, get off, and grab a drink!',
     htpStep7:             'Head back to the station and go again!',
     htpGoal:              'Explore Tokyo and discover new places to drink!',
+    // RNG tool
+    rngButton:            'Random Number Generator',
+    rngTitle:             'Random Number',
+    rngMin:               'Min',
+    rngMax:               'Max',
+    rngGenerate:          'Generate',
     // Footer
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     // Reroll button text
@@ -1667,6 +1686,11 @@ const translations = {
     drinkRollHistory:     '🍻 ここで一杯',
     drinkAtArrivalHist:   '🍻',
     transferHistory:      '🔀 乗り換え',
+    rngButton:            '乱数ジェネレーター',
+    rngTitle:             'ランダム数字',
+    rngMin:               '最小',
+    rngMax:               '最大',
+    rngGenerate:          '生成',
     howToPlay:            '遊び方',
     htpStep1:             '出発駅をGPS・検索・ランダムから選ぶ。',
     htpStep2:             'サイコロを振って乗る路線と方向をランダムに決める。',
@@ -1720,6 +1744,15 @@ function applyLang() {
   document.querySelectorAll('.lang-toggle button').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === currentLang);
   });
+}
+
+function generateRNG() {
+  const min = parseInt(document.getElementById('rng-min').value, 10) || 0;
+  const max = parseInt(document.getElementById('rng-max').value, 10) || 0;
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  const result = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+  document.getElementById('rng-result').textContent = result;
 }
 
 function switchLang(lang) {
@@ -4383,6 +4416,25 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <p id="localization-credit" style="display:none; text-align:center; color:#555; font-size:0.7rem; margin:0.5rem 0 0;">ローカライズ：優子</p>
+
+<div class="rng-wrap">
+  <button class="rng-btn" onclick="document.getElementById('rng-overlay').classList.remove('hidden')" data-i18n="rngButton">Random Number Generator</button>
+</div>
+
+<div id="rng-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="htp-card rng-card">
+    <button class="htp-close" onclick="document.getElementById('rng-overlay').classList.add('hidden')">&times;</button>
+    <h3 data-i18n="rngTitle">Random Number</h3>
+    <div class="rng-inputs">
+      <label data-i18n="rngMin">Min</label>
+      <input id="rng-min" type="number" value="1">
+      <label data-i18n="rngMax">Max</label>
+      <input id="rng-max" type="number" value="6">
+    </div>
+    <button class="rng-generate" onclick="generateRNG()" data-i18n="rngGenerate">Generate</button>
+    <div id="rng-result" class="rng-result"></div>
+  </div>
+</div>
 
 <footer>
   <span data-i18n="footer">Conceived by Shane, perfected by Shane &amp; Zack, vibe coded by Logan &mdash; the Kens</span>
