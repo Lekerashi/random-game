@@ -814,296 +814,9 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
-<script>
-// ── Express Services (no-extra-fare only) ─────────────────────────────────
-// stops: null = all stations (local); array = station names that this type stops at
-const EXPRESS_SERVICES = {
-  "Seibu Shinjuku Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Seibu-Shinjuku","Takadanobaba","Saginomiya","Kami-Shakujii",
-      "Musashi-Seki","Higashi-Fushimi","Seibu-Yagisawa","Tanashi",
-      "Hana-Koganei","Kodaira","Kumegawa","Higashi-Murayama",
-      "Tokorozawa","Koku-koen","Shin-Tokorozawa","Iriso",
-      "Sayamashi","Shin-Sayama","Minami-Otsuka","Hon-Kawagoe",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Seibu-Shinjuku","Takadanobaba","Saginomiya","Kami-Shakujii",
-      "Tanashi","Hana-Koganei","Kodaira","Kumegawa",
-      "Higashi-Murayama","Tokorozawa","Koku-koen","Shin-Tokorozawa",
-      "Iriso","Sayamashi","Shin-Sayama","Minami-Otsuka","Hon-Kawagoe",
-    ]},
-  ],
-  "JR Chuo Line": [
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: null },
-    { name: "Sp. Rapid", ja: "特別快速", color: "#f07000", stops: [
-      "Tokyo","Kanda","Ochanomizu","Yotsuya","Shinjuku",
-      "Nakano","Mitaka","Kokubunji","Tachikawa",
-      "Hino","Toyoda","Hachioji","Nishi-Hachioji","Takao",
-    ]},
-  ],
-  "Tokyo Metro Fukutoshin Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Wakoshi","Kotake-mukaihara","Ikebukuro","Shinjuku-sanchome",
-      "Meiji-jingumae 'Harajuku'","Shibuya",
-    ]},
-  ],
-  "Seibu Ikebukuro Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Oizumi-gakuen","Hoya","Hibarigaoka",
-      "Higashi-Kurume","Kiyose","Akitsu","Tokorozawa",
-      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
-      "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
-      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
-      "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
-    ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
-      "Kotesashi","Iruma-shi","Hanno",
-    ]},
-  ],
-  "Keio Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
-      "Shinjuku","Sasazuka","Meidaimae","Sakurajosui","Chitose-karasuyama",
-      "Sengawa","Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
-      "Bubaigawara","Nakagawara","Seiseki-sakuragaoka","Mogusaen",
-      "Takahatafudo","Minamidaira","Hirayamajoshi-koen",
-      "Naganuma","Kitano","Keiō-hachiōji",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shinjuku","Sasazuka","Meidaimae","Sakurajosui","Chitose-karasuyama",
-      "Sengawa","Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
-      "Bubaigawara","Nakagawara","Seiseki-sakuragaoka","Mogusaen",
-      "Takahatafudo","Minamidaira","Hirayamajoshi-koen",
-      "Naganuma","Kitano","Keiō-hachiōji",
-    ]},
-    { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
-      "Shinjuku","Sasazuka","Meidaimae","Chitose-karasuyama","Chofu",
-      "Fuchu","Bubaigawara","Seiseki-sakuragaoka","Takahatafudo","Kitano",
-      "Keiō-hachiōji",
-    ]},
-  ],
-  "Keio Inokashira line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shibuya","Shimo-Kitazawa","Meidaimae","Eifukucho","Kugayama",
-      "Inokashira-koen","Kichijōji",
-    ]},
-  ],
-  "Odakyu Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Chitose-Funabashi",
-      "Soshigaya-Okura","Seijogakuen-mae","Komae","Noborito","Mukogaoka-Yuen",
-      "Ikuta","Yomiuriland-mae","Yurigaoka","Shin-Yurigaoka",
-      "Kakio","Tsurukawa","Tamagawagakuen-mae","Machida","Odakyu-Sagamihara",
-      "Soubudai-Mae","Zama","Ebina","Atsugi","Hon-Atsugi",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Seijogakuen-mae",
-      "Noborito","Mukogaoka-Yuen","Shin-Yurigaoka","Machida","Sagami-Ono",
-      "Ebina","Hon-Atsugi","Aiko-Ishida","Isehara","Tsurumaki-Onsen",
-      "Tokaidaigaku-mae","Hadano","Shibusawa","Shin-Matsuda","Odawara",
-    ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Noborito","Shin-Yurigaoka",
-      "Machida","Sagami-Ono","Ebina","Hon-Atsugi","Aiko-Ishida","Isehara",
-      "Tsurumaki-Onsen","Tokaidaigaku-mae","Hadano","Shibusawa",
-      "Shin-Matsuda","Odawara",
-    ]},
-  ],
-  "Tokyu Toyoko Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shibuya","Naka-meguro","Gakugei-daigaku","Jiyugaoka","Den-en-chofu",
-      "Tamagawa","Musashi-Kosugi","Hiyoshi","Tsunashima","Kikuna","Yokohama",
-    ]},
-    { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
-      "Shibuya","Naka-meguro","Jiyugaoka","Musashi-Kosugi","Hiyoshi",
-      "Kikuna","Yokohama",
-    ]},
-  ],
-  "Tokyu Den-en-toshi Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Shibuya","Ikejiri-ohashi","Sangen-jaya","Komazawa-daigaku",
-      "Sakura-shimmachi","Yoga","Futako-tamagawa","Mizonokuchi","Saginuma",
-      "Tama-plaza","Azamino","Aobadai","Nagatsuta","Tsukushino","Suzukakedai",
-      "Minami-machida","Tsukimino","Chuo-Rinkan",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shibuya","Sangen-jaya","Futako-tamagawa","Mizonokuchi","Saginuma",
-      "Tama-plaza","Azamino","Aobadai","Nagatsuta","Minami-machida",
-      "Chuo-Rinkan",
-    ]},
-  ],
-  "Tobu Tojo Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Kami-itabashi","Narimasu","Wakoshi","Asaka","Asakadai",
-      "Shiki","Fujimino","Kami-fukuoka","Kawagoe","Kawagoeshi",
-      "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
-      "Ogawamachi","Yorii",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Ikebukuro","Wakoshi","Asaka","Asakadai","Kawagoe","Kawagoeshi",
-      "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
-      "Ogawamachi","Yorii",
-    ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Ikebukuro","Wakoshi","Asakadai","Kawagoe","Kawagoeshi",
-      "Kasumigaseki (Kawagoe)","Tsurugashima","Wakaba","Sakado",
-      "Kita Sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
-      "Tsukinowa","Musashi-ranzan","Ogawamachi",
-    ]},
-  ],
-  "Tobu Isesaki Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
-      "Asakusa","TOKYO SKYTREE","Hikifune","Higashi-mukojima",
-      "Kanegafuchi","Horikiri","Ushida","Kita-Senju","Nishiarai","Soka",
-      "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki","Washinomiya",
-      "Hanasaki","Kazo","Minami-Hanyu","Hanyu","Kawamata","Morinji-mae",
-      "Tatebayashi",
-    ]},
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Oshiage 'SKYTREE'","Hikifune","Kita-Senju","Nishiarai","Soka",
-      "Shin-koshigaya","Koshigaya","Kita-koshigaya","Obukuro","Sengendai",
-      "Takesato","Ichinowari","Kasukabe","Kita-Kasukabe","Himemiya",
-      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki",
-    ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Oshiage 'SKYTREE'","Hikifune","Kita-Senju","Nishiarai","Soka",
-      "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu dobutsu-koen (Tobu Zoo)",
-    ]},
-  ],
-  "Keisei Main Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
-      "Keisei-Ueno","Nippori","Senjuohashi","Aoto","Keisei Takasago",
-      "Keisei Koiwa","Edogawa","Konodai","Ichikawamama","Sugano",
-      "Keisei Yawata","Onigoe","Keisei-Nakayama","Higashi-Nakayama",
-      "Keisei Nishifuna","Kaijin","Keisei Funabashi","Daijingu-Shita",
-      "Funabashi-Keibajo","Yatsu","Keisei Tsudanuma","Keisei-Okubo",
-      "Mimomi","Yachiyodai","Keisei-Owada","Katsutadai","Shizu",
-      "Yūkarigaoka","Keisei-Usui","Keisei-Sakura","Osakura",
-      "Keisei-Shisui","Sogosando","Kozunomori","Keisei-Narita",
-      "Airport Second Building (NRT Terminal 2)","Narita Airport (NRT Terminal 1)",
-    ]},
-    { name: "Rapid Ltd", ja: "快速特急", color: "#f07000", stops: [
-      "Keisei-Ueno","Nippori","Aoto","Keisei Takasago","Keisei Yawata",
-      "Keisei Funabashi","Keisei Tsudanuma","Yachiyodai","Katsutadai",
-      "Keisei-Sakura","Keisei-Narita",
-      "Airport Second Building (NRT Terminal 2)","Narita Airport (NRT Terminal 1)",
-    ]},
-  ],
-  "Keikyu Main Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
-      "Keikyu Kawasaki","Keikyu Tsurumi","Kanagawa-shimmachi","Yokohama",
-      "Kamiooka","Sugita","Nokendai","Kanazawa-bunko","Kanazawa-Hakkei",
-    ]},
-    { name: "Ltd. Exp", ja: "快特", color: "#e83080", stops: [
-      "Sengakuji","Shinagawa","Keikyu Kamata","Keikyu Kawasaki","Yokohama",
-      "Kamiooka","Kanazawa-bunko","Kanazawa-Hakkei","Yokosuka-chuo",
-      "Horinouchi","Uraga",
-    ]},
-  ],
-  "Tokaido Shinkansen": [
-    { name: "Kodama", ja: "こだま", color: "#0073CF", stops: null },
-    { name: "Hikari", ja: "ひかり", color: "#f07000", stops: [
-      "Tokyo","Shinagawa","Shin-Yokohama","Odawara","Shizuoka",
-    ]},
-    { name: "Nozomi", ja: "のぞみ", color: "#e83080", stops: [
-      "Tokyo","Shinagawa","Shin-Yokohama","Shizuoka",
-    ]},
-  ],
-  "Tohoku Shinkansen": [
-    { name: "Nasuno", ja: "なすの", color: "#0073CF", stops: null },
-    { name: "Yamabiko", ja: "やまびこ", color: "#f07000", stops: [
-      "Tokyo","Ueno","Omiya","Utsunomiya",
-    ]},
-    { name: "Tsubasa", ja: "つばさ", color: "#9B59B6", stops: [
-      "Tokyo","Ueno","Omiya","Utsunomiya",
-    ]},
-    { name: "Hayabusa", ja: "はやぶさ", color: "#00B261", stops: [
-      "Tokyo","Ueno","Omiya",
-    ]},
-    { name: "Komachi", ja: "こまち", color: "#e83030", stops: [
-      "Tokyo","Ueno","Omiya",
-    ]},
-  ],
-  "Joetsu Shinkansen": [
-    { name: "Tanigawa", ja: "たにがわ", color: "#0073CF", stops: null },
-    { name: "Toki", ja: "とき", color: "#f07000", stops: [
-      "Tokyo","Ueno","Omiya","Takasaki",
-    ]},
-  ],
-};
-
-// ── Branch definitions for lines with multiple routes ──
-const LINE_BRANCHES = {
-  'JR Tsurumi Line': [
-    { name: 'Main Line', ja: '本線', color: '#00b900',
-      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','武蔵白石','浜川崎','昭和','扇町'] },
-    { name: 'Umi-Shibaura', ja: '海芝浦支線', color: '#58a6ff',
-      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','新芝浦','海芝浦'] },
-    { name: 'Okawa', ja: '大川支線', color: '#f07000',
-      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'] },
-  ],
-  'Tokyo Metro Marunouchi Line': [
-    { name: 'Ogikubo', ja: '荻窪方面', color: '#e60012',
-      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','新中野','東高円寺','新高円寺','南阿佐ケ谷','荻窪'] },
-    { name: 'Honancho', ja: '方南町方面', color: '#f07800',
-      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町','方南町'] },
-  ],
-  'JR Nambu Line': [
-    { name: 'Tachikawa', ja: '立川方面', color: '#ffd400',
-      stations: ['川崎','尻手','矢向','鹿島田','平間','向河原','武蔵小杉','武蔵中原','武蔵新城','武蔵溝ノ口','津田山','久地','宿河原','登戸','中野島','稲田堤','矢野口','稲城長沼','南多摩','府中本町','分倍河原','西府','谷保','矢川','西国立','立川'] },
-    { name: 'Hamakawasaki', ja: '浜川崎方面', color: '#c8a048',
-      stations: ['川崎','尻手','八丁畷','川崎新町','小田栄','浜川崎'] },
-  ],
-  // Tokaido through-running: line is reversed to south→north, branches diverge at Ueno
-  'JR Tokaido Main Line': [
-    { name: 'Tokyo', ja: '東京止まり', color: '#F7A600',
-      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京'] },
-    { name: 'Utsunomiya', ja: '宇都宮線', color: '#40d46e',
-      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','土呂','東大宮','蓮田','白岡','新白岡','久喜','東鷲宮','栗橋','古河','野木','間々田','小山','小金井','自治医大','石橋','雀宮','宇都宮','岡本','宝積寺','氏家','蒲須坂','片岡','矢板','野崎','西那須野','那須塩原','黒磯'] },
-    { name: 'Takasaki', ja: '高崎線', color: '#424d6d',
-      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','宮原','上尾','北上尾','桶川','北本','鴻巣','北鴻巣','吹上','行田','熊谷','籠原','深谷','岡部','本庄','神保原','新町','倉賀野','高崎'] },
-    { name: 'Joban', ja: '常磐線', color: '#009BBF',
-      stations: ['品川','東京','上野','日暮里','三河島','南千住','北千住','綾瀬','亀有','金町','松戸','北松戸','馬橋','新松戸','北小金','南柏','柏','北柏','我孫子','天王台','取手'] },
-  ],
-};
-
-// ── Station Aliases (physically connected stations with different names) ──
-const STATION_ALIASES = {
-  "Mizonokuchi":                ["Musashi-Mizonokuchi"],
-  "Musashi-Mizonokuchi":        ["Mizonokuchi"],
-  "Harajuku":                   ["Meiji-jingumae 'Harajuku'"],
-  "Meiji-jingumae 'Harajuku'":  ["Harajuku"],
-  "Tamachi":                    ["Mita"],
-  "Mita":                       ["Tamachi"],
-  "Daimon":                     ["Hamamatsucho"],
-  "Hamamatsucho":               ["Daimon"],
-};
-
-// Walkable connections — stations linked by walkway, not rail transfer.
-// Only affects getPlatforms (roll-again), NOT transfer checks mid-route.
-// One-way: Higashi-Narita can access Terminal 2 lines, but not vice versa
-const WALKABLE_STATIONS = {
-  "Higashi-Narita":             ["Airport Second Building (NRT Terminal 2)"],
-};
-</script>
+<script src="data-lines.js"></script>
+<script src="data-i18n.js"></script>
+<script src="data-transforms.js"></script>
 <script>
 'use strict';
 
@@ -1250,464 +963,11 @@ let currentLang = localStorage.getItem(LANG_KEY) || 'en';
 if (currentLang === 'ja') document.documentElement.lang = 'ja';
 function gc(path) { if (typeof goatcounter !== 'undefined') goatcounter.count({ path, title: path, event: true }); }
 
-const LINE_NAMES_JA = {
-  // JR
-  'JR Yamanote Line':          'JR山手線',
-  'JR Chuo Line':              'JR中央線（快速）',
-  'JR Chuo Main Line':         'JR中央本線',
-  'JR Chuo-Sobu Line':         'JR中央・総武線',
-  'JR Keihin Tohoku Line':     'JR京浜東北線',
-  'JR Keiyo Line':             'JR京葉線',
-  'JR Saikyo Line':            'JR埼京線',
-  'JR Shonan Shinjuku Line':   'JR湘南新宿ライン',
-  'JR Sobu Line':              'JR総武線',
-  'JR Tokaido Main Line':      'JR東海道本線',
-  'JR Yokosuka Line':          'JR横須賀線',
-  'JR Nambu Line':             'JR南武線',
-  'JR Musashino Line':         'JR武蔵野線',
-  'JR Negishi Line':           'JR根岸線',
-  'JR Yokohama Line':          'JR横浜線',
-  'JR Ome Line':               'JR青梅線',
-  'JR Sagami Line':            'JR相模線',
-  'JR Ito Line':               'JR伊東線',
-  'JR Kawagoe Line':           'JR川越線',
-  'JR Uchibo Line':            'JR内房線',
-  'JR Sotobo Line':            'JR外房線',
-  'JR Kururi Line':            'JR久留里線',
-  'JR Narita Line':            'JR成田線',
-  'JR Kashima Line':           'JR鹿島線',
-  'JR Mito Line':              'JR水戸線',
-  'JR Togane Line':            'JR東金線',
-  'JR Tsurumi Line':           'JR鶴見線',
-  'JR Ryomo Line':             'JR両毛線',
-  'JR Hachiaki Line':          'JR八高線',
-  'JR Gotemba Line':           'JR御殿場線',
-  'JR Minobu Line':            'JR身延線',
-  'JR Shinetsu main line':     'JR信越本線',
-  'JR Goto-city line':         'JR五日市線',
-  // Tokyo Metro
-  'Tokyo Metro Ginza Line':      '東京メトロ銀座線',
-  'Tokyo Metro Marunouchi Line': '東京メトロ丸ノ内線',
-  'Tokyo Metro Hibiya Line':     '東京メトロ日比谷線',
-  'Tokyo Metro Tozai Line':      '東京メトロ東西線',
-  'Tokyo Metro Chiyoda Line':    '東京メトロ千代田線',
-  'Tokyo Metro Yurakucho Line':  '東京メトロ有楽町線',
-  'Tokyo Metro Hanzomon Line':   '東京メトロ半蔵門線',
-  'Tokyo Metro Namboku Line':    '東京メトロ南北線',
-  'Tokyo Metro Fukutoshin Line': '東京メトロ副都心線',
-  // Toei
-  'Toei Asakusa Line':    '都営浅草線',
-  'Toei Mita Line':       '都営三田線',
-  'Toei Shinjuku Line':   '都営新宿線',
-  'Toei Oedo Line':       '都営大江戸線',
-  'Toden Arakawa Line':   '都電荒川線',
-  'Nippori-Toneri Liner': '日暮里・舎人ライナー',
-  // Tokyu
-  'Tokyu Toyoko Line':         '東急東横線',
-  'Tokyu Den-en-toshi Line':   '東急田園都市線',
-  'Tokyu Meguro Line':         '東急目黒線',
-  'Tokyu Oimachi Line':        '東急大井町線',
-  'Tokyu Ikegami Line':        '東急池上線',
-  'Tokyu Tamagawa Line':       '東急多摩川線',
-  'Tokyu Setagaya Line':       '東急世田谷線',
-  'Tokyu Kodomo-no-kuni Line': '東急こどもの国線',
-  'Tokyu Shin-Yokohama Line':  '東急新横浜線',
-  // Keio
-  'Keio Line':             '京王線',
-  'Keio Inokashira line':  '京王井の頭線',
-  'Keio new line':         '京王新線',
-  'Keio Sagamihara line':  '京王相模原線',
-  'Keio Takaoka Line':     '京王高尾線',
-  'Keio Dobutsuen Line':   '京王動物園線',
-  'Keio Racecourse Line':  '京王競馬場線',
-  // Odakyu
-  'Odakyu Line':          '小田急小田原線',
-  'Odakyu Enoshima Line': '小田急江ノ島線',
-  'Odakyu Tama Line':     '小田急多摩線',
-  // Seibu
-  'Seibu Ikebukuro Line':  '西武池袋線',
-  'Seibu Shinjuku Line':   '西武新宿線',
-  'Seibu Haijima Line':    '西武拝島線',
-  'Seibu Kokubunji Line':  '西武国分寺線',
-  'Seibu Tamaegawa Line':  '西武多摩川線',
-  'Seibu Tama Lake Line':  '西武多摩湖線',
-  'Seibu Sayama Line':     '西武狭山線',
-  'Seibu Chichibu Line':   '西武秩父線',
-  'Seibu Yurakucho Line':  '西武有楽町線',
-  'Seibu Toshima Line':    '西武豊島線',
-  'Seibu Seibu-en Line':   '西武西武園線',
-  'Leo Liner':             'レオライナー',
-  // Tobu
-  'Tobu Isesaki Line':     '東武スカイツリーライン',
-  'Tobu Tojo Line':        '東武東上線',
-  'Tobu Nikko Line':       '東武日光線',
-  'Tobu Noda line':        '東武アーバンパークライン',
-  'Tobu Kameido Line':     '東武亀戸線',
-  'Tobu Daishi Line':      '東武大師線',
-  'Tobu Ogose Line':       '東武越生線',
-  'Tobu Kiryu Line':       '東武桐生線',
-  'Tobu Koizumi Line':     '東武小泉線',
-  'Tobu Sano Line':        '東武佐野線',
-  'Tobu Utsunomiya Line':  '東武宇都宮線',
-  // Keisei
-  'Keisei Main Line':      '京成本線',
-  'Keisei Oshiage Line':   '京成押上線',
-  'Keisei Kanamachi Line': '京成金町線',
-  'Keisei Chiba Line':     '京成千葉線',
-  'Keisei Chihara Line':   '京成千原線',
-  'Narita Sky Access':     '成田スカイアクセス',
-  // Keikyu
-  'Keikyu Main Line':     '京急本線',
-  'Keikyu Airport Line':  '京急空港線',
-  'Keikyu Daisen Line':   '京急大師線',
-  'Keikyu Kurihama Line': '京急久里浜線',
-  'Keikyu Zushi Line':    '京急逗子線',
-  // Sotetsu
-  'Sotetsu Main Line':           '相鉄本線',
-  'Sotetsu Izumino Line':        '相鉄いずみ野線',
-  'Sotetsu Shin-Yokohama Line':  '相鉄新横浜線',
-  // Other
-  'Rinkai Line':           'りんかい線',
-  'Tsukuba Express':       'つくばエクスプレス',
-  'Yurikamome':            'ゆりかもめ',
-  'Tokyo monorail':        '東京モノレール',
-  'Tama Monorail':         '多摩モノレール',
-  'Minato Mirai Line':     'みなとみらい線',
-  'Kanazawa Seaside Line': '金沢シーサイドライン',
-  'Hokuso Railway Hokuso Line':  '北総鉄道北総線',
-  'Shin-Keisei Line':           '新京成線',
-  'Toyo Rapid Railway Line':    '東葉高速鉄道線',
-  'Shibayama Railway Line':     '芝山鉄道線',
-  'Saitama high-speed rail line': '埼玉高速鉄道線',
-  'New shuttle':                 'ニューシャトル',
-  'Shonan Monorail':             '湘南モノレール',
-  'Enoshima Railway Line':       '江ノ島電鉄',
-  'Hakone Tozan Railway':        '箱根登山鉄道',
-  'Hakone Tozan Cable Car':      '箱根登山ケーブルカー',
-  'Blue Line':                   '横浜市営ブルーライン',
-  'Green line':                  '横浜市営グリーンライン',
-  'Chichibu Railway Chichibu Line': '秩父鉄道秩父本線',
-  'Fuji Express Line':           '富士急行線',
-  'Izuhakone Railway Sunzu Line':    '伊豆箱根鉄道駿豆線',
-  'Izuhakone Railway Daiyuzan Line': '伊豆箱根鉄道大雄山線',
-  'Gakunan Railway':              '岳南電車',
-  'Joshin Electric Railway':      '上信電鉄',
-  'Jomo Dentetsu Jomo Line':      '上毛電気鉄道上毛線',
-  'Kanto Railway Joso Line':      '関東鉄道常総線',
-  'Kanto Railway Ryugasaki Line': '関東鉄道竜ヶ崎線',
-  'Ryutetsu Nagareyama Line':     '流鉄流山線',
-  'Moka Tetsudo Moka Line':       '真岡鉄道真岡線',
-  'Hitachinaka Seaside Railway Minato Line': 'ひたちなか海浜鉄道湊線',
-  'Kashima Rinkai Railway Oarai-Kashima Line': '鹿島臨海鉄道大洗鹿島線',
-  'Chiba City Monorail 1 Line':  '千葉都市モノレール1号線',
-  'Chiba City Monorail Line 2':  '千葉都市モノレール2号線',
-  'Kominato Railroad Line':      '小湊鉄道線',
-  'Isumi Railway':               'いすみ鉄道',
-  'Choshi Electric Railway Line': '銚子電鉄',
-  'Yukarigaoka Line':            'ユーカリが丘線',
-  // Shinkansen
-  'Shinkansen':                  '新幹線',
-  'Tokaido Shinkansen':          '東海道新幹線',
-  'Tohoku Shinkansen':           '東北新幹線',
-  'Joetsu Shinkansen':           '上越新幹線',
-};
-
 // Get display name for a line — Japanese when in JP mode
 function lineDisplayName(englishName) {
   if (currentLang === 'ja' && LINE_NAMES_JA[englishName]) return LINE_NAMES_JA[englishName];
   return englishName;
 }
-
-const translations = {
-  en: {
-    // Page / loading
-    pageTitle:            'Random Game — Tokyo',
-    loadingTitle:         '🎲 Random Game',
-    loadingData:          'Loading Tokyo train data…',
-    checkingCache:        'Checking cache…',
-    fetchingOSM:          'Fetching station name corrections from OpenStreetMap…',
-    loadingCache:         'Loading from cache…',
-    loadingTrain:         'Loading train data…',
-    // Header
-    headerTitle:          '🎲 Random Game — Tokyo',
-    headerSub:            'Randomly drink your way around Tokyo',
-    // Errors
-    errorLoad:            'Failed to load train data: {msg}. Check your internet connection and reload.',
-    errorEmpty:           'Could not load train data. Please reload.',
-    // Last train
-    lastTrainWarn:        '🚃 Last train is soon — check schedules before your next hop or find a bar to stay at til first train!',
-    dismiss:              'Dismiss',
-    // Station picker
-    startingStation:      'Starting Station',
-    searchStation:        'Search for a station…',
-    useLocation:          'Use my current location',
-    pickRandom:           'Pick random station',
-    wardsOnly:            '23 Wards only',
-    capStops:             'Cap stops at',
-    // Step 1
-    step1Title:           'Step 1 — Roll a Train Line',
-    rollTrainLabel:       'Roll to pick a train line',
-    rollTrainBtn:         'ROLL TRAIN LINE',
-    rerollTrainTitle:     'Reroll train line',
-    // Step 2
-    step2Title:           'Step 2 — Roll Stops',
-    rollStopsLabel:       'Roll to pick how many stops',
-    rollStopsBtn:         'ROLL STOPS',
-    rerollStopsTitle:     'Reroll stops',
-    // Journey
-    checkingTransfers:    'Checking Transfers',
-    transferBadge:        'Transfer',
-    destBadge:             'DEST',
-    rollBtnLabel:         'ROLL',
-    stayResult:           'Stay',
-    transferResult:       'Transfer!',
-    drinkResult:          'Drink!',
-    // Destination
-    destination:          'Destination',
-    mapBtn:               '🗺 Map',
-    barsBtn:              '🏮 Nearby Bars',
-    cafesBtn:             '☕ Nearby Cafes',
-    rollAgainBtn:         '▶ Roll Again From Here',
-    // Map / Bars / Cafes
-    mapTitle:             'Map',
-    barsTitle:            'Nearby Bars, Pubs & Izakayas',
-    cafesTitle:           'Nearby Cafes',
-    searchingBars:        'Searching for nearby bars & izakayas…',
-    searchingCafes:       'Searching for nearby cafes…',
-    noBars:               'No bars or izakayas found within 500 m — try exploring!',
-    noCafes:              'No cafes found within 500 m — try exploring!',
-    fetchBarFail:         'Could not fetch bar data: {msg}',
-    fetchCafeFail:        'Could not fetch cafe data: {msg}',
-    // History
-    sessionHistory:       'Session History',
-    copyRoute:            'Copy route',
-    clear:                'Clear',
-    noRoundsYet:          'No rounds yet — start rolling!',
-    copied:               'Copied!',
-    copyFailed:           'Copy failed',
-    statsBtn:             'Stats',
-    statsTitle:           'Session Stats',
-    statStations:         'Stations visited',
-    statLines:            'Lines ridden',
-    statStops:            'Stations ridden',
-    statDistance:          'Distance traveled',
-    statDrinks:           'Drinks',
-    distanceTraveled:     '{km} km traveled',
-    // Dynamic labels
-    platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
-    rollingStops:         'Rolling 1–{max} stop{s}',
-    selectBranch:         'Select destination branch',
-    selectTrainType:      'Select train type · Rolling 1–{max} stops (local)',
-    trainTypeStops:       '{name} ({ja}) · Rolling 1–{max} stop{s}',
-    stopsResult:          '{n} stop{s}',
-    stopsFrom:            '{n} stop{s} from {station}',
-    maxStopsHint:         'Max stops: {n}',
-    platformsAvail:       '{n} platform{s} available',
-    // Geolocation
-    geoNotSupported:      '📍 Geolocation not supported by this browser',
-    geoDetecting:         '📍 Detecting your location…',
-    geoNoStation:         '📍 No station found nearby',
-    geoNearest:           '📍 Nearest station: {name} ({dist} m away)',
-    geoDenied:            'Location access denied — search manually',
-    geoUnavailable:       'Location unavailable — search manually',
-    geoTimeout:           'Location timed out — search manually',
-    outsideWards:         'Current station is outside the 23 wards — please pick a new one.',
-    // Special rolls
-    flightRoll:           '#{n} → ✈️ Take a flight!',
-    drinkRoll:            '#{n} → 🍻 Drink here!',
-    parkRoll:             '#{n} → 🌊 Enjoy the park!',
-    flightMsg:            '✈️ Go to the departure board and manually roll a random flight.<br>Bon voyage — your Tokyo game is over!',
-    drinkHint:            'Explore without a map and find a place for a drink! Use the buttons below if you can\'t find one.',
-    parkHint:             'Enjoy the park! Umi-Shibaura is a Toshiba-owned station with nothing but a waterfront park.',
-    kajigayaHint:         'Say "Hi" to Shane!',
-    nishigaharaHint:      'Welcome to the least-used station on the entire Tokyo Metro network.',
-    stayingForDrink:      '🍻 Staying for a drink',
-    stayingForPark:       '🌊 Enjoying the park',
-    drinkAtTransfer:      '🍻 Drink here! (transfer roll on {line}{type})',
-    noValidStops:         'All stops already visited! Reroll the platform.',
-    // Platform pills
-    drinkHereLabel:       'Drink here!',
-    parkHereLabel:        'Enjoy the park!',
-    takeFlightLabel:      'Take a flight!',
-    shinkansenLabel:      'Shinkansen!',
-    shinkansenRoll:       '#{n} → 🚅 Shinkansen!',
-    // Directions
-    loopCCW:              'Loop Counterclockwise',
-    loopCW:               'Loop Clockwise',
-    towardStation:        'toward {name}',
-    clockwise:            'Clockwise',
-    counterclockwise:     'Counterclockwise',
-    // Button states
-    newGame:              '🔄 New Game',
-    newGameTitle:         'Start a new game',
-    randomBtn:            '🎲 Random',
-    // Copy route header
-    copyRouteHeader:      '🗼 Tokyo Random Game — {date}',
-    tookFlight:           '✈️ took a flight — bon voyage!',
-    stayedForDrink:       '🍻 stayed for a drink',
-    stayedForPark:        '🌊 enjoyed the park',
-    drinkRollHistory:     '🍻 drink!',
-    drinkAtArrivalHist:   '🍻',
-    transferHistory:      '🔀 transfer',
-    // How to play
-    howToPlay:            'How to Play',
-    htpStep1:             'Pick your starting station — GPS, search, or random.',
-    htpStep2:             'Roll the dice to pick a train line and direction.',
-    htpStep3:             'Head to the platform and board the next train.',
-    htpStep4:             'Roll again right away — ride that many stops.',
-    htpStep5:             'If you pass a transfer station, roll to decide: switch lines or stay on.',
-    htpStep6:             'Arrive at your stop, get off, and grab a drink!',
-    htpStep7:             'Head back to the station and go again!',
-    htpGoal:              'Explore Tokyo and discover new places to drink!',
-    // RNG tool
-    rngButton:            'Random Number Generator',
-    rngTitle:             'Random Number',
-    rngMin:               'Min',
-    rngMax:               'Max',
-    rngGenerate:          'Generate',
-    // Footer
-    footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
-    // Reroll button text
-    undoTransferRoll:     '↩ Undo Roll',
-    rerollText:           '🔁 Reroll',
-    resumeSession:        'Resume previous session?',
-    resumeBtn:            'Resume',
-    dismissBtn:           'New Game',
-  },
-  ja: {
-    pageTitle:            'ランダムゲーム — 東京',
-    loadingTitle:         '🎲 ランダムゲーム',
-    loadingData:          '東京の鉄道データを読み込み中…',
-    checkingCache:        'キャッシュを確認中…',
-    fetchingOSM:          'OpenStreetMapから駅名を取得中…',
-    loadingCache:         'キャッシュから読み込み中…',
-    loadingTrain:         '鉄道データを読み込み中…',
-    headerTitle:          '🎲 ランダムゲーム — 東京',
-    headerSub:            '東京でランダムに飲み歩こう',
-    errorLoad:            '鉄道データの読み込みに失敗しました: {msg}。ネット接続を確認してリロードしてください。',
-    errorEmpty:           '鉄道データを読み込めませんでした。ページをリロードしてください。',
-    lastTrainWarn:        '🚃 終電が迫ってきています。次のサイコロを振る前に終電の時間を確認するか、そのまま始発まで飲み明かしましょう！',
-    dismiss:              '閉じる',
-    startingStation:      '出発駅',
-    searchStation:        '駅を検索…',
-    useLocation:          '現在地を使用',
-    pickRandom:           'ランダムに選ぶ',
-    wardsOnly:            '23区内のみ',
-    capStops:             '最大駅数',
-    step1Title:           'ステップ1 — 路線を選ぶ',
-    rollTrainLabel:       'サイコロを振って路線を選ぶ',
-    rollTrainBtn:         'サイコロを振る',
-    rerollTrainTitle:     '路線を振り直す',
-    step2Title:           'ステップ2 — 停車駅を決める',
-    rollStopsLabel:       'サイコロを振って駅数を選ぶ',
-    rollStopsBtn:         'サイコロを振る',
-    rerollStopsTitle:     '駅数を振り直す',
-    checkingTransfers:    '乗り換えチェック',
-    transferBadge:        '乗換',
-    destBadge:            '目的地',
-    rollBtnLabel:         '振る',
-    stayResult:           'そのまま',
-    transferResult:       '乗り換え！',
-    drinkResult:          '飲む！',
-    destination:          '目的地',
-    mapBtn:               '🗺 地図',
-    barsBtn:              '🏮 近くのバー',
-    cafesBtn:             '☕ 近くのカフェ',
-    rollAgainBtn:         '▶ もう一回遊ぶ',
-    mapTitle:             '地図',
-    barsTitle:            '近くのバー・居酒屋',
-    cafesTitle:           '近くのカフェ',
-    searchingBars:        '近くのバー・居酒屋を検索中…',
-    searchingCafes:       '近くのカフェを検索中…',
-    noBars:               '500m以内にバー・居酒屋が見つかりませんでした — 探検してみてください！',
-    noCafes:              '500m以内にカフェが見つかりませんでした — 探検してみてください！',
-    fetchBarFail:         'バーデータの取得に失敗しました: {msg}',
-    fetchCafeFail:        'カフェデータの取得に失敗しました: {msg}',
-    sessionHistory:       'セッション履歴',
-    copyRoute:            'コピー',
-    clear:                'クリア',
-    noRoundsYet:          'ラウンドなし　ゲームを始めよう！',
-    copied:               'コピー完了！',
-    copyFailed:           'コピー失敗',
-    statsBtn:             'スタッツ',
-    statsTitle:           'セッション統計',
-    statStations:         '訪問駅数',
-    statLines:            '乗車路線数',
-    statStops:            '乗車駅数',
-    statDistance:          '移動距離',
-    statDrinks:           '飲んだ回数',
-    distanceTraveled:     '{km} km 移動',
-    platformCount:        '<strong style="color:#fff">{name}</strong>：{n}路線 — 1〜{total}を振る',
-    rollingStops:         '1〜{max}駅を振る',
-    selectBranch:         '行先を選択',
-    selectTrainType:      '種別を選択 · 1〜{max}駅（各停）',
-    trainTypeStops:       '{name}（{ja}）· 1〜{max}駅',
-    stopsResult:          '{n}駅',
-    stopsFrom:            '{station}から{n}駅',
-    maxStopsHint:         '最大駅数: {n}',
-    platformsAvail:       '{n}ホーム',
-    geoNotSupported:      '📍 このブラウザはジオロケーションに対応していません',
-    geoDetecting:         '📍 現在地を検出中…',
-    geoNoStation:         '📍 近くに駅が見つかりませんでした',
-    geoNearest:           '📍 最寄り駅: {name}（{dist}m先）',
-    geoDenied:            '位置情報のアクセスが拒否されました — 手動で検索してください',
-    geoUnavailable:       '位置情報が利用できません — 手動で検索してください',
-    geoTimeout:           '位置情報の取得がタイムアウトしました — 手動で検索してください',
-    outsideWards:         '現在の駅は23区外です — 別の駅を選んでください。',
-    flightRoll:           '#{n} → ✈️ フライトに乗ろう！',
-    drinkRoll:            '#{n} → 🍻 ここで飲もう！',
-    parkRoll:             '#{n} → 🌊 公園を楽しもう！',
-    flightMsg:            '✈️ 出発ボードに行って、ランダムにフライトを選ぼう。<br>良い旅を — 東京ゲーム終了！',
-    drinkHint:            '地図なしで探検して飲む場所を見つけよう！見つからない場合は下のボタンを使ってください。',
-    parkHint:             '公園を楽しもう！海芝浦は東芝の敷地内にある駅で、海辺の公園しかありません。',
-    kajigayaHint:         'シェーンに向かって「乾杯！」と叫ぶ！',
-    nishigaharaHint:      '東京メトロで最も利用者の少ない駅へようこそ。',
-    stayingForDrink:      '🍻 ここで一杯',
-    stayingForPark:       '🌊 公園を楽しもう',
-    drinkAtTransfer:      '🍻 ここで飲もう！（{line}{type}の乗り換えロール）',
-    noValidStops:         '全ての駅を訪問済み！路線を振り直してください。',
-    drinkHereLabel:       'ここで一杯！',
-    parkHereLabel:        '公園を楽しもう！',
-    takeFlightLabel:      'フライトに乗ろう！',
-    shinkansenLabel:      '新幹線！',
-    shinkansenRoll:       '#{n} → 🚅 新幹線！',
-    loopCCW:              '反時計回り',
-    loopCW:               '時計回り',
-    towardStation:        '{name}方面',
-    clockwise:            '時計回り',
-    counterclockwise:     '反時計回り',
-    newGame:              '🔄 振り出しに戻る',
-    newGameTitle:         '新しいゲームを始める',
-    randomBtn:            '🎲 ランダム',
-    copyRouteHeader:      '🗼 東京ランダムゲーム — {date}',
-    tookFlight:           '✈️ フライトに乗った — 良い旅を！',
-    stayedForDrink:       '🍻 ここで一杯',
-    stayedForPark:        '🌊 公園を楽しんだ',
-    drinkRollHistory:     '🍻 ここで一杯',
-    drinkAtArrivalHist:   '🍻',
-    transferHistory:      '🔀 乗り換え',
-    rngButton:            'ランダム数字メーカー',
-    rngTitle:             'ランダム数字',
-    rngMin:               '最小',
-    rngMax:               '最大',
-    rngGenerate:          '生成',
-    howToPlay:            '遊び方',
-    htpStep1:             '出発駅をGPS・検索・ランダムから選ぶ。',
-    htpStep2:             'サイコロを振って乗る路線と方向をランダムに決める。',
-    htpStep3:             'ホームに行って、次来た電車に乗る。',
-    htpStep4:             '電車に乗ってすぐにもう一回サイコロを振り、出た数の分だけ乗り続ける。',
-    htpStep5:             '途中で乗換駅が出てきたらサイコロを振って、乗り換えるかそのまま乗るか決める。',
-    htpStep6:             '目的地についたら、電車を降りて一杯！',
-    htpStep7:             '駅に戻って、もう一回！',
-    htpGoal:              '東京を探検しながら、知らない街で飲むのがこのゲームの楽しみ方です！',
-    footer:               '企画：Shane、改良：Shane & Zack、バイブコーディング：Logan — the Kens',
-    undoTransferRoll:     '↩ 振り直し',
-    rerollText:           '🔁 振り直し',
-    resumeSession:        '前回のセッションを再開しますか？',
-    resumeBtn:            '再開',
-    dismissBtn:           '新しいゲーム',
-  },
-};
 
 function t(key, params) {
   let str = translations[currentLang]?.[key] || translations.en[key] || key;
@@ -1755,14 +1015,17 @@ function generateRNG() {
   document.getElementById('rng-result').textContent = result;
 }
 
-function switchLang(lang) {
-  if (lang === currentLang) return;
-  currentLang = lang;
-  localStorage.setItem(LANG_KEY, lang);
-  document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
-  applyLang();
-  document.getElementById('localization-credit').style.display = lang === 'ja' ? 'block' : 'none';
-  // Refresh New Game / Random button
+// ── Language refresh registry ────────────────────────────────────────────
+// Each entry re-renders one piece of dynamic text when the language changes.
+// Add new entries via _langRefreshers.push(() => { ... }) near the code that
+// first renders the text — switchLang() will call them all automatically.
+const _langRefreshers = [];
+
+_langRefreshers.push(function refreshLocalizationCredit() {
+  document.getElementById('localization-credit').style.display = currentLang === 'ja' ? 'block' : 'none';
+});
+
+_langRefreshers.push(function refreshRandomBtn() {
   if (state.currentStation) {
     dom.randomStationBtn.innerHTML = t('newGame');
     dom.randomStationBtn.title = t('newGameTitle');
@@ -1770,70 +1033,82 @@ function switchLang(lang) {
     dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
     dom.randomStationBtn.title = t('pickRandom');
   }
-  // Refresh search input to show station name in current language
+});
+
+_langRefreshers.push(function refreshStationInput() {
   if (state.currentStation && dom.stationInput.classList.contains('selected')) {
     setStationInput(state.currentStation.name);
   }
-  // Re-render dynamic content that's currently visible
+});
+
+_langRefreshers.push(function refreshPlatforms() {
   if (state.currentStation && state.platforms.length > 0) {
-    // Refresh platform count text
     const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight && !p.isShinkansen).length;
     const total = state.platforms.length + (state.extraDrinkNums || 0);
     dom.platformCountText.innerHTML = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
-    // Refresh platform grid labels
     refreshPlatformGrid();
   }
-  // Refresh selected platform display
-  if (state.selectedPlatform && state.rolledPlatformNum) {
-    const p = state.selectedPlatform;
-    const roll = state.rolledPlatformNum;
-    if (p.drinkHere) {
-      const rk = eggRollKey(state.currentStation.ja);
-      dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
-      dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
-    } else if (p.takeFlight) {
-      dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
-    } else {
-      const pLabel = platformLabel(p);
-      const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-      const ln = lineDisplayName(p.lineName);
-      const effectiveHint = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
-      dom.selectedPlatformText.innerHTML =
-        `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
-    }
+});
+
+_langRefreshers.push(function refreshSelectedPlatform() {
+  if (!state.selectedPlatform || !state.rolledPlatformNum) return;
+  const p = state.selectedPlatform;
+  const roll = state.rolledPlatformNum;
+  if (p.drinkHere) {
+    const rk = eggRollKey(state.currentStation.ja);
+    dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+    dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+  } else if (p.takeFlight) {
+    dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
+  } else {
+    const pLabel = platformLabel(p);
+    const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+    const ln = lineDisplayName(p.lineName);
+    const effectiveHint = getEffectiveStops(p, { ei: null, bi: null }).validCount;
+    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
+      <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
+    dom.selectedPlatformText.innerHTML =
+      `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
   }
-  // Refresh stops range if visible
+});
+
+_langRefreshers.push(function refreshStopsRange() {
   if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
     refreshStopsLabel();
   }
-  // Refresh stops die label
+});
+
+_langRefreshers.push(function refreshStopsDie() {
   if (state.rolledStops != null) {
     dom.dieStopsLabel.innerHTML = `<strong>${t('stopsResult', { n: state.rolledStops, s: pl(state.rolledStops) })}</strong>`;
   }
-  // Refresh destination subtitle
-  if (state.destination && state.selectedPlatform) {
-    const p = state.selectedPlatform;
-    if (p.takeFlight) {
-      dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
-    } else if (p.drinkHere) {
-      dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
-        + destSubHints(state.currentStation, 'inline');
-    } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
-      // drink at transfer — handled above
-    } else {
-      const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-      dom.destSub.innerHTML =
-        `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
-        + destSubHints(state.destination, 'wrap');
-    }
+});
+
+_langRefreshers.push(function refreshDestSub() {
+  if (!state.destination || !state.selectedPlatform) return;
+  const p = state.selectedPlatform;
+  if (p.takeFlight) {
+    dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
+  } else if (p.drinkHere) {
+    dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
+      + destSubHints(state.currentStation, 'inline');
+  } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
+    // drink at transfer — handled above
+  } else {
+    const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
+    dom.destSub.innerHTML =
+      `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
+      + destSubHints(state.destination, 'wrap');
   }
-  // Refresh nearest station hint
+});
+
+_langRefreshers.push(function refreshGeoHint() {
   if (state.geoNearest) {
     setLocationHint(t('geoNearest', { name: stationDisplayName(state.geoNearest.name), dist: state.geoNearest.dist }));
   }
-  // Refresh journey card station names (transfer check)
+});
+
+_langRefreshers.push(function refreshJourneyNames() {
   document.querySelectorAll('.journey-name').forEach(el => {
     const stn = el.closest('.journey-station');
     if (!stn) return;
@@ -1845,9 +1120,20 @@ function switchLang(lang) {
       ? `${s.ja || s.name} <small class="text-muted">${s.ja ? s.name : ''}</small>`
       : `${s.name}${s.ja ? ` <small class="text-muted">${s.ja}</small>` : ''}`;
   });
-  // Re-render history
+});
+
+_langRefreshers.push(function refreshHistory() {
   renderHistory();
   updateHistoryDistance();
+});
+
+function switchLang(lang) {
+  if (lang === currentLang) return;
+  currentLang = lang;
+  localStorage.setItem(LANG_KEY, lang);
+  document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
+  applyLang();
+  for (const fn of _langRefreshers) fn();
 }
 
 function refreshPlatformGrid() {
@@ -2130,125 +1416,6 @@ async function loadData() {
   buildIndex(lines, osmNames);
 }
 
-const LINE_NAME_FIXES = {};
-
-// Stations prepended to the beginning of lines
-const LINE_PREPEND_STATIONS = {};
-
-// Stations appended to the end of lines
-const LINE_EXTRA_STATIONS = {
-  'JR Tokaido Main Line': [
-    { name: 'Kannami',           ja: '函南',      lat: 35.0873, lng: 139.0044 },
-    { name: 'Mishima',           ja: '三島',      lat: 35.1276, lng: 138.9110 },
-    { name: 'Numazu',            ja: '沼津',      lat: 35.1015, lng: 138.8635 },
-    { name: 'Katahama',          ja: '片浜',      lat: 35.1180, lng: 138.8195 },
-    { name: 'Hara',              ja: '原',        lat: 35.1248, lng: 138.7937 },
-    { name: 'Higashi-Tagonoura', ja: '東田子の浦', lat: 35.1361, lng: 138.7461 },
-    { name: 'Yoshiwara',         ja: '吉原',      lat: 35.1439, lng: 138.7023 },
-    { name: 'Fuji',              ja: '富士',      lat: 35.1515, lng: 138.6512 },
-    { name: 'Fujikawa',          ja: '富士川',    lat: 35.1283, lng: 138.6187 },
-    { name: 'Shin-Kambara',      ja: '新蒲原',    lat: 35.1101, lng: 138.5775 },
-    { name: 'Kambara',           ja: '蒲原',      lat: 35.1062, lng: 138.5615 },
-    { name: 'Yui',               ja: '由比',      lat: 35.1026, lng: 138.5247 },
-    { name: 'Okitsu',            ja: '興津',      lat: 35.0615, lng: 138.4870 },
-    { name: 'Shimizu',           ja: '清水',      lat: 35.0164, lng: 138.4882 },
-    { name: 'Kusanagi',          ja: '草薙',      lat: 34.9904, lng: 138.4341 },
-    { name: 'Higashi-Shizuoka',  ja: '東静岡',    lat: 34.9805, lng: 138.4144 },
-    { name: 'Shizuoka',          ja: '静岡',      lat: 34.9717, lng: 138.3890 },
-  ],
-};
-
-// Reverse station order (e.g. Tokaido: flip to south→north for through-running branches)
-const LINE_REVERSE = ['JR Tokaido Main Line'];
-
-// Through-running: stations appended after reversal for northern branch lines
-const LINE_THROUGH_STATIONS = {
-  'JR Tokaido Main Line': [
-    // Ueno (shared junction)
-    { name: 'Ueno',              ja: '上野',          lat: 35.71379,  lng: 139.777043 },
-    // Utsunomiya / Takasaki shared trunk
-    { name: 'Oku',               ja: '尾久',          lat: 35.74683,  lng: 139.753846 },
-    { name: 'Akabane',           ja: '赤羽',          lat: 35.778026, lng: 139.720928 },
-    { name: 'Urawa',             ja: '浦和',          lat: 35.858496, lng: 139.657109 },
-    { name: 'Saitama-Shintoshin',ja: 'さいたま新都心', lat: 35.893867, lng: 139.633587 },
-    { name: 'Omiya',             ja: '大宮',          lat: 35.906439, lng: 139.62405 },
-    // Utsunomiya Line (diverges at Omiya)
-    { name: 'Touro',             ja: '土呂',          lat: 35.931997, lng: 139.63214 },
-    { name: 'Higashi Omiya',     ja: '東大宮',        lat: 35.948751, lng: 139.640291 },
-    { name: 'Hasuda',            ja: '蓮田',          lat: 35.981272, lng: 139.653016 },
-    { name: 'Shiraoka',          ja: '白岡',          lat: 36.01774,  lng: 139.666826 },
-    { name: 'Shin-Shiraoka',     ja: '新白岡',        lat: 36.038732, lng: 139.67208 },
-    { name: 'Kuki',              ja: '久喜',          lat: 36.065684, lng: 139.67727 },
-    { name: 'Higashi-Washinomiya',ja:'東鷲宮',        lat: 36.089428, lng: 139.67913 },
-    { name: 'Kurihashi',         ja: '栗橋',          lat: 36.136852, lng: 139.694177 },
-    { name: 'Koga',              ja: '古河',          lat: 36.194375, lng: 139.709726 },
-    { name: 'Nogi',              ja: '野木',          lat: 36.229963, lng: 139.734729 },
-    { name: 'Mamada',            ja: '間々田',        lat: 36.257907, lng: 139.761039 },
-    { name: 'Oyama (Tochigi)',   ja: '小山',          lat: 36.312747, lng: 139.806241 },
-    { name: 'Koganei',           ja: '小金井',        lat: 36.374435, lng: 139.842232 },
-    { name: 'Jichi Medical University', ja: '自治医大', lat: 36.39543, lng: 139.854524 },
-    { name: 'Ishibashi',         ja: '石橋',          lat: 36.43651,  lng: 139.866536 },
-    { name: 'Suzumenomiya',      ja: '雀宮',          lat: 36.493845, lng: 139.876811 },
-    { name: 'Utsunomiya',        ja: '宇都宮',        lat: 36.559246, lng: 139.898389 },
-    { name: 'Okamoto',           ja: '岡本',          lat: 36.598182, lng: 139.944363 },
-    { name: 'Hoshakuji',         ja: '宝積寺',        lat: 36.631703, lng: 139.979487 },
-    { name: 'Ujiie',             ja: '氏家',          lat: 36.681696, lng: 139.9621 },
-    { name: 'Kamasuzaka',        ja: '蒲須坂',        lat: 36.720727, lng: 139.950461 },
-    { name: 'Kataoka',           ja: '片岡',          lat: 36.754557, lng: 139.945665 },
-    { name: 'Yaita',             ja: '矢板',          lat: 36.80655,  lng: 139.932912 },
-    { name: 'Nozaki',            ja: '野崎',          lat: 36.843722, lng: 139.957752 },
-    { name: 'Nishinasuno',       ja: '西那須野',      lat: 36.883726, lng: 139.986383 },
-    { name: 'Nasushiobara',      ja: '那須塩原',      lat: 36.931956, lng: 140.020694 },
-    { name: 'Kuroiso',           ja: '黒磯',          lat: 36.970128, lng: 140.060204 },
-    // Takasaki Line (diverges at Omiya)
-    { name: 'Miyahara',          ja: '宮原',          lat: 35.940256, lng: 139.609455 },
-    { name: 'Ageo',              ja: '上尾',          lat: 35.973522, lng: 139.588434 },
-    { name: 'Kita-Ageo',         ja: '北上尾',        lat: 35.985632, lng: 139.577223 },
-    { name: 'Okegawa',           ja: '桶川',          lat: 35.998375, lng: 139.564274 },
-    { name: 'Kitamoto',          ja: '北本',          lat: 36.032112, lng: 139.533591 },
-    { name: 'Konosu',            ja: '鴻巣',          lat: 36.0592,   lng: 139.509552 },
-    { name: 'Kita-Konosu',       ja: '北鴻巣',        lat: 36.085529, lng: 139.476894 },
-    { name: 'Fukiage',           ja: '吹上',          lat: 36.103062, lng: 139.45312 },
-    { name: 'Gyoda',             ja: '行田',          lat: 36.113879, lng: 139.432103 },
-    { name: 'Kumagaya',          ja: '熊谷',          lat: 36.139627, lng: 139.389528 },
-    { name: 'Kagohara',          ja: '籠原',          lat: 36.17448,  lng: 139.330199 },
-    { name: 'Fukaya',            ja: '深谷',          lat: 36.191344, lng: 139.28127 },
-    { name: 'Okabe',             ja: '岡部',          lat: 36.205645, lng: 139.237622 },
-    { name: 'Honjo',             ja: '本庄',          lat: 36.236229, lng: 139.188299 },
-    { name: 'Jinbohara',         ja: '神保原',        lat: 36.25359,  lng: 139.149172 },
-    { name: 'Shimmachi',         ja: '新町',          lat: 36.272984, lng: 139.105457 },
-    { name: 'Kuragano',          ja: '倉賀野',        lat: 36.300216, lng: 139.049474 },
-    { name: 'Takasaki',          ja: '高崎',          lat: 36.322239, lng: 139.012354 },
-    // Joban Line (branches at Ueno, through-service from Shinagawa)
-    { name: 'Nippori',           ja: '日暮里',        lat: 35.727908, lng: 139.771287 },
-    { name: 'Mikawashima',       ja: '三河島',        lat: 35.733383, lng: 139.777131 },
-    { name: 'Minami-senju',      ja: '南千住',        lat: 35.734033, lng: 139.7994 },
-    { name: 'Kita Senju',        ja: '北千住',        lat: 35.749677, lng: 139.804872 },
-    { name: 'Ayase',             ja: '綾瀬',          lat: 35.762222, lng: 139.825019 },
-    { name: 'Kameari',           ja: '亀有',          lat: 35.766527, lng: 139.847573 },
-    { name: 'Kanamachi',         ja: '金町',          lat: 35.769582, lng: 139.870482 },
-    { name: 'Matsudo',           ja: '松戸',          lat: 35.784472, lng: 139.900779 },
-    { name: 'Kita Matsudo',      ja: '北松戸',        lat: 35.800459, lng: 139.911528 },
-    { name: 'Mabashi',           ja: '馬橋',          lat: 35.811682, lng: 139.917305 },
-    { name: 'Shin-Matsudo',      ja: '新松戸',        lat: 35.825467, lng: 139.921076 },
-    { name: 'Kita Kogane',       ja: '北小金',        lat: 35.833436, lng: 139.931303 },
-    { name: 'Minami-Kashiwa',    ja: '南柏',          lat: 35.844655, lng: 139.954111 },
-    { name: 'Kashiwa',           ja: '柏',            lat: 35.862316, lng: 139.971148 },
-    { name: 'Kita-Kashiwa',      ja: '北柏',          lat: 35.875623, lng: 139.988035 },
-    { name: 'Abiko',             ja: '我孫子',        lat: 35.87279,  lng: 140.010466 },
-    { name: 'Tennodai',          ja: '天王台',        lat: 35.872558, lng: 140.04121 },
-    { name: 'Toride',            ja: '取手',          lat: 35.89553,  lng: 140.063004 },
-  ],
-};
-
-// Trim lines at a given station (inclusive) — drop everything beyond it
-const LINE_TRIM_AFTER = {
-  'JR Chuo Main Line': '甲府',
-};
-
-// Lines absorbed into other lines (e.g. through-running now covered by Tokaido)
-const LINE_REMOVE = ['Ueno Tokyo Line', 'Utsunomiya Line', 'JR Takasaki Line', 'JR Joban Line'];
-
 function buildIndex(lines, osmNames = {}) {
   state.lines = lines = lines.filter(l => !LINE_REMOVE.includes(l.name));
   for (const l of lines) {
@@ -2469,6 +1636,29 @@ function platformHint(p) {
   const arrow = (p.direction === 'start' || p.direction === 'A') ? '←' : '→';
   const target = p.hintStation || p.dirStation;
   return `${arrow} ${t('towardStation', { name: stationDisplayName(target) })}`;
+}
+
+function mergeShinkansenPlatforms(rawShinkansen) {
+  const byTrack = {};
+  for (const p of rawShinkansen) {
+    const line = state.lines[p.lineIdx];
+    const step = p.direction === 'start' ? -1 : 1;
+    const nextIdx = p.fromIdx + step;
+    const nextJa = (nextIdx >= 0 && nextIdx < line.stations.length) ? line.stations[nextIdx].ja : '';
+    const key = p.direction + ':' + nextJa;
+    (byTrack[key] ||= []).push(p);
+  }
+  return Object.values(byTrack).map(group => {
+    if (group.length === 1) { group[0].isShinkansen = true; return group[0]; }
+    const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
+    return {
+      isShinkansen: true, _shinkansenOptions: group,
+      lineName: 'Shinkansen', lineColor: '#0073CF',
+      direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
+      dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
+      maxStops: Math.max(...group.map(p => p.maxStops)), circular: false,
+    };
+  });
 }
 
 function getPlatforms(stationName, includeAliases = true) {
@@ -2866,32 +2056,7 @@ function onStationSelected(name, arrivedVia) {
   // Merge platforms sharing the same next station (same track section)
   const rawShinkansen = allPlatforms.filter(p => SHINKANSEN_LINES.has(p.lineName));
   allPlatforms = allPlatforms.filter(p => !SHINKANSEN_LINES.has(p.lineName));
-  const shinkansenByTrack = {};
-  for (const p of rawShinkansen) {
-    const line = state.lines[p.lineIdx];
-    const step = p.direction === 'start' ? -1 : 1;
-    const nextIdx = p.fromIdx + step;
-    const nextJa = (nextIdx >= 0 && nextIdx < line.stations.length) ? line.stations[nextIdx].ja : '';
-    const key = p.direction + ':' + nextJa;
-    (shinkansenByTrack[key] ||= []).push(p);
-  }
-  const shinkansenPlatforms = Object.values(shinkansenByTrack).map(group => {
-    if (group.length === 1) {
-      group[0].isShinkansen = true;
-      return group[0];
-    }
-    // Merged platform: pick best maxStops, store options for random selection when rolled
-    const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
-    return {
-      isShinkansen: true,
-      _shinkansenOptions: group,
-      lineName: 'Shinkansen', lineColor: '#0073CF',
-      direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
-      dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
-      maxStops: Math.max(...group.map(p => p.maxStops)),
-      circular: false,
-    };
-  });
+  const shinkansenPlatforms = mergeShinkansenPlatforms(rawShinkansen);
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD) : 0;
   // Airport stations always show a flight option (5% chance when rolled)
@@ -3402,6 +2567,67 @@ function hasTransferLines(stationName, currentLineName) {
   return entries.some(e => state.lines[e.lineIdx].name !== currentLineName);
 }
 
+// ── Transfer check helpers ───────────────────────────────────────────────
+
+function animateTransferDie(die, alreadyDrank, roll) {
+  const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
+  const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
+  die.classList.add('rolling');
+  return new Promise(resolve => {
+    let count = 0;
+    const interval = setInterval(() => {
+      die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      if (++count >= 8) {
+        clearInterval(interval);
+        die.textContent = resultEmoji;
+        die.classList.remove('rolling');
+        resolve();
+      }
+    }, 80);
+  });
+}
+
+function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
+  die.classList.add(dieClass);
+  res.textContent = t(i18nKey);
+  res.setAttribute('data-i18n', i18nKey);
+  res.classList.add(labelClass);
+  el.classList.remove('checking');
+  el.classList.add(elClass);
+}
+
+function waitForUndo() {
+  dom.undoTransferBtn.style.display = 'block';
+  return new Promise(resolve => {
+    const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
+    dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
+  });
+}
+
+async function resetAndReroll(el, die, res, inlineBtn, elClass) {
+  die.className = 'journey-die';
+  die.textContent = '?';
+  res.textContent = '';
+  res.className = 'journey-result';
+  el.classList.remove(elClass);
+  el.classList.add('checking');
+  inlineBtn.style.display = 'inline-block';
+  await new Promise(resolve => {
+    inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+  });
+  inlineBtn.style.display = 'none';
+}
+
+function dimStations(start, end) {
+  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`).classList.add('passed');
+}
+
+function undimStations(start, end) {
+  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`).classList.remove('passed');
+}
+
+// ── Transfer check main ─────────────────────────────────────────────────
+
 async function checkTransfers(platform, rolledStops) {
   const route = getStationsAlongRoute(platform, rolledStops);
   state.route = route;  // save for switchLang journey card refresh
@@ -3474,9 +2700,7 @@ async function checkTransfers(platform, rolledStops) {
   dom.journeyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
   // Dim non-transfer stations up to the first transfer station
-  for (let i = 0; i < transferIndices[0]; i++) {
-    document.getElementById(`jstn-${i}`).classList.add('passed');
-  }
+  dimStations(0, transferIndices[0]);
 
   // Walk through each transfer station, waiting for user to click roll
   for (let ti = 0; ti < transferIndices.length; ti++) {
@@ -3495,12 +2719,11 @@ async function checkTransfers(platform, rolledStops) {
 
     // Count LOCAL stations passed since last transfer (express skips still count for thirst)
     const prevTransferIdx = ti > 0 ? transferIndices[ti - 1] : -1;
-    const thirstGain = thirstBetween(prevTransferIdx, i);
-    state.stationsSinceDrink += thirstGain;
+    state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
 
-    // Thirst: after 5 stations, each extra station adds a drink number
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
+    const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
 
     // Undo loop — re-rolls this transfer station if user clicks undo
     let undoRequested = true;
@@ -3520,133 +2743,34 @@ async function checkTransfers(platform, rolledStops) {
         roll = Math.floor(Math.random() * sides) + 1;
       }
 
-      // Animate die with emojis
-      const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
-      const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
-      die.classList.add('rolling');
-      await new Promise(resolve => {
-        let count = 0;
-        const interval = setInterval(() => {
-          die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-          count++;
-          if (count >= 8) {
-            clearInterval(interval);
-            die.textContent = resultEmoji;
-            die.classList.remove('rolling');
-            resolve();
-          }
-        }, 80);
-      });
+      await animateTransferDie(die, alreadyDrank, roll);
 
       if (roll <= 3) {
-        // Stay on
-        die.classList.add('stay');
-        res.textContent = t('stayResult');
-        res.setAttribute('data-i18n', 'stayResult');
-        res.classList.add('stay-label');
-        el.classList.remove('checking');
-        el.classList.add('passed');
-
-        // Dim stations between this and the next transfer (or end)
-        const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
-        for (let j = i + 1; j < nextTI; j++) {
-          document.getElementById(`jstn-${j}`).classList.add('passed');
-        }
-
-        // Show undo button briefly
-        dom.undoTransferBtn.style.display = 'block';
-        const undone = await new Promise(resolve => {
-          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
-          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
-        });
-        if (undone) {
-          // Reset this station's visual state
-          die.className = 'journey-die';
-          die.textContent = '?';
-          res.textContent = '';
-          res.className = 'journey-result';
-          el.classList.remove('passed');
-          el.classList.add('checking');
-          const nextTI2 = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
-          for (let j = i + 1; j < nextTI2; j++) {
-            document.getElementById(`jstn-${j}`).classList.remove('passed');
-          }
-          // Re-show the roll button and wait for click
-          inlineBtn.style.display = 'inline-block';
-          await new Promise(resolve => {
-            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
-          });
-          inlineBtn.style.display = 'none';
+        applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
+        dimStations(i + 1, nextTI);
+        if (await waitForUndo()) {
+          undimStations(i + 1, nextTI);
+          await resetAndReroll(el, die, res, inlineBtn, 'passed');
           undoRequested = true;
           continue;
         }
       } else if (roll === 4) {
-        // Transfer!
-        die.classList.add('transfer');
-        res.textContent = t('transferResult');
-        res.setAttribute('data-i18n', 'transferResult');
-        res.classList.add('transfer-label');
-        el.classList.remove('checking');
-        el.classList.add('transferred');
-
-        // Show undo button and wait
-        dom.undoTransferBtn.style.display = 'block';
-        const undone = await new Promise(resolve => {
-          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
-          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
-        });
-        if (undone) {
-          die.className = 'journey-die';
-          die.textContent = '?';
-          res.textContent = '';
-          res.className = 'journey-result';
-          el.classList.remove('transferred');
-          el.classList.add('checking');
-          inlineBtn.style.display = 'inline-block';
-          await new Promise(resolve => {
-            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
-          });
-          inlineBtn.style.display = 'none';
+        applyOutcome(el, die, res, 'transfer', 'transferResult', 'transfer-label', 'transferred');
+        if (await waitForUndo()) {
+          await resetAndReroll(el, die, res, inlineBtn, 'transferred');
           undoRequested = true;
           continue;
         }
-        for (let j = i + 1; j < route.length; j++) {
-          document.getElementById(`jstn-${j}`).classList.add('passed');
-        }
+        dimStations(i + 1, route.length);
         return { type: 'transfer', station: route[i], stopsUsed: i + 1 };
       } else {
-        // Drink here!
-        die.classList.add('drink-roll');
-        res.textContent = t('drinkResult');
-        res.setAttribute('data-i18n', 'drinkResult');
-        res.classList.add('drink-label');
-        el.classList.remove('checking');
-        el.classList.add('drink');
-
-        // Show undo button and wait
-        dom.undoTransferBtn.style.display = 'block';
-        const undone = await new Promise(resolve => {
-          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
-          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
-        });
-        if (undone) {
-          die.className = 'journey-die';
-          die.textContent = '?';
-          res.textContent = '';
-          res.className = 'journey-result';
-          el.classList.remove('drink');
-          el.classList.add('checking');
-          inlineBtn.style.display = 'inline-block';
-          await new Promise(resolve => {
-            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
-          });
-          inlineBtn.style.display = 'none';
+        applyOutcome(el, die, res, 'drink-roll', 'drinkResult', 'drink-label', 'drink');
+        if (await waitForUndo()) {
+          await resetAndReroll(el, die, res, inlineBtn, 'drink');
           undoRequested = true;
           continue;
         }
-        for (let j = i + 1; j < route.length; j++) {
-          document.getElementById(`jstn-${j}`).classList.add('passed');
-        }
+        dimStations(i + 1, route.length);
         return { type: 'drink', station: route[i], stopsUsed: i + 1 };
       }
     } // end undo loop
@@ -4217,102 +3341,86 @@ function copyToClipboard(text, feedbackBtn) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-(async function init() {
-  // Restore saved language
-  if (currentLang !== 'en') applyLang();
-  setupAutocomplete();
+function onWards23Change(checked) {
+  state.wards23Only = checked;
+  if (!state.currentStation) return;
 
+  if (state.wards23Only && !isIn23Wards(state.currentStation.lat, state.currentStation.lng)) {
+    // Current station is outside the wards — clear it and prompt to pick again
+    state.currentStation = null;
+    dom.stationInput.value = '';
+    dom.stationInput.classList.remove('selected');
+    dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
+    dom.randomStationBtn.title     = t('pickRandom');
+    showStep(null);
+    hideAllCards();
+    setLocationHint(t('outsideWards'), true);
+    return;
+  }
+
+  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
+    // Platform already selected — recalculate maxStops in place
+    const p = state.selectedPlatform;
+    const line = state.lines[p.lineIdx];
+    const N = line.stations.length;
+    const step = (p.direction === 'start' || p.direction === 'A') ? -1 : 1;
+
+    let newMax;
+    if (line.name.includes('Oedo') || line.name.includes('\u014Cedo')) {
+      const loopEnd = OEDO_LOOP_END;
+      const loopMid = Math.floor((loopEnd - 1) / 2);
+      const stemLen = N - 1 - (loopEnd - 1);
+      if (p.dirKey === 'loopCCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1)) : loopMid;
+      else if (p.dirKey === 'loopCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1)) : loopMid;
+      else newMax = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)) : stemLen;
+    } else if (line.circular) {
+      newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step) : N - 1;
+    } else {
+      newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step)
+        : (p.direction === 'start' ? p.fromIdx : N - 1 - p.fromIdx);
+    }
+
+    if (newMax <= 0) {
+      onStationSelected(state.currentStation.name);
+      return;
+    }
+
+    p.maxStops = newMax;
+    if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
+      refreshStopsLabel();
+      dom.rollStopsBtn.disabled = false;
+    }
+    // Rebuild platform grid to reflect updated stop counts
+    let _allP = getPlatforms(state.currentStation.name)
+      .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
+    const _rawShin = _allP.filter(p => SHINKANSEN_LINES.has(p.lineName));
+    _allP = _allP.filter(p => !SHINKANSEN_LINES.has(p.lineName));
+    const _mergedShin = mergeShinkansenPlatforms(_rawShin);
+    const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
+    const isAirport = /airport/i.test(state.currentStation.name);
+    state.platforms = [
+      ..._allP,
+      ..._mergedShin,
+      ...(canDrinkHere ? [{ drinkHere: true }] : []),
+      ...(isAirport ? [{ takeFlight: true }] : []),
+    ];
+    refreshPlatformGrid();
+  } else {
+    // No platform selected yet, or drink/flight — rebuild from scratch
+    onStationSelected(state.currentStation.name);
+  }
+}
+
+function setupStationPicker() {
+  setupAutocomplete();
   dom.randomStationBtn.addEventListener('click', () => {
     if (state.currentStation) resetGame(); else pickRandomStation();
   });
   dom.locateBtn.addEventListener('click', detectLocation);
-  dom.wards23Check.addEventListener('change', e => {
-    state.wards23Only = e.target.checked;
-    if (state.currentStation) {
-      if (state.wards23Only && !isIn23Wards(state.currentStation.lat, state.currentStation.lng)) {
-        // Current station is outside the wards — clear it and prompt to pick again
-        state.currentStation = null;
-        dom.stationInput.value = '';
-        dom.stationInput.classList.remove('selected');
-        dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
-        dom.randomStationBtn.title     = t('pickRandom');
-        showStep(null);
-        hideAllCards();
-        setLocationHint(t('outsideWards'), true);
-      } else if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
-        // Platform already selected — recalculate maxStops in place
-        const p = state.selectedPlatform;
-        const line = state.lines[p.lineIdx];
-        const N = line.stations.length;
-        const step = (p.direction === 'start' || p.direction === 'A') ? -1 : 1;
+  dom.wards23Check.addEventListener('change', e => onWards23Change(e.target.checked));
+}
 
-        // Recalculate maxStops using same logic as getPlatforms
-        let newMax;
-        if (line.name.includes('Oedo') || line.name.includes('\u014Cedo')) {
-          // Oedo lollipop — use original cap logic
-          const loopEnd = OEDO_LOOP_END;
-          const loopMid = Math.floor((loopEnd - 1) / 2);
-          const stemLen = N - 1 - (loopEnd - 1);
-          if (p.dirKey === 'loopCCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1)) : loopMid;
-          else if (p.dirKey === 'loopCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1)) : loopMid;
-          else newMax = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)) : stemLen;
-        } else if (line.circular) {
-          newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step) : N - 1;
-        } else {
-          newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step)
-            : (p.direction === 'start' ? p.fromIdx : N - 1 - p.fromIdx);
-        }
-
-        if (newMax <= 0) {
-          // Platform no longer valid — fall back to rebuilding
-          onStationSelected(state.currentStation.name);
-        } else {
-          p.maxStops = newMax;
-          // Refresh branch/train type buttons and stops label
-          if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
-            refreshStopsLabel();
-            dom.rollStopsBtn.disabled = false;
-          }
-          // Also rebuild platform grid to reflect updated stop counts
-          let _allP = getPlatforms(state.currentStation.name)
-            .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
-          const _rawShin = _allP.filter(p => SHINKANSEN_LINES.has(p.lineName));
-          _allP = _allP.filter(p => !SHINKANSEN_LINES.has(p.lineName));
-          const _shinByTrack = {};
-          for (const p of _rawShin) {
-            const _line = state.lines[p.lineIdx];
-            const _step = p.direction === 'start' ? -1 : 1;
-            const _ni = p.fromIdx + _step;
-            const _nJa = (_ni >= 0 && _ni < _line.stations.length) ? _line.stations[_ni].ja : '';
-            (_shinByTrack[p.direction + ':' + _nJa] ||= []).push(p);
-          }
-          const _mergedShin = Object.values(_shinByTrack).map(group => {
-            if (group.length === 1) { group[0].isShinkansen = true; return group[0]; }
-            const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
-            return {
-              isShinkansen: true, _shinkansenOptions: group,
-              lineName: 'Shinkansen', lineColor: '#0073CF',
-              direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
-              dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
-              maxStops: Math.max(...group.map(p => p.maxStops)), circular: false,
-            };
-          });
-          const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
-          const isAirport = /airport/i.test(state.currentStation.name);
-          state.platforms = [
-            ..._allP,
-            ..._mergedShin,
-            ...(canDrinkHere ? [{ drinkHere: true }] : []),
-            ...(isAirport ? [{ takeFlight: true }] : []),
-          ];
-          refreshPlatformGrid();
-        }
-      } else {
-        // No platform selected yet, or drink/flight — rebuild from scratch
-        onStationSelected(state.currentStation.name);
-      }
-    }
-  });
+function setupGameControls() {
   dom.rollPlatformBtn.addEventListener('click', rollPlatform);
   dom.rerollPlatformBtn.addEventListener('click', rerollPlatform);
   dom.rollStopsBtn.addEventListener('click', rollStops);
@@ -4324,6 +3432,9 @@ function copyToClipboard(text, feedbackBtn) {
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
   dom.copyRouteBtn.addEventListener('click', copyRoute);
   dom.statsBtn.addEventListener('click', showStats);
+}
+
+function setupSettings() {
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
     localStorage.setItem(LTW_KEY, new Date().toDateString());
@@ -4345,26 +3456,32 @@ function copyToClipboard(text, feedbackBtn) {
       refreshStopsLabel();
     }
   });
-
   checkLastTrainWarning();
-  setInterval(checkLastTrainWarning, 5 * 60 * 1000); // re-check every 5 min
+  setInterval(checkLastTrainWarning, 5 * 60 * 1000);
+}
 
-  await loadData();
-
-  // Check for saved session to resume
+function setupSessionResume() {
   const saved = loadSession();
-  if (saved) {
-    const banner = document.getElementById('resume-banner');
-    banner.style.display = '';
-    document.getElementById('resume-btn').addEventListener('click', () => {
-      banner.style.display = 'none';
-      resumeSession(saved);
-    }, { once: true });
-    document.getElementById('dismiss-resume-btn').addEventListener('click', () => {
-      banner.style.display = 'none';
-      localStorage.removeItem(SESSION_KEY);
-    }, { once: true });
-  }
+  if (!saved) return;
+  const banner = document.getElementById('resume-banner');
+  banner.style.display = '';
+  document.getElementById('resume-btn').addEventListener('click', () => {
+    banner.style.display = 'none';
+    resumeSession(saved);
+  }, { once: true });
+  document.getElementById('dismiss-resume-btn').addEventListener('click', () => {
+    banner.style.display = 'none';
+    localStorage.removeItem(SESSION_KEY);
+  }, { once: true });
+}
+
+(async function init() {
+  if (currentLang !== 'en') applyLang();
+  setupStationPicker();
+  setupGameControls();
+  setupSettings();
+  await loadData();
+  setupSessionResume();
 })();
 // Re-apply language to elements parsed after the script tag
 document.addEventListener('DOMContentLoaded', () => {
