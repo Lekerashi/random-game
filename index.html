@@ -404,14 +404,25 @@
     #destination-card { display: none; }
     #destination-card.active { display: block; }
 
+    .destination-name-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 6px 0 12px;
+      flex-wrap: wrap;
+    }
     .destination-name {
       font-size: 2rem;
       font-weight: 800;
-      margin: 6px 0 12px;
       color: inherit;
       text-decoration: underline;
       text-decoration-color: rgba(255,255,255,0.3);
       text-underline-offset: 4px;
+    }
+    .destination-name-ja {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: inherit;
     }
     .destination-sub {
       color: var(--muted);
@@ -573,6 +584,7 @@
     @media (max-width: 480px) {
       .die-face { width: 56px; height: 56px; font-size: 1.8rem; }
       .destination-name { font-size: 1.5rem; }
+      .destination-name-ja { font-size: 1.2rem; }
     }
 
     /* ── Initial hidden states (JS-toggled) ──────────── */
@@ -760,7 +772,10 @@
   <!-- Destination -->
   <div class="card" id="destination-card">
     <div class="card-title" data-i18n="destination">Destination</div>
-    <a class="destination-name" id="dest-name" target="_blank" rel="noopener"></a>
+    <div class="destination-name-row">
+      <a class="destination-name" id="dest-name" target="_blank" rel="noopener"></a>
+      <span class="destination-name-ja" id="dest-name-ja"></span>
+    </div>
     <div class="destination-sub" id="dest-sub"></div>
     <div class="action-row">
       <button class="btn btn-ghost" id="show-map-btn" data-i18n="mapBtn">🗺 Map</button>
@@ -837,6 +852,12 @@ const PLACES_RADIUS     = 500;   // meters — search radius for nearby bars/caf
 const EARTH_RADIUS_M    = 6371000;
 const THIRST_THRESHOLD  = 5;     // stations without drinking before extra drink rolls kick in
 const TRANSFER_DIE_SIDES = 5;    // base sides: 1-3 stay, 4 transfer, 5+ drink
+const TRANSFER_DIE_FRAMES   = 8;     // number of animation frames for transfer die
+const TRANSFER_DIE_FRAME_MS = 80;    // ms between transfer die animation frames
+const TRANSFER_ARRIVE_DELAY = 200;   // ms pause before showing arrival after transfers
+const TRANSFER_REDIRECT_DELAY = 400; // ms pause before redirecting after a transfer
+const UNDO_TRANSFER_TIMEOUT = 3000;  // ms to show undo button before auto-dismissing
+const FEEDBACK_RESET_DELAY  = 2000;  // ms before resetting copy/feedback button text
 const LANG_KEY           = 'random_game_lang';
 const SESSION_KEY        = 'random_game_session';
 const SESSION_TTL        = 24 * 60 * 60 * 1000; // 24 hours
@@ -1201,6 +1222,7 @@ const dom = {
   undoTransferBtn: document.getElementById('undo-transfer-btn'),
   destCard:       document.getElementById('destination-card'),
   destName:       document.getElementById('dest-name'),
+  destNameJa:     document.getElementById('dest-name-ja'),
   destSub:        document.getElementById('dest-sub'),
   rollAgainBtn:   document.getElementById('roll-again-btn'),
   showBarsBtn:    document.getElementById('show-bars-btn'),
@@ -1617,6 +1639,25 @@ function stationDisplayName(englishName) {
   return englishName;
 }
 
+// Render station name with secondary in <small> tag (primary depends on current lang)
+function formatStationName(name, ja) {
+  const primary = currentLang === 'ja' && ja ? ja : name;
+  const secondary = currentLang === 'ja' ? name : ja;
+  if (!secondary || secondary === primary) return primary;
+  return `${primary} <small class="text-muted">${secondary}</small>`;
+}
+
+// Pick the appropriate name from a history entry's from/to fields
+function historyName(en, ja) {
+  return currentLang === 'ja' && ja ? ja : en;
+}
+
+// Render history from/to with optional <small> secondary
+function historyNameHtml(en, ja) {
+  if (currentLang === 'ja') return en && ja ? ja : (en || '');
+  return en + (ja ? ` <small class="dest-ja">${ja}</small>` : '');
+}
+
 function setStationInput(englishName) {
   dom.stationInput.value = stationDisplayName(englishName);
   dom.stationInput.classList.add('selected');
@@ -1661,15 +1702,109 @@ function mergeShinkansenPlatforms(rawShinkansen) {
   });
 }
 
+// ── Platform builders (used by getPlatforms) ─────────────────────────────
+
+function getOedoTochomaePlatforms(line, entry, N) {
+  const platforms = [];
+  const loopEnd = OEDO_LOOP_END;
+  const loopMid = Math.floor((loopEnd - 1) / 2);  // = 14, midpoint of the loop
+  const stemLen = N - 1 - (loopEnd - 1);           // = 9 (indices 29–37)
+  const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))          : loopMid;
+  const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1))    : loopMid;
+  const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)): stemLen;
+  if (maxCCW > 0) platforms.push({
+    dirKey: 'loopCCW', dirStation: line.stations[1].name,
+    lineColor: line.color, lineName: line.name,
+    circular: false, direction: 'end',
+    fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCCW,
+  });
+  if (maxCW > 0) platforms.push({
+    dirKey: 'loopCW', dirStation: line.stations[loopEnd - 1].name,
+    lineColor: line.color, lineName: line.name,
+    circular: false, direction: 'start',
+    fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCW,
+  });
+  if (maxStem > 0) platforms.push({
+    dirKey: 'toward', dirStation: 'Hikarigaoka', hintStation: line.stations[N - 1].name,
+    lineColor: line.color, lineName: line.name,
+    circular: false, direction: 'end',
+    fromIdx: loopEnd - 1, lineIdx: entry.lineIdx, maxStops: maxStem,
+  });
+  return platforms;
+}
+
+function getCircularPlatforms(line, entry, si, N) {
+  const platforms = [];
+  const majorA = findMajorStation(line, si, 'A');
+  const majorB = findMajorStation(line, si, 'B');
+  const maxA = state.wards23Only ? wardMaxStops(line, si, -1) : N - 1;
+  const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
+  if (maxA > 0) platforms.push({
+    dirKey: 'clockwise', dirStation: majorA,
+    lineColor: line.color, lineName: line.name,
+    circular: true, direction: 'A',
+    fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxA,
+  });
+  if (maxB > 0) platforms.push({
+    dirKey: 'counterclockwise', dirStation: majorB,
+    lineColor: line.color, lineName: line.name,
+    circular: true, direction: 'B',
+    fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxB,
+  });
+  return platforms;
+}
+
+function getLinearPlatforms(line, entry, si, N) {
+  const platforms = [];
+  const branchConfig = LINE_BRANCHES[line.name];
+  const stnJa = line.stations[si].ja;
+
+  if (si > 0) {
+    let maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
+    if (branchConfig) {
+      const branches = getBranches(line.name, stnJa, line);
+      maxS = 0;
+      for (const b of branches) {
+        const fakeP = { fromIdx: si, direction: 'start', lineIdx: entry.lineIdx };
+        maxS = Math.max(maxS, getBranchMaxStops(fakeP, b.branchIndices));
+      }
+    }
+    if (maxS > 0) platforms.push({
+      dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
+      lineColor: line.color, lineName: line.name,
+      circular: false, direction: 'start',
+      fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxS,
+    });
+  }
+  if (si < N - 1) {
+    let maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
+    if (branchConfig) {
+      const branches = getBranches(line.name, stnJa, line);
+      maxE = 0;
+      for (const b of branches) {
+        const fakeP = { fromIdx: si, direction: 'end', lineIdx: entry.lineIdx };
+        maxE = Math.max(maxE, getBranchMaxStops(fakeP, b.branchIndices));
+      }
+    }
+    if (maxE > 0) platforms.push({
+      dirKey: 'toward', dirStation: line.stations[N - 1].name, hintStation: findMajorStation(line, si, 'end'),
+      lineColor: line.color, lineName: line.name,
+      circular: false, direction: 'end',
+      fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxE,
+    });
+  }
+  return platforms;
+}
+
+// ── getPlatforms ─────────────────────────────────────────────────────────
+
 function getPlatforms(stationName, includeAliases = true) {
   const key = normalize(stationName);
   const entries = [...(state.stationIndex[key] || [])];
-  // Also include platforms from aliased stations (connected stations with different names)
   if (includeAliases) {
     for (const aliasKey of getAliasKeys(stationName)) {
       for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
     }
-    // Walkable connections (e.g. underground walkways) — not rail transfers
     for (const walkName of (WALKABLE_STATIONS[stationName] || [])) {
       for (const e of (state.stationIndex[normalize(walkName)] || [])) entries.push(e);
     }
@@ -1677,117 +1812,17 @@ function getPlatforms(stationName, includeAliases = true) {
   const platforms = [];
 
   for (const entry of entries) {
-    const line   = state.lines[entry.lineIdx];
-    const si     = entry.stationIdx;
-    const N      = line.stations.length;
+    const line = state.lines[entry.lineIdx];
+    const si   = entry.stationIdx;
+    const N    = line.stations.length;
+    const isOedo = line.name.includes('Oedo') || line.name.includes('\u014Cedo');
 
-    // ── Oedo lollipop: Tochomae (si=0) gets 3 directional platforms ──────────
-    if ((line.name.includes('Oedo') || line.name.includes('\u014Cedo')) && si === 0) {
-      // Data layout: 0=Tochomae, 1-28=loop stations, 29=Nakanozaka (junction), 30-37=stem→Hikarigaoka
-      const loopEnd = OEDO_LOOP_END;
-      const loopMid = Math.floor((loopEnd - 1) / 2);  // = 14, midpoint of the loop
-      const stemLen = N - 1 - (loopEnd - 1);           // = 9 (indices 29–37)
-      const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))          : loopMid;
-      const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1))    : loopMid;
-      const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)): stemLen;
-      if (maxCCW > 0) platforms.push({
-        dirKey: 'loopCCW', dirStation: line.stations[1].name,
-        lineColor: line.color, lineName: line.name,
-        circular: false, direction: 'end',
-        fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCCW,
-      });
-      if (maxCW > 0) platforms.push({
-        dirKey: 'loopCW', dirStation: line.stations[loopEnd - 1].name,
-        lineColor: line.color, lineName: line.name,
-        circular: false, direction: 'start',
-        fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCW,
-      });
-      if (maxStem > 0) platforms.push({
-        dirKey: 'toward', dirStation: 'Hikarigaoka', hintStation: line.stations[N - 1].name,
-        lineColor: line.color, lineName: line.name,
-        circular: false, direction: 'end',
-        fromIdx: loopEnd - 1, lineIdx: entry.lineIdx, maxStops: maxStem,
-      });
-      continue;
-    }
-
-    if (line.circular && !line.name.includes('Oedo') && !line.name.includes('\u014Cedo')) {
-      // Both directions always available; max = N-1 (go almost all the way around)
-      const majorA = findMajorStation(line, si, 'A');
-      const majorB = findMajorStation(line, si, 'B');
-      const maxA = state.wards23Only ? wardMaxStops(line, si, -1) : N - 1;
-      const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
-
-      if (maxA > 0) platforms.push({
-        dirKey: 'clockwise', dirStation: majorA,
-        lineColor: line.color,
-        lineName:  line.name,
-        circular:  true,
-        direction: 'A',    // decreasing index
-        fromIdx:   si,
-        lineIdx:   entry.lineIdx,
-        maxStops:  maxA,
-      });
-      if (maxB > 0) platforms.push({
-        dirKey: 'counterclockwise', dirStation: majorB,
-        lineColor: line.color,
-        lineName:  line.name,
-        circular:  true,
-        direction: 'B',    // increasing index
-        fromIdx:   si,
-        lineIdx:   entry.lineIdx,
-        maxStops:  maxB,
-      });
+    if (isOedo && si === 0) {
+      platforms.push(...getOedoTochomaePlatforms(line, entry, N));
+    } else if (line.circular && !isOedo) {
+      platforms.push(...getCircularPlatforms(line, entry, si, N));
     } else {
-      // For branching lines, compute maxStops from the best branch
-      const branchConfig = LINE_BRANCHES[line.name];
-      const stnJa = line.stations[si].ja;
-
-      // Linear: add platform toward start (if not already at start)
-      if (si > 0) {
-        let maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
-        if (branchConfig) {
-          // Use best branch max for this direction
-          const branches = getBranches(line.name, stnJa, line);
-          maxS = 0;
-          for (const b of branches) {
-            const fakeP = { fromIdx: si, direction: 'start', lineIdx: entry.lineIdx };
-            maxS = Math.max(maxS, getBranchMaxStops(fakeP, b.branchIndices));
-          }
-        }
-        if (maxS > 0) platforms.push({
-          dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
-          lineColor: line.color,
-          lineName:  line.name,
-          circular:  false,
-          direction: 'start',
-          fromIdx:   si,
-          lineIdx:   entry.lineIdx,
-          maxStops:  maxS,
-        });
-      }
-      // Add platform toward end (if not already at end)
-      if (si < N - 1) {
-        let maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
-        if (branchConfig) {
-          const branches = getBranches(line.name, stnJa, line);
-          maxE = 0;
-          for (const b of branches) {
-            const fakeP = { fromIdx: si, direction: 'end', lineIdx: entry.lineIdx };
-            maxE = Math.max(maxE, getBranchMaxStops(fakeP, b.branchIndices));
-          }
-        }
-        if (maxE > 0) platforms.push({
-          dirKey: 'toward', dirStation: line.stations[N - 1].name, hintStation: findMajorStation(line, si, 'end'),
-          lineColor: line.color,
-          lineName:  line.name,
-          circular:  false,
-          direction: 'end',
-          fromIdx:   si,
-          lineIdx:   entry.lineIdx,
-          maxStops:  maxE,
-        });
-      }
+      platforms.push(...getLinearPlatforms(line, entry, si, N));
     }
   }
 
@@ -1917,10 +1952,8 @@ function setupAutocomplete() {
       for (const ak of getAliasKeys(n)) for (const e of (state.stationIndex[ak] || [])) entries.push(e);
       const lineNames = [...new Set(entries.map(e => lineDisplayName(state.lines[e.lineIdx].name)))].slice(0, 4).join(', ');
       const ja = stationJa(n);
-      const primary = currentLang === 'ja' && ja ? ja : n;
-      const secondary = currentLang === 'ja' ? n : ja;
       return `<div class="autocomplete-item" data-idx="${i}">
-        ${primary}${secondary && secondary !== primary ? ` <small class="text-muted">${secondary}</small>` : ''}<span class="station-sub">${lineNames}</span>
+        ${formatStationName(n, ja)}<span class="station-sub">${lineNames}</span>
       </div>`;
     }).join('');
     list.classList.add('open');
@@ -2014,18 +2047,9 @@ function onStationSelected(name, arrivedVia) {
   dom.rollAgainBtn.style.display = '';
   dom.showBarsBtn.style.display = '';
   dom.showCafesBtn.style.display = '';
-  dom.trainTypeRow.style.display = 'none';
-  dom.rollStopsRow.style.display = 'flex';
-  dom.diePlatform.textContent = '?';
-  dom.diePlatform.className = 'die-face';
-  dom.dieStops.textContent = '?';
-  dom.dieStops.className = 'die-face';
-  dom.dieStops.parentElement.style.display = '';
-  dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
-  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
+  showRollStopsUI();
+  resetDiceUI();
   dom.rollPlatformBtn.disabled = false;
-  dom.rollStopsBtn.disabled = true;
-  resetStopsBtn();
   dom.rerollPlatformBtn.style.display = 'none';
   dom.rerollStopsBtn.style.display = 'none';
 
@@ -2130,17 +2154,12 @@ function rollPlatform() {
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      dom.destName.textContent = state.currentStation.name;
-      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
-      dom.destSub.innerHTML =
-        `${state.currentStation.ja}<br>` +
-        `<span class="flight-msg">${t('flightMsg')}</span>`;
+      showDestCard(state.currentStation,
+        `<span class="flight-msg">${t('flightMsg')}</span>`);
       // Hide all action buttons — no rolling from here
       dom.rollAgainBtn.style.display = 'none';
       dom.showBarsBtn.style.display = 'none';
       dom.showCafesBtn.style.display = 'none';
-      dom.destCard.classList.add('active');
-      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       addHistory({ flight: true });
       return;
     }
@@ -2163,13 +2182,9 @@ function rollPlatform() {
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      dom.destName.textContent = state.currentStation.name;
-      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${state.currentStation.lat},${state.currentStation.lng}`;
-      dom.destSub.innerHTML =
-        `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
-        + destSubHints(state.currentStation, 'inline');
-      dom.destCard.classList.add('active');
-      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      showDestCard(state.currentStation,
+        t(eggStayingKey(state.currentStation.ja))
+        + destSubHints(state.currentStation, 'inline'));
 
       state.drankAt.add(normalize(state.currentStation.name));
       state.stationsSinceDrink = 0;
@@ -2221,18 +2236,9 @@ function rerollPlatform() {
   // Hide reroll, reset step 2 content, and fire a fresh roll
   dom.rerollPlatformBtn.style.display = 'none';
   hideAllCards();
-  dom.diePlatform.textContent = '?';
-  dom.diePlatform.className = 'die-face';
-  dom.dieStops.textContent = '?';
-  dom.dieStops.className = 'die-face';
-  dom.dieStops.parentElement.style.display = '';
-  dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
-  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
-  dom.rollStopsBtn.disabled = true;
-  resetStopsBtn();
+  resetDiceUI();
   dom.rerollStopsBtn.style.display = 'none';
-  dom.trainTypeRow.style.display = 'none';
-  dom.rollStopsRow.style.display = 'flex';
+  showRollStopsUI();
   state.selectedTrainType = null;
   state.selectedBranch = null;
   rollPlatform();
@@ -2310,8 +2316,7 @@ function showBranchButtons(p) {
   }
 
   // Show branch picker buttons
-  dom.rollStopsRow.style.display = 'none';
-  dom.trainTypeRow.style.display = 'flex';
+  showTrainTypeUI();
   dom.trainTypeRow.innerHTML = viable.map((b, i) => {
     const effectiveMax = getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount;
     const fullWidth = i === 0 && viable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
@@ -2330,7 +2335,6 @@ function showBranchButtons(p) {
         const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
         dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
-        dom.rollStopsRow.style.display = 'flex';
         resetStopsBtn();
         rollStops();
       }
@@ -2344,15 +2348,13 @@ function showBranchButtons(p) {
 // Show train type buttons if express services are available. Returns true if shown.
 function showTrainTypeButtons(p) {
   if (!p || !EXPRESS_SERVICES[p.lineName]) {
-    dom.trainTypeRow.style.display = 'none';
-    dom.rollStopsRow.style.display = 'flex';
+    showRollStopsUI();
     return false;
   }
   const line = state.lines[p.lineIdx];
   const trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line);
   if (!trainTypes || trainTypes.length <= 1) {
-    dom.trainTypeRow.style.display = 'none';
-    dom.rollStopsRow.style.display = 'flex';
+    showRollStopsUI();
     return false;
   }
 
@@ -2371,8 +2373,7 @@ function showTrainTypeButtons(p) {
   }
 
   if (grouped.length <= 1) {
-    dom.trainTypeRow.style.display = 'none';
-    dom.rollStopsRow.style.display = 'flex';
+    showRollStopsUI();
     return false;
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
@@ -2380,12 +2381,10 @@ function showTrainTypeButtons(p) {
     return getEffectiveStops(p, { ei: g.expressIndices }).validCount <= 1;
   });
   if (allMax1) {
-    dom.trainTypeRow.style.display = 'none';
-    dom.rollStopsRow.style.display = 'flex';
+    showRollStopsUI();
     return false;
   }
-  dom.rollStopsRow.style.display = 'none';
-  dom.trainTypeRow.style.display = 'flex';
+  showTrainTypeUI();
   dom.trainTypeRow.innerHTML = grouped.map((g, i) => {
     const ei = g.expressIndices;
     const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei });
@@ -2479,6 +2478,37 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
 
 function capStops(max) {
   return state.stopsCap ? Math.min(max, state.stopsCapValue) : max;
+}
+
+function showRollStopsUI() {
+  dom.trainTypeRow.style.display = 'none';
+  dom.rollStopsRow.style.display = 'flex';
+}
+
+function showTrainTypeUI() {
+  dom.rollStopsRow.style.display = 'none';
+  dom.trainTypeRow.style.display = 'flex';
+}
+
+function resetDiceUI() {
+  dom.diePlatform.textContent = '?';
+  dom.diePlatform.className = 'die-face';
+  dom.dieStops.textContent = '?';
+  dom.dieStops.className = 'die-face';
+  dom.dieStops.parentElement.style.display = '';
+  dom.diePlatformLabel.innerHTML = t('rollTrainLabel');
+  dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
+  dom.rollStopsBtn.disabled = true;
+  resetStopsBtn();
+}
+
+function showDestCard(station, subHtml) {
+  dom.destName.textContent = station.name;
+  dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`;
+  dom.destNameJa.textContent = station.ja || '';
+  dom.destSub.innerHTML = subHtml;
+  dom.destCard.classList.add('active');
+  dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function resetStopsBtn() {
@@ -2577,13 +2607,13 @@ function animateTransferDie(die, alreadyDrank, roll) {
     let count = 0;
     const interval = setInterval(() => {
       die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-      if (++count >= 8) {
+      if (++count >= TRANSFER_DIE_FRAMES) {
         clearInterval(interval);
         die.textContent = resultEmoji;
         die.classList.remove('rolling');
         resolve();
       }
-    }, 80);
+    }, TRANSFER_DIE_FRAME_MS);
   });
 }
 
@@ -2599,7 +2629,7 @@ function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
 function waitForUndo() {
   dom.undoTransferBtn.style.display = 'block';
   return new Promise(resolve => {
-    const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
+    const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, UNDO_TRANSFER_TIMEOUT);
     dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
   });
 }
@@ -2626,15 +2656,10 @@ function undimStations(start, end) {
   for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`).classList.remove('passed');
 }
 
-// ── Transfer check main ─────────────────────────────────────────────────
-
-async function checkTransfers(platform, rolledStops) {
-  const route = getStationsAlongRoute(platform, rolledStops);
-  state.route = route;  // save for switchLang journey card refresh
-
-  // For express trains, count LOCAL stations physically passed for thirst,
-  // not just the express stops. Build raw index map: rawIdx[0]=start,
-  // rawIdx[i+1]=route[i]'s raw station index.
+// ── Transfer check: thirst tracking ──────────────────────────────────────
+// Returns a thirstBetween(a, b) function that counts local stations between
+// two route indices, accounting for express/branch skips.
+function buildThirstTracker(platform, rolledStops) {
   const _ei = state.selectedTrainType?.expressIndices;
   const _eiPos = _ei ? _ei.indexOf(platform.fromIdx) : -1;
   let _rawIdx = null;
@@ -2646,7 +2671,6 @@ async function checkTransfers(platform, rolledStops) {
       _rawIdx.push(_ei[p]);
     }
   }
-  // Branch routing: count local stations via branch indices
   const _bi = state.selectedBranch?.branchIndices;
   if (!_rawIdx && _bi) {
     const _biPos = _bi.indexOf(platform.fromIdx);
@@ -2659,13 +2683,108 @@ async function checkTransfers(platform, rolledStops) {
       }
     }
   }
-  // Local stations between two route indices (-1 = start station)
-  function thirstBetween(a, b) {
+  return function thirstBetween(a, b) {
     if (!_rawIdx) return b - a;
     return Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]);
-  }
+  };
+}
 
-  // Check intermediate stations for transfers (not the destination)
+// ── Transfer check: journey card rendering ───────────────────────────────
+function renderJourneyCard(route, transferIndices) {
+  dom.journeyCard.style.display = 'block';
+  dom.journeyContent.innerHTML = route.map((stn, i) => {
+    const isLast = i === route.length - 1;
+    const isTransfer = transferIndices.includes(i);
+    return `<div class="journey-station" id="jstn-${i}">
+      <span class="journey-num">${i + 1}</span>
+      <span class="journey-name">${formatStationName(stn.name, stn.ja)}</span>
+      ${isTransfer ? `<span class="transfer-badge" data-i18n="transferBadge">${t('transferBadge')}</span>` : ''}
+      ${isLast ? `<span class="dest-badge" data-i18n="destBadge">${t('destBadge')}</span>` : ''}
+      ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}" data-i18n="rollBtnLabel">${t('rollBtnLabel')}</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
+    </div>`;
+  }).join('');
+  dom.journeyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  dimStations(0, transferIndices[0]);
+}
+
+// ── Transfer check: resolve one transfer station ─────────────────────────
+// Returns { outcome: 'stay' } | { outcome: 'transfer'|'drink', station, stopsUsed }
+async function resolveTransfer(route, i, ti, transferIndices) {
+  const el = document.getElementById(`jstn-${i}`);
+  el.classList.add('checking');
+
+  const inlineBtn = document.getElementById(`jroll-${i}`);
+  inlineBtn.style.display = 'inline-block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  await new Promise(resolve => {
+    inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+  });
+  inlineBtn.style.display = 'none';
+
+  const die = document.getElementById(`jdie-${i}`);
+  const res = document.getElementById(`jres-${i}`);
+  const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
+
+  let undoRequested = true;
+  while (undoRequested) {
+    undoRequested = false;
+
+    const alreadyDrank = state.drankAt.has(normalize(route[i].name));
+    const extraDrink = Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD);
+    const sides = alreadyDrank ? (TRANSFER_DIE_SIDES - 1) : TRANSFER_DIE_SIDES + extraDrink;
+    let roll;
+    if (window._forceNextRoll != null) {
+      roll = Math.max(1, Math.min(sides, window._forceNextRoll));
+      window._forceNextRoll = null;
+    } else if (window._forceTransferQueue?.length) {
+      roll = Math.max(1, Math.min(sides, window._forceTransferQueue.shift()));
+    } else {
+      roll = Math.floor(Math.random() * sides) + 1;
+    }
+
+    await animateTransferDie(die, alreadyDrank, roll);
+
+    if (roll <= 3) {
+      applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
+      dimStations(i + 1, nextTI);
+      if (await waitForUndo()) {
+        undimStations(i + 1, nextTI);
+        await resetAndReroll(el, die, res, inlineBtn, 'passed');
+        undoRequested = true;
+        continue;
+      }
+      return { outcome: 'stay' };
+    } else if (roll === 4) {
+      applyOutcome(el, die, res, 'transfer', 'transferResult', 'transfer-label', 'transferred');
+      if (await waitForUndo()) {
+        await resetAndReroll(el, die, res, inlineBtn, 'transferred');
+        undoRequested = true;
+        continue;
+      }
+      dimStations(i + 1, route.length);
+      return { outcome: 'transfer', station: route[i], stopsUsed: i + 1 };
+    } else {
+      applyOutcome(el, die, res, 'drink-roll', 'drinkResult', 'drink-label', 'drink');
+      if (await waitForUndo()) {
+        await resetAndReroll(el, die, res, inlineBtn, 'drink');
+        undoRequested = true;
+        continue;
+      }
+      dimStations(i + 1, route.length);
+      return { outcome: 'drink', station: route[i], stopsUsed: i + 1 };
+    }
+  }
+}
+
+// ── Transfer check main ─────────────────────────────────────────────────
+
+async function checkTransfers(platform, rolledStops) {
+  const route = getStationsAlongRoute(platform, rolledStops);
+  state.route = route;
+
+  const thirstBetween = buildThirstTracker(platform, rolledStops);
+
+  // Find intermediate stations with transfer lines
   const transferIndices = [];
   for (let i = 0; i < route.length - 1; i++) {
     if (hasTransferLines(route[i].name, platform.lineName)) {
@@ -2679,107 +2798,30 @@ async function checkTransfers(platform, rolledStops) {
     return { type: 'arrive', station: route[route.length - 1] };
   }
 
-  // Show journey card
-  dom.journeyCard.style.display = 'block';
+  renderJourneyCard(route, transferIndices);
 
-  // Build station list
-  dom.journeyContent.innerHTML = route.map((stn, i) => {
-    const isLast = i === route.length - 1;
-    const isTransfer = transferIndices.includes(i);
-    return `<div class="journey-station" id="jstn-${i}">
-      <span class="journey-num">${i + 1}</span>
-      <span class="journey-name">${currentLang === 'ja'
-        ? `${stn.ja || stn.name} <small class="text-muted">${stn.ja ? stn.name : ''}</small>`
-        : `${stn.name}${stn.ja ? ` <small class="text-muted">${stn.ja}</small>` : ''}`}</span>
-      ${isTransfer ? `<span class="transfer-badge" data-i18n="transferBadge">${t('transferBadge')}</span>` : ''}
-      ${isLast ? `<span class="dest-badge" data-i18n="destBadge">${t('destBadge')}</span>` : ''}
-      ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}" data-i18n="rollBtnLabel">${t('rollBtnLabel')}</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
-    </div>`;
-  }).join('');
-
-  dom.journeyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-  // Dim non-transfer stations up to the first transfer station
-  dimStations(0, transferIndices[0]);
-
-  // Walk through each transfer station, waiting for user to click roll
+  // Walk through each transfer station
   for (let ti = 0; ti < transferIndices.length; ti++) {
     const i = transferIndices[ti];
-    const el = document.getElementById(`jstn-${i}`);
-    el.classList.add('checking');
 
-    // Show inline roll button and wait for click
-    const inlineBtn = document.getElementById(`jroll-${i}`);
-    inlineBtn.style.display = 'inline-block';
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    await new Promise(resolve => {
-      inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
-    });
-    inlineBtn.style.display = 'none';
-
-    // Count LOCAL stations passed since last transfer (express skips still count for thirst)
+    // Count LOCAL stations passed since last transfer
     const prevTransferIdx = ti > 0 ? transferIndices[ti - 1] : -1;
     state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
 
-    const die = document.getElementById(`jdie-${i}`);
-    const res = document.getElementById(`jres-${i}`);
-    const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
+    const result = await resolveTransfer(route, i, ti, transferIndices);
 
-    // Undo loop — re-rolls this transfer station if user clicks undo
-    let undoRequested = true;
-    while (undoRequested) {
-      undoRequested = false;
-
-      const alreadyDrank = state.drankAt.has(normalize(route[i].name));
-      const extraDrink = Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD);
-      const sides = alreadyDrank ? (TRANSFER_DIE_SIDES - 1) : TRANSFER_DIE_SIDES + extraDrink;
-      let roll;
-      if (window._forceNextRoll != null) {
-        roll = Math.max(1, Math.min(sides, window._forceNextRoll));
-        window._forceNextRoll = null;
-      } else if (window._forceTransferQueue?.length) {
-        roll = Math.max(1, Math.min(sides, window._forceTransferQueue.shift()));
-      } else {
-        roll = Math.floor(Math.random() * sides) + 1;
-      }
-
-      await animateTransferDie(die, alreadyDrank, roll);
-
-      if (roll <= 3) {
-        applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
-        dimStations(i + 1, nextTI);
-        if (await waitForUndo()) {
-          undimStations(i + 1, nextTI);
-          await resetAndReroll(el, die, res, inlineBtn, 'passed');
-          undoRequested = true;
-          continue;
-        }
-      } else if (roll === 4) {
-        applyOutcome(el, die, res, 'transfer', 'transferResult', 'transfer-label', 'transferred');
-        if (await waitForUndo()) {
-          await resetAndReroll(el, die, res, inlineBtn, 'transferred');
-          undoRequested = true;
-          continue;
-        }
-        dimStations(i + 1, route.length);
-        return { type: 'transfer', station: route[i], stopsUsed: i + 1 };
-      } else {
-        applyOutcome(el, die, res, 'drink-roll', 'drinkResult', 'drink-label', 'drink');
-        if (await waitForUndo()) {
-          await resetAndReroll(el, die, res, inlineBtn, 'drink');
-          undoRequested = true;
-          continue;
-        }
-        dimStations(i + 1, route.length);
-        return { type: 'drink', station: route[i], stopsUsed: i + 1 };
-      }
-    } // end undo loop
+    if (result.outcome === 'transfer') {
+      return { type: 'transfer', station: result.station, stopsUsed: result.stopsUsed };
+    }
+    if (result.outcome === 'drink') {
+      return { type: 'drink', station: result.station, stopsUsed: result.stopsUsed };
+    }
   }
 
-  // No transfer triggered — count remaining LOCAL stations to destination
+  // No transfer triggered — count remaining stations to destination
   const lastChecked = transferIndices[transferIndices.length - 1];
   state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
-  await new Promise(r => setTimeout(r, 200));
+  await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
   return { type: 'arrive', station: route[route.length - 1] };
 }
 
@@ -2835,7 +2877,7 @@ function rollStops() {
       addHistory({ transferred: true, stopsUsed: result.stopsUsed });
 
       // Brief pause then set up new station
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
       setStationInput(result.station.name);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       onStationSelected(result.station.name, { lineName: state.selectedPlatform.lineName, isTransfer: true });
@@ -2847,18 +2889,8 @@ function rollStops() {
       state.destination = result.station;
       state.selectedPlatform = { ...state.selectedPlatform, drinkHere: true };
 
-      dom.destName.textContent = result.station.name;
-      dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${result.station.lat},${result.station.lng}`;
-      const drinkTrainType = state.selectedTrainType ? ` ${state.selectedTrainType.ja}` : '';
-      const transferEgg = getEgg(result.station.ja);
-      const transferHint = transferEgg?.position === 'replace' && transferEgg.hintKey
-        ? eggEmoji(result.station.ja) + ' ' + t(transferEgg.hintKey)
-        : t('drinkAtTransfer', { line: lineDisplayName(state.selectedPlatform.lineName), type: drinkTrainType });
-      dom.destSub.innerHTML =
-        `${result.station.ja} &nbsp;·&nbsp; ${transferHint}`
-        + destSubHints(result.station);
-      dom.destCard.classList.add('active');
-      dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      showDestCard(result.station,
+        t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
 
       state.drankAt.add(normalize(result.station.name));
       state.stationsSinceDrink = 0;
@@ -2870,14 +2902,10 @@ function rollStops() {
     const dest = result.station;
     state.destination = dest;
 
-    dom.destName.textContent = dest.name;
-    dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${dest.lat},${dest.lng}`;
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-    dom.destSub.innerHTML =
-      `${dest.ja} &nbsp;·&nbsp; ${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
-      + destSubHints(dest, 'wrap');
-    dom.destCard.classList.add('active');
-    dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    showDestCard(dest,
+      `${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
+      + destSubHints(dest, 'wrap'));
 
     state.drankAt.add(normalize(dest.name));
     state.stationsSinceDrink = 0;
@@ -2989,23 +3017,21 @@ async function showPlaces(mode) {
 // ── History ───────────────────────────────────────────────────────────────
 function buildHistoryItem(e, num) {
   let body;
-  const from = currentLang === 'ja' && e.fromJa ? e.fromJa : e.from;
-  const to   = currentLang === 'ja' && e.toJa   ? e.toJa   : e.to;
-  const fromSub = currentLang === 'ja' ? '' : (e.fromJa ? ` <small class="dest-ja">${e.fromJa}</small>` : '');
-  const toSub   = currentLang === 'ja' ? '' : (e.toJa   ? ` <small class="dest-ja">${e.toJa}</small>`   : '');
+  const fromH = historyNameHtml(e.from, e.fromJa);
+  const toH   = historyNameHtml(e.to, e.toJa);
   if (e.flight) {
-    body = `<strong>${from}</strong>${fromSub} <span class="text-flight">${t('tookFlight')}</span>`;
+    body = `<strong>${fromH}</strong> <span class="text-flight">${t('tookFlight')}</span>`;
   } else if (e.drinkHere) {
-    body = `<strong>${from}</strong>${fromSub} <span class="text-muted">${t(eggStayedKey(e.fromJa))}</span>`;
+    body = `<strong>${fromH}</strong> <span class="text-muted">${t(eggStayedKey(e.fromJa))}</span>`;
   } else if (e.drinkAtTransfer) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent">${t('drinkRollHistory')}</span>`;
+    body = `<strong>${fromH}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${toH}</strong> <span class="text-accent">${t('drinkRollHistory')}</span>`;
   } else if (e.transferred) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${to}</strong>${toSub} <span class="text-accent2">${t('transferHistory')}</span>`;
+    body = `<strong>${fromH}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stopsUsed, s: pl(e.stopsUsed) })}) &rarr; <strong>${toH}</strong> <span class="text-accent2">${t('transferHistory')}</span>`;
   } else {
     const tt = e.trainType ? ` ${e.trainType}` : '';
-    body = `<strong>${from}</strong>${fromSub} &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${to}</strong>${toSub}${e.drinkAtArrival ? ` <span class="text-accent">${eggDrinkAtArrival(e.toJa)}</span>` : ''}`;
+    body = `<strong>${fromH}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${toH}</strong>${e.drinkAtArrival ? ` <span class="text-accent">${eggDrinkAtArrival(e.toJa)}</span>` : ''}`;
   }
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
@@ -3305,8 +3331,8 @@ function copyRoute(feedbackBtn) {
   const date = new Date().toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
   const lines = [t('copyRouteHeader', { date }), ''];
   state.history.forEach((e, i) => {
-    const from = currentLang === 'ja' && e.fromJa ? e.fromJa : e.from;
-    const to   = currentLang === 'ja' && e.toJa   ? e.toJa   : e.to;
+    const from = historyName(e.from, e.fromJa);
+    const to   = historyName(e.to, e.toJa);
     if (e.flight) {
       lines.push(`${i + 1}. ${from} ${t('tookFlight')}`);
     } else if (e.drinkHere) {
@@ -3332,11 +3358,11 @@ function copyToClipboard(text, feedbackBtn) {
   navigator.clipboard.writeText(text).then(() => {
     const orig = feedbackBtn.textContent;
     feedbackBtn.textContent = t('copied');
-    setTimeout(() => { feedbackBtn.textContent = orig; }, 2000);
+    setTimeout(() => { feedbackBtn.textContent = orig; }, FEEDBACK_RESET_DELAY);
   }).catch(() => {
     const orig = feedbackBtn.textContent;
     feedbackBtn.textContent = t('copyFailed');
-    setTimeout(() => { feedbackBtn.textContent = orig; }, 2000);
+    setTimeout(() => { feedbackBtn.textContent = orig; }, FEEDBACK_RESET_DELAY);
   });
 }
 
