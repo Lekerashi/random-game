@@ -2630,6 +2630,11 @@ function hasTransferLines(stationName, currentLineName) {
 function animateTransferDie(die, alreadyDrank, roll) {
   const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
   const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
+  if (window._skipAnimation) {
+    die.textContent = resultEmoji;
+    die.classList.remove('rolling');
+    return Promise.resolve();
+  }
   die.classList.add('rolling');
   return new Promise(resolve => {
     let count = 0;
@@ -2655,6 +2660,7 @@ function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
 }
 
 function waitForUndo() {
+  if (window._skipAnimation) { return Promise.resolve(false); }
   dom.undoTransferBtn.style.display = 'block';
   return new Promise(resolve => {
     const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, UNDO_TRANSFER_TIMEOUT);
@@ -2850,7 +2856,7 @@ async function checkTransfers(platform, rolledStops) {
   // No transfer triggered — count remaining stations to destination
   const lastChecked = transferIndices[transferIndices.length - 1];
   state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
-  await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
+  if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
   return { type: 'arrive', station: route[route.length - 1] };
 }
 
@@ -2906,7 +2912,7 @@ function rollStops() {
       addHistory({ transferred: true, stopsUsed: result.stopsUsed });
 
       // Brief pause then set up new station
-      await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
+      if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
       setStationInput(result.station.name);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       onStationSelected(result.station.name, { lineName: state.selectedPlatform.lineName, isTransfer: true });
