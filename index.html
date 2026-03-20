@@ -1093,6 +1093,12 @@ _langRefreshers.push(function refreshSelectedPlatform() {
   }
 });
 
+_langRefreshers.push(function refreshTrainTypeButtons() {
+  if (state.selectedPlatform && !state.selectedTrainType && dom.trainTypeRow.style.display !== 'none') {
+    showTrainTypeButtons(state.selectedPlatform);
+  }
+});
+
 _langRefreshers.push(function refreshStopsRange() {
   if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
     refreshStopsLabel();
@@ -2392,7 +2398,9 @@ function showTrainTypeButtons(p) {
     const fullWidth = i === 0 && grouped.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${g.color};${fullWidth}"
       data-type-name="${g.name}" data-max="${physMax}"${effectiveMax === 0 ? ' disabled' : ''}>
-      ${g.name}<small>${g.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>
+      ${currentLang === 'ja'
+        ? `${g.ja}<small>${g.name} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>`
+        : `${g.name}<small>${g.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>`}
     </button>`;
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
