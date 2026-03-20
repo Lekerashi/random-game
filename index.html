@@ -394,6 +394,7 @@
     .journey-result.stay-label { color: var(--muted); }
     .journey-result.transfer-label { color: var(--accent2); }
     .journey-result.drink-label { color: var(--accent); }
+    #undo-transfer-btn { display: none; margin-top: 10px; font-size: .85rem; }
 
     /* ── Destination ─────────────────────────────────── */
     #destination-card { display: none; }
@@ -736,6 +737,7 @@
   <div class="card" id="journey-card">
     <div class="card-title" data-i18n="checkingTransfers">Checking Transfers</div>
     <div id="journey-content"></div>
+    <button class="btn btn-secondary" id="undo-transfer-btn" data-i18n="undoTransferRoll">↩ Undo Roll</button>
   </div>
 
   <!-- Destination -->
@@ -1497,6 +1499,7 @@ const translations = {
     // Footer
     footer:               'Conceived by Shane, perfected by Shane & Zack, vibe coded by Logan — the Kens',
     // Reroll button text
+    undoTransferRoll:     '↩ Undo Roll',
     rerollText:           '🔁 Reroll',
     resumeSession:        'Resume previous session?',
     resumeBtn:            'Resume',
@@ -1622,6 +1625,7 @@ const translations = {
     htpStep7:             '駅に戻って、もう一回！',
     htpGoal:              '東京を探検しながら、知らない街で飲むのがこのゲームの楽しみ方です！',
     footer:               '企画：Shane、改良：Shane & Zack、バイブコーディング：Logan — the Kens',
+    undoTransferRoll:     '↩ 振り直し',
     rerollText:           '🔁 振り直し',
     resumeSession:        '前回のセッションを再開しますか？',
     resumeBtn:            '再開',
@@ -1744,6 +1748,18 @@ function switchLang(lang) {
   if (state.geoNearest) {
     setLocationHint(t('geoNearest', { name: stationDisplayName(state.geoNearest.name), dist: state.geoNearest.dist }));
   }
+  // Refresh journey card station names (transfer check)
+  document.querySelectorAll('.journey-name').forEach(el => {
+    const stn = el.closest('.journey-station');
+    if (!stn) return;
+    const idx = parseInt(stn.id.replace('jstn-', ''), 10);
+    const route = state.route;
+    if (!route || !route[idx]) return;
+    const s = route[idx];
+    el.innerHTML = currentLang === 'ja'
+      ? `${s.ja || s.name} <small class="text-muted">${s.ja ? s.name : ''}</small>`
+      : `${s.name}${s.ja ? ` <small class="text-muted">${s.ja}</small>` : ''}`;
+  });
   // Re-render history
   renderHistory();
   updateHistoryDistance();
@@ -1805,6 +1821,7 @@ const dom = {
   // Journey / Destination
   journeyCard:    document.getElementById('journey-card'),
   journeyContent: document.getElementById('journey-content'),
+  undoTransferBtn: document.getElementById('undo-transfer-btn'),
   destCard:       document.getElementById('destination-card'),
   destName:       document.getElementById('dest-name'),
   destSub:        document.getElementById('dest-sub'),
@@ -2582,8 +2599,9 @@ function onStationSelected(name, arrivedVia) {
   dom.rerollStopsBtn.style.display = 'none';
 
   // Compute platforms + add drink-here as last option
-  // (not if last roll was already a drink, or if already drank here this session)
-  const canDrinkHere = !lastWasDrink && !state.drankAt.has(normalize(name));
+  // (not if last roll was already a drink, already drank here, or arrived via transfer
+  //  — the transfer die already covered the drink chance)
+  const canDrinkHere = !lastWasDrink && !state.drankAt.has(normalize(name)) && !arrivedVia?.isTransfer;
   let allPlatforms = getPlatforms(name, !!arrivedVia);
   if (arrivedVia) {
     const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
@@ -3070,6 +3088,7 @@ function hasTransferLines(stationName, currentLineName) {
 
 async function checkTransfers(platform, rolledStops) {
   const route = getStationsAlongRoute(platform, rolledStops);
+  state.route = route;  // save for switchLang journey card refresh
 
   // For express trains, count LOCAL stations physically passed for thirst,
   // not just the express stops. Build raw index map: rawIdx[0]=start,
@@ -3127,7 +3146,9 @@ async function checkTransfers(platform, rolledStops) {
     const isTransfer = transferIndices.includes(i);
     return `<div class="journey-station" id="jstn-${i}">
       <span class="journey-num">${i + 1}</span>
-      <span class="journey-name">${stn.name}${stn.ja ? ` <small class="text-muted">${stn.ja}</small>` : ''}</span>
+      <span class="journey-name">${currentLang === 'ja'
+        ? `${stn.ja || stn.name} <small class="text-muted">${stn.ja ? stn.name : ''}</small>`
+        : `${stn.name}${stn.ja ? ` <small class="text-muted">${stn.ja}</small>` : ''}`}</span>
       ${isTransfer ? `<span class="transfer-badge" data-i18n="transferBadge">${t('transferBadge')}</span>` : ''}
       ${isLast ? `<span class="dest-badge" data-i18n="destBadge">${t('destBadge')}</span>` : ''}
       ${isTransfer ? `<button class="journey-roll-btn" id="jroll-${i}" data-i18n="rollBtnLabel">${t('rollBtnLabel')}</button><span class="journey-die" id="jdie-${i}">?</span><span class="journey-result" id="jres-${i}"></span>` : ''}
@@ -3158,84 +3179,161 @@ async function checkTransfers(platform, rolledStops) {
 
     // Count LOCAL stations passed since last transfer (express skips still count for thirst)
     const prevTransferIdx = ti > 0 ? transferIndices[ti - 1] : -1;
-    state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
+    const thirstGain = thirstBetween(prevTransferIdx, i);
+    state.stationsSinceDrink += thirstGain;
 
     // Thirst: after 5 stations, each extra station adds a drink number
     const die = document.getElementById(`jdie-${i}`);
     const res = document.getElementById(`jres-${i}`);
-    const alreadyDrank = state.drankAt.has(normalize(route[i].name));
-    const extraDrink = Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD);
-    const sides = alreadyDrank ? (TRANSFER_DIE_SIDES - 1) : TRANSFER_DIE_SIDES + extraDrink;
-    let roll;
-    if (window._forceNextRoll != null) {
-      roll = Math.max(1, Math.min(sides, window._forceNextRoll));
-      window._forceNextRoll = null;
-    } else if (window._forceTransferQueue?.length) {
-      roll = Math.max(1, Math.min(sides, window._forceTransferQueue.shift()));
-    } else {
-      roll = Math.floor(Math.random() * sides) + 1;
-    }
 
-    // Animate die with emojis
-    const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
-    const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
-    die.classList.add('rolling');
-    await new Promise(resolve => {
-      let count = 0;
-      const interval = setInterval(() => {
-        die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-        count++;
-        if (count >= 8) {
-          clearInterval(interval);
-          die.textContent = resultEmoji;
-          die.classList.remove('rolling');
-          resolve();
+    // Undo loop — re-rolls this transfer station if user clicks undo
+    let undoRequested = true;
+    while (undoRequested) {
+      undoRequested = false;
+
+      const alreadyDrank = state.drankAt.has(normalize(route[i].name));
+      const extraDrink = Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD);
+      const sides = alreadyDrank ? (TRANSFER_DIE_SIDES - 1) : TRANSFER_DIE_SIDES + extraDrink;
+      let roll;
+      if (window._forceNextRoll != null) {
+        roll = Math.max(1, Math.min(sides, window._forceNextRoll));
+        window._forceNextRoll = null;
+      } else if (window._forceTransferQueue?.length) {
+        roll = Math.max(1, Math.min(sides, window._forceTransferQueue.shift()));
+      } else {
+        roll = Math.floor(Math.random() * sides) + 1;
+      }
+
+      // Animate die with emojis
+      const emojis = alreadyDrank ? ['🚃', '🔀'] : ['🚃', '🍺', '🔀'];
+      const resultEmoji = roll <= 3 ? '🚃' : roll === 4 ? '🔀' : '🍺';
+      die.classList.add('rolling');
+      await new Promise(resolve => {
+        let count = 0;
+        const interval = setInterval(() => {
+          die.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+          count++;
+          if (count >= 8) {
+            clearInterval(interval);
+            die.textContent = resultEmoji;
+            die.classList.remove('rolling');
+            resolve();
+          }
+        }, 80);
+      });
+
+      if (roll <= 3) {
+        // Stay on
+        die.classList.add('stay');
+        res.textContent = t('stayResult');
+        res.setAttribute('data-i18n', 'stayResult');
+        res.classList.add('stay-label');
+        el.classList.remove('checking');
+        el.classList.add('passed');
+
+        // Dim stations between this and the next transfer (or end)
+        const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
+        for (let j = i + 1; j < nextTI; j++) {
+          document.getElementById(`jstn-${j}`).classList.add('passed');
         }
-      }, 80);
-    });
 
-    if (roll <= 3) {
-      // Stay on
-      die.classList.add('stay');
-      res.textContent = t('stayResult');
-      res.setAttribute('data-i18n', 'stayResult');
-      res.classList.add('stay-label');
-      el.classList.remove('checking');
-      el.classList.add('passed');
+        // Show undo button briefly
+        dom.undoTransferBtn.style.display = 'block';
+        const undone = await new Promise(resolve => {
+          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
+          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
+        });
+        if (undone) {
+          // Reset this station's visual state
+          die.className = 'journey-die';
+          die.textContent = '?';
+          res.textContent = '';
+          res.className = 'journey-result';
+          el.classList.remove('passed');
+          el.classList.add('checking');
+          const nextTI2 = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
+          for (let j = i + 1; j < nextTI2; j++) {
+            document.getElementById(`jstn-${j}`).classList.remove('passed');
+          }
+          // Re-show the roll button and wait for click
+          inlineBtn.style.display = 'inline-block';
+          await new Promise(resolve => {
+            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+          });
+          inlineBtn.style.display = 'none';
+          undoRequested = true;
+          continue;
+        }
+      } else if (roll === 4) {
+        // Transfer!
+        die.classList.add('transfer');
+        res.textContent = t('transferResult');
+        res.setAttribute('data-i18n', 'transferResult');
+        res.classList.add('transfer-label');
+        el.classList.remove('checking');
+        el.classList.add('transferred');
 
-      // Dim stations between this and the next transfer (or end)
-      const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
-      for (let j = i + 1; j < nextTI; j++) {
-        document.getElementById(`jstn-${j}`).classList.add('passed');
+        // Show undo button and wait
+        dom.undoTransferBtn.style.display = 'block';
+        const undone = await new Promise(resolve => {
+          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
+          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
+        });
+        if (undone) {
+          die.className = 'journey-die';
+          die.textContent = '?';
+          res.textContent = '';
+          res.className = 'journey-result';
+          el.classList.remove('transferred');
+          el.classList.add('checking');
+          inlineBtn.style.display = 'inline-block';
+          await new Promise(resolve => {
+            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+          });
+          inlineBtn.style.display = 'none';
+          undoRequested = true;
+          continue;
+        }
+        for (let j = i + 1; j < route.length; j++) {
+          document.getElementById(`jstn-${j}`).classList.add('passed');
+        }
+        return { type: 'transfer', station: route[i], stopsUsed: i + 1 };
+      } else {
+        // Drink here!
+        die.classList.add('drink-roll');
+        res.textContent = t('drinkResult');
+        res.setAttribute('data-i18n', 'drinkResult');
+        res.classList.add('drink-label');
+        el.classList.remove('checking');
+        el.classList.add('drink');
+
+        // Show undo button and wait
+        dom.undoTransferBtn.style.display = 'block';
+        const undone = await new Promise(resolve => {
+          const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, 3000);
+          dom.undoTransferBtn.onclick = () => { clearTimeout(timeout); dom.undoTransferBtn.style.display = 'none'; resolve(true); };
+        });
+        if (undone) {
+          die.className = 'journey-die';
+          die.textContent = '?';
+          res.textContent = '';
+          res.className = 'journey-result';
+          el.classList.remove('drink');
+          el.classList.add('checking');
+          inlineBtn.style.display = 'inline-block';
+          await new Promise(resolve => {
+            inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+          });
+          inlineBtn.style.display = 'none';
+          undoRequested = true;
+          continue;
+        }
+        for (let j = i + 1; j < route.length; j++) {
+          document.getElementById(`jstn-${j}`).classList.add('passed');
+        }
+        return { type: 'drink', station: route[i], stopsUsed: i + 1 };
       }
-      await new Promise(r => setTimeout(r, 300));
-    } else if (roll === 4) {
-      // Transfer!
-      die.classList.add('transfer');
-      res.textContent = t('transferResult');
-      res.setAttribute('data-i18n', 'transferResult');
-      res.classList.add('transfer-label');
-      el.classList.remove('checking');
-      el.classList.add('transferred');
-      await new Promise(r => setTimeout(r, 700));
-      for (let j = i + 1; j < route.length; j++) {
-        document.getElementById(`jstn-${j}`).classList.add('passed');
-      }
-      return { type: 'transfer', station: route[i], stopsUsed: i + 1 };
-    } else {
-      // Drink here!
-      die.classList.add('drink-roll');
-      res.textContent = t('drinkResult');
-      res.setAttribute('data-i18n', 'drinkResult');
-      res.classList.add('drink-label');
-      el.classList.remove('checking');
-      el.classList.add('drink');
-      await new Promise(r => setTimeout(r, 700));
-      for (let j = i + 1; j < route.length; j++) {
-        document.getElementById(`jstn-${j}`).classList.add('passed');
-      }
-      return { type: 'drink', station: route[i], stopsUsed: i + 1 };
-    }
+    } // end undo loop
   }
 
   // No transfer triggered — count remaining LOCAL stations to destination
