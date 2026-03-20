@@ -2413,7 +2413,14 @@ function showTrainTypeButtons(p) {
       const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
-      rollStops();
+      // In debug mode, show roll button so user can set force value first
+      if (window.game) {
+        showRollStopsUI();
+        dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
+        dom.rollStopsBtn.disabled = false;
+      } else {
+        rollStops();
+      }
     };
   });
   const localEffective = getEffectiveStops(p, { ei: null, bi: null }).validCount;
