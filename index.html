@@ -851,6 +851,7 @@ const SHINKANSEN_LINES = new Set(['Tokaido Shinkansen', 'Tohoku Shinkansen', 'Jo
 const PLACES_RADIUS     = 500;   // meters — search radius for nearby bars/cafes
 const EARTH_RADIUS_M    = 6371000;
 const THIRST_THRESHOLD  = 5;     // stations without drinking before extra drink rolls kick in
+const SHINKANSEN_THIRST = 3;     // thirst multiplier per shinkansen stop (longer distances)
 const TRANSFER_DIE_SIDES = 5;    // base sides: 1-3 stay, 4 transfer, 5+ drink
 const TRANSFER_DIE_FRAMES   = 8;     // number of animation frames for transfer die
 const TRANSFER_DIE_FRAME_MS = 80;    // ms between transfer die animation frames
@@ -2691,9 +2692,10 @@ function buildThirstTracker(platform, rolledStops) {
       }
     }
   }
+  const _mult = platform.isShinkansen ? SHINKANSEN_THIRST : 1;
   return function thirstBetween(a, b) {
-    if (!_rawIdx) return b - a;
-    return Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]);
+    const raw = _rawIdx ? Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]) : b - a;
+    return raw * _mult;
   };
 }
 
