@@ -1325,11 +1325,12 @@ function getBranchIndices(line, branchJaNames) {
 }
 
 // Get branches available at a station, with precomputed indices
-function getBranches(lineName, stationJa, line) {
+function getBranches(lineName, stationJa, line, direction) {
   const config = LINE_BRANCHES[lineName];
   if (!config) return null;
   return config
     .filter(b => b.stations.includes(stationJa))
+    .filter(b => !direction || !b.direction || b.direction === direction)
     .map(b => ({ ...b, branchIndices: getBranchIndices(line, b.stations) }));
 }
 
@@ -1588,20 +1589,37 @@ function buildSpatialIndex() {
 // Walk ahead along a line and return the first station that's a major hub
 // (served by 4+ directional platforms, i.e. a real transfer station).
 // Falls back to the immediate next station if none found within lookahead.
+// Well-known anchor stations for "toward" labels — the stations people actually navigate by
+const ANCHOR_STATIONS = new Set([
+  // Yamanote big 6
+  'Tokyo', 'Shinagawa', 'Shibuya', 'Shinjuku', 'Ikebukuro', 'Ueno',
+  // Major JR hubs outside central Tokyo
+  'Yokohama', 'Kawasaki', 'Omiya', 'Tachikawa', 'Hachioji',
+  'Ofuna', 'Chiba', 'Kashiwa', 'Funabashi', 'Machida', 'Kichijoji',
+]);
+
 function findMajorStation(line, fromIdx, direction) {
   const N = line.stations.length;
-  const LOOKAHEAD  = 20;
-  const HUB_THRESHOLD = 4; // entries in stationIndex = # of directional platforms
+  const LOOKAHEAD  = 30;
+  const HUB_THRESHOLD = 4;
 
   const step = (direction === 'A' || direction === 'start') ? -1 : 1;
 
+  // First pass: look for a curated anchor station
   for (let i = 1; i <= Math.min(LOOKAHEAD, N - 1); i++) {
     let idx = line.circular
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
-
     if (idx < 0 || idx >= N) break;
+    if (ANCHOR_STATIONS.has(line.stations[idx].name)) return line.stations[idx].name;
+  }
 
+  // Second pass: fall back to any hub station (4+ lines)
+  for (let i = 1; i <= Math.min(LOOKAHEAD, N - 1); i++) {
+    let idx = line.circular
+      ? ((fromIdx + step * i) % N + N) % N
+      : fromIdx + step * i;
+    if (idx < 0 || idx >= N) break;
     const stn     = line.stations[idx];
     const entries = state.stationIndex[normalize(stn.name)] || [];
     if (entries.length >= HUB_THRESHOLD) return stn.name;
@@ -1614,7 +1632,6 @@ function findMajorStation(line, fromIdx, direction) {
   }
   const terminus = step === -1 ? 0 : N - 1;
   if (terminus !== fromIdx) return line.stations[terminus].name;
-  // Already at terminus — show immediate neighbour as last resort
   const nb = fromIdx + step;
   return (nb >= 0 && nb < N) ? line.stations[nb].name : null;
 }
@@ -1672,12 +1689,12 @@ function setStationInput(englishName) {
 
 // Compute display label and hint for a platform using i18n
 function platformLabel(p) {
-  const ln = lineDisplayName(p.lineName);
+  const ln = lineDisplayName(p.displayName || p.lineName);
   if (p.dirKey === 'loopCCW')         return `${ln} — ${t('loopCCW')}`;
   if (p.dirKey === 'loopCW')          return `${ln} — ${t('loopCW')}`;
   if (p.dirKey === 'clockwise')       return `${ln} — ${t('clockwise')}`;
   if (p.dirKey === 'counterclockwise') return `${ln} — ${t('counterclockwise')}`;
-  if (p.dirKey === 'toward')          return `${ln} — ${t('towardStation', { name: stationDisplayName(p.dirStation) })}`;
+  if (p.dirKey === 'toward')          return `${ln} — ${t('towardStation', { name: stationDisplayName(p.hintStation || p.dirStation) })}`;
   return ln;
 }
 function platformHint(p) {
@@ -1761,6 +1778,17 @@ function getCircularPlatforms(line, entry, si, N) {
   return platforms;
 }
 
+function getLineDisplayOverride(line, si, direction) {
+  const ovr = LINE_DISPLAY_OVERRIDE[line.name];
+  if (!ovr || ovr.direction !== direction) return null;
+  const refIdx = line.stations.findIndex(s => s.ja === ovr.afterJa);
+  if (refIdx === -1) return null;
+  // 'start' direction: stations with index > refIdx are "after" the ref going north
+  if (direction === 'start' && si > refIdx) return ovr.name;
+  if (direction === 'end' && si < refIdx) return ovr.name;
+  return null;
+}
+
 function getLinearPlatforms(line, entry, si, N) {
   const platforms = [];
   const branchConfig = LINE_BRANCHES[line.name];
@@ -1769,24 +1797,29 @@ function getLinearPlatforms(line, entry, si, N) {
   if (si > 0) {
     let maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
     if (branchConfig) {
-      const branches = getBranches(line.name, stnJa, line);
+      const branches = getBranches(line.name, stnJa, line, 'start');
       maxS = 0;
       for (const b of branches) {
         const fakeP = { fromIdx: si, direction: 'start', lineIdx: entry.lineIdx };
         maxS = Math.max(maxS, getBranchMaxStops(fakeP, b.branchIndices));
       }
     }
-    if (maxS > 0) platforms.push({
-      dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
-      lineColor: line.color, lineName: line.name,
-      circular: false, direction: 'start',
-      fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxS,
-    });
+    if (maxS > 0) {
+      const p = {
+        dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
+        lineColor: line.color, lineName: line.name,
+        circular: false, direction: 'start',
+        fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxS,
+      };
+      const dn = getLineDisplayOverride(line, si, 'start');
+      if (dn) p.displayName = dn;
+      platforms.push(p);
+    }
   }
   if (si < N - 1) {
     let maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
     if (branchConfig) {
-      const branches = getBranches(line.name, stnJa, line);
+      const branches = getBranches(line.name, stnJa, line, 'end');
       maxE = 0;
       for (const b of branches) {
         const fakeP = { fromIdx: si, direction: 'end', lineIdx: entry.lineIdx };
@@ -2291,7 +2324,7 @@ function rerollStops() {
 function showBranchButtons(p) {
   if (!p || !LINE_BRANCHES[p.lineName]) return false;
   const line = state.lines[p.lineIdx];
-  const branches = getBranches(p.lineName, state.currentStation.ja, line);
+  const branches = getBranches(p.lineName, state.currentStation.ja, line, p.direction);
   if (!branches || branches.length === 0) return false;
 
   // Filter to branches that have stations ahead in our direction
