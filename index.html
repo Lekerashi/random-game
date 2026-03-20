@@ -268,6 +268,10 @@
       border-color: #f59e0b;
       color: #f59e0b;
     }
+    .platform-pill.shinkansen {
+      border-color: #0073CF;
+      color: #0073CF;
+    }
 
     /* ── Train Type Buttons ─────────────────────────── */
     .train-type-row {
@@ -1001,6 +1005,36 @@ const EXPRESS_SERVICES = {
       "Horinouchi","Uraga",
     ]},
   ],
+  "Tokaido Shinkansen": [
+    { name: "Kodama", ja: "こだま", color: "#0073CF", stops: null },
+    { name: "Hikari", ja: "ひかり", color: "#f07000", stops: [
+      "Tokyo","Shinagawa","Shin-Yokohama","Odawara","Shizuoka",
+    ]},
+    { name: "Nozomi", ja: "のぞみ", color: "#e83080", stops: [
+      "Tokyo","Shinagawa","Shin-Yokohama","Shizuoka",
+    ]},
+  ],
+  "Tohoku Shinkansen": [
+    { name: "Nasuno", ja: "なすの", color: "#0073CF", stops: null },
+    { name: "Yamabiko", ja: "やまびこ", color: "#f07000", stops: [
+      "Tokyo","Ueno","Omiya","Utsunomiya",
+    ]},
+    { name: "Tsubasa", ja: "つばさ", color: "#9B59B6", stops: [
+      "Tokyo","Ueno","Omiya","Utsunomiya",
+    ]},
+    { name: "Hayabusa", ja: "はやぶさ", color: "#00B261", stops: [
+      "Tokyo","Ueno","Omiya",
+    ]},
+    { name: "Komachi", ja: "こまち", color: "#e83030", stops: [
+      "Tokyo","Ueno","Omiya",
+    ]},
+  ],
+  "Joetsu Shinkansen": [
+    { name: "Tanigawa", ja: "たにがわ", color: "#0073CF", stops: null },
+    { name: "Toki", ja: "とき", color: "#f07000", stops: [
+      "Tokyo","Ueno","Omiya","Takasaki",
+    ]},
+  ],
 };
 
 // ── Branch definitions for lines with multiple routes ──
@@ -1028,11 +1062,11 @@ const LINE_BRANCHES = {
   // Tokaido through-running: line is reversed to south→north, branches diverge at Ueno
   'JR Tokaido Main Line': [
     { name: 'Tokyo', ja: '東京止まり', color: '#F7A600',
-      stations: ['富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京'] },
+      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京'] },
     { name: 'Utsunomiya', ja: '宇都宮線', color: '#40d46e',
-      stations: ['富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','土呂','東大宮','蓮田','白岡','新白岡','久喜','東鷲宮','栗橋','古河','野木','間々田','小山','小金井','自治医大','石橋','雀宮','宇都宮','岡本','宝積寺','氏家','蒲須坂','片岡','矢板','野崎','西那須野','那須塩原','黒磯'] },
+      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','土呂','東大宮','蓮田','白岡','新白岡','久喜','東鷲宮','栗橋','古河','野木','間々田','小山','小金井','自治医大','石橋','雀宮','宇都宮','岡本','宝積寺','氏家','蒲須坂','片岡','矢板','野崎','西那須野','那須塩原','黒磯'] },
     { name: 'Takasaki', ja: '高崎線', color: '#424d6d',
-      stations: ['富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','宮原','上尾','北上尾','桶川','北本','鴻巣','北鴻巣','吹上','行田','熊谷','籠原','深谷','岡部','本庄','神保原','新町','倉賀野','高崎'] },
+      stations: ['静岡','東静岡','草薙','清水','興津','由比','蒲原','新蒲原','富士川','富士','吉原','東田子の浦','原','片浜','沼津','三島','函南','熱海','湯河原','真鶴','根府川','早川','小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船','戸塚','横浜','川崎','品川','新橋','東京','上野','尾久','赤羽','浦和','さいたま新都心','大宮','宮原','上尾','北上尾','桶川','北本','鴻巣','北鴻巣','吹上','行田','熊谷','籠原','深谷','岡部','本庄','神保原','新町','倉賀野','高崎'] },
     { name: 'Joban', ja: '常磐線', color: '#009BBF',
       stations: ['品川','東京','上野','日暮里','三河島','南千住','北千住','綾瀬','亀有','金町','松戸','北松戸','馬橋','新松戸','北小金','南柏','柏','北柏','我孫子','天王台','取手'] },
   ],
@@ -1070,7 +1104,9 @@ const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 
 // ── Game logic constants ─────────────────────────────────────────────────
 const OEDO_LOOP_END     = 29;    // Nakanozaka junction index (end of loop, start of stem)
-const FLIGHT_PROBABILITY = 0.05; // 5% chance to trigger flight at airport stations
+const FLIGHT_PROBABILITY     = 0.05; // 5% chance to trigger flight at airport stations
+const SHINKANSEN_PROBABILITY = 0.05; // 5% chance to roll shinkansen at shared stations
+const SHINKANSEN_LINES = new Set(['Tokaido Shinkansen', 'Tohoku Shinkansen', 'Joetsu Shinkansen']);
 const PLACES_RADIUS     = 500;   // meters — search radius for nearby bars/cafes
 const EARTH_RADIUS_M    = 6371000;
 const THIRST_THRESHOLD  = 5;     // stations without drinking before extra drink rolls kick in
@@ -1356,6 +1392,11 @@ const LINE_NAMES_JA = {
   'Isumi Railway':               'いすみ鉄道',
   'Choshi Electric Railway Line': '銚子電鉄',
   'Yukarigaoka Line':            'ユーカリが丘線',
+  // Shinkansen
+  'Shinkansen':                  '新幹線',
+  'Tokaido Shinkansen':          '東海道新幹線',
+  'Tohoku Shinkansen':           '東北新幹線',
+  'Joetsu Shinkansen':           '上越新幹線',
 };
 
 // Get display name for a line — Japanese when in JP mode
@@ -1475,6 +1516,8 @@ const translations = {
     drinkHereLabel:       'Drink here!',
     parkHereLabel:        'Enjoy the park!',
     takeFlightLabel:      'Take a flight!',
+    shinkansenLabel:      'Shinkansen!',
+    shinkansenRoll:       '#{n} → 🚅 Shinkansen!',
     // Directions
     loopCCW:              'Loop Counterclockwise',
     loopCW:               'Loop Clockwise',
@@ -1607,6 +1650,8 @@ const translations = {
     drinkHereLabel:       'ここで一杯！',
     parkHereLabel:        '公園を楽しもう！',
     takeFlightLabel:      'フライトに乗ろう！',
+    shinkansenLabel:      '新幹線！',
+    shinkansenRoll:       '#{n} → 🚅 新幹線！',
     loopCCW:              '反時計回り',
     loopCW:               '時計回り',
     towardStation:        '{name}方面',
@@ -1699,7 +1744,7 @@ function switchLang(lang) {
   // Re-render dynamic content that's currently visible
   if (state.currentStation && state.platforms.length > 0) {
     // Refresh platform count text
-    const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight).length;
+    const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight && !p.isShinkansen).length;
     const total = state.platforms.length + (state.extraDrinkNums || 0);
     dom.platformCountText.innerHTML = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
     // Refresh platform grid labels
@@ -1786,6 +1831,12 @@ function refreshPlatformGrid() {
            <span class="platform-num">${i + 1}</span>
            <span>✈️</span>
            <span>${t('takeFlightLabel')}</span>
+         </div>`
+      : p.isShinkansen
+      ? `<div class="platform-pill shinkansen">
+           <span class="platform-num">${i + 1}</span>
+           <span>🚅</span>
+           <span>${t('shinkansenLabel')}<br><small class="text-muted">${platformHint(p)}</small></span>
          </div>`
       : `<div class="platform-pill">
            <span class="platform-num">${i + 1}</span>
@@ -2062,6 +2113,15 @@ const LINE_EXTRA_STATIONS = {
     { name: 'Higashi-Tagonoura', ja: '東田子の浦', lat: 35.1361, lng: 138.7461 },
     { name: 'Yoshiwara',         ja: '吉原',      lat: 35.1439, lng: 138.7023 },
     { name: 'Fuji',              ja: '富士',      lat: 35.1515, lng: 138.6512 },
+    { name: 'Fujikawa',          ja: '富士川',    lat: 35.1283, lng: 138.6187 },
+    { name: 'Shin-Kambara',      ja: '新蒲原',    lat: 35.1101, lng: 138.5775 },
+    { name: 'Kambara',           ja: '蒲原',      lat: 35.1062, lng: 138.5615 },
+    { name: 'Yui',               ja: '由比',      lat: 35.1026, lng: 138.5247 },
+    { name: 'Okitsu',            ja: '興津',      lat: 35.0615, lng: 138.4870 },
+    { name: 'Shimizu',           ja: '清水',      lat: 35.0164, lng: 138.4882 },
+    { name: 'Kusanagi',          ja: '草薙',      lat: 34.9904, lng: 138.4341 },
+    { name: 'Higashi-Shizuoka',  ja: '東静岡',    lat: 34.9805, lng: 138.4144 },
+    { name: 'Shizuoka',          ja: '静岡',      lat: 34.9717, lng: 138.3890 },
   ],
 };
 
@@ -2189,6 +2249,55 @@ function buildIndex(lines, osmNames = {}) {
       ],
     });
   }
+
+  // Tokaido Shinkansen (東海道新幹線) — Tokyo to Shizuoka
+  // Reuse existing station coords where possible for transfer detection
+  const _findStn = (ja) => {
+    for (const l of lines) for (const s of l.stations) if (s.ja === ja) return s;
+    return null;
+  };
+  const _stnCoord = (ja, fallback) => {
+    const s = _findStn(ja);
+    return s ? { lat: s.lat, lng: s.lng } : fallback;
+  };
+  lines.push({
+    name: 'Tokaido Shinkansen', color: '#0073CF',
+    stations: [
+      { name: 'Tokyo',         ja: '東京',   ..._stnCoord('東京',   { lat: 35.6812, lng: 139.7671 }) },
+      { name: 'Shinagawa',     ja: '品川',   ..._stnCoord('品川',   { lat: 35.6284, lng: 139.7387 }) },
+      { name: 'Shin-Yokohama', ja: '新横浜', ..._stnCoord('新横浜', { lat: 35.5064, lng: 139.6176 }) },
+      { name: 'Odawara',       ja: '小田原', ..._stnCoord('小田原', { lat: 35.2564, lng: 139.1551 }) },
+      { name: 'Atami',         ja: '熱海',   ..._stnCoord('熱海',   { lat: 35.1041, lng: 139.0779 }) },
+      { name: 'Mishima',       ja: '三島',   ..._stnCoord('三島',   { lat: 35.1276, lng: 138.9110 }) },
+      { name: 'Shin-Fuji',     ja: '新富士', lat: 35.1415, lng: 138.6654 },
+      { name: 'Shizuoka',      ja: '静岡',   ..._stnCoord('静岡',   { lat: 34.9717, lng: 138.3890 }) },
+    ],
+  });
+
+  // Tohoku Shinkansen (東北新幹線) — Tokyo to Utsunomiya
+  lines.push({
+    name: 'Tohoku Shinkansen', color: '#00B261',
+    stations: [
+      { name: 'Tokyo',      ja: '東京',   ..._stnCoord('東京',   { lat: 35.6812, lng: 139.7671 }) },
+      { name: 'Ueno',       ja: '上野',   ..._stnCoord('上野',   { lat: 35.7138, lng: 139.7770 }) },
+      { name: 'Omiya',      ja: '大宮',   ..._stnCoord('大宮',   { lat: 35.9064, lng: 139.6241 }) },
+      { name: 'Oyama',      ja: '小山',   ..._stnCoord('小山',   { lat: 36.3127, lng: 139.8062 }) },
+      { name: 'Utsunomiya', ja: '宇都宮', ..._stnCoord('宇都宮', { lat: 36.5592, lng: 139.8984 }) },
+    ],
+  });
+
+  // Joetsu Shinkansen (上越新幹線) — Tokyo to Takasaki
+  lines.push({
+    name: 'Joetsu Shinkansen', color: '#E44D93',
+    stations: [
+      { name: 'Tokyo',        ja: '東京',     ..._stnCoord('東京',   { lat: 35.6812, lng: 139.7671 }) },
+      { name: 'Ueno',         ja: '上野',     ..._stnCoord('上野',   { lat: 35.7138, lng: 139.7770 }) },
+      { name: 'Omiya',        ja: '大宮',     ..._stnCoord('大宮',   { lat: 35.9064, lng: 139.6241 }) },
+      { name: 'Kumagaya',     ja: '熊谷',     ..._stnCoord('熊谷',   { lat: 36.1396, lng: 139.3895 }) },
+      { name: 'Honjo-Waseda', ja: '本庄早稲田', lat: 36.2336, lng: 139.1736 },
+      { name: 'Takasaki',     ja: '高崎',     ..._stnCoord('高崎',   { lat: 36.3222, lng: 139.0124 }) },
+    ],
+  });
 
   const nameSet = new Set();
 
@@ -2720,17 +2829,48 @@ function onStationSelected(name, arrivedVia) {
   }
   // Filter out platforms where all destinations have been drunk-at
   allPlatforms = allPlatforms.filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
+  // Separate shinkansen platforms — they get 5% roll treatment like flights
+  // Merge platforms sharing the same next station (same track section)
+  const rawShinkansen = allPlatforms.filter(p => SHINKANSEN_LINES.has(p.lineName));
+  allPlatforms = allPlatforms.filter(p => !SHINKANSEN_LINES.has(p.lineName));
+  const shinkansenByTrack = {};
+  for (const p of rawShinkansen) {
+    const line = state.lines[p.lineIdx];
+    const step = p.direction === 'start' ? -1 : 1;
+    const nextIdx = p.fromIdx + step;
+    const nextJa = (nextIdx >= 0 && nextIdx < line.stations.length) ? line.stations[nextIdx].ja : '';
+    const key = p.direction + ':' + nextJa;
+    (shinkansenByTrack[key] ||= []).push(p);
+  }
+  const shinkansenPlatforms = Object.values(shinkansenByTrack).map(group => {
+    if (group.length === 1) {
+      group[0].isShinkansen = true;
+      return group[0];
+    }
+    // Merged platform: pick best maxStops, store options for random selection when rolled
+    const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
+    return {
+      isShinkansen: true,
+      _shinkansenOptions: group,
+      lineName: 'Shinkansen', lineColor: '#0073CF',
+      direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
+      dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
+      maxStops: Math.max(...group.map(p => p.maxStops)),
+      circular: false,
+    };
+  });
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD) : 0;
   // Airport stations always show a flight option (5% chance when rolled)
   const isAirport = /airport/i.test(name) || stn.ja === '東成田';
   state.platforms = [
     ...allPlatforms,
+    ...shinkansenPlatforms,
     ...(canDrinkHere ? [{ drinkHere: true }] : []),
     ...(isAirport ? [{ takeFlight: true }] : []),
   ];
   state.extraDrinkNums = extraDrinkNums;
-  const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight).length;
+  const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight && !p.isShinkansen).length;
   const total     = state.platforms.length + extraDrinkNums;
 
   // Render platform grid
@@ -2745,18 +2885,26 @@ function rollPlatform() {
   gc('roll-platform');
   dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
-  // Flight: 5% of all rolls at airport stations trigger the flight
+  // Special platforms: shinkansen (5%) and flight (5%) — excluded from normal pool
+  const shinkansenIdxs = state.platforms.map((p, i) => p.isShinkansen ? i : -1).filter(i => i !== -1);
   const flightIdx = state.platforms.findIndex(p => p.takeFlight);
   let roll;
   if (window._forceNextRoll != null) {
     roll = Math.max(1, Math.min(n, window._forceNextRoll));
     window._forceNextRoll = null;
+  } else if (shinkansenIdxs.length && Math.random() < SHINKANSEN_PROBABILITY) {
+    const pick = shinkansenIdxs[Math.floor(Math.random() * shinkansenIdxs.length)];
+    roll = pick + 1;
   } else if (flightIdx !== -1 && Math.random() < FLIGHT_PROBABILITY) {
     roll = flightIdx + 1;
   } else {
     const pool = [];
     const excludeRoll = state._rerollExcludePlatform;
-    for (let i = 1; i <= n; i++) if (i !== flightIdx + 1 && i !== excludeRoll) pool.push(i);
+    const excludeSet = new Set([
+      ...(flightIdx !== -1 ? [flightIdx + 1] : []),
+      ...shinkansenIdxs.map(i => i + 1),
+    ]);
+    for (let i = 1; i <= n; i++) if (!excludeSet.has(i) && i !== excludeRoll) pool.push(i);
     roll = pool.length ? pool[Math.floor(Math.random() * pool.length)] : Math.floor(Math.random() * n) + 1;
   }
   state._rerollExcludePlatform = null;
@@ -2766,6 +2914,14 @@ function rollPlatform() {
     const idx = roll > state.platforms.length ? state.platforms.length - 1 : roll - 1;
     state.selectedPlatform = state.platforms[idx];
     state.rolledPlatformNum = roll;
+
+    // ── Resolve merged shinkansen → pick a random underlying line ────────
+    if (state.selectedPlatform._shinkansenOptions) {
+      const opts = state.selectedPlatform._shinkansenOptions;
+      const pick = opts[Math.floor(Math.random() * opts.length)];
+      pick.isShinkansen = true;
+      state.selectedPlatform = pick;
+    }
     const p = state.selectedPlatform;
 
     // ── Take a flight! ────────────────────────────────────────────────────
@@ -2823,13 +2979,18 @@ function rollPlatform() {
       return;
     }
 
-    // ── Normal train line ─────────────────────────────────────────────────
+    // ── Normal train line (or shinkansen) ──────────────────────────────────
     const pLabel = platformLabel(p);
     const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
     const ln = lineDisplayName(p.lineName);
     const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-      <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
+    if (p.isShinkansen) {
+      dom.diePlatformLabel.innerHTML = `<strong>${t('shinkansenRoll', { n: roll })}</strong> ${dirPart ? ` ${dirPart}` : ''}
+        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
+    } else {
+      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
+        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
+    }
 
     // Show which platform was rolled
     dom.selectedPlatformDot.style.background = p.lineColor;
@@ -2996,9 +3157,29 @@ function showTrainTypeButtons(p) {
     dom.rollStopsRow.style.display = 'flex';
     return false;
   }
+
+  // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi)
+  const grouped = [];
+  for (const tt of trainTypes) {
+    const key = tt.expressIndices ? tt.expressIndices.join(',') : 'local';
+    const existing = grouped.find(g => g._key === key);
+    if (existing) {
+      existing._members.push(tt);
+      existing.name += ' / ' + tt.name;
+      existing.ja += ' / ' + tt.ja;
+    } else {
+      grouped.push({ ...tt, _key: key, _members: [tt] });
+    }
+  }
+
+  if (grouped.length <= 1) {
+    dom.trainTypeRow.style.display = 'none';
+    dom.rollStopsRow.style.display = 'flex';
+    return false;
+  }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
-  const allMax1 = trainTypes.every(t => {
-    return getEffectiveStops(p, { ei: t.expressIndices }).validCount <= 1;
+  const allMax1 = grouped.every(g => {
+    return getEffectiveStops(p, { ei: g.expressIndices }).validCount <= 1;
   });
   if (allMax1) {
     dom.trainTypeRow.style.display = 'none';
@@ -3007,21 +3188,24 @@ function showTrainTypeButtons(p) {
   }
   dom.rollStopsRow.style.display = 'none';
   dom.trainTypeRow.style.display = 'flex';
-  dom.trainTypeRow.innerHTML = trainTypes.map((t, i) => {
-    const ei = t.expressIndices;
+  dom.trainTypeRow.innerHTML = grouped.map((g, i) => {
+    const ei = g.expressIndices;
     const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei });
     // Local (first) button gets full width when there are exactly 3 types
-    const fullWidth = i === 0 && trainTypes.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
-    return `<button class="train-type-btn" style="background:${t.color};${fullWidth}"
-      data-type-name="${t.name}" data-max="${physMax}"${effectiveMax === 0 ? ' disabled' : ''}>
-      ${t.name}<small>${t.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>
+    const fullWidth = i === 0 && grouped.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    return `<button class="train-type-btn" style="background:${g.color};${fullWidth}"
+      data-type-name="${g.name}" data-max="${physMax}"${effectiveMax === 0 ? ' disabled' : ''}>
+      ${g.name}<small>${g.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>
     </button>`;
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
-      state.selectedTrainType = trainTypes[i];
+      // If grouped, randomly pick one of the member services for the label
+      const g = grouped[i];
+      const pick = g._members[Math.floor(Math.random() * g._members.length)];
+      state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
       const effectiveMax = getEffectiveStops(p).validCount;
-      dom.stopsRangeText.textContent = t('trainTypeStops', { name: trainTypes[i].name, ja: trainTypes[i].ja, max: effectiveMax, s: pl(effectiveMax) });
+      dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       rollStops();
     };
@@ -4057,12 +4241,37 @@ function copyToClipboard(text, feedbackBtn) {
             dom.rollStopsBtn.disabled = false;
           }
           // Also rebuild platform grid to reflect updated stop counts
-          state.platforms = getPlatforms(state.currentStation.name)
+          let _allP = getPlatforms(state.currentStation.name)
             .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
+          const _rawShin = _allP.filter(p => SHINKANSEN_LINES.has(p.lineName));
+          _allP = _allP.filter(p => !SHINKANSEN_LINES.has(p.lineName));
+          const _shinByTrack = {};
+          for (const p of _rawShin) {
+            const _line = state.lines[p.lineIdx];
+            const _step = p.direction === 'start' ? -1 : 1;
+            const _ni = p.fromIdx + _step;
+            const _nJa = (_ni >= 0 && _ni < _line.stations.length) ? _line.stations[_ni].ja : '';
+            (_shinByTrack[p.direction + ':' + _nJa] ||= []).push(p);
+          }
+          const _mergedShin = Object.values(_shinByTrack).map(group => {
+            if (group.length === 1) { group[0].isShinkansen = true; return group[0]; }
+            const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
+            return {
+              isShinkansen: true, _shinkansenOptions: group,
+              lineName: 'Shinkansen', lineColor: '#0073CF',
+              direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
+              dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
+              maxStops: Math.max(...group.map(p => p.maxStops)), circular: false,
+            };
+          });
           const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
           const isAirport = /airport/i.test(state.currentStation.name);
-          state.platforms.push(...(canDrinkHere ? [{ drinkHere: true }] : []));
-          state.platforms.push(...(isAirport ? [{ takeFlight: true }] : []));
+          state.platforms = [
+            ..._allP,
+            ..._mergedShin,
+            ...(canDrinkHere ? [{ drinkHere: true }] : []),
+            ...(isAirport ? [{ takeFlight: true }] : []),
+          ];
           refreshPlatformGrid();
         }
       } else {
