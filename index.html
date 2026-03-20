@@ -3149,6 +3149,7 @@ function saveSession() {
     drankAt: [...state.drankAt],
     stationsSinceDrink: state.stationsSinceDrink,
     currentStation,
+    wards23Only: state.wards23Only,
   }));
 }
 
@@ -3169,6 +3170,10 @@ function resumeSession(data) {
   state.history = data.history;
   state.drankAt = new Set(data.drankAt);
   state.stationsSinceDrink = data.stationsSinceDrink;
+  if (data.wards23Only !== undefined) {
+    state.wards23Only = data.wards23Only;
+    dom.wards23Check.checked = data.wards23Only;
+  }
   renderHistory();
 
   // Set up current station so the player can roll again
