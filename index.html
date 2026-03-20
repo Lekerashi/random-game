@@ -833,39 +833,41 @@ const EXPRESS_SERVICES = {
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Nerima","Shakujii-kōen Station","Hoya","Hibarigaoka",
+      "Ikebukuro","Shakujii-kōen Station","Oizumi-gakuen","Hoya","Hibarigaoka",
       "Higashi-Kurume","Kiyose","Akitsu","Tokorozawa",
-      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Irumashi","Hanno",
-      "Higashi-Hannō","Koma","Musashi-Yokote","Higashi-Agano","Agano",
+      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
+      "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
-      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Irumashi","Hanno",
-      "Higashi-Hannō","Koma","Musashi-Yokote","Higashi-Agano","Agano",
+      "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
+      "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
-      "Kotesashi","Irumashi","Hanno",
-      "Higashi-Hannō","Koma","Musashi-Yokote","Higashi-Agano","Agano",
+      "Kotesashi","Iruma-shi","Hanno",
     ]},
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
-      "Shinjuku","Sasazuka","Meidaimae","Chitose-karasuyama","Tsutsujigaoka",
-      "Chofu","Nishi-chofu","Tobitakyu","Musashinodai","Tama-reien",
-      "Higashi-fuchu","Fuchu","Bubaigawara","Nakagawara","Seiseki-sakuragaoka",
-      "Mogusaen","Takahatafudo","Minamidaira","Hirayamajoshi-koen",
+      "Shinjuku","Sasazuka","Meidaimae","Sakurajosui","Chitose-karasuyama",
+      "Sengawa","Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
+      "Bubaigawara","Nakagawara","Seiseki-sakuragaoka","Mogusaen",
+      "Takahatafudo","Minamidaira","Hirayamajoshi-koen",
       "Naganuma","Kitano","Keiō-hachiōji",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Shinjuku","Meidaimae","Chitose-karasuyama","Tsutsujigaoka","Chofu",
-      "Fuchu","Bubaigawara","Seiseki-sakuragaoka","Takahatafudo","Kitano",
-      "Keiō-hachiōji",
+      "Shinjuku","Sasazuka","Meidaimae","Sakurajosui","Chitose-karasuyama",
+      "Sengawa","Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
+      "Bubaigawara","Nakagawara","Seiseki-sakuragaoka","Mogusaen",
+      "Takahatafudo","Minamidaira","Hirayamajoshi-koen",
+      "Naganuma","Kitano","Keiō-hachiōji",
     ]},
     { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
-      "Shinjuku","Meidaimae","Chofu","Fuchu","Seiseki-sakuragaoka",
-      "Takahatafudo","Kitano","Keiō-hachiōji",
+      "Shinjuku","Sasazuka","Meidaimae","Chitose-karasuyama","Chofu",
+      "Fuchu","Bubaigawara","Seiseki-sakuragaoka","Takahatafudo","Kitano",
+      "Keiō-hachiōji",
     ]},
   ],
   "Keio Inokashira line": [
@@ -879,29 +881,29 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Chitose-Funabashi",
-      "Seijogakuen-mae","Noborito","Mukogaoka-Yuen","Shin-Yurigaoka",
-      "Kakio","Tsurukawa","Machida","Sagami-Ono","Soubudai-Mae","Zama",
-      "Ebina","Atsugi","Hon-Atsugi","Isehara","Tsurumaki-Onsen","Tokai-Daigaku-Mae",
-      "Hadano","Shibusawa","Shin-Matsuda","Kaisei","Kayama","Tomizu",
-      "Hotaruda","Ashigara","Odawara",
+      "Soshigaya-Okura","Seijogakuen-mae","Komae","Noborito","Mukogaoka-Yuen",
+      "Ikuta","Yomiuriland-mae","Yurigaoka","Shin-Yurigaoka",
+      "Kakio","Tsurukawa","Tamagawagakuen-mae","Machida","Odakyu-Sagamihara",
+      "Soubudai-Mae","Zama","Ebina","Atsugi","Hon-Atsugi",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Seijogakuen-mae",
-      "Noborito","Shin-Yurigaoka","Machida","Sagami-Ono","Ebina","Hon-Atsugi",
-      "Isehara","Hadano","Shin-Matsuda","Kaisei","Kayama","Tomizu",
-      "Hotaruda","Ashigara","Odawara",
+      "Noborito","Mukogaoka-Yuen","Shin-Yurigaoka","Machida","Sagami-Ono",
+      "Ebina","Hon-Atsugi","Aiko-Ishida","Isehara","Tsurumaki-Onsen",
+      "Tokaidaigaku-mae","Hadano","Shibusawa","Shin-Matsuda","Odawara",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Shin-Yurigaoka","Machida",
-      "Sagami-Ono","Ebina","Hon-Atsugi","Isehara","Shin-Matsuda",
-      "Kaisei","Kayama","Tomizu","Hotaruda","Ashigara","Odawara",
+      "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Noborito","Shin-Yurigaoka",
+      "Machida","Sagami-Ono","Ebina","Hon-Atsugi","Aiko-Ishida","Isehara",
+      "Tsurumaki-Onsen","Tokaidaigaku-mae","Hadano","Shibusawa",
+      "Shin-Matsuda","Odawara",
     ]},
   ],
   "Tokyu Toyoko Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Shibuya","Naka-meguro","Gakugei-daigaku","Jiyugaoka","Den-en-chofu",
-      "Musashi-Kosugi","Hiyoshi","Tsunashima","Kikuna","Yokohama",
+      "Tamagawa","Musashi-Kosugi","Hiyoshi","Tsunashima","Kikuna","Yokohama",
     ]},
     { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
       "Shibuya","Naka-meguro","Jiyugaoka","Musashi-Kosugi","Hiyoshi",
@@ -911,72 +913,82 @@ const EXPRESS_SERVICES = {
   "Tokyu Den-en-toshi Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Shibuya","Ikejiri-ohashi","Sangen-jaya","Futako-tamagawa",
-      "Mizonokuchi","Saginuma","Tama-plaza","Azamino","Eda","Ichigao",
-      "Fujigaoka","Aobadai","Tana","Nagatsuta","Tsukushino","Suzukakedai",
+      "Shibuya","Ikejiri-ohashi","Sangen-jaya","Komazawa-daigaku",
+      "Sakura-shimmachi","Yoga","Futako-tamagawa","Mizonokuchi","Saginuma",
+      "Tama-plaza","Azamino","Aobadai","Nagatsuta","Tsukushino","Suzukakedai",
       "Minami-machida","Tsukimino","Chuo-Rinkan",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Shibuya","Sangen-jaya","Futako-tamagawa","Mizonokuchi","Saginuma",
-      "Tama-plaza","Azamino","Nagatsuta","Chuo-Rinkan",
+      "Tama-plaza","Azamino","Aobadai","Nagatsuta","Minami-machida",
+      "Chuo-Rinkan",
     ]},
   ],
   "Tobu Tojo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Narimasu","Wakoshi","Asaka","Asakadai","Shiki",
-      "Fujimino","Kami-fukuoka","Kawagoe","Kawagoeshi",
+      "Ikebukuro","Kami-itabashi","Narimasu","Wakoshi","Asaka","Asakadai",
+      "Shiki","Fujimino","Kami-fukuoka","Kawagoe","Kawagoeshi",
       "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
       "Ogawamachi","Yorii",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Ikebukuro","Wakoshi","Asakadai","Kawagoe","Kawagoeshi",
+      "Ikebukuro","Wakoshi","Asaka","Asakadai","Kawagoe","Kawagoeshi",
       "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
       "Ogawamachi","Yorii",
     ]},
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
-      "Ikebukuro","Wakoshi","Kawagoe","Kawagoeshi","Sakado",
-      "Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
-      "Ogawamachi","Yorii",
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
+      "Ikebukuro","Wakoshi","Asakadai","Kawagoe","Kawagoeshi",
+      "Kasumigaseki (Kawagoe)","Tsurugashima","Wakaba","Sakado",
+      "Kita Sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
+      "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},
   ],
   "Tobu Isesaki Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
-      "Asakusa","TOKYO SKYTREE","Oshiage 'SKYTREE'","Hikifune","Kita-Senju",
-      "Nishiarai","Takenotsuka","Soka","Shin-koshigaya","Koshigaya",
-      "Sengendai","Kasukabe","Tobu Dobutsu-Koen","Kuki","Washinomiya",
-      "Hanyu","Tatebayashi",
+      "Asakusa","TOKYO SKYTREE","Hikifune","Higashi-mukojima",
+      "Kanegafuchi","Horikiri","Ushida","Kita-Senju","Nishiarai","Soka",
+      "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
+      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki","Washinomiya",
+      "Hanasaki","Kazo","Minami-Hanyu","Hanyu","Kawamata","Morinji-mae",
+      "Tatebayashi",
     ]},
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Asakusa","TOKYO SKYTREE","Oshiage 'SKYTREE'","Hikifune","Kita-Senju",
-      "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu Dobutsu-Koen","Kuki","Washinomiya","Hanyu","Tatebayashi",
+      "Oshiage 'SKYTREE'","Hikifune","Kita-Senju","Nishiarai","Soka",
+      "Shin-koshigaya","Koshigaya","Kita-koshigaya","Obukuro","Sengendai",
+      "Takesato","Ichinowari","Kasukabe","Kita-Kasukabe","Himemiya",
+      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Asakusa","TOKYO SKYTREE","Oshiage 'SKYTREE'","Kita-Senju",
+      "Oshiage 'SKYTREE'","Hikifune","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu Dobutsu-Koen","Kuki","Washinomiya","Hanyu","Tatebayashi",
+      "Tobu dobutsu-koen (Tobu Zoo)",
     ]},
   ],
   "Keisei Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
-      "Keisei-Ueno","Nippori","Aoto","Keisei Takasago","Keisei Yawata",
-      "Keisei Funabashi","Keisei Tsudanuma","Yachiyodai","Katsutadai",
-      "Yūkarigaoka","Keisei-Sakura","Keisei-Narita",
+      "Keisei-Ueno","Nippori","Senjuohashi","Aoto","Keisei Takasago",
+      "Keisei Koiwa","Edogawa","Konodai","Ichikawamama","Sugano",
+      "Keisei Yawata","Onigoe","Keisei-Nakayama","Higashi-Nakayama",
+      "Keisei Nishifuna","Kaijin","Keisei Funabashi","Daijingu-Shita",
+      "Funabashi-Keibajo","Yatsu","Keisei Tsudanuma","Keisei-Okubo",
+      "Mimomi","Yachiyodai","Keisei-Owada","Katsutadai","Shizu",
+      "Yūkarigaoka","Keisei-Usui","Keisei-Sakura","Osakura",
+      "Keisei-Shisui","Sogosando","Kozunomori","Keisei-Narita",
       "Airport Second Building (NRT Terminal 2)","Narita Airport (NRT Terminal 1)",
     ]},
     { name: "Rapid Ltd", ja: "快速特急", color: "#f07000", stops: [
       "Keisei-Ueno","Nippori","Aoto","Keisei Takasago","Keisei Yawata",
-      "Keisei Funabashi","Keisei Tsudanuma","Yachiyodai","Keisei-Sakura",
-      "Keisei-Narita","Airport Second Building (NRT Terminal 2)",
-      "Narita Airport (NRT Terminal 1)",
+      "Keisei Funabashi","Keisei Tsudanuma","Yachiyodai","Katsutadai",
+      "Keisei-Sakura","Keisei-Narita",
+      "Airport Second Building (NRT Terminal 2)","Narita Airport (NRT Terminal 1)",
     ]},
   ],
   "Keikyu Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Airport Exp", ja: "エアポート急行", color: "#e83030", stops: [
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
       "Keikyu Kawasaki","Keikyu Tsurumi","Kanagawa-shimmachi","Yokohama",
       "Kamiooka","Sugita","Nokendai","Kanazawa-bunko","Kanazawa-Hakkei",
@@ -1019,6 +1031,10 @@ const STATION_ALIASES = {
   "Musashi-Mizonokuchi":        ["Mizonokuchi"],
   "Harajuku":                   ["Meiji-jingumae 'Harajuku'"],
   "Meiji-jingumae 'Harajuku'":  ["Harajuku"],
+  "Tamachi":                    ["Mita"],
+  "Mita":                       ["Tamachi"],
+  "Daimon":                     ["Hamamatsucho"],
+  "Hamamatsucho":               ["Daimon"],
 };
 
 // Walkable connections — stations linked by walkway, not rail transfer.
@@ -2751,6 +2767,8 @@ function rerollStops() {
   if (state.history.length > 0 && state.destination) {
     state.history.pop();
     renderHistory();
+    // Undo drankAt for the destination we're un-arriving from
+    state.drankAt.delete(normalize(state.destination.name));
   }
   // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
   state._rerollExcludeStops = state.rolledStops;
