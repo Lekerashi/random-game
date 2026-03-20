@@ -2147,7 +2147,16 @@ function rollPlatform() {
     // ── Resolve merged shinkansen → pick a random underlying line ────────
     if (state.selectedPlatform._shinkansenOptions) {
       const opts = state.selectedPlatform._shinkansenOptions;
-      const pick = opts[Math.floor(Math.random() * opts.length)];
+      let pick;
+      if (window._forceNextShinkansenLine != null) {
+        const fi = typeof window._forceNextShinkansenLine === 'number'
+          ? window._forceNextShinkansenLine
+          : opts.findIndex(o => o.lineName.toLowerCase().includes(String(window._forceNextShinkansenLine).toLowerCase()));
+        pick = opts[Math.max(0, Math.min(opts.length - 1, fi))];
+        window._forceNextShinkansenLine = null;
+      } else {
+        pick = opts[Math.floor(Math.random() * opts.length)];
+      }
       pick.isShinkansen = true;
       state.selectedPlatform = pick;
     }
@@ -2379,12 +2388,15 @@ function showTrainTypeButtons(p) {
     }
   }
 
-  if (grouped.length <= 1) {
+  // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya)
+  const reachable = grouped.filter(g => getEffectiveStops(p, { ei: g.expressIndices }).validCount > 0);
+
+  if (reachable.length <= 1) {
     showRollStopsUI();
     return false;
   }
   // If every type has max 1 stop (e.g. one stop from terminus), skip the picker
-  const allMax1 = grouped.every(g => {
+  const allMax1 = reachable.every(g => {
     return getEffectiveStops(p, { ei: g.expressIndices }).validCount <= 1;
   });
   if (allMax1) {
@@ -2392,22 +2404,22 @@ function showTrainTypeButtons(p) {
     return false;
   }
   showTrainTypeUI();
-  dom.trainTypeRow.innerHTML = grouped.map((g, i) => {
+  dom.trainTypeRow.innerHTML = reachable.map((g, i) => {
     const ei = g.expressIndices;
     const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei });
     // Local (first) button gets full width when there are exactly 3 types
-    const fullWidth = i === 0 && grouped.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    const fullWidth = i === 0 && reachable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${g.color};${fullWidth}"
-      data-type-name="${g.name}" data-max="${physMax}"${effectiveMax === 0 ? ' disabled' : ''}>
+      data-type-name="${g.name}" data-max="${physMax}">
       ${currentLang === 'ja'
-        ? `${g.ja}<small>${g.name} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>`
-        : `${g.name}<small>${g.ja} · ${effectiveMax > 0 ? `1–${effectiveMax}` : '—'}</small>`}
+        ? `${g.ja}<small>${g.name} · 1–${effectiveMax}</small>`
+        : `${g.name}<small>${g.ja} · 1–${effectiveMax}</small>`}
     </button>`;
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       // If grouped, randomly pick one of the member services for the label
-      const g = grouped[i];
+      const g = reachable[i];
       const pick = g._members[Math.floor(Math.random() * g._members.length)];
       state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
       const effectiveMax = getEffectiveStops(p).validCount;
