@@ -1096,7 +1096,11 @@ _langRefreshers.push(function refreshSelectedPlatform() {
 
 _langRefreshers.push(function refreshTrainTypeButtons() {
   if (state.selectedPlatform && !state.selectedTrainType && dom.trainTypeRow.style.display !== 'none') {
-    showTrainTypeButtons(state.selectedPlatform);
+    if (!state.selectedBranch && LINE_BRANCHES[state.selectedPlatform.lineName]) {
+      showBranchButtons(state.selectedPlatform);
+    } else {
+      showTrainTypeButtons(state.selectedPlatform);
+    }
   }
 });
 
@@ -1188,7 +1192,7 @@ function refreshPlatformGrid() {
       : `<div class="platform-pill">
            <span class="platform-num">${i + 1}</span>
            <span class="line-dot" style="background:${p.lineColor}"></span>
-           <span>${lineDisplayName(p.lineName)}<br><small class="text-muted">${platformHint(p)}</small></span>
+           <span>${lineDisplayName(p.displayName || p.lineName)}<br><small class="text-muted">${platformHint(p)}</small></span>
          </div>`
   ).join('');
 }
@@ -1480,12 +1484,21 @@ function buildIndex(lines, osmNames = {}) {
     });
   }
 
-  // Tokaido Shinkansen (東海道新幹線) — Tokyo to Shizuoka
   // Reuse existing station coords where possible for transfer detection
   const _findStn = (ja) => {
     for (const l of lines) for (const s of l.stations) if (s.ja === ja) return s;
     return null;
   };
+
+  // Keikyu Airport Line through-running: prepend Shinagawa-side, append Yokohama-side
+  const keikyuAirport = lines.find(l => l.name === 'Keikyu Airport Line');
+  if (keikyuAirport) {
+    const resolve = (jaList) => jaList.map(ja => _findStn(ja)).filter(Boolean);
+    keikyuAirport.stations.unshift(...resolve(KEIKYU_AIRPORT_PREPEND));
+    keikyuAirport.stations.push(...resolve(KEIKYU_AIRPORT_APPEND));
+  }
+
+  // Tokaido Shinkansen (東海道新幹線) — Tokyo to Shizuoka
   const _stnCoord = (ja, fallback) => {
     const s = _findStn(ja);
     return s ? { lat: s.lat, lng: s.lng } : fallback;
@@ -1596,6 +1609,8 @@ const ANCHOR_STATIONS = new Set([
   // Major JR hubs outside central Tokyo
   'Yokohama', 'Kawasaki', 'Omiya', 'Tachikawa', 'Hachioji',
   'Ofuna', 'Chiba', 'Kashiwa', 'Funabashi', 'Machida', 'Kichijoji',
+  // Private railway hubs
+  'Keikyu Kamata',
 ]);
 
 function findMajorStation(line, fromIdx, direction) {
@@ -1779,13 +1794,16 @@ function getCircularPlatforms(line, entry, si, N) {
 }
 
 function getLineDisplayOverride(line, si, direction) {
-  const ovr = LINE_DISPLAY_OVERRIDE[line.name];
-  if (!ovr || ovr.direction !== direction) return null;
-  const refIdx = line.stations.findIndex(s => s.ja === ovr.afterJa);
-  if (refIdx === -1) return null;
-  // 'start' direction: stations with index > refIdx are "after" the ref going north
-  if (direction === 'start' && si > refIdx) return ovr.name;
-  if (direction === 'end' && si < refIdx) return ovr.name;
+  const entries = LINE_DISPLAY_OVERRIDE[line.name];
+  if (!entries) return null;
+  const list = Array.isArray(entries) ? entries : [entries];
+  for (const ovr of list) {
+    if (ovr.direction !== direction) continue;
+    const refIdx = line.stations.findIndex(s => s.ja === ovr.afterJa);
+    if (refIdx === -1) continue;
+    if (direction === 'start' && si > refIdx) return ovr.name;
+    if (direction === 'end' && (ovr.inclusive ? si >= refIdx : si > refIdx)) return ovr.name;
+  }
   return null;
 }
 
@@ -1798,15 +1816,24 @@ function getLinearPlatforms(line, entry, si, N) {
     let maxS = state.wards23Only ? wardMaxStops(line, si, -1) : si;
     if (branchConfig) {
       const branches = getBranches(line.name, stnJa, line, 'start');
-      maxS = 0;
-      for (const b of branches) {
-        const fakeP = { fromIdx: si, direction: 'start', lineIdx: entry.lineIdx };
-        maxS = Math.max(maxS, getBranchMaxStops(fakeP, b.branchIndices));
+      if (branches.length > 0) {
+        maxS = 0;
+        for (const b of branches) {
+          const fakeP = { fromIdx: si, direction: 'start', lineIdx: entry.lineIdx };
+          maxS = Math.max(maxS, getBranchMaxStops(fakeP, b.branchIndices));
+        }
       }
     }
     if (maxS > 0) {
+      let startHint = findMajorStation(line, si, 'start');
+      if (branchConfig) {
+        const startBranches = getBranches(line.name, stnJa, line, 'start');
+        if (startBranches.length === 1) {
+          startHint = line.stations[startBranches[0].branchIndices[0]]?.name || startHint;
+        }
+      }
       const p = {
-        dirKey: 'toward', dirStation: line.stations[0].name, hintStation: findMajorStation(line, si, 'start'),
+        dirKey: 'toward', dirStation: line.stations[0].name, hintStation: startHint,
         lineColor: line.color, lineName: line.name,
         circular: false, direction: 'start',
         fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxS,
@@ -1820,18 +1847,34 @@ function getLinearPlatforms(line, entry, si, N) {
     let maxE = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1 - si;
     if (branchConfig) {
       const branches = getBranches(line.name, stnJa, line, 'end');
-      maxE = 0;
-      for (const b of branches) {
-        const fakeP = { fromIdx: si, direction: 'end', lineIdx: entry.lineIdx };
-        maxE = Math.max(maxE, getBranchMaxStops(fakeP, b.branchIndices));
+      if (branches.length > 0) {
+        maxE = 0;
+        for (const b of branches) {
+          const fakeP = { fromIdx: si, direction: 'end', lineIdx: entry.lineIdx };
+          maxE = Math.max(maxE, getBranchMaxStops(fakeP, b.branchIndices));
+        }
       }
     }
-    if (maxE > 0) platforms.push({
-      dirKey: 'toward', dirStation: line.stations[N - 1].name, hintStation: findMajorStation(line, si, 'end'),
-      lineColor: line.color, lineName: line.name,
-      circular: false, direction: 'end',
-      fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxE,
-    });
+    if (maxE > 0) {
+      let endHint = findMajorStation(line, si, 'end');
+      // When a single end-direction branch limits the route, use its terminus as hint
+      if (branchConfig) {
+        const endBranches = getBranches(line.name, stnJa, line, 'end');
+        if (endBranches.length === 1) {
+          const lastIdx = endBranches[0].branchIndices[endBranches[0].branchIndices.length - 1];
+          endHint = line.stations[lastIdx]?.name || endHint;
+        }
+      }
+      const p = {
+        dirKey: 'toward', dirStation: line.stations[N - 1].name, hintStation: endHint,
+        lineColor: line.color, lineName: line.name,
+        circular: false, direction: 'end',
+        fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxE,
+      };
+      const dn = getLineDisplayOverride(line, si, 'end');
+      if (dn) p.displayName = dn;
+      platforms.push(p);
+    }
   }
   return platforms;
 }
@@ -1920,6 +1963,13 @@ function getDestination(platform, stops) {
 
 // ── Roll Animation ────────────────────────────────────────────────────────
 function animateRoll(min, max, finalValue, el, onComplete) {
+  if (window._skipAnimation) {
+    el.textContent = finalValue;
+    el.classList.remove('rolling');
+    el.classList.add('landed');
+    onComplete();
+    return;
+  }
   const steps   = [50, 70, 100, 140, 200, 280, 380, 500];
   let stepIdx   = 0;
 
@@ -2366,12 +2416,16 @@ function showBranchButtons(p) {
 
   // Show branch picker buttons
   showTrainTypeUI();
+  const hasExpress = !!EXPRESS_SERVICES[p.lineName];
   dom.trainTypeRow.innerHTML = viable.map((b, i) => {
     const effectiveMax = getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount;
     const fullWidth = i === 0 && viable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    const stopLabel = hasExpress ? '' : ` · ${effectiveMax > 0 ? '1\u2013' + effectiveMax : '\u2014'}`;
     return `<button class="train-type-btn" style="background:${b.color};${fullWidth}"
       ${effectiveMax === 0 ? ' disabled' : ''}>
-      ${b.name}<small>${b.ja} · ${effectiveMax > 0 ? '1\u2013' + effectiveMax : '\u2014'}</small>
+      ${currentLang === 'ja'
+        ? `${b.ja}<small>${b.name}${stopLabel}</small>`
+        : `${b.name}<small>${b.ja}${stopLabel}</small>`}
     </button>`;
   }).join('');
 

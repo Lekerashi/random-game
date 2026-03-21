@@ -190,15 +190,24 @@ const EXPRESS_SERVICES = {
   ],
   "Keikyu Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    { name: "Ltd. Express", ja: "特急", color: "#e84040", stops: [
       "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
-      "Keikyu Kawasaki","Keikyu Tsurumi","Kanagawa-shimmachi","Yokohama",
+      "Keikyu Kawasaki","Kanagawa-shimmachi","Yokohama",
       "Kamiooka","Sugita","Nokendai","Kanazawa-bunko","Kanazawa-Hakkei",
+      "Yokosuka-chuo","Horinouchi","Uraga",
     ]},
-    { name: "Ltd. Exp", ja: "快特", color: "#e83080", stops: [
+    { name: "Rapid Ltd. Exp", ja: "快特", color: "#e83080", stops: [
       "Sengakuji","Shinagawa","Keikyu Kamata","Keikyu Kawasaki","Yokohama",
       "Kamiooka","Kanazawa-bunko","Kanazawa-Hakkei","Yokosuka-chuo",
       "Horinouchi","Uraga",
+    ]},
+  ],
+  "Keikyu Airport Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Airport Exp", ja: "エアポート急行", color: "#e83030", stops: [
+      "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
+      "Kojiya","Otorii","Anamori-Inari","Tenkubashi",
+      "Haneda Airport Terminal 3","Haneda Airport Terminal 1 & 2",
     ]},
   ],
   "Tokaido Shinkansen": [
@@ -255,6 +264,18 @@ const LINE_BRANCHES = {
     { name: 'Hamakawasaki', ja: '浜川崎方面', color: '#c8a048',
       stations: ['川崎','尻手','八丁畷','川崎新町','小田栄','浜川崎'] },
   ],
+  // Keikyu Airport Line: from Haneda, trains split at Keikyu Kamata
+  // toward Shinagawa (north) or Yokohama (south)
+  'Keikyu Airport Line': [
+    // From Haneda (start direction): split at Keikyu Kamata
+    { name: 'Shinagawa', ja: '品川方面', color: '#e57053', direction: 'start',
+      stations: ['泉岳寺','品川','北品川','新馬場','青物横丁','鮫洲','立会川','大森海岸','平和島','大森町','梅屋敷','京急蒲田','糀谷','大鳥居','穴守稲荷','天空橋','羽田空港国際線ターミナル','羽田空港国内線ターミナル'] },
+    { name: 'Yokohama', ja: '横浜方面', color: '#1a8fe8', direction: 'start',
+      stations: ['横浜','神奈川','仲木戸','神奈川新町','子安','京急新子安','生麦','花月園前','京急鶴見','鶴見市場','八丁畷','京急川崎','六郷土手','雑色','京急蒲田','糀谷','大鳥居','穴守稲荷','天空橋','羽田空港国際線ターミナル','羽田空港国内線ターミナル'] },
+    // From Shinagawa side (end direction): only airport route (not Yokohama appendage)
+    { name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8', direction: 'end',
+      stations: ['泉岳寺','品川','北品川','新馬場','青物横丁','鮫洲','立会川','大森海岸','平和島','大森町','梅屋敷','京急蒲田','糀谷','大鳥居','穴守稲荷','天空橋','羽田空港国際線ターミナル','羽田空港国内線ターミナル'] },
+  ],
   // Tokaido through-running: line is reversed to south→north.
   // Northbound branches (direction:'end') diverge at Omiya/Ueno.
   // Southbound branches (direction:'start') represent train termini going toward Tokyo/beyond.
@@ -284,7 +305,10 @@ const LINE_BRANCHES = {
 // ── Line display name overrides by direction ──
 // At northern through-running stations, southbound Tokaido is branded "Ueno Tokyo Line"
 const LINE_DISPLAY_OVERRIDE = {
-  'JR Tokaido Main Line': { direction: 'start', afterJa: '東京', name: 'Ueno Tokyo Line' },
+  'JR Tokaido Main Line': [
+    { direction: 'start', afterJa: '東京', name: 'Ueno Tokyo Line' },
+    { direction: 'end',   afterJa: '東京', name: 'Ueno Tokyo Line', inclusive: true },
+  ],
 };
 
 // ── Station Aliases (physically connected stations with different names) ──

@@ -3,6 +3,18 @@ const LINE_NAME_FIXES = {};
 // Stations prepended to the beginning of lines
 const LINE_PREPEND_STATIONS = {};
 
+// Keikyu Airport through-running: main line station names (ja)
+// Prepend: north of Keikyu Kamata (toward Shinagawa/Sengakuji)
+// Append: south of Keikyu Kamata (toward Yokohama)
+const KEIKYU_AIRPORT_PREPEND = [
+  '泉岳寺','品川','北品川','新馬場','青物横丁','鮫洲','立会川',
+  '大森海岸','平和島','大森町','梅屋敷',
+];
+const KEIKYU_AIRPORT_APPEND = [
+  '雑色','六郷土手','京急川崎','八丁畷','鶴見市場','京急鶴見',
+  '花月園前','生麦','京急新子安','子安','神奈川新町','仲木戸','神奈川','横浜',
+];
+
 // Stations appended to the end of lines
 const LINE_EXTRA_STATIONS = {
   'JR Tokaido Main Line': [
