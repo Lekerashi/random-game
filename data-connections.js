@@ -193,14 +193,14 @@ const LINE_CONNECTIONS = [
     express: [
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['Hanno','Kotesashi','Nishi-Tokorozawa','Tokorozawa',
-                'Hibarigaoka','Shakujii-kōen Station','Nerima','Kotake-mukaihara'] },
+                'Hibarigaoka','Shakujii-kōen','Nerima','Kotake-mukaihara'] },
     ] },
   { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'end',
     to:   'Seibu Yurakucho Line', toEnd: '練馬',
     express: [
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['Hanno','Kotesashi','Nishi-Tokorozawa','Tokorozawa',
-                'Hibarigaoka','Shakujii-kōen Station','Nerima','Kotake-mukaihara'] },
+                'Hibarigaoka','Shakujii-kōen','Nerima','Kotake-mukaihara'] },
     ] },
 
   // ── Fukutoshin ↔ Tokyu Toyoko at Shibuya ──────────────────────────────

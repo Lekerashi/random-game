@@ -1269,7 +1269,8 @@ function normalize(s) {
   return (s || '').toLowerCase()
     .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
     .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i')
-    .replace(/[\s\-]+/g, '');
+    .replace(/[\s\-']+/g, '')
+    .replace(/station$/, '');
 }
 
 function haversineM(lat1, lng1, lat2, lng2) {
@@ -1470,10 +1471,10 @@ function buildIndex(lines, osmNames = {}) {
     }
   }
 
-  // Normalize Oshiage station names — same physical station, different bracket styles in upstream
-  // 押上〈スカイツリー前〉 (Hanzomon/Tobu) vs 押上（スカイツリー前） (Keisei/Toei)
+  // Fix upstream station name quirks
   for (const l of lines) {
     for (const s of l.stations) {
+      // Normalize Oshiage bracket styles to one canonical form
       if (s.ja === '押上（スカイツリー前）' || s.ja === '押上〈スカイツリー前〉') {
         s.name = 'Oshiage (Skytree)';
         s.ja = '押上(スカイツリー前)';
@@ -1561,6 +1562,8 @@ function buildIndex(lines, osmNames = {}) {
       // OSM name:en overrides the pre-baked fix from the build step
       const osmEn = osmNames[stn.ja];
       if (osmEn) stn.name = osmEn;
+      // Strip "Station" suffix from bad upstream translations
+      if (stn.name.endsWith(' Station')) stn.name = stn.name.slice(0, -8);
 
       const key = normalize(stn.name);
       nameSet.add(stn.name);

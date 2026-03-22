@@ -35,18 +35,18 @@ const EXPRESS_SERVICES = {
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Oizumi-gakuen","Hoya","Hibarigaoka",
+      "Ikebukuro","Shakujii-kōen","Oizumi-gakuen","Hoya","Hibarigaoka",
       "Higashi-Kurume","Kiyose","Akitsu","Tokorozawa",
       "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
       "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
+      "Ikebukuro","Shakujii-kōen","Hibarigaoka","Tokorozawa",
       "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
       "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Ikebukuro","Shakujii-kōen Station","Hibarigaoka","Tokorozawa",
+      "Ikebukuro","Shakujii-kōen","Hibarigaoka","Tokorozawa",
       "Kotesashi","Iruma-shi","Hanno",
     ]},
   ],
