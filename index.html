@@ -1607,7 +1607,10 @@ function resolveConnections() {
   for (const conn of LINE_CONNECTIONS) {
     const fromLine = state.lines.find(l => l.name === conn.from);
     const toLine   = state.lines.find(l => l.name === conn.to);
-    if (!fromLine || !toLine) continue;
+    if (!fromLine || !toLine) {
+      console.warn(`[CONNECTION] Line not found: from="${conn.from}"${!fromLine ? ' (missing)' : ''}, to="${conn.to}"${!toLine ? ' (missing)' : ''}`);
+      continue;
+    }
 
     const fromLineIdx = state.lines.indexOf(fromLine);
     const toLineIdx   = state.lines.indexOf(toLine);
@@ -1630,7 +1633,10 @@ function resolveConnections() {
       toJunctionIdx = toLine.stations.findIndex(s => s.ja === conn.toStation);
     }
 
-    if (fromJunctionIdx === -1 || toJunctionIdx === -1) continue;
+    if (fromJunctionIdx === -1 || toJunctionIdx === -1) {
+      console.warn(`[CONNECTION] Junction not found: "${conn.from}" ${conn.fromEnd || conn.fromStation || '?'}(idx=${fromJunctionIdx}), "${conn.to}" ${conn.toEnd || conn.toStation || '?'}(idx=${toJunctionIdx})`);
+      continue;
+    }
 
     // Determine which direction the source line approaches the junction from
     // 'start' means the junction is at index 0 (or near start), 'end' means at N-1
@@ -1647,11 +1653,12 @@ function resolveConnections() {
     const viaStations = [];
     if (conn.via) {
       for (const ja of conn.via) {
-        // Find this station in any line for coords
+        let found = false;
         for (const l of state.lines) {
           const s = l.stations.find(st => st.ja === ja);
-          if (s) { viaStations.push(s); break; }
+          if (s) { viaStations.push(s); found = true; break; }
         }
+        if (!found) console.warn(`[CONNECTION] Via station not found: "${ja}" in ${conn.from}→${conn.to}`);
       }
     }
 
@@ -1660,6 +1667,7 @@ function resolveConnections() {
     if (conn.destinations) {
       destinations = conn.destinations.map(d => {
         const untilIdx = toLine.stations.findIndex(s => s.ja === d.until);
+        if (untilIdx === -1) console.warn(`[CONNECTION] Destination not found: until="${d.until}" on "${conn.to}"`);
         return { ...d, untilIdx };
       }).filter(d => d.untilIdx !== -1);
     }
@@ -1673,14 +1681,19 @@ function resolveConnections() {
       }));
     }
 
+    let toUntilIdx = -1;
+    if (conn.toUntil) {
+      toUntilIdx = toLine.stations.findIndex(s => s.ja === conn.toUntil);
+      if (toUntilIdx === -1) console.warn(`[CONNECTION] toUntil not found: "${conn.toUntil}" on "${conn.to}"`);
+    }
+
     state.connections.push({
       from: conn.from, fromLineIdx, fromJunctionIdx, fromDir,
       to: conn.to, toLineIdx, toJunctionIdx, toDir,
       viaStations,
       name: conn.name, ja: conn.ja, color: conn.color,
       displayName: conn.displayName,
-      toUntilIdx: conn.toUntil ? toLine.stations.findIndex(s => s.ja === conn.toUntil) : -1,
-      destinations, express,
+      toUntilIdx, destinations, express,
     });
   }
 }
@@ -1747,6 +1760,91 @@ function getConnectionStations(conn, maxStops) {
 // Count effective via stations (skip any matching the starting station name)
 function effectiveViaCount(conn, startStationName) {
   return conn.viaStations.filter(v => v.name !== startStationName).length;
+}
+
+// Find onward connections from a connection's target line far terminus.
+// Used for chained through-running (e.g. Seibu → Fukutoshin → Toyoko).
+// Returns [] if the connection has a toUntil limit (chain stops there).
+function getOnwardConnections(conn) {
+  const toLine = state.lines[conn.toLineIdx];
+  if (!toLine || conn.toUntilIdx >= 0) return [];
+  const farIdx = conn.toDir === 'start' ? 0 : toLine.stations.length - 1;
+  return state.connections.filter(c =>
+    c.from === conn.to && c.fromJunctionIdx === farIdx);
+}
+
+// Compute max additional stops available through terminus connections.
+// Follows chained connections recursively (with cycle detection).
+function computeConnectionExtra(connections, stationName, visited) {
+  if (!visited) visited = new Set();
+  let extra = 0;
+  for (const conn of connections) {
+    if (visited.has(conn.to)) continue;
+    const via = effectiveViaCount(conn, stationName);
+    const target = getConnectionMaxStops(conn);
+    let chainExtra = 0;
+    const nextVisited = new Set(visited);
+    nextVisited.add(conn.to);
+    const onward = getOnwardConnections(conn);
+    if (onward.length > 0) {
+      chainExtra = computeConnectionExtra(onward, '', nextVisited);
+    }
+    extra = Math.max(extra, via + target + chainExtra);
+  }
+  return extra;
+}
+
+// Resolve connection express services to train types with target-line indices.
+// Returns array of resolved types ready for the trainTypes list.
+function resolveConnectionExpress(connExInfo, platform, line) {
+  const { express, targetLineIdx, targetLine, connObj } = connExInfo;
+  if (!targetLine) return [];
+  const results = [];
+  const currentName = state.currentStation.name;
+
+  for (const ex of express) {
+    if (ex.stops === null) {
+      // Local service — all stations, no express filtering on target line
+      const localMax = connObj
+        ? Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx) + getConnectionMaxStops(connObj)
+        : platform.maxStops;
+      results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
+      continue;
+    }
+    const joinedNames = new Set(ex.stops.map(s => normalize(s)));
+    if (!joinedNames.has(normalize(currentName))) continue;
+    // Target line express indices
+    const targetIndices = [];
+    for (let i = 0; i < targetLine.stations.length; i++) {
+      if (joinedNames.has(normalize(targetLine.stations[i].name))) targetIndices.push(i);
+    }
+    // Compute total max: source-line express to junction + target express from junction
+    let totalMax = platform.maxStops; // fallback
+    if (connObj) {
+      // Count source-line express stops between player and junction
+      const srcEi = [];
+      for (let i = 0; i < line.stations.length; i++) {
+        if (joinedNames.has(normalize(line.stations[i].name))) srcEi.push(i);
+      }
+      const pos = srcEi.indexOf(platform.fromIdx);
+      let srcExpStops = Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx); // fallback to raw
+      if (pos !== -1) {
+        srcExpStops = 0;
+        const step = platform.direction === 'start' ? -1 : 1;
+        for (let i = pos + step; i >= 0 && i < srcEi.length; i += step) {
+          if (platform.direction === 'end' && srcEi[i] > connObj.fromJunctionIdx) break;
+          if (platform.direction === 'start' && srcEi[i] < connObj.fromJunctionIdx) break;
+          srcExpStops++;
+        }
+      }
+      const tgtExpStops = targetIndices.length > 0
+        ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx }, targetIndices)
+        : getConnectionMaxStops(connObj);
+      totalMax = srcExpStops + tgtExpStops;
+    }
+    results.push({ ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax });
+  }
+  return results;
 }
 
 // ── Platform Logic ────────────────────────────────────────────────────────
@@ -1994,13 +2092,7 @@ function getLinearPlatforms(line, entry, si, N) {
     const midLineConns = conns.filter(c => c.fromJunctionIdx !== (dir === 'start' ? 0 : N - 1));
     let connExtra = 0;
     if (terminusConns.length > 0 && !branchConfig) {
-      // Extend maxStops through terminus connections
-      const stnName = line.stations[si].name;
-      for (const conn of terminusConns) {
-        const effectiveVia = conn.viaStations.filter(v => v.name !== stnName).length;
-        const targetMax = getConnectionMaxStops(conn);
-        connExtra = Math.max(connExtra, effectiveVia + targetMax);
-      }
+      connExtra = computeConnectionExtra(terminusConns, line.stations[si].name);
       maxStops += connExtra;
     }
 
@@ -2544,17 +2636,8 @@ function rollPlatform() {
       `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
 
     dom.rerollPlatformBtn.style.display = 'block';
-    state.selectedTrainType = null;
-    state.selectedBranch = null;
-    state.selectedConnection = null;
-    state.selectedDestination = null;
-
-    // Check for branch destinations, then express services, or normal ROLL STOPS
-    if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
-      const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
-      dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
-      dom.rollStopsBtn.disabled = false;
-    }
+    clearSelectionState();
+    rebuildPickers(p);
 
     showStep('step-stops');
   });
@@ -2574,10 +2657,7 @@ function rerollPlatform() {
   resetDiceUI();
   dom.rerollStopsBtn.style.display = 'none';
   showRollStopsUI();
-  state.selectedTrainType = null;
-  state.selectedBranch = null;
-  state.selectedConnection = null;
-  state.selectedDestination = null;
+  clearSelectionState();
   rollPlatform();
 }
 
@@ -2601,13 +2681,8 @@ function rerollStops() {
   dom.dieStopsLabel.innerHTML = t('rollStopsLabel');
 
   // If branches or express services, show buttons again; otherwise just reroll
-  state.selectedTrainType = null;
-  state.selectedBranch = null;
-  state.selectedConnection = null;
-  state.selectedDestination = null;
-  if (showBranchButtons(state.selectedPlatform)) return;
-  if (showTrainTypeButtons(state.selectedPlatform)) return;
-  rollStops();
+  clearSelectionState();
+  rebuildPickers(state.selectedPlatform, { autoRoll: true });
 }
 
 // Show branch destination buttons for branching lines. Returns true if shown.
@@ -2826,51 +2901,8 @@ function showTrainTypeButtons(p) {
   const line = state.lines[p.lineIdx];
   let trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line) || [];
   // Add connection express services (e.g. Airport Exp spanning both lines)
-  // Resolve indices on the TARGET line (source line portion is local; express only matters on target)
-  for (const { express, targetLineIdx, targetLine, connObj } of allConnExpress) {
-    if (!targetLine) continue;
-    for (const ex of express) {
-      if (ex.stops === null) {
-        // Local service — all stations, no express filtering on target line
-        const localMax = connObj
-          ? Math.abs((connObj.fromJunctionIdx || 0) - p.fromIdx) + getConnectionMaxStops(connObj)
-          : p.maxStops;
-        trainTypes.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
-        continue;
-      }
-      const joinedNames = new Set(ex.stops.map(s => normalize(s)));
-      if (!joinedNames.has(normalize(state.currentStation.name))) continue;
-      // Target line express indices
-      const targetIndices = [];
-      for (let i = 0; i < targetLine.stations.length; i++) {
-        if (joinedNames.has(normalize(targetLine.stations[i].name))) targetIndices.push(i);
-      }
-      // Compute total max: source-line express to junction + target express from junction
-      let totalMax = p.maxStops; // fallback
-      if (connObj) {
-        // Count source-line express stops between player and junction
-        const srcEi = [];
-        for (let i = 0; i < line.stations.length; i++) {
-          if (joinedNames.has(normalize(line.stations[i].name))) srcEi.push(i);
-        }
-        const pos = srcEi.indexOf(p.fromIdx);
-        let srcExpStops = Math.abs((connObj.fromJunctionIdx || 0) - p.fromIdx); // fallback to raw
-        if (pos !== -1) {
-          srcExpStops = 0;
-          const step = p.direction === 'start' ? -1 : 1;
-          for (let i = pos + step; i >= 0 && i < srcEi.length; i += step) {
-            if (p.direction === 'end' && srcEi[i] > connObj.fromJunctionIdx) break;
-            if (p.direction === 'start' && srcEi[i] < connObj.fromJunctionIdx) break;
-            srcExpStops++;
-          }
-        }
-        const tgtExpStops = targetIndices.length > 0
-          ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx }, targetIndices)
-          : getConnectionMaxStops(connObj);
-        totalMax = srcExpStops + tgtExpStops;
-      }
-      trainTypes.push({ ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax });
-    }
+  for (const connExInfo of allConnExpress) {
+    trainTypes.push(...resolveConnectionExpress(connExInfo, p, line));
   }
   // Remove source-line services duplicated by connection express (connection version spans both lines)
   const connExpNames = new Set(trainTypes.filter(t => t._connTargetLineIdx != null).map(t => normalize(t.name)));
@@ -3055,12 +3087,14 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   }
 
   // If we have a connection and consumed all on-line stops, continue onto connected line
-  // (skip if train terminates at junction)
-  if (conn && result.length < stops && !state.selectedTrainType?._terminatesAtJunction) {
+  // (skip if train terminates at junction). Follow chained connections if stops remain.
+  const visitedLines = new Set([platform.lineName]);
+  let currentConn = conn;
+  if (currentConn && result.length < stops && !state.selectedTrainType?._terminatesAtJunction) {
     stopsLeft = stops - result.length;
     // Add via stations (skip any that match the starting station or last station in route)
     const startName = state.lines[platform.lineIdx].stations[platform.fromIdx]?.name;
-    for (const vs of conn.viaStations) {
+    for (const vs of currentConn.viaStations) {
       if (stopsLeft <= 0) break;
       if (vs.name === startName) continue;
       if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
@@ -3071,23 +3105,47 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
     if (stopsLeft > 0) {
       const connTargetEi = (state.selectedTrainType?._connTargetLineIdx != null) ? ei : null;
       if (connTargetEi) {
-        const toLine = state.lines[conn.toLineIdx];
-        const pos = connTargetEi.indexOf(conn.toJunctionIdx);
+        const toLine = state.lines[currentConn.toLineIdx];
+        const pos = connTargetEi.indexOf(currentConn.toJunctionIdx);
         if (pos !== -1) {
-          const step = conn.toDir === 'start' ? -1 : 1;
+          const step = currentConn.toDir === 'start' ? -1 : 1;
           for (let i = 1; i <= stopsLeft; i++) {
             const ep = pos + step * i;
             if (ep < 0 || ep >= connTargetEi.length) break;
-            if (conn.toUntilIdx >= 0) {
-              if (step === 1 && connTargetEi[ep] > conn.toUntilIdx) break;
-              if (step === -1 && connTargetEi[ep] < conn.toUntilIdx) break;
+            if (currentConn.toUntilIdx >= 0) {
+              if (step === 1 && connTargetEi[ep] > currentConn.toUntilIdx) break;
+              if (step === -1 && connTargetEi[ep] < currentConn.toUntilIdx) break;
             }
             result.push(toLine.stations[connTargetEi[ep]]);
           }
         }
       } else {
-        const connStations = getConnectionStations(conn, stopsLeft);
+        const connStations = getConnectionStations(currentConn, stopsLeft);
         for (const cs of connStations) result.push(cs);
+      }
+    }
+    // Follow chained connections if stops remain (e.g. Seibu → Fukutoshin → Toyoko)
+    visitedLines.add(currentConn.to);
+    stopsLeft = stops - result.length;
+    while (stopsLeft > 0) {
+      const onward = getOnwardConnections(currentConn)
+        .filter(c => !visitedLines.has(c.to));
+      if (onward.length === 0) break;
+      // Pick the first onward connection (single transparent chain)
+      currentConn = onward[0];
+      visitedLines.add(currentConn.to);
+      // Add via stations for this hop
+      for (const vs of currentConn.viaStations) {
+        if (stopsLeft <= 0) break;
+        if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
+        result.push(vs);
+        stopsLeft--;
+      }
+      // Add stations on the next line
+      if (stopsLeft > 0) {
+        const chainStations = getConnectionStations(currentConn, stopsLeft);
+        for (const cs of chainStations) result.push(cs);
+        stopsLeft = stops - result.length;
       }
     }
   }
@@ -3136,12 +3194,27 @@ function resetStopsBtn() {
   dom.rollStopsBtn.style.width = '';
 }
 
-function resetRoundState() {
-  state.selectedPlatform = null;
+function clearSelectionState() {
   state.selectedTrainType = null;
   state.selectedBranch = null;
   state.selectedConnection = null;
   state.selectedDestination = null;
+}
+
+function rebuildPickers(p, opts) {
+  if (showBranchButtons(p)) return true;
+  if (showTrainTypeButtons(p)) return true;
+  const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
+  dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
+  showRollStopsUI();
+  dom.rollStopsBtn.disabled = false;
+  if (opts && opts.autoRoll) rollStops();
+  return false;
+}
+
+function resetRoundState() {
+  state.selectedPlatform = null;
+  clearSelectionState();
   state.rolledStops = null;
   state.rolledPlatformNum = null;
   state._rerollExcludePlatform = null;
@@ -3470,7 +3543,17 @@ async function checkTransfers(platform, rolledStops) {
 
   // Build set of all line names in the current route (for connection-aware transfer checks)
   const routeLineNames = new Set([platform.lineName]);
-  if (state.selectedConnection) routeLineNames.add(state.selectedConnection.to);
+  if (state.selectedConnection) {
+    // Add all lines in the connection chain (including onward connections)
+    let chainConn = state.selectedConnection;
+    const chainVisited = new Set();
+    while (chainConn && !chainVisited.has(chainConn.to)) {
+      routeLineNames.add(chainConn.to);
+      chainVisited.add(chainConn.to);
+      const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
+      chainConn = onward.length > 0 ? onward[0] : null;
+    }
+  }
 
   // Find intermediate stations with transfer lines
   const transferIndices = [];
@@ -4105,12 +4188,7 @@ function onWards23Change(checked) {
 
     // Add connection extension (same logic as getLinearPlatforms)
     if (p._connections && p._connections.length > 0) {
-      let connExtra = 0;
-      for (const conn of p._connections) {
-        const viaCount = effectiveViaCount(conn, state.currentStation.name);
-        const targetMax = getConnectionMaxStops(conn);
-        connExtra = Math.max(connExtra, viaCount + targetMax);
-      }
+      const connExtra = computeConnectionExtra(p._connections, state.currentStation.name);
       newMax += connExtra;
       p._onLineStops = newMax - connExtra;
     }
@@ -4121,15 +4199,8 @@ function onWards23Change(checked) {
     }
 
     p.maxStops = newMax;
-    state.selectedConnection = null;
-    state.selectedDestination = null;
-    state.selectedTrainType = null;
-    if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
-      const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
-      dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
-      showRollStopsUI();
-      dom.rollStopsBtn.disabled = false;
-    }
+    clearSelectionState();
+    rebuildPickers(p);
     // Rebuild platform grid to reflect updated stop counts
     let _allP = getPlatforms(state.currentStation.name)
       .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
@@ -4184,16 +4255,8 @@ function setupSettings() {
   function onCapChange() {
     if (state.selectedPlatform && !state.selectedPlatform.drinkHere) {
       const p = state.selectedPlatform;
-      state.selectedConnection = null;
-      state.selectedDestination = null;
-      state.selectedTrainType = null;
-      // Rebuild pickers (same flow as rollPlatform)
-      if (!showBranchButtons(p) && !showTrainTypeButtons(p)) {
-        const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
-        dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
-        showRollStopsUI();
-        dom.rollStopsBtn.disabled = false;
-      }
+      clearSelectionState();
+      rebuildPickers(p);
     }
     refreshStopsLabel();
   }

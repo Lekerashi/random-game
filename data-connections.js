@@ -84,6 +84,13 @@ const LINE_CONNECTIONS = [
     via:  ['上野'],
     name: 'Joban', ja: '常磐線', color: '#009BBF',
     displayName: 'Ueno Tokyo Line' },
+  // Some trains terminate at Ueno
+  { from: 'JR Tokaido Main Line', fromEnd: '東京',
+    to:   'Utsunomiya Line',      toEnd:   '上野',
+    via:  ['上野'],
+    toUntil: '上野',
+    name: 'Ueno', ja: '上野方面', color: '#E78B54',
+    displayName: 'Ueno Tokyo Line' },
 
   // ── Tokaido UTL southbound ──────────────────────────────────────────────
   // From northern lines heading south onto Tokaido
