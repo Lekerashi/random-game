@@ -228,4 +228,65 @@ const LINE_CONNECTIONS = [
     to:   'Minato Mirai Line',  toEnd:   '横浜' },
   { from: 'Minato Mirai Line',  fromEnd: '横浜',
     to:   'Tokyu Toyoko Line',  toEnd:   '横浜' },
+
+  // ── Namboku ↔ Tokyu Meguro at Meguro ──────────────────────────────────
+  { from: 'Tokyo Metro Namboku Line', fromEnd: '目黒',
+    to:   'Tokyu Meguro Line',        toEnd:   '目黒' },
+  { from: 'Tokyu Meguro Line',        fromEnd: '目黒',
+    to:   'Tokyo Metro Namboku Line', toEnd:   '目黒' },
+
+  // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
+  { from: 'Toei Mita Line',    fromEnd: '目黒',
+    to:   'Tokyu Meguro Line', toEnd:   '目黒' },
+  { from: 'Tokyu Meguro Line', fromEnd: '目黒',
+    to:   'Toei Mita Line',   toEnd:   '目黒' },
+
+  // ── Toei Shinjuku ↔ Keio at Shinjuku ──────────────────────────────────
+  // Keio has express services (Sub-Exp, Express, Ltd. Exp)
+  { from: 'Toei Shinjuku Line', fromEnd: '新宿',
+    to:   'Keio Line',          toEnd:   '新宿' },
+  { from: 'Keio Line',          fromEnd: '新宿',
+    to:   'Toei Shinjuku Line', toEnd:   '新宿' },
+
+  // ── Tobu Tojo ↔ Fukutoshin/Yurakucho at Wakoshi ──────────────────────
+  // Wakoshi is mid-line on Tobu Tojo (idx 10), start of Fukutoshin and Yurakucho
+  // Both travel directions: heading toward Ikebukuro or away
+  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
+    to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
+    name: 'Fukutoshin', ja: '副都心線', color: '#9C5E31' },
+  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
+    to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
+    name: 'Yurakucho', ja: '有楽町線', color: '#C9A800' },
+  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
+    to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
+    name: 'Fukutoshin', ja: '副都心線', color: '#9C5E31' },
+  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
+    to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
+    name: 'Yurakucho', ja: '有楽町線', color: '#C9A800' },
+  // Return: Fukutoshin/Yurakucho terminus → Tobu Tojo
+  { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '和光市',
+    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
+  { from: 'Tokyo Metro Yurakucho Line',  fromEnd: '和光市',
+    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
+
+  // ── Chiyoda ↔ JR Joban at Ayase ───────────────────────────────────────
+  // Ayase is idx 1 on Chiyoda (near start, Kita-ayase is a 1-station stub)
+  // Ayase is idx 5 on Joban (mid-line)
+  { from: 'Tokyo Metro Chiyoda Line', fromStation: '綾瀬', fromDir: 'start',
+    to:   'JR Joban Line',            toStation: '綾瀬', toDir: 'end' },
+  { from: 'JR Joban Line',            fromStation: '綾瀬', fromDir: 'end',
+    to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end' },
+
+  // ── Rinkai ↔ Saikyo at Osaki ──────────────────────────────────────────
+  { from: 'Rinkai Line',    fromEnd: '大崎',
+    to:   'JR Saikyo Line', toEnd:   '大崎' },
+  { from: 'JR Saikyo Line', fromEnd: '大崎',
+    to:   'Rinkai Line',    toEnd:   '大崎' },
+
+  // ── Keisei Main ↔ Keisei Oshiage at Aoto ──────────────────────────────
+  // Connects Asakusa→Keisei Oshiage chain to Keisei Main → Narita Airport
+  { from: 'Keisei Oshiage Line', fromStation: '青砥', fromDir: 'end',
+    to:   'Keisei Main Line',    toStation: '青砥', toDir: 'end' },
+  { from: 'Keisei Main Line',    fromStation: '青砥', fromDir: 'start',
+    to:   'Keisei Oshiage Line', toStation: '青砥', toDir: 'start' },
 ];
