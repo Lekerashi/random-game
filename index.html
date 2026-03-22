@@ -1920,6 +1920,8 @@ const ANCHOR_STATIONS = new Set([
   // Major JR hubs outside central Tokyo
   'Yokohama', 'Kawasaki', 'Omiya', 'Tachikawa', 'Hachioji',
   'Ofuna', 'Chiba', 'Kashiwa', 'Funabashi', 'Machida', 'Kichijoji',
+  // Secondary JR/Metro hubs for better direction labels
+  'Akihabara', 'Ochanomizu', 'Nakano',
   // Private railway hubs
   'Keikyu Kamata',
 ]);
@@ -3949,7 +3951,7 @@ function addHistory(transferInfo) {
   // Save intermediate station coordinates for route map (prepend departure station)
   if (!drinkHere && !flight && state.route && state.route.length > 0) {
     const usedCount = transferInfo?.stopsUsed;
-    const routeSlice = usedCount != null ? state.route.slice(0, usedCount + 1) : state.route;
+    const routeSlice = usedCount != null ? state.route.slice(0, usedCount) : state.route;
     const coords = routeSlice.map(s => [s.lat, s.lng]);
     // Prepend departure if route doesn't start there
     const depLat = state.currentStation.lat, depLng = state.currentStation.lng;
