@@ -61,13 +61,12 @@ const EXPRESS_SERVICES = {
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Shinjuku","Sasazuka","Meidaimae","Sakurajosui","Chitose-karasuyama",
-      "Sengawa","Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
-      "Bubaigawara","Nakagawara","Seiseki-sakuragaoka","Mogusaen",
-      "Takahatafudo","Minamidaira","Hirayamajoshi-koen",
-      "Naganuma","Kitano","Keiō-hachiōji",
+      "Tsutsujigaoka","Chofu","Higashi-fuchu","Fuchu",
+      "Bubaigawara","Seiseki-sakuragaoka","Takahatafudo",
+      "Kitano","Keiō-hachiōji",
     ]},
     { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
-      "Shinjuku","Sasazuka","Meidaimae","Chitose-karasuyama","Chofu",
+      "Shinjuku","Meidaimae","Chofu",
       "Fuchu","Bubaigawara","Seiseki-sakuragaoka","Takahatafudo","Kitano",
       "Keiō-hachiōji",
     ]},
@@ -110,6 +109,20 @@ const EXPRESS_SERVICES = {
     { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
       "Shibuya","Naka-meguro","Jiyugaoka","Musashi-Kosugi","Hiyoshi",
       "Kikuna","Yokohama",
+    ]},
+  ],
+  "Tokyu Meguro Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "Meguro","Musashi-koyama","Ookayama","Den-en-chofu",
+      "Tamagawa","Musashi-Kosugi","Hiyoshi",
+    ]},
+  ],
+  "Toei Shinjuku Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "Shinjuku","Ichigaya","Jimbocho","Bakuroyokoyama",
+      "Morishita","Ojima","Funabori","Moto-Yawata",
     ]},
   ],
   "Tokyu Den-en-toshi Line": [

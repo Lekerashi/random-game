@@ -289,4 +289,31 @@ const LINE_CONNECTIONS = [
     to:   'Keisei Main Line',    toStation: '青砥', toDir: 'end' },
   { from: 'Keisei Main Line',    fromStation: '青砥', fromDir: 'start',
     to:   'Keisei Oshiage Line', toStation: '青砥', toDir: 'start' },
+
+  // ── Keio ↔ Keio Sagamihara at Chofu ───────────────────────────────────
+  // Chofu is mid-line on Keio (idx 17), start of Sagamihara (idx 0)
+  { from: 'Keio Line',            fromStation: '調布', fromDir: 'start',
+    to:   'Keio Sagamihara line', toEnd: '調布' },
+  { from: 'Keio Line',            fromStation: '調布', fromDir: 'end',
+    to:   'Keio Sagamihara line', toEnd: '調布' },
+  { from: 'Keio Sagamihara line', fromEnd: '調布',
+    to:   'Keio Line',            toStation: '調布', toDir: 'start' },
+
+  // ── Odakyu ↔ Odakyu Enoshima at Sagami-Ono ───────────────────────────
+  // Sagami-Ono is mid-line on Odakyu (idx 27), start of Enoshima (idx 0)
+  { from: 'Odakyu Line',          fromStation: '相模大野', fromDir: 'start',
+    to:   'Odakyu Enoshima Line', toEnd: '相模大野' },
+  { from: 'Odakyu Line',          fromStation: '相模大野', fromDir: 'end',
+    to:   'Odakyu Enoshima Line', toEnd: '相模大野' },
+  { from: 'Odakyu Enoshima Line', fromEnd: '相模大野',
+    to:   'Odakyu Line',          toStation: '相模大野', toDir: 'start' },
+
+  // ── Odakyu ↔ Odakyu Tama at Shin-Yurigaoka ───────────────────────────
+  // Shin-Yurigaoka is mid-line on Odakyu (idx 22), start of Tama (idx 0)
+  { from: 'Odakyu Line',      fromStation: '新百合ヶ丘', fromDir: 'start',
+    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘' },
+  { from: 'Odakyu Line',      fromStation: '新百合ヶ丘', fromDir: 'end',
+    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘' },
+  { from: 'Odakyu Tama Line', fromEnd: '新百合ヶ丘',
+    to:   'Odakyu Line',      toStation: '新百合ヶ丘', toDir: 'start' },
 ];
