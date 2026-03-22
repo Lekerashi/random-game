@@ -238,6 +238,8 @@ const translations = {
     statStops:            'Stations ridden',
     statDistance:          'Distance traveled',
     statDrinks:           'Drinks',
+    showRouteMap:         'Show Route Map',
+    hideRouteMap:         'Hide Map',
     distanceTraveled:     '{km} km traveled',
     // Dynamic labels
     platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
@@ -382,6 +384,8 @@ const translations = {
     statStops:            '乗車駅数',
     statDistance:          '移動距離',
     statDrinks:           '飲んだ回数',
+    showRouteMap:         'ルートマップ表示',
+    hideRouteMap:         'マップを隠す',
     distanceTraveled:     '{km} km 移動',
     platformCount:        '<strong style="color:#fff">{name}</strong>：{n}路線 — 1〜{total}を振る',
     rollingStops:         '1〜{max}駅を振る',

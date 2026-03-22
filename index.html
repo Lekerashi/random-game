@@ -639,6 +639,16 @@
     .stats-grid .stat-box.full-width { grid-column: 1 / -1; }
     #history-distance          { color: var(--muted); font-size: .8rem; margin-top: 10px; text-align: right; }
 
+    /* ── Route map in stats overlay ────────────── */
+    #route-map                 { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
+    #stats-overlay .htp-card   { max-height: 90vh; overflow-y: auto; }
+    #route-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    #route-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
+    #route-map .leaflet-control-attribution a { color: var(--accent2); }
+    .route-map-drink { background: none !important; border: none !important; font-size: 14px; line-height: 18px; text-align: center; }
+    .route-map-tooltip { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 3px 6px; }
+    .route-map-tooltip::before { border-top-color: var(--border) !important; }
+
     /* ── Language Toggle ────────────────────────────── */
     .lang-toggle-wrap {
       text-align: center;
@@ -833,6 +843,7 @@
 <script src="data-i18n.js"></script>
 <script src="data-transforms.js"></script>
 <script src="data-connections.js"></script>
+<script src="data-wards.js"></script>
 <script>
 'use strict';
 
@@ -1162,6 +1173,12 @@ _langRefreshers.push(function refreshJourneyNames() {
 _langRefreshers.push(function refreshHistory() {
   renderHistory();
   updateHistoryDistance();
+});
+
+_langRefreshers.push(function refreshRouteMapBtn() {
+  const btn = document.getElementById('stats-map-btn');
+  const wrap = document.getElementById('route-map-wrap');
+  if (btn) btn.textContent = t(wrap && wrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
 });
 
 function switchLang(lang) {
@@ -3927,7 +3944,20 @@ function addHistory(transferInfo) {
     drinkAtTransfer: transferInfo?.drinkAtTransfer || false,
     drinkAtArrival:  transferInfo?.drinkAtArrival || false,
     stopsUsed:      transferInfo?.stopsUsed || null,
+    routeCoords:    null,
   };
+  // Save intermediate station coordinates for route map (prepend departure station)
+  if (!drinkHere && !flight && state.route && state.route.length > 0) {
+    const usedCount = transferInfo?.stopsUsed;
+    const routeSlice = usedCount != null ? state.route.slice(0, usedCount + 1) : state.route;
+    const coords = routeSlice.map(s => [s.lat, s.lng]);
+    // Prepend departure if route doesn't start there
+    const depLat = state.currentStation.lat, depLng = state.currentStation.lng;
+    if (coords.length === 0 || coords[0][0] !== depLat || coords[0][1] !== depLng) {
+      coords.unshift([depLat, depLng]);
+    }
+    entry.routeCoords = coords;
+  }
   state.history.push(entry);
   dom.historyEmpty.style.display = 'none';
   dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
@@ -4055,6 +4085,123 @@ function showStats() {
     <div class="stat-box full-width"><div class="stat-val">${s.distKm} km</div><div class="stat-label">${t('statDistance')}</div></div>
   `;
   document.getElementById('stats-overlay').classList.remove('hidden');
+}
+
+function hideStats() {
+  document.getElementById('stats-overlay').classList.add('hidden');
+  document.getElementById('route-map-wrap').style.display = 'none';
+  document.getElementById('stats-map-btn').textContent = t('showRouteMap');
+  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+}
+
+function showRouteMap() {
+  const wrap = document.getElementById('route-map-wrap');
+  const btn  = document.getElementById('stats-map-btn');
+
+  // Toggle off
+  if (wrap.style.display !== 'none') {
+    wrap.style.display = 'none';
+    btn.textContent = t('showRouteMap');
+    if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+    return;
+  }
+
+  // Toggle on
+  wrap.style.display = 'block';
+  btn.textContent = t('hideRouteMap');
+
+  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+
+  const map = L.map('route-map', {
+    zoomControl: true,
+    attributionControl: false,
+    scrollWheelZoom: false,
+  }).setView([35.681, 139.767], 11); // Temporary view — fitBounds overwrites later
+  state.routeMap = map;
+
+  // Base layer: ward/city/prefecture boundaries from TOKYO_GEO
+  if (typeof TOKYO_GEO !== 'undefined') {
+    L.geoJSON(TOKYO_GEO, {
+      style: function(feature) {
+        const t = feature.properties.type;
+        if (t === 'river') return { color: '#1a3a5c', weight: 1.5, opacity: 0.6, fill: false };
+        if (t === 'prefecture') return { color: '#30363d', weight: 2, opacity: 0.5, fillColor: '#0d1117', fillOpacity: 0.15 };
+        if (t === 'ward') return { color: '#30363d', weight: 1, opacity: 0.7, fillColor: '#161b22', fillOpacity: 0.4 };
+        // city
+        return { color: '#252a31', weight: 0.7, opacity: 0.5, fillColor: '#13171e', fillOpacity: 0.3 };
+      },
+      interactive: false,
+    }).addTo(map);
+  }
+
+  // Route polylines + station markers
+  // Stop types: 'start' (session origin), 'transfer' (mid-ride transfer), 'drink' (drank here)
+  const bounds = L.latLngBounds();
+  const stopMarkers = new Map(); // key → {lat, lng, name, ja, type}
+  const TYPE_RANK = { start: 0, transfer: 1, drink: 2 }; // higher wins
+
+  function trackStop(lat, lng, name, ja, type) {
+    const key = lat + ',' + lng;
+    const existing = stopMarkers.get(key);
+    if (!existing) stopMarkers.set(key, { lat, lng, name, ja, type });
+    else if (TYPE_RANK[type] > TYPE_RANK[existing.type]) existing.type = type;
+  }
+
+  // Mark first station of entire session as starting point
+  if (state.history.length > 0 && state.history[0].fromLat != null) {
+    const first = state.history[0];
+    trackStop(first.fromLat, first.fromLng, first.from, first.fromJa, 'start');
+  }
+
+  for (const e of state.history) {
+    if (e.fromLat == null) continue;
+
+    if (e.routeCoords && e.routeCoords.length >= 2) {
+      const latlngs = e.routeCoords.map(c => L.latLng(c[0], c[1]));
+      L.polyline(latlngs, { color: e.color || '#8b949e', weight: 3, opacity: 0.85 }).addTo(map);
+      for (const ll of latlngs) bounds.extend(ll);
+    } else if (!e.drinkHere && !e.flight && e.toLat != null) {
+      const from = L.latLng(e.fromLat, e.fromLng);
+      const to   = L.latLng(e.toLat, e.toLng);
+      L.polyline([from, to], { color: e.color || '#8b949e', weight: 3, opacity: 0.85 }).addTo(map);
+      bounds.extend(from); bounds.extend(to);
+    }
+
+    // Track stops by type
+    if (e.drinkHere || e.flight) {
+      trackStop(e.fromLat, e.fromLng, e.from, e.fromJa, 'drink');
+      bounds.extend(L.latLng(e.fromLat, e.fromLng));
+    } else if (e.transferred || e.drinkAtTransfer) {
+      // Transfer mid-ride: destination is where they got off
+      trackStop(e.toLat, e.toLng, e.to, e.toJa, e.drinkAtTransfer ? 'drink' : 'transfer');
+    } else if (e.toLat != null) {
+      trackStop(e.toLat, e.toLng, e.to, e.toJa, 'drink');
+    }
+  }
+
+  // Add markers with station name tooltips
+  const TRANSFER_MARKER = { radius: 3.5, fillColor: '#58a6ff', color: '#30363d', weight: 1, fillOpacity: 0.9 };
+  const START_MARKER    = { radius: 5,   fillColor: '#e6edf3', color: '#30363d', weight: 1.5, fillOpacity: 0.9 };
+  const drinkIcon = L.divIcon({ className: 'route-map-drink', html: '🍺', iconSize: [18, 18], iconAnchor: [9, 9] });
+
+  for (const [, s] of stopMarkers) {
+    const label = s.ja ? s.name + ' / ' + s.ja : s.name;
+    const pt = L.latLng(s.lat, s.lng);
+    if (s.type === 'drink') {
+      L.marker(pt, { icon: drinkIcon }).bindTooltip(label, { direction: 'top', className: 'route-map-tooltip' }).addTo(map);
+    } else {
+      const opts = s.type === 'transfer' ? TRANSFER_MARKER : START_MARKER;
+      L.circleMarker(pt, opts).bindTooltip(label, { direction: 'top', className: 'route-map-tooltip' }).addTo(map);
+    }
+  }
+
+  if (bounds.isValid()) {
+    map.fitBounds(bounds.pad(0.15));
+  } else {
+    map.setView([35.681, 139.767], 12);
+  }
+
+  setTimeout(() => { map.invalidateSize(); }, 100);
 }
 
 // ── Random Station ────────────────────────────────────────────────────────
@@ -4397,15 +4544,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const statsCopyBtn = document.getElementById('stats-copy-btn');
   statsCopyBtn.addEventListener('click', () => copyRoute(statsCopyBtn));
+  document.getElementById('stats-map-btn').addEventListener('click', showRouteMap);
 });
 </script>
-<div id="stats-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+<div id="stats-overlay" class="htp-overlay hidden" onclick="if(event.target===this)hideStats()">
   <div class="htp-card">
-    <button class="htp-close" onclick="document.getElementById('stats-overlay').classList.add('hidden')">&times;</button>
+    <button class="htp-close" onclick="hideStats()">&times;</button>
     <h3 data-i18n="statsTitle">Session Stats</h3>
     <div class="stats-grid" id="stats-grid"></div>
     <div style="text-align:center; margin-top:12px;">
       <button class="btn btn-ghost btn-sm" id="stats-copy-btn" data-i18n="copyRoute">Copy route</button>
+    </div>
+    <div style="text-align:center; margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" id="stats-map-btn" data-i18n="showRouteMap">Show Route Map</button>
+    </div>
+    <div id="route-map-wrap" style="display:none; margin-top:12px;">
+      <div id="route-map"></div>
     </div>
   </div>
 </div>
