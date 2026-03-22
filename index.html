@@ -1470,6 +1470,17 @@ function buildIndex(lines, osmNames = {}) {
     }
   }
 
+  // Normalize Oshiage station names — same physical station, different bracket styles in upstream
+  // 押上〈スカイツリー前〉 (Hanzomon/Tobu) vs 押上（スカイツリー前） (Keisei/Toei)
+  for (const l of lines) {
+    for (const s of l.stations) {
+      if (s.ja === '押上（スカイツリー前）' || s.ja === '押上〈スカイツリー前〉') {
+        s.name = 'Oshiage (Skytree)';
+        s.ja = '押上(スカイツリー前)';
+      }
+    }
+  }
+
   // Fix upstream bad translation: 東成田 is "Higashi-Narita", not "Higashidada"
   const shibayamaLine = lines.find(l => l.name === 'Shibayama Railway Line');
   const higashiNaritaStn = shibayamaLine?.stations.find(s => s.ja === '東成田');
@@ -1820,6 +1831,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     }
     // Compute total max: source-line express to junction + target express from junction
     let totalMax = platform.maxStops; // fallback
+    let chainStops = null;
     if (connObj) {
       // Count source-line express stops between player and junction
       const srcEi = [];
@@ -1841,8 +1853,37 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx }, targetIndices)
         : getConnectionMaxStops(connObj);
       totalMax = srcExpStops + tgtExpStops;
+
+      // Follow chain: merge express stops from onward connections with the same service name
+      let chainConn = connObj;
+      const chainVisited = new Set([connObj.from]);
+      chainVisited.add(connObj.to);
+      while (chainConn) {
+        const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
+        if (onward.length === 0) break;
+        const nextEx = onward[0].express?.find(e => normalize(e.name) === normalize(ex.name));
+        if (!nextEx || !nextEx.stops) break;
+        // Build the chain stops set on first extension
+        if (!chainStops) chainStops = new Set(ex.stops.map(s => normalize(s)));
+        nextEx.stops.forEach(s => chainStops.add(normalize(s)));
+        // Count express stops on this chain hop
+        const nextLine = state.lines[onward[0].toLineIdx];
+        if (nextLine) {
+          const step = onward[0].toDir === 'start' ? -1 : 1;
+          for (let k = onward[0].toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
+            if (onward[0].toUntilIdx >= 0 && (step === 1 ? k > onward[0].toUntilIdx : k < onward[0].toUntilIdx)) break;
+            if (chainStops.has(normalize(nextLine.stations[k].name))) totalMax++;
+          }
+        }
+        chainVisited.add(onward[0].to);
+        chainConn = onward[0];
+      }
+
     }
-    results.push({ ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax });
+    const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax };
+    // Attach chain express stops for downstream filtering in getStationsAlongRoute
+    if (chainStops) entry._chainExpressStops = chainStops;
+    results.push(entry);
   }
   return results;
 }
@@ -3028,7 +3069,9 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
         const stn = line.stations[ei[p]];
         result.push(stn);
       }
-      return result;
+      // If express reaches the terminus and there are connections, fall through
+      // to the connection extension (e.g. Den-en-toshi Express → Hanzomon local)
+      if (!(platform._connections && result.length < stops)) return result;
     }
   }
 
@@ -3120,8 +3163,26 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
           }
         }
       } else {
-        const connStations = getConnectionStations(currentConn, stopsLeft);
-        for (const cs of connStations) result.push(cs);
+        const chainExpStops = state.selectedTrainType?._chainExpressStops;
+        if (chainExpStops) {
+          // First hop target: express-filter using chain stop set
+          const toLine = state.lines[currentConn.toLineIdx];
+          const step = currentConn.toDir === 'start' ? -1 : 1;
+          for (let k = currentConn.toJunctionIdx + step; stopsLeft > 0; k += step) {
+            if (k < 0 || k >= toLine.stations.length) break;
+            if (currentConn.toUntilIdx >= 0) {
+              if (step === 1 && k > currentConn.toUntilIdx) break;
+              if (step === -1 && k < currentConn.toUntilIdx) break;
+            }
+            if (chainExpStops.has(normalize(toLine.stations[k].name))) {
+              result.push(toLine.stations[k]);
+              stopsLeft--;
+            }
+          }
+        } else {
+          const connStations = getConnectionStations(currentConn, stopsLeft);
+          for (const cs of connStations) result.push(cs);
+        }
       }
     }
     // Follow chained connections if stops remain (e.g. Seibu → Fukutoshin → Toyoko)
@@ -3141,10 +3202,28 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
         result.push(vs);
         stopsLeft--;
       }
-      // Add stations on the next line
+      // Add stations on the next line (express-filtered if chain express active)
       if (stopsLeft > 0) {
-        const chainStations = getConnectionStations(currentConn, stopsLeft);
-        for (const cs of chainStations) result.push(cs);
+        const chainExpStops = state.selectedTrainType?._chainExpressStops;
+        if (chainExpStops) {
+          // Walk target line, only include stations in the chain express stop set
+          const toLine = state.lines[currentConn.toLineIdx];
+          const step = currentConn.toDir === 'start' ? -1 : 1;
+          for (let k = currentConn.toJunctionIdx + step; stopsLeft > 0; k += step) {
+            if (k < 0 || k >= toLine.stations.length) break;
+            if (currentConn.toUntilIdx >= 0) {
+              if (step === 1 && k > currentConn.toUntilIdx) break;
+              if (step === -1 && k < currentConn.toUntilIdx) break;
+            }
+            if (chainExpStops.has(normalize(toLine.stations[k].name))) {
+              result.push(toLine.stations[k]);
+              stopsLeft--;
+            }
+          }
+        } else {
+          const chainStations = getConnectionStations(currentConn, stopsLeft);
+          for (const cs of chainStations) result.push(cs);
+        }
         stopsLeft = stops - result.length;
       }
     }
@@ -3309,6 +3388,15 @@ function getEffectiveStops(platform, opts = {}) {
     }
   } else if (ei) {
     rawMax = getExpressMaxStops(platform, ei);
+    // Source-line express can continue as local onto connected lines
+    // (e.g. Den-en-toshi Express → Hanzomon local at Shibuya)
+    if (platform._connections && platform._onLineStops != null) {
+      const line = state.lines[platform.lineIdx];
+      const terminusIdx = platform.direction === 'start' ? 0 : line.stations.length - 1;
+      if (ei.includes(terminusIdx)) {
+        rawMax += (platform.maxStops - platform._onLineStops);
+      }
+    }
   } else if (bi) {
     rawMax = getBranchMaxStops(platform, bi);
   } else {

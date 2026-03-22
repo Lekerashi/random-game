@@ -128,4 +128,104 @@ const LINE_CONNECTIONS = [
       { until: '東京',   name: 'Tokyo',     ja: '東京方面', color: '#F7A600' },
       { until: '品川',   name: 'Shinagawa', ja: '品川方面', color: '#009BBF' },
     ] },
+
+  // ── Hanzomon ↔ Tobu Isesaki (Skytree) at Oshiage ─────────────────────
+  // Through-running to Tobu Skytree Line (= Tobu Isesaki from Oshiage)
+  { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
+    to:   'Tobu Isesaki Line',         toStation: '押上(スカイツリー前)', toDir: 'end' },
+  { from: 'Tobu Isesaki Line',         fromStation: '押上(スカイツリー前)', fromDir: 'start',
+    to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)' },
+
+  // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
+  // Sengakuji is mid-line on Asakusa (idx 6), start of Keikyu Main (idx 0)
+  // Asakusa trains heading toward Nishi-magome (start) pass Sengakuji → branch onto Keikyu
+  { from: 'Toei Asakusa Line', fromStation: '泉岳寺', fromDir: 'start',
+    to:   'Keikyu Main Line',  toEnd: '泉岳寺' },
+  // Keikyu trains from Haneda arrive at Sengakuji → continue onto Asakusa toward Oshiage (end)
+  { from: 'Keikyu Main Line',  fromEnd: '泉岳寺',
+    to:   'Toei Asakusa Line', toStation: '泉岳寺', toDir: 'end' },
+
+  // ── Asakusa ↔ Keisei Oshiage at Oshiage (toward Narita) ──────────────
+  // Oshiage is end of Asakusa (idx 19), start of Keisei Oshiage (idx 0)
+  { from: 'Toei Asakusa Line',  fromEnd: '押上(スカイツリー前)',
+    to:   'Keisei Oshiage Line', toEnd: '押上(スカイツリー前)' },
+  { from: 'Keisei Oshiage Line', fromEnd: '押上(スカイツリー前)',
+    to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)' },
+
+  // ── Chiyoda ↔ Odakyu at Yoyogi-Uehara ─────────────────────────────────
+  // 1:1 through-running with rich Odakyu express services
+  { from: 'Tokyo Metro Chiyoda Line', fromEnd: '代々木上原',
+    to:   'Odakyu Line',              toEnd:   '新宿' },
+  { from: 'Odakyu Line',              fromEnd: '新宿',
+    to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原' },
+
+  // ── Tozai ↔ Chuo-Sobu at Nakano and Nishi-Funabashi ───────────────────
+  // Two junction points, both local-only
+  // Nakano: Tozai start terminus ↔ Chuo-Sobu mid-line
+  { from: 'Tokyo Metro Tozai Line', fromEnd: '中野',
+    to:   'JR Chuo-Sobu Line',      toStation: '中野', toDir: 'start' },
+  { from: 'JR Chuo-Sobu Line',      fromStation: '中野', fromDir: 'start',
+    to:   'Tokyo Metro Tozai Line', toEnd: '中野' },
+  // Nishi-Funabashi: Tozai end terminus ↔ Chuo-Sobu mid-line
+  { from: 'Tokyo Metro Tozai Line', fromEnd: '西船橋',
+    to:   'JR Chuo-Sobu Line',      toStation: '西船橋', toDir: 'end' },
+  { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'end',
+    to:   'Tokyo Metro Tozai Line', toEnd: '西船橋' },
+
+  // ── Seibu Yurakucho ↔ Fukutoshin at Kotake-mukaihara ──────────────────
+  // Seibu Yurakucho connects to Fukutoshin for through-running to Shibuya/Toyoko
+  // F-Liner: Seibu Rapid Exp → Fukutoshin Express → Toyoko Express (all-express through-service)
+  { from: 'Seibu Yurakucho Line',       fromEnd: '小竹向原',
+    to:   'Tokyo Metro Fukutoshin Line', toStation: '小竹向原', toDir: 'end',
+    express: [
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['Kotake-mukaihara','Ikebukuro','Shinjuku-sanchome',
+                "Meiji-jingumae 'Harajuku'",'Shibuya'] },
+    ] },
+  { from: 'Tokyo Metro Fukutoshin Line', fromStation: '小竹向原', fromDir: 'end',
+    to:   'Seibu Yurakucho Line',        toEnd: '小竹向原' },
+
+  // ── Seibu Ikebukuro → Seibu Yurakucho at Nerima (mid-line junction) ───
+  // Nerima is mid-line on Ikebukuro (idx 5), end on Yurakucho (idx 2)
+  // F-Liner runs express on Seibu Ikebukuro, doesn't go to Ikebukuro station
+  { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'start',
+    to:   'Seibu Yurakucho Line', toEnd: '練馬',
+    express: [
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['Hanno','Kotesashi','Nishi-Tokorozawa','Tokorozawa',
+                'Hibarigaoka','Shakujii-kōen Station','Nerima','Kotake-mukaihara'] },
+    ] },
+  { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'end',
+    to:   'Seibu Yurakucho Line', toEnd: '練馬',
+    express: [
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['Hanno','Kotesashi','Nishi-Tokorozawa','Tokorozawa',
+                'Hibarigaoka','Shakujii-kōen Station','Nerima','Kotake-mukaihara'] },
+    ] },
+
+  // ── Fukutoshin ↔ Tokyu Toyoko at Shibuya ──────────────────────────────
+  // Through-running to Toyoko (chains with Seibu Yurakucho above)
+  { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '渋谷',
+    to:   'Tokyu Toyoko Line',           toEnd:   '渋谷',
+    express: [
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['Wakoshi','Kotake-mukaihara','Ikebukuro','Shinjuku-sanchome',
+                "Meiji-jingumae 'Harajuku'",'Shibuya',
+                'Naka-meguro','Jiyugaoka','Musashi-Kosugi','Hiyoshi','Kikuna','Yokohama'] },
+    ] },
+  { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
+    to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
+    express: [
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['Yokohama','Kikuna','Hiyoshi','Musashi-Kosugi','Jiyugaoka','Naka-meguro',
+                'Shibuya',"Meiji-jingumae 'Harajuku'",'Shinjuku-sanchome','Ikebukuro',
+                'Kotake-mukaihara','Wakoshi'] },
+    ] },
+
+  // ── Tokyu Toyoko ↔ Minato Mirai at Yokohama ──────────────────────────
+  // Through-running to Motomachi-chukagai (chains with Fukutoshin/Seibu above)
+  { from: 'Tokyu Toyoko Line',  fromEnd: '横浜',
+    to:   'Minato Mirai Line',  toEnd:   '横浜' },
+  { from: 'Minato Mirai Line',  fromEnd: '横浜',
+    to:   'Tokyu Toyoko Line',  toEnd:   '横浜' },
 ];
