@@ -154,7 +154,7 @@ const EXPRESS_SERVICES = {
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Ikebukuro","Wakoshi","Asakadai","Kawagoe","Kawagoeshi",
-      "Kasumigaseki (Kawagoe)","Tsurugashima","Wakaba","Sakado",
+      "Kasumigaseki","Tsurugashima","Wakaba","Sakado",
       "Kita Sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
       "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},
