@@ -3583,12 +3583,14 @@ async function resolveTransfer(route, i, ti, transferIndices) {
   el.classList.add('checking');
 
   const inlineBtn = document.getElementById(`jroll-${i}`);
-  inlineBtn.style.display = 'inline-block';
-  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  await new Promise(resolve => {
-    inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
-  });
-  inlineBtn.style.display = 'none';
+  if (!window._skipAnimation) {
+    inlineBtn.style.display = 'inline-block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    await new Promise(resolve => {
+      inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
+    });
+    inlineBtn.style.display = 'none';
+  }
 
   const die = document.getElementById(`jdie-${i}`);
   const res = document.getElementById(`jres-${i}`);
