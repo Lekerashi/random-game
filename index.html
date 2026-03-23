@@ -1994,12 +1994,15 @@ function findMajorStation(line, fromIdx, direction) {
   const N = line.stations.length;
   const LOOKAHEAD  = 30;
   const HUB_THRESHOLD = 4;
+  // Oedo is marked circular but treated as linear for non-Tochomae stations
+  const isOedo = line.name.includes('Oedo') || line.name.includes('\u014Cedo');
+  const wrap = line.circular && !isOedo;
 
   const step = (direction === 'A' || direction === 'start') ? -1 : 1;
 
   // First pass: look for a curated anchor station
   for (let i = 1; i <= Math.min(LOOKAHEAD, N - 1); i++) {
-    let idx = line.circular
+    let idx = wrap
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
     if (idx < 0 || idx >= N) break;
@@ -2008,7 +2011,7 @@ function findMajorStation(line, fromIdx, direction) {
 
   // Second pass: fall back to any hub station (4+ lines)
   for (let i = 1; i <= Math.min(LOOKAHEAD, N - 1); i++) {
-    let idx = line.circular
+    let idx = wrap
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
     if (idx < 0 || idx >= N) break;
@@ -2018,7 +2021,7 @@ function findMajorStation(line, fromIdx, direction) {
   }
 
   // Fallback: terminus (end of line in this direction)
-  if (line.circular) {
+  if (wrap) {
     const fallback = ((fromIdx + step) % N + N) % N;
     return line.stations[fallback].name;
   }
