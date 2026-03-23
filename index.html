@@ -839,6 +839,9 @@
       </div>
     </div>
     <div id="history-empty" class="bars-empty" data-i18n="noRoundsYet">No rounds yet — start rolling!</div>
+    <div id="undo-clear-wrap" style="display:none; text-align:center; margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" id="undo-clear-btn" onclick="undoClearHistory()" data-i18n="undoClear">Undo</button>
+    </div>
     <div class="history-list" id="history-list"></div>
     <div id="history-distance"></div>
     <div id="inline-map-btn-wrap" style="text-align:center; margin-top:8px; display:none;">
@@ -846,6 +849,9 @@
     </div>
     <div id="inline-route-map-wrap" style="display:none; margin-top:10px;">
       <div id="inline-route-map"></div>
+    </div>
+    <div id="inline-save-wrap" style="display:none; text-align:center; margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" id="inline-save-btn" onclick="saveSessionImage()" data-i18n="saveSession">Save Image</button>
     </div>
   </div>
 </div>
@@ -4022,6 +4028,12 @@ function buildHistoryItem(e, num) {
 }
 
 function addHistory(transferInfo) {
+  // Clear undo snapshot once new game activity starts
+  if (state._undoSnapshot) {
+    clearTimeout(_undoTimer);
+    state._undoSnapshot = null;
+    document.getElementById('undo-clear-wrap').style.display = 'none';
+  }
   const drinkHere = state.selectedPlatform?.drinkHere && !(transferInfo?.transferred || transferInfo?.drinkAtTransfer || transferInfo?.drinkAtArrival || transferInfo?.flight);
   const flight    = transferInfo?.flight || false;
   const entry = {
@@ -4088,7 +4100,15 @@ function renderHistory() {
   updateHistoryDistance();
 }
 
+let _undoTimer = null;
 function clearHistory() {
+  if (state.history.length > 0) {
+    state._undoSnapshot = {
+      history: [...state.history],
+      drankAt: [...state.drankAt],
+      stationsSinceDrink: state.stationsSinceDrink,
+    };
+  }
   state.history = [];
   state.drankAt.clear();
   state.stationsSinceDrink = 0;
@@ -4098,6 +4118,30 @@ function clearHistory() {
   document.getElementById('inline-route-map-wrap').style.display = 'none';
   document.getElementById('inline-map-btn').textContent = t('showRouteMap');
   document.getElementById('inline-map-btn-wrap').style.display = 'none';
+  document.getElementById('inline-save-wrap').style.display = 'none';
+  saveSession();
+  // Show undo button if there was history to undo
+  if (state._undoSnapshot) {
+    document.getElementById('undo-clear-wrap').style.display = '';
+    clearTimeout(_undoTimer);
+    _undoTimer = setTimeout(() => {
+      state._undoSnapshot = null;
+      document.getElementById('undo-clear-wrap').style.display = 'none';
+    }, 30000);
+  }
+}
+
+function undoClearHistory() {
+  const snap = state._undoSnapshot;
+  if (!snap) return;
+  clearTimeout(_undoTimer);
+  state.history = snap.history;
+  state.drankAt = new Set(snap.drankAt);
+  state.stationsSinceDrink = snap.stationsSinceDrink;
+  state._undoSnapshot = null;
+  document.getElementById('undo-clear-wrap').style.display = 'none';
+  renderHistory();
+  updateHistoryDistance();
   saveSession();
 }
 
@@ -4198,6 +4242,7 @@ function showStats() {
 function hideStats() {
   document.getElementById('stats-overlay').classList.add('hidden');
   document.getElementById('route-map-wrap').style.display = 'none';
+  document.getElementById('stats-save-wrap').style.display = 'none';
   document.getElementById('stats-map-btn').textContent = t('showRouteMap');
   destroyMap('routeMap');
 }
@@ -4311,18 +4356,19 @@ function buildRouteMap(elId) {
   return map;
 }
 
-function toggleRouteMap(stateKey, wrapId, mapElId, btnId) {
+function toggleRouteMap(stateKey, wrapId, mapElId, btnId, saveWrapId) {
   const wrap = document.getElementById(wrapId);
   const btn  = document.getElementById(btnId);
   const showing = wrap.style.display !== 'none';
   wrap.style.display = showing ? 'none' : 'block';
   btn.textContent = t(showing ? 'showRouteMap' : 'hideRouteMap');
+  if (saveWrapId) document.getElementById(saveWrapId).style.display = showing ? 'none' : '';
   destroyMap(stateKey);
   if (!showing) state[stateKey] = buildRouteMap(mapElId);
 }
 
-function showRouteMap()        { toggleRouteMap('routeMap',       'route-map-wrap',        'route-map',        'stats-map-btn'); }
-function toggleInlineRouteMap() { toggleRouteMap('inlineRouteMap', 'inline-route-map-wrap', 'inline-route-map', 'inline-map-btn'); }
+function showRouteMap()        { toggleRouteMap('routeMap',       'route-map-wrap',        'route-map',        'stats-map-btn', 'stats-save-wrap'); }
+function toggleInlineRouteMap() { toggleRouteMap('inlineRouteMap', 'inline-route-map-wrap', 'inline-route-map', 'inline-map-btn', 'inline-save-wrap'); }
 
 function refreshInlineRouteMap() {
   if (!state.inlineRouteMap) return;
@@ -4496,6 +4542,241 @@ function copyRoute(feedbackBtn) {
 function formatStatsText() {
   const s = getSessionStats();
   return `📊 ${t('statStations')}: ${s.stations} · ${t('statLines')}: ${s.lines} · ${t('statStops')}: ${s.totalStops} · ${t('statDrinks')}: ${s.drinks} · ${t('statDistance')}: ${s.distKm} km`;
+}
+
+// ── Save Session Image ────────────────────────────────────────────────────
+
+function saveSessionImage() {
+  if (state.history.length === 0) return;
+
+  const DPR = 2;
+  const W = 360, MAP_H = 340, STAT_H = 140, PAD = 16;
+  const TITLE_H = 56, FOOTER_H = 28;
+  const H = TITLE_H + MAP_H + STAT_H + FOOTER_H;
+  const mapX = 0, mapY = TITLE_H, mapW = W, mapH = MAP_H;
+
+  // ── Compute bounds from route ──
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  for (const e of state.history) {
+    if (e.routeCoords) for (const c of e.routeCoords) {
+      minLat = Math.min(minLat, c[0]); maxLat = Math.max(maxLat, c[0]);
+      minLng = Math.min(minLng, c[1]); maxLng = Math.max(maxLng, c[1]);
+    }
+    if (e.fromLat != null) { minLat = Math.min(minLat, e.fromLat); maxLat = Math.max(maxLat, e.fromLat); minLng = Math.min(minLng, e.fromLng); maxLng = Math.max(maxLng, e.fromLng); }
+    if (e.toLat != null) { minLat = Math.min(minLat, e.toLat); maxLat = Math.max(maxLat, e.toLat); minLng = Math.min(minLng, e.toLng); maxLng = Math.max(maxLng, e.toLng); }
+  }
+  if (!isFinite(minLat)) { minLat = 35.5; maxLat = 35.8; minLng = 139.5; maxLng = 139.9; }
+
+  // Padding (25%)
+  const lp = (maxLat - minLat) * 0.25 || 0.015, gp = (maxLng - minLng) * 0.25 || 0.015;
+  minLat -= lp; maxLat += lp; minLng -= gp; maxLng += gp;
+
+  // Pick zoom level for tiles: find z where bounds fit in mapW x mapH pixels
+  const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+  const mMin = mercY(minLat), mMax = mercY(maxLat);
+  let zoom = 16;
+  for (let z = 16; z >= 8; z--) {
+    const n = Math.pow(2, z);
+    const pxW = ((maxLng - minLng) / 360) * n * 256;
+    const pxH = ((mMax - mMin) / (2 * Math.PI)) * n * 256;
+    if (pxW <= mapW * DPR && pxH <= mapH * DPR) { zoom = z; break; }
+  }
+  // Expand bounds to fill map area at this zoom level
+  const n = Math.pow(2, zoom);
+  const neededLng = (mapW * DPR) / (n * 256) * 360;
+  const neededMerc = (mapH * DPR) / (n * 256) * 2 * Math.PI;
+  const midLng = (minLng + maxLng) / 2;
+  const midM = (mMin + mMax) / 2;
+  minLng = midLng - neededLng / 2; maxLng = midLng + neededLng / 2;
+  const invMerc = (y) => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
+  minLat = invMerc(midM - neededMerc / 2);
+  maxLat = invMerc(midM + neededMerc / 2);
+
+  // Tile range
+  const lngToTile = (lng) => Math.floor((lng + 180) / 360 * n);
+  const latToTile = (lat) => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+  const txMin = lngToTile(minLng), txMax = lngToTile(maxLng);
+  const tyMin = latToTile(maxLat), tyMax = latToTile(minLat);
+
+  // World pixel helpers (standard Web Mercator)
+  const lngToPx = (lng) => ((lng + 180) / 360) * n * 256;
+  const latToPx = (lat) => ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * n * 256;
+  const originX = lngToPx(minLng), originY = latToPx(maxLat);
+  // Map world px to canvas px (accounting for DPR)
+  const toCanvasX = (wpx) => (wpx - originX) / DPR;
+  const toCanvasY = (wpx) => (wpx - originY) / DPR;
+  const toX = (lng) => toCanvasX(lngToPx(lng));
+  const toY = (lat) => toCanvasY(latToPx(lat));
+
+  // ── Load tiles then draw ──
+  const tileUrls = [];
+  for (let tx = txMin; tx <= txMax; tx++) {
+    for (let ty = tyMin; ty <= tyMax; ty++) {
+      tileUrls.push({ tx, ty, url: 'https://a.basemaps.cartocdn.com/dark_all/' + zoom + '/' + tx + '/' + ty + '.png' });
+    }
+  }
+
+  // Load all tile images (with CORS)
+  const loadTile = (t) => new Promise((res) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res({ ...t, img });
+    img.onerror = () => res({ ...t, img: null });
+    img.src = t.url;
+  });
+
+  Promise.all(tileUrls.map(loadTile)).then(function(tiles) {
+    const canvas = document.createElement('canvas');
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(DPR, DPR);
+
+    // ── Background ──
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Title ──
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t('copyRouteHeader', { date: '' }).replace(/\s*—\s*$/, ''), W / 2, 26);
+    const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+    const dateStr = new Date().toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+    ctx.fillStyle = '#8b949e'; ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(dateStr, W / 2, 44);
+
+    // ── Clip map area ──
+    ctx.save();
+    ctx.beginPath(); ctx.rect(mapX, mapY, mapW, mapH); ctx.clip();
+
+    // Draw tiles (fallback to vector if tiles failed)
+    let tilesDrawn = 0;
+    for (const t of tiles) {
+      if (!t.img) continue;
+      const tx = t.tx * 256, ty = t.ty * 256;
+      const dx = (tx - originX) / DPR, dy = (ty - originY) / DPR + mapY;
+      ctx.drawImage(t.img, dx, dy, 256 / DPR, 256 / DPR);
+      tilesDrawn++;
+    }
+
+    // Vector fallback if no tiles loaded
+    if (tilesDrawn === 0 && typeof TOKYO_GEO !== 'undefined') {
+      for (const feat of TOKYO_GEO.features) {
+        const ft = feat.properties.type, geom = feat.geometry;
+        if (geom.type === 'Polygon') {
+          const ring = geom.coordinates[0];
+          ctx.beginPath();
+          for (let i = 0; i < ring.length; i++) {
+            const x = toX(ring[i][0]), y = toY(ring[i][1]) + mapY;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          if (ft === 'water') { ctx.fillStyle = '#0f2a45'; ctx.fill(); }
+          else if (ft === 'prefecture') { ctx.fillStyle = '#161b22'; ctx.fill(); ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 1; ctx.stroke(); }
+          else if (ft === 'ward') { ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 0.5; ctx.stroke(); }
+        } else if (geom.type === 'LineString' && ft === 'river') {
+          ctx.beginPath();
+          for (let i = 0; i < geom.coordinates.length; i++) {
+            const x = toX(geom.coordinates[i][0]), y = toY(geom.coordinates[i][1]) + mapY;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = '#2a6090'; ctx.lineWidth = 1.5; ctx.stroke();
+        }
+      }
+    }
+
+    // ── Route polylines ──
+    for (const e of state.history) {
+      if (e.drinkHere || e.flight) continue;
+      ctx.beginPath();
+      if (e.routeCoords && e.routeCoords.length >= 2) {
+        for (let i = 0; i < e.routeCoords.length; i++) {
+          const x = toX(e.routeCoords[i][1]), y = toY(e.routeCoords[i][0]) + mapY;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+      } else if (e.fromLat != null && e.toLat != null) {
+        // Fallback: straight line from→to
+        ctx.moveTo(toX(e.fromLng), toY(e.fromLat) + mapY);
+        ctx.lineTo(toX(e.toLng), toY(e.toLat) + mapY);
+      } else { continue; }
+      ctx.strokeStyle = e.color || '#8b949e'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+    }
+
+    // ── Markers ──
+    const markers = new Map();
+    const RANK = { start: 0, transfer: 1, drink: 2 };
+    function mark(lat, lng, type) {
+      const k = lat + ',' + lng;
+      const ex = markers.get(k);
+      if (!ex) markers.set(k, { lat, lng, type });
+      else if (RANK[type] > RANK[ex.type]) ex.type = type;
+    }
+    if (state.history.length > 0 && state.history[0].fromLat != null)
+      mark(state.history[0].fromLat, state.history[0].fromLng, 'start');
+    for (const e of state.history) {
+      if (e.drinkHere || e.flight) mark(e.fromLat, e.fromLng, 'drink');
+      else if (e.transferred || e.drinkAtTransfer) mark(e.toLat, e.toLng, e.drinkAtTransfer ? 'drink' : 'transfer');
+      else if (e.toLat != null) mark(e.toLat, e.toLng, 'drink');
+    }
+    for (const [, m] of markers) {
+      const x = toX(m.lng), y = toY(m.lat) + mapY;
+      if (m.type === 'drink') {
+        ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🍺', x, y);
+      } else if (m.type === 'start') {
+        ctx.fillStyle = '#e6edf3'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1.5; ctx.stroke();
+      } else {
+        ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.stroke();
+      }
+    }
+
+    ctx.restore(); // unclip
+
+    // ── Stats section ──
+    const s = getSessionStats();
+    const statsY = TITLE_H + MAP_H;
+    ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD, statsY); ctx.lineTo(W - PAD, statsY); ctx.stroke();
+
+    const colW = (W - PAD * 2) / 2;
+    const statItems = [
+      { val: String(s.stations), label: t('statStations') },
+      { val: String(s.lines),    label: t('statLines') },
+      { val: String(s.totalStops), label: t('statStops') },
+      { val: String(s.drinks),   label: t('statDrinks') },
+    ];
+    ctx.textBaseline = 'alphabetic';
+    for (let i = 0; i < 4; i++) {
+      const col = i % 2, row = Math.floor(i / 2);
+      const cx = PAD + col * colW + colW / 2, cy = statsY + 14 + row * 46;
+      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(statItems[i].val, cx, cy + 16);
+      ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillText(statItems[i].label, cx, cy + 30);
+    }
+    ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(s.distKm + ' km', W / 2, statsY + 112);
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(t('statDistance'), W / 2, statsY + 126);
+
+    // ── Footer ──
+    ctx.fillStyle = '#484f58'; ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('randomgame.tokyo', W / 2, H - 8);
+
+    // ── Export ──
+    canvas.toBlob(function(blob) {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const d = new Date();
+      a.download = 'tokyo-random-game-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
+  });
 }
 
 function copyToClipboard(text, feedbackBtn) {
@@ -4687,6 +4968,9 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
     <div id="route-map-wrap" style="display:none; margin-top:12px;">
       <div id="route-map"></div>
+    </div>
+    <div id="stats-save-wrap" style="display:none; text-align:center; margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" id="stats-save-btn" onclick="saveSessionImage()" data-i18n="saveSession">Save Image</button>
     </div>
   </div>
 </div>

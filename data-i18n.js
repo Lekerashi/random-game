@@ -240,6 +240,8 @@ const translations = {
     statDrinks:           'Drinks',
     showRouteMap:         'Show Route Map',
     hideRouteMap:         'Hide Map',
+    saveSession:          'Save Image',
+    undoClear:            'Undo',
     distanceTraveled:     '{km} km traveled',
     // Dynamic labels
     platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
@@ -392,6 +394,8 @@ const translations = {
     statDrinks:           '飲んだ回数',
     showRouteMap:         'ルートマップ表示',
     hideRouteMap:         'マップを隠す',
+    saveSession:          '画像を保存',
+    undoClear:            '元に戻す',
     distanceTraveled:     '{km} km 移動',
     platformCount:        '<strong style="color:#fff">{name}</strong>：{n}路線 — 1〜{total}を振る',
     rollingStops:         '1〜{max}駅を振る',
