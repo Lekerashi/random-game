@@ -593,7 +593,7 @@
     #journey-card, #map-card, #bars-card, #cafes-card { display: none; }
     #train-type-row     { display: none; }
     #reroll-platform-btn,
-    #reroll-stops-btn   { display: none; padding: 10px 14px; font-size: .85rem; }
+    #reroll-stops-btn   { display: none; padding: 10px 14px; font-size: .85rem; flex-shrink: 0; }
 
     /* ── Structural layout (moved from HTML) ─────────── */
     .platform-banner-row      { display: flex; align-items: stretch; gap: 8px; margin-bottom: 12px; }
@@ -639,12 +639,12 @@
     .stats-grid .stat-box.full-width { grid-column: 1 / -1; }
     #history-distance          { color: var(--muted); font-size: .8rem; margin-top: 10px; text-align: right; }
 
-    /* ── Route map in stats overlay ────────────── */
-    #route-map                 { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
+    /* ── Route map (shared styles) ────────────── */
+    #route-map, #inline-route-map { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
     #stats-overlay .htp-card   { max-height: 90vh; overflow-y: auto; }
-    #route-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
-    #route-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
-    #route-map .leaflet-control-attribution a { color: var(--accent2); }
+    #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
+    #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a { color: var(--accent2); }
     .route-map-drink { background: none !important; border: none !important; font-size: 14px; line-height: 18px; text-align: center; }
     .route-map-tooltip { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 3px 6px; }
     .route-map-tooltip::before { border-top-color: var(--border) !important; }
@@ -764,11 +764,11 @@
     <div class="roll-die-display">
       <div class="die-face" id="die-stops">?</div>
       <div class="die-label" id="die-stops-label" data-i18n="rollStopsLabel">Roll to pick how many stops</div>
+      <button class="btn btn-secondary" id="reroll-stops-btn" data-i18n-title="rerollStopsTitle" title="Reroll stops" data-i18n="rerollText">🔁 Reroll</button>
     </div>
     <div class="train-type-row" id="train-type-row"></div>
     <div id="roll-stops-row">
       <button class="btn btn-roll" id="roll-stops-btn" data-i18n="rollStopsBtn">ROLL STOPS</button>
-      <button class="btn btn-secondary" id="reroll-stops-btn" data-i18n-title="rerollStopsTitle" title="Reroll stops" data-i18n="rerollText">🔁 Reroll</button>
     </div>
   </div>
 
@@ -835,6 +835,12 @@
     <div id="history-empty" class="bars-empty" data-i18n="noRoundsYet">No rounds yet — start rolling!</div>
     <div class="history-list" id="history-list"></div>
     <div id="history-distance"></div>
+    <div id="inline-map-btn-wrap" style="text-align:center; margin-top:8px; display:none;">
+      <button class="btn btn-ghost btn-sm" id="inline-map-btn" data-i18n="showRouteMap">Show Route Map</button>
+    </div>
+    <div id="inline-route-map-wrap" style="display:none; margin-top:10px;">
+      <div id="inline-route-map"></div>
+    </div>
   </div>
 </div>
 
@@ -1179,6 +1185,9 @@ _langRefreshers.push(function refreshRouteMapBtn() {
   const btn = document.getElementById('stats-map-btn');
   const wrap = document.getElementById('route-map-wrap');
   if (btn) btn.textContent = t(wrap && wrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
+  const inBtn = document.getElementById('inline-map-btn');
+  const inWrap = document.getElementById('inline-route-map-wrap');
+  if (inBtn) inBtn.textContent = t(inWrap && inWrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
 });
 
 function switchLang(lang) {
@@ -2914,7 +2923,7 @@ function showBranchPickerUI(p, choices, hasExpress) {
   dom.trainTypeRow.innerHTML = choices.map((c, i) => {
     const fullWidth = i === 0 && choices.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     const stopLabel = hasExpress ? '' : ` · ${c.effectiveMax > 0 ? '1\u2013' + c.effectiveMax : '\u2014'}`;
-    return `<button class="train-type-btn" style="background:${c.color};${fullWidth}"
+    return `<button class="train-type-btn" style="background:${c.color};${pillTextStyle(c.color)}${fullWidth}"
       ${c.effectiveMax === 0 ? ' disabled' : ''}>
       ${currentLang === 'ja'
         ? `${c.ja}<small>${c.name}${stopLabel}</small>`
@@ -2986,7 +2995,7 @@ function showTrainTypeButtons(p) {
       const jJa = junctionStn.ja;
       const onLine = p._onLineStops != null ? p._onLineStops : p.maxStops;
       trainTypes.push({
-        name: jName + ' only', ja: jJa + 'まで',
+        name: 'To ' + jName, ja: jJa + '行き',
         color: p.lineColor, stops: null, expressIndices: null,
         _terminatesAtJunction: true,
       });
@@ -3035,7 +3044,7 @@ function showTrainTypeButtons(p) {
     const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax });
     // Local (first) button gets full width when there are exactly 3 types
     const fullWidth = i === 0 && reachable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
-    return `<button class="train-type-btn" style="background:${g.color};${fullWidth}"
+    return `<button class="train-type-btn" style="background:${g.color};${pillTextStyle(g.color)}${fullWidth}"
       data-type-name="${g.name}" data-max="${physMax}">
       ${currentLang === 'ja'
         ? `${g.ja}<small>${g.name} · 1–${effectiveMax}</small>`
@@ -3258,6 +3267,16 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
 
 function capStops(max) {
   return state.stopsCap ? Math.min(max, state.stopsCapValue) : max;
+}
+
+// Returns 'color:#000;' for light backgrounds, '' for dark (white text is default via CSS)
+function pillTextStyle(hex) {
+  if (!hex || hex[0] !== '#') return '';
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Relative luminance (sRGB)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 160 ? 'color:#000;' : '';
 }
 
 function showRollStopsUI() {
@@ -3493,8 +3512,9 @@ function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
   el.classList.add(elClass);
 }
 
-function waitForUndo() {
+function waitForUndo(afterEl) {
   if (window._skipAnimation) { return Promise.resolve(false); }
+  if (afterEl) afterEl.after(dom.undoTransferBtn);
   dom.undoTransferBtn.style.display = 'block';
   return new Promise(resolve => {
     const timeout = setTimeout(() => { dom.undoTransferBtn.onclick = null; dom.undoTransferBtn.style.display = 'none'; resolve(false); }, UNDO_TRANSFER_TIMEOUT);
@@ -3618,7 +3638,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
     if (roll <= 3) {
       applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
       dimStations(i + 1, nextTI);
-      if (await waitForUndo()) {
+      if (await waitForUndo(el)) {
         undimStations(i + 1, nextTI);
         await resetAndReroll(el, die, res, inlineBtn, 'passed');
         undoRequested = true;
@@ -3627,7 +3647,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
       return { outcome: 'stay' };
     } else if (roll === 4) {
       applyOutcome(el, die, res, 'transfer', 'transferResult', 'transfer-label', 'transferred');
-      if (await waitForUndo()) {
+      if (await waitForUndo(el)) {
         await resetAndReroll(el, die, res, inlineBtn, 'transferred');
         undoRequested = true;
         continue;
@@ -3636,7 +3656,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
       return { outcome: 'transfer', station: route[i], stopsUsed: i + 1 };
     } else {
       applyOutcome(el, die, res, 'drink-roll', 'drinkResult', 'drink-label', 'drink');
-      if (await waitForUndo()) {
+      if (await waitForUndo(el)) {
         await resetAndReroll(el, die, res, inlineBtn, 'drink');
         undoRequested = true;
         continue;
@@ -3720,7 +3740,7 @@ function rollStops() {
     dom.dieStops.textContent = '—';
     dom.dieStopsLabel.innerHTML = `<strong>${t('noValidStops')}</strong>`;
     dom.rollStopsBtn.disabled = false;
-    dom.rerollStopsBtn.style.display = 'block';
+    dom.rerollStopsBtn.style.display = 'inline-flex';
     return;
   }
 
@@ -3751,7 +3771,7 @@ function rollStops() {
       dom.rollStopsBtn.style.width = 'auto';
     }
     dom.rollStopsRow.style.display = 'flex';
-    dom.rerollStopsBtn.style.display = 'block';
+    dom.rerollStopsBtn.style.display = 'inline-flex';
 
     // Check for transfers along the route (using physical stop count)
     const result = await checkTransfers(state.selectedPlatform, physicalStops);
@@ -3968,6 +3988,8 @@ function addHistory(transferInfo) {
   dom.historyEmpty.style.display = 'none';
   dom.historyList.insertAdjacentHTML('afterbegin', buildHistoryItem(entry, state.history.length));
   updateHistoryDistance();
+  document.getElementById('inline-map-btn-wrap').style.display = '';
+  refreshInlineRouteMap();
   saveSession();
   const s = getSessionStats();
   gc(`round-complete/rounds:${state.history.length}/stations:${s.stations}/lines:${s.lines}/stops:${s.totalStops}/km:${s.distKm}/drinks:${s.drinks}`);
@@ -3980,6 +4002,7 @@ function renderHistory() {
   if (state.history.length === 0) {
     empty.style.display = '';
     list.innerHTML = '';
+    document.getElementById('inline-map-btn-wrap').style.display = 'none';
     return;
   }
 
@@ -3987,6 +4010,7 @@ function renderHistory() {
   list.innerHTML = state.history.slice().reverse().map((e, i) =>
     buildHistoryItem(e, state.history.length - i)
   ).join('');
+  document.getElementById('inline-map-btn-wrap').style.display = '';
   updateHistoryDistance();
 }
 
@@ -3996,6 +4020,11 @@ function clearHistory() {
   state.stationsSinceDrink = 0;
   renderHistory();
   updateHistoryDistance();
+  // Hide inline route map
+  if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
+  document.getElementById('inline-route-map-wrap').style.display = 'none';
+  document.getElementById('inline-map-btn').textContent = t('showRouteMap');
+  document.getElementById('inline-map-btn-wrap').style.display = 'none';
   saveSession();
 }
 
@@ -4100,32 +4129,14 @@ function hideStats() {
   if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
 }
 
-function showRouteMap() {
-  const wrap = document.getElementById('route-map-wrap');
-  const btn  = document.getElementById('stats-map-btn');
-
-  // Toggle off
-  if (wrap.style.display !== 'none') {
-    wrap.style.display = 'none';
-    btn.textContent = t('showRouteMap');
-    if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
-    return;
-  }
-
-  // Toggle on
-  wrap.style.display = 'block';
-  btn.textContent = t('hideRouteMap');
-
-  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
-
-  const map = L.map('route-map', {
+// Shared: create a Leaflet route map on the given element ID
+function buildRouteMap(elId) {
+  const map = L.map(elId, {
     zoomControl: true,
     attributionControl: false,
     scrollWheelZoom: false,
-  }).setView([35.681, 139.767], 11); // Temporary view — fitBounds overwrites later
-  state.routeMap = map;
+  }).setView([35.681, 139.767], 11);
 
-  // Base layer: ward/city/prefecture boundaries from TOKYO_GEO
   if (typeof TOKYO_GEO !== 'undefined') {
     L.geoJSON(TOKYO_GEO, {
       style: function(feature) {
@@ -4133,18 +4144,15 @@ function showRouteMap() {
         if (t === 'river') return { color: '#1a3a5c', weight: 1.5, opacity: 0.6, fill: false };
         if (t === 'prefecture') return { color: '#30363d', weight: 2, opacity: 0.5, fillColor: '#0d1117', fillOpacity: 0.15 };
         if (t === 'ward') return { color: '#30363d', weight: 1, opacity: 0.7, fillColor: '#161b22', fillOpacity: 0.4 };
-        // city
         return { color: '#252a31', weight: 0.7, opacity: 0.5, fillColor: '#13171e', fillOpacity: 0.3 };
       },
       interactive: false,
     }).addTo(map);
   }
 
-  // Route polylines + station markers
-  // Stop types: 'start' (session origin), 'transfer' (mid-ride transfer), 'drink' (drank here)
   const bounds = L.latLngBounds();
-  const stopMarkers = new Map(); // key → {lat, lng, name, ja, type}
-  const TYPE_RANK = { start: 0, transfer: 1, drink: 2 }; // higher wins
+  const stopMarkers = new Map();
+  const TYPE_RANK = { start: 0, transfer: 1, drink: 2 };
 
   function trackStop(lat, lng, name, ja, type) {
     const key = lat + ',' + lng;
@@ -4153,7 +4161,6 @@ function showRouteMap() {
     else if (TYPE_RANK[type] > TYPE_RANK[existing.type]) existing.type = type;
   }
 
-  // Mark first station of entire session as starting point
   if (state.history.length > 0 && state.history[0].fromLat != null) {
     const first = state.history[0];
     trackStop(first.fromLat, first.fromLng, first.from, first.fromJa, 'start');
@@ -4173,19 +4180,16 @@ function showRouteMap() {
       bounds.extend(from); bounds.extend(to);
     }
 
-    // Track stops by type
     if (e.drinkHere || e.flight) {
       trackStop(e.fromLat, e.fromLng, e.from, e.fromJa, 'drink');
       bounds.extend(L.latLng(e.fromLat, e.fromLng));
     } else if (e.transferred || e.drinkAtTransfer) {
-      // Transfer mid-ride: destination is where they got off
       trackStop(e.toLat, e.toLng, e.to, e.toJa, e.drinkAtTransfer ? 'drink' : 'transfer');
     } else if (e.toLat != null) {
       trackStop(e.toLat, e.toLng, e.to, e.toJa, 'drink');
     }
   }
 
-  // Add markers with station name tooltips
   const TRANSFER_MARKER = { radius: 3.5, fillColor: '#58a6ff', color: '#30363d', weight: 1, fillOpacity: 0.9 };
   const START_MARKER    = { radius: 5,   fillColor: '#e6edf3', color: '#30363d', weight: 1.5, fillOpacity: 0.9 };
   const drinkIcon = L.divIcon({ className: 'route-map-drink', html: '🍺', iconSize: [18, 18], iconAnchor: [9, 9] });
@@ -4208,6 +4212,53 @@ function showRouteMap() {
   }
 
   setTimeout(() => { map.invalidateSize(); }, 100);
+  return map;
+}
+
+// Stats overlay route map
+function showRouteMap() {
+  const wrap = document.getElementById('route-map-wrap');
+  const btn  = document.getElementById('stats-map-btn');
+
+  // Toggle off
+  if (wrap.style.display !== 'none') {
+    wrap.style.display = 'none';
+    btn.textContent = t('showRouteMap');
+    if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+    return;
+  }
+
+  // Toggle on
+  wrap.style.display = 'block';
+  btn.textContent = t('hideRouteMap');
+  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+  state.routeMap = buildRouteMap('route-map');
+}
+
+// Inline route map below session history
+function toggleInlineRouteMap() {
+  const wrap = document.getElementById('inline-route-map-wrap');
+  const btn  = document.getElementById('inline-map-btn');
+
+  // Toggle off
+  if (wrap.style.display !== 'none') {
+    wrap.style.display = 'none';
+    btn.textContent = t('showRouteMap');
+    if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
+    return;
+  }
+
+  // Toggle on
+  wrap.style.display = 'block';
+  btn.textContent = t('hideRouteMap');
+  if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
+  state.inlineRouteMap = buildRouteMap('inline-route-map');
+}
+
+function refreshInlineRouteMap() {
+  if (!state.inlineRouteMap) return;
+  state.inlineRouteMap.remove();
+  state.inlineRouteMap = buildRouteMap('inline-route-map');
 }
 
 // ── Random Station ────────────────────────────────────────────────────────
@@ -4489,6 +4540,7 @@ function setupGameControls() {
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
   dom.copyRouteBtn.addEventListener('click', copyRoute);
   dom.statsBtn.addEventListener('click', showStats);
+  document.getElementById('inline-map-btn').addEventListener('click', toggleInlineRouteMap);
 }
 
 function setupSettings() {
