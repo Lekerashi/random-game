@@ -617,6 +617,12 @@
     .htp-card .htp-goal        { margin-top: 0.75rem; font-style: italic; color: var(--muted); }
     .htp-close                 { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #888; line-height: 1; }
     .htp-close:hover           { color: var(--text); }
+    .htp-advanced-btn          { background: none; border: 1px solid var(--surface2); border-radius: 6px; color: var(--muted); font-size: 0.8rem; cursor: pointer; padding: 4px 12px; margin-top: 0.75rem; display: block; width: 100%; }
+    .htp-advanced-btn:hover    { color: var(--text); border-color: var(--muted); }
+    .htp-advanced              { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--surface2); font-size: 0.85rem; color: var(--muted); }
+    .htp-advanced.hidden       { display: none; }
+    .htp-advanced ul           { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+    .htp-advanced ul li        { margin-bottom: 0.4rem; }
 
     /* ── RNG tool ─────────────────────────────────── */
     .rng-wrap                  { text-align: center; padding: 0.75rem 1rem 0; }
@@ -1038,6 +1044,13 @@ function applyLang() {
   // Title attributes
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  // Arbitrary attribute translations: data-i18n-attr="data-show:key1;data-hide:key2"
+  document.querySelectorAll('[data-i18n-attr]').forEach(el => {
+    for (const pair of el.getAttribute('data-i18n-attr').split(';')) {
+      const [attr, key] = pair.split(':');
+      if (attr && key) el.setAttribute(attr, t(key));
+    }
   });
   // Page title
   document.title = t('pageTitle');
@@ -2720,8 +2733,9 @@ function rollPlatform() {
         + destSubHints(state.currentStation, 'inline'));
 
       state.drankAt.add(normalize(state.currentStation.name));
+      const drinkHereThirst = state.stationsSinceDrink;
       state.stationsSinceDrink = 0;
-      addHistory();
+      addHistory({ thirst: drinkHereThirst });
       return;
     }
 
@@ -3173,27 +3187,31 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   }
   let stopsLeft = stops;
 
-  // Count how many on-line stops we can make before hitting the terminus or mid-line junction
-  let onLineMax = platform.circular ? N - 1
-    : (platform.direction === 'start' ? platform.fromIdx : N - 1 - platform.fromIdx);
-  // For mid-line connections with target express, stop at the junction station
-  if (conn && connTargetLineIdx != null && conn.fromJunctionIdx !== (platform.direction === 'start' ? 0 : N - 1)) {
-    const junctionDist = Math.abs(conn.fromJunctionIdx - platform.fromIdx);
-    onLineMax = Math.min(onLineMax, junctionDist);
-  }
-
-  for (let i = 1; i <= Math.min(stopsLeft, onLineMax); i++) {
-    let idx;
-    if (platform.circular) {
-      idx = platform.direction === 'A'
-        ? ((platform.fromIdx - i) % N + N) % N
-        : (platform.fromIdx + i) % N;
-    } else {
-      idx = platform.direction === 'start'
-        ? platform.fromIdx - i
-        : platform.fromIdx + i;
+  // If express fell through (result already has express stops), skip on-line local routing —
+  // the express already reached the terminus, remaining stops continue on the connected line.
+  if (result.length === 0) {
+    // Count how many on-line stops we can make before hitting the terminus or mid-line junction
+    let onLineMax = platform.circular ? N - 1
+      : (platform.direction === 'start' ? platform.fromIdx : N - 1 - platform.fromIdx);
+    // For mid-line connections with target express, stop at the junction station
+    if (conn && connTargetLineIdx != null && conn.fromJunctionIdx !== (platform.direction === 'start' ? 0 : N - 1)) {
+      const junctionDist = Math.abs(conn.fromJunctionIdx - platform.fromIdx);
+      onLineMax = Math.min(onLineMax, junctionDist);
     }
-    result.push(line.stations[idx]);
+
+    for (let i = 1; i <= Math.min(stopsLeft, onLineMax); i++) {
+      let idx;
+      if (platform.circular) {
+        idx = platform.direction === 'A'
+          ? ((platform.fromIdx - i) % N + N) % N
+          : (platform.fromIdx + i) % N;
+      } else {
+        idx = platform.direction === 'start'
+          ? platform.fromIdx - i
+          : platform.fromIdx + i;
+      }
+      result.push(line.stations[idx]);
+    }
   }
 
   // If we have a connection and consumed all on-line stops, continue onto connected line
@@ -3581,33 +3599,50 @@ function undimStations(start, end) {
 // ── Transfer check: thirst tracking ──────────────────────────────────────
 // Returns a thirstBetween(a, b) function that counts local stations between
 // two route indices, accounting for express/branch skips.
+// Uses cumulative physical station counts so express→connection transitions
+// count correctly (express portion = local stations skipped, connection = 1 each).
 function buildThirstTracker(platform, rolledStops) {
   const _ei = state.selectedTrainType?.expressIndices;
   const _eiPos = _ei ? _ei.indexOf(platform.fromIdx) : -1;
-  let _rawIdx = null;
+  let _cumPhysical = null;
   if (_ei && _eiPos !== -1) {
-    _rawIdx = [platform.fromIdx];
+    _cumPhysical = [0]; // departure = 0 stations passed
+    let lastRaw = platform.fromIdx;
+    let exhausted = false;
     for (let i = 1; i <= rolledStops; i++) {
-      let p = platform.direction === 'start' ? _eiPos - i : _eiPos + i;
-      p = Math.max(0, Math.min(_ei.length - 1, p));
-      _rawIdx.push(_ei[p]);
+      const prev = _cumPhysical[_cumPhysical.length - 1];
+      if (!exhausted) {
+        const p = platform.direction === 'start' ? _eiPos - i : _eiPos + i;
+        if (p < 0 || p >= _ei.length) {
+          exhausted = true;
+          _cumPhysical.push(prev + 1);
+        } else {
+          const raw = _ei[p];
+          _cumPhysical.push(prev + Math.abs(raw - lastRaw));
+          lastRaw = raw;
+        }
+      } else {
+        _cumPhysical.push(prev + 1);
+      }
     }
   }
   const _bi = state.selectedBranch?.branchIndices;
-  if (!_rawIdx && _bi) {
+  if (!_cumPhysical && _bi) {
     const _biPos = _bi.indexOf(platform.fromIdx);
     if (_biPos !== -1) {
-      _rawIdx = [_biPos];
+      _cumPhysical = [0];
+      let lastBP = _biPos;
       for (let i = 1; i <= rolledStops; i++) {
         let p = platform.direction === 'start' ? _biPos - i : _biPos + i;
         p = Math.max(0, Math.min(_bi.length - 1, p));
-        _rawIdx.push(p);
+        _cumPhysical.push(_cumPhysical[_cumPhysical.length - 1] + Math.abs(p - lastBP));
+        lastBP = p;
       }
     }
   }
   const _mult = platform.isShinkansen ? SHINKANSEN_THIRST : 1;
   return function thirstBetween(a, b) {
-    const raw = _rawIdx ? Math.abs(_rawIdx[b + 1] - _rawIdx[a + 1]) : b - a;
+    const raw = _cumPhysical ? _cumPhysical[b + 1] - _cumPhysical[a + 1] : b - a;
     return raw * _mult;
   };
 }
@@ -3836,8 +3871,9 @@ function rollStops() {
         t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
 
       state.drankAt.add(normalize(result.station.name));
+      const drinkTransferThirst = state.stationsSinceDrink;
       state.stationsSinceDrink = 0;
-      addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed });
+      addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed, thirst: drinkTransferThirst });
       return;
     }
 
@@ -3851,8 +3887,9 @@ function rollStops() {
       + destSubHints(dest, 'wrap'));
 
     state.drankAt.add(normalize(dest.name));
+    const arrivalThirst = state.stationsSinceDrink;
     state.stationsSinceDrink = 0;
-    addHistory({ drinkAtArrival: true });
+    addHistory({ drinkAtArrival: true, thirst: arrivalThirst });
   });
 }
 
@@ -3976,14 +4013,16 @@ function buildHistoryItem(e, num) {
     const tt = e.trainType ? ` ${e.trainType}` : '';
     body = `<strong>${fromH}</strong> &rarr; <span class="history-line-dot" style="background:${e.color}"></span>${lineDisplayName(e.line)}${tt} (${t('stopsResult', { n: e.stops, s: pl(e.stops) })}) &rarr; <strong>${toH}</strong>${e.drinkAtArrival ? ` <span class="text-accent">${eggDrinkAtArrival(e.toJa)}</span>` : ''}`;
   }
+  const thirstTag = document.getElementById('debug-panel') && e.thirst != null
+    ? ` <span class="text-muted" style="font-size:0.75em">🥵${e.thirst}</span>` : '';
   return `<div class="history-item">
       <span class="history-num">${num}.</span>
-      <span class="history-text">${body}</span>
+      <span class="history-text">${body}${thirstTag}</span>
     </div>`;
 }
 
 function addHistory(transferInfo) {
-  const drinkHere = state.selectedPlatform?.drinkHere && !transferInfo;
+  const drinkHere = state.selectedPlatform?.drinkHere && !(transferInfo?.transferred || transferInfo?.drinkAtTransfer || transferInfo?.drinkAtArrival || transferInfo?.flight);
   const flight    = transferInfo?.flight || false;
   const entry = {
     from:      state.currentStation.name,
@@ -4005,6 +4044,7 @@ function addHistory(transferInfo) {
     drinkAtArrival:  transferInfo?.drinkAtArrival || false,
     stopsUsed:      transferInfo?.stopsUsed || null,
     routeCoords:    null,
+    thirst:         transferInfo?.thirst != null ? transferInfo.thirst : state.stationsSinceDrink,
   };
   // Save intermediate station coordinates for route map (prepend departure station)
   if (!drinkHere && !flight && state.route && state.route.length > 0) {
@@ -4645,11 +4685,19 @@ document.addEventListener('DOMContentLoaded', () => {
       <li data-i18n="htpStep2">Roll the dice to pick a train line and direction.</li>
       <li data-i18n="htpStep3">Head to the platform and board the next train.</li>
       <li data-i18n="htpStep4">Roll again right away — ride that many stops.</li>
-      <li data-i18n="htpStep5">If you pass a transfer station, roll to decide: switch lines or stay on.</li>
+      <li data-i18n="htpStep5">If you pass a transfer station, roll to decide: switch lines, stay on, or get off and drink!</li>
       <li data-i18n="htpStep6">Arrive at your stop, get off, and grab a drink!</li>
       <li data-i18n="htpStep7">Head back to the station and go again!</li>
     </ol>
     <p class="htp-goal" data-i18n="htpGoal">Explore Tokyo and discover new places to drink!</p>
+    <button class="htp-advanced-btn" data-i18n="htpAdvancedBtn" data-i18n-attr="data-show:htpAdvancedBtn;data-hide:htpHideBtn" data-show="Advanced" data-hide="Hide" onclick="this.nextElementSibling.classList.toggle('hidden');this.textContent=this.nextElementSibling.classList.contains('hidden')?this.getAttribute('data-show'):this.getAttribute('data-hide')">Advanced</button>
+    <div class="htp-advanced hidden">
+      <ul>
+        <li data-i18n="htpAdv1">If you end up wandering a bit to find a drink and find yourself closer to a different station, feel free to roll from that station instead after you drink.</li>
+        <li data-i18n="htpAdv2">The game is optimized to be played within the 23 wards of Tokyo, but is still fun throughout the greater Tokyo area.</li>
+        <li data-i18n="htpAdv3">To optimize for more drinking or to not end up too far when last train is approaching, you can cap the max stops you can roll. Between 5 and 10 is usually the sweet spot.</li>
+      </ul>
+    </div>
   </div>
 </div>
 
