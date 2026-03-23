@@ -4020,8 +4020,7 @@ function clearHistory() {
   state.stationsSinceDrink = 0;
   renderHistory();
   updateHistoryDistance();
-  // Hide inline route map
-  if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
+  destroyMap('inlineRouteMap');
   document.getElementById('inline-route-map-wrap').style.display = 'none';
   document.getElementById('inline-map-btn').textContent = t('showRouteMap');
   document.getElementById('inline-map-btn-wrap').style.display = 'none';
@@ -4126,7 +4125,11 @@ function hideStats() {
   document.getElementById('stats-overlay').classList.add('hidden');
   document.getElementById('route-map-wrap').style.display = 'none';
   document.getElementById('stats-map-btn').textContent = t('showRouteMap');
-  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
+  destroyMap('routeMap');
+}
+
+function destroyMap(key) {
+  if (state[key]) { state[key].remove(); state[key] = null; }
 }
 
 // Shared: create a Leaflet route map on the given element ID
@@ -4215,49 +4218,22 @@ function buildRouteMap(elId) {
   return map;
 }
 
-// Stats overlay route map
-function showRouteMap() {
-  const wrap = document.getElementById('route-map-wrap');
-  const btn  = document.getElementById('stats-map-btn');
-
-  // Toggle off
-  if (wrap.style.display !== 'none') {
-    wrap.style.display = 'none';
-    btn.textContent = t('showRouteMap');
-    if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
-    return;
-  }
-
-  // Toggle on
-  wrap.style.display = 'block';
-  btn.textContent = t('hideRouteMap');
-  if (state.routeMap) { state.routeMap.remove(); state.routeMap = null; }
-  state.routeMap = buildRouteMap('route-map');
+function toggleRouteMap(stateKey, wrapId, mapElId, btnId) {
+  const wrap = document.getElementById(wrapId);
+  const btn  = document.getElementById(btnId);
+  const showing = wrap.style.display !== 'none';
+  wrap.style.display = showing ? 'none' : 'block';
+  btn.textContent = t(showing ? 'showRouteMap' : 'hideRouteMap');
+  destroyMap(stateKey);
+  if (!showing) state[stateKey] = buildRouteMap(mapElId);
 }
 
-// Inline route map below session history
-function toggleInlineRouteMap() {
-  const wrap = document.getElementById('inline-route-map-wrap');
-  const btn  = document.getElementById('inline-map-btn');
-
-  // Toggle off
-  if (wrap.style.display !== 'none') {
-    wrap.style.display = 'none';
-    btn.textContent = t('showRouteMap');
-    if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
-    return;
-  }
-
-  // Toggle on
-  wrap.style.display = 'block';
-  btn.textContent = t('hideRouteMap');
-  if (state.inlineRouteMap) { state.inlineRouteMap.remove(); state.inlineRouteMap = null; }
-  state.inlineRouteMap = buildRouteMap('inline-route-map');
-}
+function showRouteMap()        { toggleRouteMap('routeMap',       'route-map-wrap',        'route-map',        'stats-map-btn'); }
+function toggleInlineRouteMap() { toggleRouteMap('inlineRouteMap', 'inline-route-map-wrap', 'inline-route-map', 'inline-map-btn'); }
 
 function refreshInlineRouteMap() {
   if (!state.inlineRouteMap) return;
-  state.inlineRouteMap.remove();
+  destroyMap('inlineRouteMap');
   state.inlineRouteMap = buildRouteMap('inline-route-map');
 }
 
