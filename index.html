@@ -1306,6 +1306,34 @@ function haversineM(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// ── Schedule-aware service stops ──────────────────────────────────────────
+const SCHEDULE_DAY_BOUNDARY = 2; // schedule rolls over at 2am, not midnight
+// Returns 'weekday' or 'weekend'. Override with window._forceSchedule for testing.
+function getScheduleType() {
+  if (window._forceSchedule) return window._forceSchedule;
+  const now = new Date();
+  let day = now.getDay();
+  if (now.getHours() < SCHEDULE_DAY_BOUNDARY) day = (day + 6) % 7; // still previous day
+  return (day === 0 || day === 6) ? 'weekend' : 'weekday';
+}
+
+// Resolve a service's effective stops for the current schedule.
+// Applies schedule.skip (remove stations) or schedule.stops (full override).
+function resolveServiceStops(service, line) {
+  if (!service.schedule) return service.stops;
+  const sched = service.schedule[getScheduleType()];
+  if (!sched) return service.stops;
+  if (sched.skip) {
+    const skipSet = new Set(sched.skip.map(n => normalize(n)));
+    if (service.stops === null) {
+      return line.stations.filter(s => !skipSet.has(normalize(s.name))).map(s => s.name);
+    }
+    return service.stops.filter(s => !skipSet.has(normalize(s)));
+  }
+  if (sched.stops !== undefined) return sched.stops;
+  return service.stops;
+}
+
 // ── Express Service Helpers ───────────────────────────────────────────────
 // Convert stop names to sorted station indices for a line
 function getExpressIndices(line, stopNames) {
@@ -1322,11 +1350,17 @@ function getTrainTypes(lineName, stationName, line) {
   if (!services) return null;
   const norm = normalize(stationName);
   return services
-    .filter(t => t.stops === null || t.stops.some(s => normalize(s) === norm))
-    .map(t => ({
-      ...t,
-      expressIndices: getExpressIndices(line, t.stops),
-    }));
+    .filter(t => {
+      const stops = resolveServiceStops(t, line);
+      return stops === null || stops.some(s => normalize(s) === norm);
+    })
+    .map(t => {
+      const stops = resolveServiceStops(t, line);
+      return {
+        ...t,
+        expressIndices: getExpressIndices(line, stops),
+      };
+    });
 }
 
 // Compute maxStops for an express type on a platform

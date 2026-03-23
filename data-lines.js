@@ -1,5 +1,8 @@
 // ── Express Services (no-extra-fare only) ─────────────────────────────────
 // stops: null = all stations (local); array = station names that this type stops at
+// schedule: optional day-of-week overrides — keys are schedule types ('weekday'|'weekend')
+//   { skip: [...] } = remove these stations from stops for that schedule
+//   { stops: [...] } = completely replace the stop list for that schedule
 const EXPRESS_SERVICES = {
   "Seibu Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -18,7 +21,8 @@ const EXPRESS_SERVICES = {
     ]},
   ],
   "JR Chuo Line": [
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: null,
+      schedule: { weekend: { skip: ["Koenji", "Asagaya", "Nishi-Ogikubo"] } } },
     { name: "Sp. Rapid", ja: "特別快速", color: "#f07000", stops: [
       "Tokyo","Kanda","Ochanomizu","Yotsuya","Shinjuku",
       "Nakano","Mitaka","Kokubunji","Tachikawa",
