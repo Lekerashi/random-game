@@ -4735,32 +4735,35 @@ function saveSessionImage() {
         ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.stroke();
       }
     }
-    // Labels with collision avoidance
+    // Labels with collision avoidance (try above, below, right, left)
     const labels = [];
+    function lblCollides(lx, ly, tw) {
+      return labels.some(function(p) { return Math.abs(lx - p.x) < (tw + p.w) / 2 + 4 && Math.abs(ly - p.y) < 12; });
+    }
     for (const [, m] of markers) {
       if (m.type !== 'start' && m.type !== 'drink') continue;
       const x = toX(m.lng), y = toY(m.lat) + mapY;
       ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       const tw = ctx.measureText(m.name).width;
-      let ly = y - (m.type === 'drink' ? 12 : 10);
-      // Check overlap with existing labels
-      let skip = false;
-      for (const prev of labels) {
-        if (Math.abs(x - prev.x) < (tw + prev.w) / 2 + 4 && Math.abs(ly - prev.y) < 12) {
-          // Try below the marker instead
-          ly = y + (m.type === 'drink' ? 16 : 14);
-          if (labels.some(function(p) { return Math.abs(x - p.x) < (tw + p.w) / 2 + 4 && Math.abs(ly - p.y) < 12; })) {
-            skip = true;
-          }
+      const gap = m.type === 'drink' ? 12 : 10;
+      // Try positions: above, below, right, left
+      const candidates = [
+        { lx: x, ly: y - gap, align: 'center', base: 'bottom' },
+        { lx: x, ly: y + gap + 4, align: 'center', base: 'top' },
+        { lx: x + gap + 2, ly: y, align: 'left', base: 'middle' },
+        { lx: x - gap - 2, ly: y, align: 'right', base: 'middle' },
+      ];
+      let placed = false;
+      for (const c of candidates) {
+        if (!lblCollides(c.lx, c.ly, tw)) {
+          ctx.textAlign = c.align; ctx.textBaseline = c.base;
+          ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+          ctx.strokeText(m.name, c.lx, c.ly);
+          ctx.fillStyle = '#e6edf3'; ctx.fillText(m.name, c.lx, c.ly);
+          labels.push({ x: c.lx, y: c.ly, w: tw });
+          placed = true;
           break;
         }
-      }
-      if (!skip) {
-        ctx.textAlign = 'center'; ctx.textBaseline = ly < y ? 'bottom' : 'top';
-        ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-        ctx.strokeText(m.name, x, ly);
-        ctx.fillStyle = '#e6edf3'; ctx.fillText(m.name, x, ly);
-        labels.push({ x, y: ly, w: tw });
       }
     }
 
