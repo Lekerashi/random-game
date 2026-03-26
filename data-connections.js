@@ -136,6 +136,13 @@ const LINE_CONNECTIONS = [
   { from: 'Tobu Isesaki Line',         fromStation: '押上(スカイツリー前)', fromDir: 'start',
     to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)' },
 
+  // ── Hibiya ↔ Tobu Isesaki (Skytree) at Kita-Senju ──────────────────────
+  // Hibiya terminus at Kita-Senju connects to mid-line Tobu toward Isesaki
+  { from: 'Tokyo Metro Hibiya Line', fromEnd: '北千住',
+    to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end' },
+  { from: 'Tobu Isesaki Line',       fromStation: '北千住', fromDir: 'start',
+    to:   'Tokyo Metro Hibiya Line', toEnd: '北千住' },
+
   // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
   // Sengakuji is mid-line on Asakusa (idx 6), start of Keikyu Main (idx 0)
   // Asakusa trains heading toward Nishi-magome (start) pass Sengakuji → branch onto Keikyu
