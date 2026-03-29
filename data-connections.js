@@ -189,8 +189,12 @@ const LINE_CONNECTIONS = [
         stops: ['Kotake-mukaihara','Ikebukuro','Shinjuku-sanchome',
                 "Meiji-jingumae 'Harajuku'",'Shibuya'] },
     ] },
-  { from: 'Tokyo Metro Fukutoshin Line', fromStation: '小竹向原', fromDir: 'end',
-    to:   'Seibu Yurakucho Line',        toEnd: '小竹向原' },
+  // (No Fukutoshin→Seibu connection needed: at Kotake-mukaihara the Seibu platform is available directly)
+
+  // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
+  // Yurakucho terminates at Nerima (idx 2), continues onto Ikebukuro toward Kotesashi/Hanno
+  { from: 'Seibu Yurakucho Line',  fromEnd: '練馬',
+    to:   'Seibu Ikebukuro Line',  toStation: '練馬', toDir: 'end' },
 
   // ── Seibu Ikebukuro → Seibu Yurakucho at Nerima (mid-line junction) ───
   // Nerima is mid-line on Ikebukuro (idx 5), end on Yurakucho (idx 2)

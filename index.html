@@ -3057,9 +3057,21 @@ function showTrainTypeButtons(p) {
         _terminatesAtJunction: true,
       });
     }
+    // Skip target Local if source already has one (through-run local covers both lines)
+    const srcHasLocal = trainTypes.some(t => t.stops === null && !t._connTargetLineIdx);
+    const srcNames = new Set(trainTypes.map(t => normalize(t.name)));
+    // Short label for target line (e.g. "Tobu Tojo Line" → "Tobu Tojo")
+    const shortTargetEn = conn.to.replace(/ Line$/, '').replace(/^Tokyo Metro /, '');
+    const shortTargetJa = (LINE_NAMES_JA[conn.to] || shortTargetEn).replace(/線$/, '');
     for (const tt of targetTypes) {
-      // Mark as connection-target: expressIndices are on the target line, not the source
-      trainTypes.push({ ...tt, _connTargetLineIdx: conn.toLineIdx });
+      if (srcHasLocal && tt.stops === null) continue;
+      const entry = { ...tt, _connTargetLineIdx: conn.toLineIdx };
+      // Disambiguate if source line has a type with the same name
+      if (srcNames.has(normalize(tt.name))) {
+        entry.name = shortTargetEn + ' ' + tt.name;
+        entry.ja = shortTargetJa + ' ' + tt.ja;
+      }
+      trainTypes.push(entry);
     }
   }
   if (!trainTypes || trainTypes.length <= 1) {
@@ -3494,11 +3506,16 @@ function getEffectiveStops(platform, opts = {}) {
     rawMax = getExpressMaxStops(platform, ei);
     // Source-line express can continue as local onto connected lines
     // (e.g. Den-en-toshi Express → Hanzomon local at Shibuya)
+    // But not when the target line has its own express services — those handle through-running
     if (platform._connections && platform._onLineStops != null) {
       const line = state.lines[platform.lineIdx];
       const terminusIdx = platform.direction === 'start' ? 0 : line.stations.length - 1;
       if (ei.includes(terminusIdx)) {
-        rawMax += (platform.maxStops - platform._onLineStops);
+        const conn = state.selectedConnection || platform._connections?.[0];
+        const targetHasExpress = conn && EXPRESS_SERVICES[conn.to];
+        if (!targetHasExpress) {
+          rawMax += (platform.maxStops - platform._onLineStops);
+        }
       }
     }
   } else if (bi) {

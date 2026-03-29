@@ -31,7 +31,7 @@ const EXPRESS_SERVICES = {
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    { name: "F-Liner", ja: "Fライナー", color: "#e83030", stops: [
       "Wakoshi","Kotake-mukaihara","Ikebukuro","Shinjuku-sanchome",
       "Meiji-jingumae 'Harajuku'","Shibuya",
     ]},
