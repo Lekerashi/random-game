@@ -56,7 +56,7 @@ const EXPRESS_SERVICES = {
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Ikebukuro","Shakujii-kōen","Hibarigaoka","Tokorozawa",
       "Kotesashi","Iruma-shi","Hanno",
-    ]},
+    ],  schedule: { weekday: { stops: [] } } },
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
