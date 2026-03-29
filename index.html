@@ -3101,7 +3101,8 @@ function showTrainTypeButtons(p) {
     showRollStopsUI();
     return false;
   }
-  // Merge types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
+  // Merge express types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
+  // Never merge local with express — same count can mean different destinations
   const withCounts = reachable.map(g => ({ g, count: getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount }));
   const merged = [];
   for (const { g, count } of withCounts) {
