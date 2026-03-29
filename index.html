@@ -3031,7 +3031,7 @@ function showTrainTypeButtons(p) {
   }
   const line = state.lines[p.lineIdx];
   let trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line) || [];
-  // Add connection express services (e.g. Airport Exp spanning both lines)
+  // Add connection express services (e.g. Keikyu Express spanning both lines)
   for (const connExInfo of allConnExpress) {
     trainTypes.push(...resolveConnectionExpress(connExInfo, p, line));
   }

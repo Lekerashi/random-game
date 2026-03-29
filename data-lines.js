@@ -74,9 +74,9 @@ const EXPRESS_SERVICES = {
       "Kitano","Keiō-hachiōji",
     ]},
     { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
-      "Shinjuku","Meidaimae","Chofu",
-      "Fuchu","Bubaigawara","Seiseki-sakuragaoka","Takahatafudo","Kitano",
-      "Keiō-hachiōji",
+      "Shinjuku","Sasazuka","Meidaimae","Chitose-karasuyama",
+      "Tsutsujigaoka","Chofu","Fuchu","Bubaigawara",
+      "Seiseki-sakuragaoka","Takahatafudo","Kitano","Keiō-hachiōji",
     ]},
   ],
   "Keio Inokashira line": [
@@ -90,7 +90,8 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Chitose-Funabashi",
-      "Soshigaya-Okura","Seijogakuen-mae","Komae","Noborito","Mukogaoka-Yuen",
+      "Soshigaya-Okura","Seijogakuen-mae","Kitami","Komae","Izumi-Tamagawa",
+      "Noborito","Mukogaoka-Yuen",
       "Ikuta","Yomiuriland-mae","Yurigaoka","Shin-Yurigaoka",
       "Kakio","Tsurukawa","Tamagawagakuen-mae","Machida","Odakyu-Sagamihara",
       "Soubudai-Mae","Zama","Ebina","Atsugi","Hon-Atsugi",
@@ -105,7 +106,7 @@ const EXPRESS_SERVICES = {
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Noborito","Shin-Yurigaoka",
       "Machida","Sagami-Ono","Ebina","Hon-Atsugi","Aiko-Ishida","Isehara",
       "Tsurumaki-Onsen","Tokaidaigaku-mae","Hadano","Shibusawa",
-      "Shin-Matsuda","Odawara",
+      "Shin-Matsuda","Kaisei","Odawara",
     ]},
   ],
   "Tokyu Toyoko Line": [
@@ -228,7 +229,7 @@ const EXPRESS_SERVICES = {
   ],
   "Keikyu Airport Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Airport Exp", ja: "エアポート急行", color: "#e83030", stops: [
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
       "Kojiya","Otorii","Anamori-Inari","Tenkubashi",
       "Haneda Airport Terminal 3","Haneda Airport Terminal 1 & 2",

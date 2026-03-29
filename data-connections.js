@@ -29,7 +29,7 @@ const LINE_CONNECTIONS = [
     to:   'Keikyu Main Line',     toStation: '京急蒲田', toDir: 'start',
     name: 'Shinagawa', ja: '品川方面', color: '#e57053',
     express: [
-      { name: 'Airport Exp', ja: 'エアポート急行', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
@@ -39,7 +39,7 @@ const LINE_CONNECTIONS = [
     toUntil: '横浜',
     name: 'Yokohama', ja: '横浜方面', color: '#1a8fe8',
     express: [
-      { name: 'Airport Exp', ja: 'エアポート急行', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Keikyu Kamata','Keikyu Kawasaki','Kanagawa-shimmachi','Yokohama',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
@@ -51,7 +51,7 @@ const LINE_CONNECTIONS = [
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
-      { name: 'Airport Exp', ja: 'エアポート急行', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
@@ -61,7 +61,7 @@ const LINE_CONNECTIONS = [
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
-      { name: 'Airport Exp', ja: 'エアポート急行', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Yokohama','Kanagawa-shimmachi','Keikyu Kawasaki','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
