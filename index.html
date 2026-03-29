@@ -3101,18 +3101,31 @@ function showTrainTypeButtons(p) {
     showRollStopsUI();
     return false;
   }
+  // Merge types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
+  const withCounts = reachable.map(g => ({ g, count: getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount }));
+  const merged = [];
+  for (const { g, count } of withCounts) {
+    const existing = merged.find(m => m._count === count);
+    if (existing) {
+      existing._members.push(...g._members);
+      existing.name += ' / ' + g.name;
+      existing.ja += ' / ' + g.ja;
+    } else {
+      merged.push({ ...g, _count: count });
+    }
+  }
   // Skip picker if all types produce the same valid stop count (no meaningful choice)
-  const counts = reachable.map(g => getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount);
-  if (counts.every(c => c === counts[0])) {
+  if (merged.length <= 1) {
     showRollStopsUI();
     return false;
   }
+  const reachableFinal = merged;
   showTrainTypeUI();
-  dom.trainTypeRow.innerHTML = reachable.map((g, i) => {
-    const ei = g.expressIndices;
-    const { validCount: effectiveMax, rawMax: physMax } = getEffectiveStops(p, { ei, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax });
+  dom.trainTypeRow.innerHTML = reachableFinal.map((g, i) => {
+    const effectiveMax = g._count;
+    const physMax = getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).rawMax;
     // Local (first) button gets full width when there are exactly 3 types
-    const fullWidth = i === 0 && reachable.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    const fullWidth = i === 0 && reachableFinal.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${g.color};${pillTextStyle(g.color)}${fullWidth}"
       data-type-name="${g.name}" data-max="${physMax}">
       ${currentLang === 'ja'
@@ -3123,7 +3136,7 @@ function showTrainTypeButtons(p) {
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       // If grouped, randomly pick one of the member services for the label
-      const g = reachable[i];
+      const g = reachableFinal[i];
       const pick = g._members[Math.floor(Math.random() * g._members.length)];
       state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
       const effectiveMax = getEffectiveStops(p).validCount;
