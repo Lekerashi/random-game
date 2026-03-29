@@ -3105,7 +3105,8 @@ function showTrainTypeButtons(p) {
   const withCounts = reachable.map(g => ({ g, count: getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount }));
   const merged = [];
   for (const { g, count } of withCounts) {
-    const existing = merged.find(m => m._count === count);
+    const isLocal = !g.expressIndices;
+    const existing = merged.find(m => m._count === count && !m.expressIndices === isLocal);
     if (existing) {
       existing._members.push(...g._members);
       existing.name += ' / ' + g.name;
