@@ -31,6 +31,10 @@ const EXPRESS_SERVICES = {
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "Wakoshi","Kotake-mukaihara","Ikebukuro","Shinjuku-sanchome",
+      "Meiji-jingumae 'Harajuku'","Shibuya",
+    ]},
     { name: "F-Liner", ja: "Fライナー", color: "#e83030", stops: [
       "Wakoshi","Kotake-mukaihara","Ikebukuro","Shinjuku-sanchome",
       "Meiji-jingumae 'Harajuku'","Shibuya",
@@ -145,21 +149,24 @@ const EXPRESS_SERVICES = {
   ],
   "Tobu Tojo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    // 2023 revision: all services local between Kawagoe and Ogawamachi
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "Ikebukuro","Kami-itabashi","Narimasu","Wakoshi","Asaka","Asakadai",
-      "Shiki","Fujimino","Kami-fukuoka","Kawagoe","Kawagoeshi",
-      "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
-      "Ogawamachi","Yorii",
+      "Shiki","Fujimino","Kami-fukuoka",
+      "Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
+      "Tsukinowa","Musashi-ranzan","Ogawamachi","Yorii",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Ikebukuro","Wakoshi","Asaka","Asakadai","Kawagoe","Kawagoeshi",
-      "Sakado","Higashi-matsuyama","Shinrin-koen","Musashi-ranzan",
-      "Ogawamachi","Yorii",
+      "Ikebukuro","Wakoshi","Asaka","Asakadai",
+      "Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
+      "Tsukinowa","Musashi-ranzan","Ogawamachi","Yorii",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "Ikebukuro","Wakoshi","Asakadai","Kawagoe","Kawagoeshi",
-      "Kasumigaseki","Tsurugashima","Wakaba","Sakado",
-      "Kita Sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
+      "Ikebukuro","Wakoshi","Asakadai",
+      "Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
       "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},
   ],
