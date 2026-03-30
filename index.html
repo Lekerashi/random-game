@@ -472,6 +472,8 @@
     .bar-name a:hover { text-decoration: underline; }
     .bar-dist { color: var(--muted); font-size: .8rem; }
     .bars-empty { color: var(--muted); font-size: .88rem; margin-top: 12px; }
+    .show-more-btn { width: 100%; padding: 8px; margin-top: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); cursor: pointer; font-size: .88rem; }
+    .show-more-btn:hover { background: var(--border); }
 
     /* ── History ─────────────────────────────────────── */
     .history-list { margin-top: 12px; }
@@ -1207,6 +1209,13 @@ _langRefreshers.push(function refreshRouteMapBtn() {
   const inBtn = document.getElementById('inline-map-btn');
   const inWrap = document.getElementById('inline-route-map-wrap');
   if (inBtn) inBtn.textContent = t(inWrap && inWrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
+});
+
+_langRefreshers.push(function refreshPlacesBtns() {
+  const barsOpen  = dom.barsCard.style.display === 'block';
+  const cafesOpen = dom.cafesCard.style.display === 'block';
+  dom.showBarsBtn.textContent  = t(barsOpen  ? 'hideBarsBtn'  : 'barsBtn');
+  dom.showCafesBtn.textContent = t(cafesOpen ? 'hideCafesBtn' : 'cafesBtn');
 });
 
 function switchLang(lang) {
@@ -2462,6 +2471,10 @@ function hideAllCards() {
   dom.mapCard.style.display     = 'none';
   dom.barsCard.style.display    = 'none';
   dom.cafesCard.style.display   = 'none';
+  dom.showBarsBtn.textContent   = t('barsBtn');
+  dom.showCafesBtn.textContent  = t('cafesBtn');
+  _placesCache.bars = null;
+  _placesCache.cafes = null;
 }
 
 function showError(msg) {
@@ -3959,12 +3972,71 @@ function showMap() {
 }
 
 // ── Bars & Cafes (HERE Maps) ──────────────────────────────────────────────
-async function showPlaces(mode) {
+const PLACES_PAGE_SIZE = 5;
+const _placesCache = { bars: null, cafes: null };
+
+function renderPlaceItems(items, shown) {
+  return items.slice(0, shown).map(p =>
+    `<div class="bar-item">
+      <span class="bar-icon">${p.icon}</span>
+      <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small class="text-muted" style="margin-left:6px">${p.placeType}</small>` : ''}</span>
+      <span class="bar-dist">${Math.round(p.dist)} m</span>
+    </div>`
+  ).join('');
+}
+
+function renderPlacesContent(mode, items, shown) {
+  const isBars = mode === 'bars';
+  const content = isBars ? dom.barsContent : dom.cafesContent;
+  let html = `<div class="bars-list">${renderPlaceItems(items, shown)}</div>`;
+  if (shown < items.length) {
+    html += `<button class="show-more-btn" id="show-more-${mode}">${isBars ? t('showMoreBars') : t('showMoreCafes')}</button>`;
+  }
+  content.innerHTML = html;
+  if (shown < items.length) {
+    document.getElementById(`show-more-${mode}`).addEventListener('click', () => {
+      const next = shown + PLACES_PAGE_SIZE;
+      renderPlacesContent(mode, items, next);
+    });
+  }
+}
+
+function hidePlaces(mode) {
+  const isBars = mode === 'bars';
+  const card = isBars ? dom.barsCard : dom.cafesCard;
+  const btn  = isBars ? dom.showBarsBtn : dom.showCafesBtn;
+  card.style.display = 'none';
+  btn.textContent = t(isBars ? 'barsBtn' : 'cafesBtn');
+}
+
+async function togglePlaces(mode) {
   const isBars  = mode === 'bars';
+  const other   = isBars ? 'cafes' : 'bars';
   const card    = isBars ? dom.barsCard    : dom.cafesCard;
   const content = isBars ? dom.barsContent : dom.cafesContent;
+  const btn     = isBars ? dom.showBarsBtn : dom.showCafesBtn;
+
+  // Toggle off if already visible
+  if (card.style.display === 'block') {
+    hidePlaces(mode);
+    return;
+  }
+
+  // Close the other panel first
+  const otherCard = isBars ? dom.cafesCard : dom.barsCard;
+  if (otherCard.style.display === 'block') hidePlaces(other);
+
+  // Show card and update button text
   card.style.display = 'block';
+  btn.textContent = t(isBars ? 'hideBarsBtn' : 'hideCafesBtn');
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Use cache if we already fetched for this destination
+  if (_placesCache[mode]) {
+    renderPlacesContent(mode, _placesCache[mode], PLACES_PAGE_SIZE);
+    return;
+  }
+
   content.innerHTML = `<div class="bars-empty">${isBars ? t('searchingBars') : t('searchingCafes')}</div>`;
 
   const { lat, lng } = state.destination;
@@ -3973,8 +4045,6 @@ async function showPlaces(mode) {
   try {
     let items;
     if (isBars) {
-      // Two parallel queries: 200-2000-0011 = Bar/Pub/Izakaya (HERE Japan category)
-      // + discover for 居酒屋 to catch izakayas miscategorised as restaurants
       const [browseRes, izakayaRes] = await Promise.all([
         fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=200-2000-0011&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
         fetch(`https://discover.search.hereapi.com/v1/discover?at=${lat},${lng}&q=%E5%B1%85%E9%85%92%E5%B1%8B&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`),
@@ -4004,7 +4074,6 @@ async function showPlaces(mode) {
         })
         .sort((a, b) => a.dist - b.dist);
     } else {
-      // 100-1100-0010 = Coffee/Tea shop (HERE category)
       const res = await fetch(`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=100-1100-0010&in=${encodeURIComponent(circle)}&limit=50&apiKey=${HERE_API_KEY}`);
       if (!res.ok) throw new Error(`HERE HTTP ${res.status}`);
       const data = await res.json();
@@ -4023,13 +4092,8 @@ async function showPlaces(mode) {
       return;
     }
 
-    content.innerHTML = `<div class="bars-list">${items.map(p =>
-      `<div class="bar-item">
-        <span class="bar-icon">${p.icon}</span>
-        <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small class="text-muted" style="margin-left:6px">${p.placeType}</small>` : ''}</span>
-        <span class="bar-dist">${Math.round(p.dist)} m</span>
-      </div>`
-    ).join('')}</div>`;
+    _placesCache[mode] = items;
+    renderPlacesContent(mode, items, PLACES_PAGE_SIZE);
   } catch (err) {
     content.innerHTML = `<div class="bars-empty">${isBars ? t('fetchBarFail', { msg: err.message }) : t('fetchCafeFail', { msg: err.message })}</div>`;
   }
@@ -4954,8 +5018,8 @@ function setupGameControls() {
   dom.rollStopsBtn.addEventListener('click', rollStops);
   dom.rerollStopsBtn.addEventListener('click', rerollStops);
   dom.showMapBtn.addEventListener('click', showMap);
-  dom.showBarsBtn.addEventListener('click', () => showPlaces('bars'));
-  dom.showCafesBtn.addEventListener('click', () => showPlaces('cafes'));
+  dom.showBarsBtn.addEventListener('click', () => togglePlaces('bars'));
+  dom.showCafesBtn.addEventListener('click', () => togglePlaces('cafes'));
   dom.rollAgainBtn.addEventListener('click', rollAgainFromHere);
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
   dom.copyRouteBtn.addEventListener('click', copyRoute);
