@@ -5143,23 +5143,15 @@ function setupSessionResume() {
     <div class="stat-box full-width"><div class="stat-val">${s.distKm} km</div><div class="stat-label">${t('statDistance')}</div></div>
   `;
 
-  // Show overlay BEFORE building map — Leaflet needs a visible container for bounds
-  overlay.classList.remove('hidden');
-  overlay.offsetHeight; // force reflow so Leaflet gets correct container size
-
-  // Route map
-  state.recapMap = buildRouteMap('recap-map');
-
-  // Save image (works because state.history is populated)
-  document.getElementById('recap-save-btn').addEventListener('click', () => saveSessionImage(), { once: true });
-  // Copy route
-  const copyBtn = document.getElementById('recap-copy-btn');
-  copyBtn.addEventListener('click', () => copyRoute(copyBtn));
-
+  // Wire up buttons FIRST — must always work even if map fails
   function dismissRecap() {
     destroyMap('recapMap');
     overlay.classList.add('hidden');
   }
+
+  document.getElementById('recap-save-btn').addEventListener('click', () => saveSessionImage(), { once: true });
+  const copyBtn = document.getElementById('recap-copy-btn');
+  copyBtn.addEventListener('click', () => copyRoute(copyBtn));
 
   document.getElementById('resume-btn').addEventListener('click', () => {
     dismissRecap();
@@ -5170,6 +5162,13 @@ function setupSessionResume() {
     state.history = [];
     localStorage.removeItem(SESSION_KEY);
   }, { once: true });
+
+  // Show overlay BEFORE building map — Leaflet needs a visible container for bounds
+  overlay.classList.remove('hidden');
+  overlay.offsetHeight; // force reflow so Leaflet gets correct container size
+
+  // Route map (wrapped so a failure never blocks the buttons)
+  try { state.recapMap = buildRouteMap('recap-map'); } catch (e) { console.warn('Recap map failed:', e); }
 }
 
 (async function init() {
