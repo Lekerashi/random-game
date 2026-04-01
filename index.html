@@ -2520,6 +2520,8 @@ function hideLoading() {
 
 function hideAllCards() {
   dom.destCard.classList.remove('active');
+  dom.destWard.textContent = '';
+  state._destWard = null;
   dom.journeyCard.style.display = 'none';
   dom.mapCard.style.display     = 'none';
   dom.barsCard.style.display    = 'none';
@@ -5165,10 +5167,16 @@ function setupSessionResume() {
 
   // Show overlay BEFORE building map — Leaflet needs a visible container for bounds
   overlay.classList.remove('hidden');
+  document.activeElement?.blur(); // prevent typing behind overlay
   overlay.offsetHeight; // force reflow so Leaflet gets correct container size
 
-  // Route map (wrapped so a failure never blocks the buttons)
-  try { state.recapMap = buildRouteMap('recap-map'); } catch (e) { console.warn('Recap map failed:', e); }
+  // Route map — Leaflet loads with defer so it may not be ready yet
+  function tryBuildRecapMap() {
+    try { state.recapMap = buildRouteMap('recap-map'); }
+    catch (e) { console.warn('Recap map failed:', e); }
+  }
+  if (typeof L !== 'undefined') tryBuildRecapMap();
+  else document.querySelector('script[src*="leaflet"]').addEventListener('load', tryBuildRecapMap);
 }
 
 (async function init() {
