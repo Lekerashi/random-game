@@ -1225,7 +1225,8 @@ _langRefreshers.push(function refreshDestSub() {
 
 _langRefreshers.push(function refreshDestWard() {
   if (state._destWard) {
-    dom.destWard.textContent = currentLang === 'ja' ? state._destWard.ja : state._destWard.name;
+    var ws = state._destWard.isWard ? ' Ward' : state._destWard.ja.endsWith('市') ? ' City' : '';
+    dom.destWard.textContent = currentLang === 'ja' ? state._destWard.ja : state._destWard.name + ws;
   }
 });
 
@@ -3465,7 +3466,8 @@ function showDestCard(station, subHtml) {
   const ward = station.lat != null ? getWardOrCity(station.lat, station.lng) : null;
   if (ward) {
     state._destWard = ward;
-    dom.destWard.textContent = currentLang === 'ja' ? ward.ja : ward.name;
+    var wardSuffix = ward.isWard ? ' Ward' : ward.ja.endsWith('市') ? ' City' : '';
+    dom.destWard.textContent = currentLang === 'ja' ? ward.ja : ward.name + wardSuffix;
     dom.destWard.style.display = '';
   } else {
     state._destWard = null;
