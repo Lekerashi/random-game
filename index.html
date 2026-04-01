@@ -429,6 +429,7 @@
       font-size: .85rem;
       margin-bottom: 14px;
     }
+    .dest-ward { color: var(--muted); font-size: .8rem; margin-bottom: 4px; opacity: 0.7; }
     .action-row {
       display: flex; gap: 10px; flex-wrap: wrap;
       margin-top: 14px;
@@ -649,10 +650,11 @@
 
     /* ── Route map (shared styles) ────────────── */
     #route-map, #inline-route-map { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
-    #stats-overlay .htp-card   { max-height: 90vh; overflow-y: auto; }
-    #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
-    #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
-    #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a { color: var(--accent2); }
+    #recap-map { height: 220px; border-radius: 8px; overflow: hidden; background: var(--bg); }
+    #stats-overlay .htp-card, #recap-overlay .htp-card { max-height: 90vh; overflow-y: auto; }
+    #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a, #recap-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution, #recap-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
+    #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a, #recap-map .leaflet-control-attribution a { color: var(--accent2); }
     .route-map-drink { background: none !important; border: none !important; font-size: 14px; line-height: 18px; text-align: center; }
     .route-map-tooltip { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 3px 6px; }
     .route-map-tooltip::before { border-top-color: var(--border) !important; }
@@ -794,6 +796,7 @@
       <a class="destination-name" id="dest-name" target="_blank" rel="noopener"></a>
       <span class="destination-name-ja" id="dest-name-ja"></span>
     </div>
+    <div class="dest-ward" id="dest-ward"></div>
     <div class="destination-sub" id="dest-sub"></div>
     <div class="action-row">
       <button class="btn btn-ghost" id="show-map-btn" data-i18n="mapBtn">🗺 Map</button>
@@ -821,12 +824,22 @@
     <div id="cafes-content"></div>
   </div>
 
-  <!-- Resume banner -->
-  <div class="card" id="resume-banner" style="display:none; text-align:center;">
-    <p id="resume-text" data-i18n="resumeSession">Resume previous session?</p>
-    <div style="display:flex; gap:8px; justify-content:center;">
-      <button class="btn btn-primary btn-sm" id="resume-btn" data-i18n="resumeBtn">Resume</button>
-      <button class="btn btn-ghost btn-sm" id="dismiss-resume-btn" data-i18n="dismissBtn">New Game</button>
+  <!-- Resume / Recap overlay -->
+  <div class="htp-overlay hidden" id="recap-overlay">
+    <div class="htp-card">
+      <h3 id="recap-title"></h3>
+      <div class="stats-grid" id="recap-stats"></div>
+      <div id="recap-map-wrap" style="margin-top:12px;">
+        <div id="recap-map"></div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+        <button class="btn btn-ghost btn-sm" id="recap-save-btn" data-i18n="saveSession">Save Image</button>
+        <button class="btn btn-ghost btn-sm" id="recap-copy-btn" data-i18n="copyRoute">Copy route</button>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center; margin-top:8px;">
+        <button class="btn btn-primary btn-sm" id="resume-btn" data-i18n="resumeBtn">Resume</button>
+        <button class="btn btn-sm" id="dismiss-resume-btn" style="background:var(--accent2);color:#fff;" data-i18n="dismissBtn">New Game</button>
+      </div>
     </div>
   </div>
 
@@ -974,7 +987,40 @@ function isIn23Wards(lat, lng) {
   return true;
 }
 
+// ── Point-in-polygon (ray casting) ───────────────────────────────────────
+function pointInPolygon(lat, lng, ring) {
+  // ring is GeoJSON [lng, lat] pairs
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if ((yi > lat) !== (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
 
+function getWardOrCity(lat, lng) {
+  if (typeof TOKYO_GEO === 'undefined') return null;
+  // Wards first (23 special wards — more specific)
+  for (const feat of TOKYO_GEO.features) {
+    if (feat.properties.type === 'ward' && feat.geometry.type === 'Polygon') {
+      if (pointInPolygon(lat, lng, feat.geometry.coordinates[0])) {
+        return { name: feat.properties.name, ja: feat.properties.ja, isWard: true };
+      }
+    }
+  }
+  // Fallback to cities (greater Tokyo municipalities)
+  for (const feat of TOKYO_GEO.features) {
+    if (feat.properties.type === 'city' && feat.geometry.type === 'Polygon') {
+      if (pointInPolygon(lat, lng, feat.geometry.coordinates[0])) {
+        return { name: feat.properties.name, ja: feat.properties.ja, isWard: false };
+      }
+    }
+  }
+  return null;
+}
 
 function getAliasKeys(stationName) {
   const aliases = STATION_ALIASES[stationName];
@@ -1177,6 +1223,12 @@ _langRefreshers.push(function refreshDestSub() {
   }
 });
 
+_langRefreshers.push(function refreshDestWard() {
+  if (state._destWard) {
+    dom.destWard.textContent = currentLang === 'ja' ? state._destWard.ja : state._destWard.name;
+  }
+});
+
 _langRefreshers.push(function refreshGeoHint() {
   if (state.geoNearest) {
     setLocationHint(t('geoNearest', { name: stationDisplayName(state.geoNearest.name), dist: state.geoNearest.dist }));
@@ -1294,6 +1346,7 @@ const dom = {
   destName:       document.getElementById('dest-name'),
   destNameJa:     document.getElementById('dest-name-ja'),
   destSub:        document.getElementById('dest-sub'),
+  destWard:       document.getElementById('dest-ward'),
   rollAgainBtn:   document.getElementById('roll-again-btn'),
   showBarsBtn:    document.getElementById('show-bars-btn'),
   showCafesBtn:   document.getElementById('show-cafes-btn'),
@@ -3406,6 +3459,17 @@ function showDestCard(station, subHtml) {
   dom.destName.textContent = station.name;
   dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`;
   dom.destNameJa.textContent = station.ja || '';
+  // Ward / city context
+  const ward = station.lat != null ? getWardOrCity(station.lat, station.lng) : null;
+  if (ward) {
+    state._destWard = ward;
+    dom.destWard.textContent = currentLang === 'ja' ? ward.ja : ward.name;
+    dom.destWard.style.display = '';
+  } else {
+    state._destWard = null;
+    dom.destWard.textContent = '';
+    dom.destWard.style.display = 'none';
+  }
   dom.destSub.innerHTML = subHtml;
   dom.destCard.classList.add('active');
   dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -5057,15 +5121,53 @@ function setupSettings() {
 
 function setupSessionResume() {
   const saved = loadSession();
-  if (!saved) return;
-  const banner = document.getElementById('resume-banner');
-  banner.style.display = '';
+  if (!saved || !saved.history || saved.history.length === 0) return;
+  const overlay = document.getElementById('recap-overlay');
+
+  // Temporarily populate state.history so stats + map functions work
+  state.history = saved.history;
+
+  // Title — formatted date from session timestamp
+  const locale = currentLang === 'ja' ? 'ja-JP' : 'en-US';
+  const sessionDate = new Date(saved.timestamp);
+  const dateStr = sessionDate.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+  document.getElementById('recap-title').textContent = t('copyRouteHeader', { date: dateStr }).replace(/^🗼\s*/, '');
+
+  // Stats grid
+  const s = getSessionStats();
+  document.getElementById('recap-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${s.stations}</div><div class="stat-label">${t('statStations')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.lines}</div><div class="stat-label">${t('statLines')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.totalStops}</div><div class="stat-label">${t('statStops')}</div></div>
+    <div class="stat-box"><div class="stat-val">${s.drinks}</div><div class="stat-label">${t('statDrinks')}</div></div>
+    <div class="stat-box full-width"><div class="stat-val">${s.distKm} km</div><div class="stat-label">${t('statDistance')}</div></div>
+  `;
+
+  // Show overlay BEFORE building map — Leaflet needs a visible container for bounds
+  overlay.classList.remove('hidden');
+  overlay.offsetHeight; // force reflow so Leaflet gets correct container size
+
+  // Route map
+  state.recapMap = buildRouteMap('recap-map');
+
+  // Save image (works because state.history is populated)
+  document.getElementById('recap-save-btn').addEventListener('click', () => saveSessionImage(), { once: true });
+  // Copy route
+  const copyBtn = document.getElementById('recap-copy-btn');
+  copyBtn.addEventListener('click', () => copyRoute(copyBtn));
+
+  function dismissRecap() {
+    destroyMap('recapMap');
+    overlay.classList.add('hidden');
+  }
+
   document.getElementById('resume-btn').addEventListener('click', () => {
-    banner.style.display = 'none';
+    dismissRecap();
     resumeSession(saved);
   }, { once: true });
   document.getElementById('dismiss-resume-btn').addEventListener('click', () => {
-    banner.style.display = 'none';
+    dismissRecap();
+    state.history = [];
     localStorage.removeItem(SESSION_KEY);
   }, { once: true });
 }
