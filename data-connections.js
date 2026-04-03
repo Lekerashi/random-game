@@ -78,12 +78,24 @@ const LINE_CONNECTIONS = [
     to:   'JR Takasaki Line',     toEnd:   '上野',
     via:  ['上野'],
     name: 'Takasaki', ja: '高崎線', color: '#424d6d',
-    displayName: 'Ueno Tokyo Line' },
+    displayName: 'Ueno Tokyo Line',
+    destinations: [
+      { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d' },
+      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
+    ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Joban Line',        toEnd:   '上野',
     via:  ['上野'],
     name: 'Joban', ja: '常磐線', color: '#009BBF',
-    displayName: 'Ueno Tokyo Line' },
+    displayName: 'Ueno Tokyo Line',
+    express: [
+      { name: 'Rapid', ja: '快速', color: '#009BBF',
+        stops: ['Ueno','Nippori','Mikawashima','Minami-Senju','Kita-Senju',
+                'Matsudo','Kashiwa','Abiko','Tennodai','Toride'] },
+      { name: 'Special Rapid', ja: '特別快速', color: '#e85050',
+        stops: ['Ueno','Nippori','Kita-Senju',
+                'Matsudo','Kashiwa','Toride'] },
+    ] },
   // Some trains terminate at Ueno
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'Utsunomiya Line',      toEnd:   '上野',
@@ -280,11 +292,29 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Yurakucho Line',  fromEnd: '和光市',
     to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
 
+  // ── Chuo → Ome at Tachikawa ─────────────────────────────────────────
+  // Mid-line connection: some Chuo rapid trains through-run onto Ome Line
+  { from: 'JR Chuo Line',  fromStation: '立川', fromDir: 'end',
+    to:   'JR Ome Line',   toStation: '立川', toDir: 'end',
+    toUntil: '青梅',
+    express: [
+      { name: 'Ome Sp. Rapid', ja: '青梅特快', color: '#f07000',
+        stops: ['Tokyo','Kanda','Ochanomizu','Yotsuya','Shinjuku',
+                'Nakano','Mitaka','Kokubunji','Tachikawa',
+                'Nishi-Tachikawa','Higashi-Nakagami','Nakagami','Akishima',
+                'Haijima','Ushihama','Fussa','Hamura','Ozaku','Kabe',
+                'Higashi-Ome','Ome'] },
+    ] },
+
   // ── Chiyoda ↔ JR Joban at Ayase ───────────────────────────────────────
   // Ayase is idx 1 on Chiyoda (near start, Kita-ayase is a 1-station stub)
   // Ayase is idx 5 on Joban (mid-line)
   { from: 'Tokyo Metro Chiyoda Line', fromStation: '綾瀬', fromDir: 'start',
-    to:   'JR Joban Line',            toStation: '綾瀬', toDir: 'end' },
+    to:   'JR Joban Line',            toStation: '綾瀬', toDir: 'end',
+    destinations: [
+      { until: '我孫子', name: 'Abiko',  ja: '我孫子方面', color: '#1aa260' },
+      { until: '取手',   name: 'Toride', ja: '取手方面',   color: '#009BBF' },
+    ] },
   { from: 'JR Joban Line',            fromStation: '綾瀬', fromDir: 'end',
     to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end' },
 

@@ -1398,13 +1398,27 @@ function getScheduleType() {
   if (now.getHours() < SCHEDULE_DAY_BOUNDARY) day = (day + 6) % 7; // still previous day
   return (day === 0 || day === 6) ? 'weekend' : 'weekday';
 }
+// Returns current hour (0-23). Override with window._forceHour for testing.
+function getCurrentHour() {
+  if (window._forceHour != null) return window._forceHour;
+  return new Date().getHours();
+}
 
 // Resolve a service's effective stops for the current schedule.
-// Applies schedule.skip (remove stations) or schedule.stops (full override).
+// Applies schedule.skip (remove stations), schedule.stops (full override),
+// and schedule.timeRange ([startHour, endHour]) for time-of-day filtering.
 function resolveServiceStops(service, line) {
   if (!service.schedule) return service.stops;
   const sched = service.schedule[getScheduleType()];
   if (!sched) return service.stops;
+  // Time-of-day filter: hide service outside the specified hour range
+  if (sched.timeRange) {
+    const hour = getCurrentHour();
+    const [start, end] = sched.timeRange;
+    if (start <= end ? (hour < start || hour >= end) : (hour < start && hour >= end)) {
+      return []; // empty = hidden
+    }
+  }
   if (sched.skip) {
     const skipSet = new Set(sched.skip.map(n => normalize(n)));
     if (service.stops === null) {
@@ -1968,7 +1982,10 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       continue;
     }
     const joinedNames = new Set(ex.stops.map(s => normalize(s)));
-    if (!joinedNames.has(normalize(currentName))) continue;
+    // For mid-line connections, current station must be in the stop list.
+    // For terminus connections (player is on source line, not in target stops), skip this check.
+    const isTerminusConn = connObj && connObj.fromJunctionIdx === (platform.direction === 'start' ? 0 : line.stations.length - 1);
+    if (!isTerminusConn && !joinedNames.has(normalize(currentName))) continue;
     // Target line express indices
     const targetIndices = [];
     for (let i = 0; i < targetLine.stations.length; i++) {
@@ -1997,7 +2014,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       const tgtExpStops = targetIndices.length > 0
         ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx }, targetIndices)
         : getConnectionMaxStops(connObj);
-      totalMax = srcExpStops + tgtExpStops;
+      const viaCount = effectiveViaCount(connObj, currentName);
+      totalMax = srcExpStops + viaCount + tgtExpStops;
 
       // Follow chain: merge express stops from onward connections with the same service name
       let chainConn = connObj;
@@ -2936,6 +2954,40 @@ function showBranchButtons(p) {
     }
   }
 
+  // ── Line destinations (trains terminating at different stations) ──
+  const lineDest = LINE_DESTINATIONS[p.lineName];
+  if (lineDest && p.direction === lineDest.direction) {
+    const line = state.lines[p.lineIdx];
+    const dests = lineDest.destinations
+      .map(d => {
+        const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+        if (untilIdx === -1) return null;
+        // Count stops from current position to destination
+        const stopsToEnd = lineDest.direction === 'end'
+          ? untilIdx - p.fromIdx
+          : p.fromIdx - untilIdx;
+        if (stopsToEnd <= 0) return null;
+        return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)) };
+      })
+      .filter(d => d && d.effectiveMax > 0);
+    // If all destinations have the same effectiveMax (cap makes them equivalent),
+    // auto-select the furthest one — no meaningful choice to make.
+    const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
+    if (allSameMax) {
+      state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax };
+    } else if (dests.length > 1) {
+      return showBranchPickerUI(p, dests.map(d => ({
+        name: d.name, ja: d.ja, color: d.color,
+        effectiveMax: d.effectiveMax,
+        onSelect: () => {
+          state.selectedDestination = { totalMax: d.effectiveMax };
+        },
+      })), !!EXPRESS_SERVICES[p.lineName]);
+    } else if (dests.length === 1) {
+      state.selectedDestination = { totalMax: dests[0].effectiveMax };
+    }
+  }
+
   // ── Connection branches (through-running) ──
   if (p._connections && p._connections.length > 0) {
     const conns = p._connections;
@@ -2990,15 +3042,32 @@ function showBranchButtons(p) {
     // Show connection picker (different target lines)
     return showBranchPickerUI(p, conns.map(conn => {
       const viaCount = effectiveViaCount(conn, state.currentStation.name);
-      const targetMax = getConnectionMaxStops(conn);
+      let targetMax = getConnectionMaxStops(conn);
+      // If connection has express but no local (no stops:null entry),
+      // cap targetMax to the express service with the most stops
+      if (conn.express && !conn.express.some(e => e.stops === null)) {
+        const toLine = state.lines[conn.toLineIdx];
+        const jIdx = conn.toJunctionIdx;
+        const maxExpStops = Math.max(...conn.express.map(e => {
+          const indices = getExpressIndices(toLine, e.stops);
+          if (conn.toDir === 'start') return indices.filter(i => i < jIdx).length;
+          return indices.filter(i => i > jIdx).length;
+        }));
+        targetMax = Math.min(targetMax, maxExpStops);
+      }
       const connMax = viaCount + targetMax + onLineStops;
       const effectiveMax = Math.min(capStops(connMax), p.maxStops);
       return {
         name: conn.name || conn.to, ja: conn.ja || '', color: conn.color || p.lineColor,
         effectiveMax,
         onSelect: () => {
+          if (conn.destinations) {
+            state.selectedConnection = conn;
+            showDestinationPicker(p, conn, onLineStops);
+            return 'subpicker';
+          }
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: onLineStops + viaCount + targetMax };
+          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
         },
       };
     }), false);
@@ -3059,10 +3128,12 @@ function showBranchPickerUI(p, choices, hasExpress) {
 
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
-      choices[i].onSelect();
+      const result = choices[i].onSelect();
+      if (result === 'subpicker') return;
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       if (!showTrainTypeButtons(p)) {
-        const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
+        const ei = state.selectedTrainType?.expressIndices || null;
+        const effectiveMax = getEffectiveStops(p, { ei }).validCount;
         dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         resetStopsBtn();
@@ -3085,9 +3156,11 @@ function showTrainTypeButtons(p) {
   // Collect all connection express services (from selected connection + mid-line connections on platform)
   const allConnExpress = [];
   if (conn?.express) allConnExpress.push({ express: conn.express, targetLineIdx: conn.toLineIdx, targetLine: connTargetLine, connObj: conn });
-  // Only add mid-line connection express when no branch connection is selected
+  // Only add mid-line connection express when no branch connection or line destination is selected
   // (if user picked Yokohama branch, don't add Shinagawa branch's express)
-  if (!conn && p._connections) {
+  // (if user picked a line destination like Takao, don't add Ome connection express)
+  const hasLineDest = !conn && state.selectedDestination;
+  if (!conn && !hasLineDest && p._connections) {
     for (const c of p._connections) {
       if (!c.express) continue;
       allConnExpress.push({ express: c.express, targetLineIdx: c.toLineIdx, targetLine: state.lines[c.toLineIdx], connObj: c });
@@ -3167,6 +3240,10 @@ function showTrainTypeButtons(p) {
   const reachable = grouped.filter(g => getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount > 0);
 
   if (reachable.length <= 1) {
+    // Auto-select the single express type so its indices are used for the roll
+    if (reachable.length === 1 && reachable[0].expressIndices) {
+      state.selectedTrainType = { ...reachable[0], expressIndices: reachable[0].expressIndices };
+    }
     showRollStopsUI();
     return false;
   }

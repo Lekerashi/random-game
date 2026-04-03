@@ -23,11 +23,20 @@ const EXPRESS_SERVICES = {
   "JR Chuo Line": [
     { name: "Rapid", ja: "快速", color: "#00b900", stops: null,
       schedule: { weekend: { skip: ["Koenji", "Asagaya", "Nishi-Ogikubo"] } } },
-    { name: "Sp. Rapid", ja: "特別快速", color: "#f07000", stops: [
+    { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", stops: [
       "Tokyo","Kanda","Ochanomizu","Yotsuya","Shinjuku",
       "Nakano","Mitaka","Kokubunji","Tachikawa",
       "Hino","Toyoda","Hachioji","Nishi-Hachioji","Takao",
+      "Sagamiko","Fujino","Uenohara","Shiotsu","Yanagawa",
+      "Torisawa","Saruhashi","Otsuki","Hatsukari","Sasago",
+      "Kai-Yamato","Katsunumabudokyo","Enzan","Higashi-Yamanashi",
+      "Yamanashishi","Kasugaicho","Isawa-Onsen","Sakaori","Kofu",
     ]},
+    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", stops: [
+      "Tokyo","Kanda","Ochanomizu","Yotsuya","Shinjuku",
+      "Nakano","Ogikubo","Kichijoji","Mitaka","Kokubunji","Tachikawa",
+      "Hino","Toyoda","Hachioji","Nishi-Hachioji","Takao",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 24] } } },
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -290,6 +299,21 @@ const LINE_BRANCHES = {
       stations: ['川崎','尻手','八丁畷','川崎新町','小田栄','浜川崎'] },
   ],
   // (Keikyu Airport and Tokaido through-running now handled by LINE_CONNECTIONS)
+};
+
+// ── Line destinations (trains terminating at different stations on the same line) ──
+const LINE_DESTINATIONS = {
+  'JR Chuo Line': {
+    direction: 'end',  // only when heading toward end (west)
+    destinations: [
+      { until: '武蔵小金井', name: 'Musashi-Koganei', ja: '武蔵小金井方面', color: '#8bc34a' },
+      { until: '立川',       name: 'Tachikawa',       ja: '立川方面',       color: '#4caf50' },
+      { until: '豊田',       name: 'Toyoda',           ja: '豊田方面',       color: '#009688' },
+      { until: '八王子',     name: 'Hachioji',         ja: '八王子方面',     color: '#00796b' },
+      { until: '高尾',       name: 'Takao',            ja: '高尾方面',       color: '#E85B0B' },
+      { until: '大月',       name: 'Otsuki',           ja: '大月方面',       color: '#bf360c' },
+    ],
+  },
 };
 
 // ── Line display name overrides by direction ──
