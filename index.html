@@ -2974,17 +2974,17 @@ function showBranchButtons(p) {
     // auto-select the furthest one — no meaningful choice to make.
     const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
     if (allSameMax) {
-      state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax };
+      state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx };
     } else if (dests.length > 1) {
       return showBranchPickerUI(p, dests.map(d => ({
         name: d.name, ja: d.ja, color: d.color,
         effectiveMax: d.effectiveMax,
         onSelect: () => {
-          state.selectedDestination = { totalMax: d.effectiveMax };
+          state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx };
         },
       })), !!EXPRESS_SERVICES[p.lineName]);
     } else if (dests.length === 1) {
-      state.selectedDestination = { totalMax: dests[0].effectiveMax };
+      state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx };
     }
   }
 
@@ -3697,9 +3697,22 @@ function getEffectiveStops(platform, opts = {}) {
     rawMax = platform.maxStops;
   }
 
-  // Apply destination limit (from selectedDestination) before cap
+  // Apply destination limit (from selectedDestination) before cap.
+  // When untilIdx is set (LINE_DESTINATIONS) and express indices are active,
+  // compute the express stop count to that index — totalMax is in local terms.
   const destLimit = state.selectedDestination?.totalMax;
-  if (destLimit != null) rawMax = Math.min(rawMax, destLimit);
+  const destUntilIdx = state.selectedDestination?.untilIdx;
+  if (destLimit != null) {
+    if (destUntilIdx != null && ei && !connTargetLineIdx) {
+      const expToLimit = ei.filter(i =>
+        platform.direction === 'end' ? (i > platform.fromIdx && i <= destUntilIdx)
+                                     : (i < platform.fromIdx && i >= destUntilIdx)
+      ).length;
+      rawMax = Math.min(rawMax, expToLimit);
+    } else {
+      rawMax = Math.min(rawMax, destLimit);
+    }
+  }
   const cappedMax = capStops(rawMax);
 
   // Temporarily set selectedTrainType for getStationsAlongRoute to use during preview
