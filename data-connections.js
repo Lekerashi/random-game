@@ -403,4 +403,39 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'JR Kawagoe Line',  fromEnd: '高麗川',
     to:   'JR Hachiko Line',  toEnd:   '高麗川' },
+
+  // ── Keihin-Tohoku Line ↔ Negishi Line at Yokohama ────────────────────
+  // Through-running: KT Line trains continue from Yokohama onto the Negishi
+  // Line toward Sakuragicho/Isogo/Ofuna. Rapid skips 7 stations in the
+  // Tabata–Hamamatsucho section; Okachimachi added back on weekends.
+  { from: 'JR Keihin Tohoku Line', fromEnd: '横浜',
+    to:   'JR Negishi Line',       toEnd:   '横浜',
+    lineDests: [
+      { until: '赤羽',     name: 'Akabane',          ja: '赤羽方面',     color: '#48b8d0' },
+      { until: '蒲田',     name: 'Kamata',            ja: '蒲田方面',     color: '#30a0b8' },
+      { until: '鶴見',     name: 'Tsurumi',           ja: '鶴見方面',     color: '#2090a0' },
+      { until: '東神奈川', name: 'Higashi-Kanagawa',  ja: '東神奈川方面', color: '#108088' },
+      { until: '横浜',     name: 'Yokohama',          ja: '横浜方面',     color: '#00B2E5' },
+    ],
+    destinations: [
+      { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1' },
+      { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0' },
+      { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090' },
+    ],
+    express: [
+      { name: 'Local', ja: '各停', color: '#00a0e8', stops: null },
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
+        'Omiya','Saitama-Shintoshin','Yono','Kita-Urawa','Urawa',
+        'Minami-Urawa','Warabi','Nishi-Kawaguchi','Kawaguchi','Akabane',
+        'Higashi-Jūjō','Oji','Kami-Nakazato','Tabata',
+        'Okachimachi','Akihabara','Kanda','Tokyo',
+        'Hamamatsucho','Tamachi','Takanawa Gateway','Shinagawa',
+        'Oimachi','Ōmori','Kamata','Kawasaki','Tsurumi',
+        'Shin-Koyasu','Higashi-Kanagawa','Yokohama',
+        'Sakuragicho','Kannai','Ishikawacho','Yamate','Negishi',
+        'Isogo','Shin-Sugita','Yokodai','Konandai','Hongodai','Ōfuna'],
+        schedule: { weekday: { skip: ['Okachimachi'] } } },
+    ] },
+  { from: 'JR Negishi Line',       fromEnd: '横浜',
+    to:   'JR Keihin Tohoku Line', toEnd:   '横浜' },
 ];

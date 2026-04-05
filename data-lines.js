@@ -274,6 +274,14 @@ const EXPRESS_SERVICES = {
       "Tokyo","Ueno","Omiya","Takasaki",
     ]},
   ],
+  "JR Nambu Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "Kawasaki","Kashimada","Musashi-Kosugi","Musashi-Nakahara",
+      "Musashi-Shinjo","Musashi-Mizonokuchi","Noborito","Inadazutsumi",
+      "Inagi-Naganuma","Fuchu-Hommachi","Bubaigawara","Tachikawa",
+    ]},
+  ],
 };
 
 // ── Branch definitions for lines with multiple routes ──
@@ -312,6 +320,31 @@ const LINE_DESTINATIONS = {
       { until: '八王子',     name: 'Hachioji',         ja: '八王子方面',     color: '#00796b' },
       { until: '高尾',       name: 'Takao',            ja: '高尾方面',       color: '#E85B0B' },
       { until: '大月',       name: 'Otsuki',           ja: '大月方面',       color: '#bf360c' },
+    ],
+  },
+  'JR Ome Line': {
+    direction: 'end',  // heading toward end (toward Oku-Tama)
+    destinations: [
+      { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#b8a060' },
+      { until: '河辺', name: 'Kabe',    ja: '河辺方面', color: '#8a7040' },
+      { until: '青梅', name: 'Ome',     ja: '青梅方面', color: '#6a5020' },
+    ],
+  },
+  'JR Sagami Line': {
+    direction: 'start',  // heading toward start (toward Chigasaki)
+    destinations: [
+      { until: '海老名', name: 'Ebina',     ja: '海老名方面', color: '#6a9a8a' },
+      { until: '茅ケ崎', name: 'Chigasaki', ja: '茅ケ崎方面', color: '#4a786f' },
+    ],
+  },
+  'JR Nambu Line': {
+    direction: 'end',  // heading toward end (toward Tachikawa on main branch)
+    destinations: [
+      { until: '武蔵中原',   name: 'Musashi-Nakahara',   ja: '武蔵中原方面',   color: '#ffe040' },
+      { until: '武蔵溝ノ口', name: 'Musashi-Mizonokuchi', ja: '武蔵溝ノ口方面', color: '#e8c830' },
+      { until: '登戸',       name: 'Noborito',           ja: '登戸方面',       color: '#d0b020' },
+      { until: '稲城長沼',   name: 'Inagi-Naganuma',     ja: '稲城長沼方面',   color: '#b89810' },
+      { until: '立川',       name: 'Tachikawa',          ja: '立川方面',       color: '#ffd400' },
     ],
   },
 };

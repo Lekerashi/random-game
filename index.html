@@ -2918,7 +2918,8 @@ function showBranchButtons(p) {
   if (!p) return false;
 
   // ── Physical branches (Tsurumi, Marunouchi, Nambu) ──
-  if (LINE_BRANCHES[p.lineName]) {
+  // Skip if branch already selected (allows fall-through to destinations after branch picker)
+  if (LINE_BRANCHES[p.lineName] && !state.selectedBranch) {
     const line = state.lines[p.lineIdx];
     const branches = getBranches(p.lineName, state.currentStation.ja, line, p.direction);
     if (branches && branches.length > 0) {
@@ -2965,8 +2966,9 @@ function showBranchButtons(p) {
   }
 
   // ── Line destinations (trains terminating at different stations) ──
+  // Skip if destination already selected (prevents re-showing after picker handler re-calls)
   const lineDest = LINE_DESTINATIONS[p.lineName];
-  if (lineDest && p.direction === lineDest.direction) {
+  if (lineDest && p.direction === lineDest.direction && !state.selectedDestination) {
     const line = state.lines[p.lineIdx];
     const dests = lineDest.destinations
       .map(d => {
@@ -2999,7 +3001,8 @@ function showBranchButtons(p) {
   }
 
   // ── Connection branches (through-running) ──
-  if (p._connections && p._connections.length > 0) {
+  // Skip if connection or destination already selected
+  if (p._connections && p._connections.length > 0 && !state.selectedConnection && !state.selectedDestination) {
     const conns = p._connections;
     const onLineStops = p._onLineStops || 0;
     const rollableMax = capStops(p.maxStops);
@@ -3168,6 +3171,9 @@ function showBranchPickerUI(p, choices, hasExpress) {
       const result = choices[i].onSelect();
       if (result === 'subpicker') return;
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
+      // After branch/destination/connection selection, check for further pickers
+      // (e.g. Nambu Line: branch → destination → train type)
+      if (showBranchButtons(p)) return;
       if (!showTrainTypeButtons(p)) {
         const ei = state.selectedTrainType?.expressIndices || null;
         const effectiveMax = getEffectiveStops(p, { ei }).validCount;
