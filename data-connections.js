@@ -357,4 +357,50 @@ const LINE_CONNECTIONS = [
     to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘' },
   { from: 'Odakyu Tama Line', fromEnd: '新百合ヶ丘',
     to:   'Odakyu Line',      toStation: '新百合ヶ丘', toDir: 'start' },
+
+  // ── Yokohama Line ↔ Negishi Line at Higashi-Kanagawa/Yokohama ────────
+  // Through-running: Yokohama Line trains continue from Higashi-Kanagawa
+  // via Yokohama onto the Negishi Line toward Sakuragicho/Isogo/Ofuna.
+  // lineDests = within-line short-turn destinations (Hashimoto, Machida, H-Kanagawa)
+  // Rapid only runs on Sakuragicho-bound through-running trains.
+  { from: 'JR Yokohama Line', fromEnd: '東神奈川',
+    to:   'JR Negishi Line',  toEnd:   '横浜',
+    via:  ['横浜'],
+    lineDests: [
+      { until: '橋本',     name: 'Hashimoto',        ja: '橋本方面',     color: '#6aba6a' },
+      { until: '町田',     name: 'Machida',          ja: '町田方面',     color: '#3da03d' },
+      { until: '東神奈川', name: 'Higashi-Kanagawa', ja: '東神奈川方面', color: '#00AD53' },
+    ],
+    destinations: [
+      { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1' },
+      { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0' },
+      { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090' },
+    ],
+    express: [
+      { name: 'Local', ja: '各停', color: '#00a0e8', stops: null },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: ['Higashi-Kanagawa','Kikuna','Shin-Yokohama','Kamoi','Nakayama',
+                'Nagatsuta','Machida','Sagamihara','Hashimoto',
+                'Aihara','Hachiojiminamino','Katakura','Hachioji',
+                'Yokohama','Sakuragicho'] },
+    ] },
+  { from: 'JR Negishi Line',  fromEnd: '横浜',
+    to:   'JR Yokohama Line', toEnd:   '東神奈川',
+    via:  ['横浜'] },
+
+  // ── Hachiko Line ↔ Kawagoe Line at Komagawa ──────────────────────────
+  // Through-running: Hachiko Line trains from Hachioji continue onto
+  // the Kawagoe Line toward Kawagoe. Komagawa is shared terminus.
+  { from: 'JR Hachiko Line', fromEnd: '高麗川',
+    to:   'JR Kawagoe Line',  toEnd:   '高麗川',
+    lineDests: [
+      { until: '拝島',     name: 'Haijima',      ja: '拝島方面',     color: '#b8956a' },
+      { until: '箱根ケ崎', name: 'Hakonegasaki', ja: '箱根ケ崎方面', color: '#a67d52' },
+      { until: '高麗川',   name: 'Komagawa',     ja: '高麗川方面',   color: '#996633' },
+    ],
+    destinations: [
+      { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
+    ] },
+  { from: 'JR Kawagoe Line',  fromEnd: '高麗川',
+    to:   'JR Hachiko Line',  toEnd:   '高麗川' },
 ];

@@ -1775,15 +1775,22 @@ function resolveConnections() {
   if (typeof LINE_CONNECTIONS === 'undefined') return;
 
   for (const conn of LINE_CONNECTIONS) {
-    const fromLine = state.lines.find(l => l.name === conn.from);
-    const toLine   = state.lines.find(l => l.name === conn.to);
-    if (!fromLine || !toLine) {
-      console.warn(`[CONNECTION] Line not found: from="${conn.from}"${!fromLine ? ' (missing)' : ''}, to="${conn.to}"${!toLine ? ' (missing)' : ''}`);
+    // Collect all matching lines (handles same-name segments like JR Hachiko Line)
+    const fromMatches = [];
+    const toMatches = [];
+    state.lines.forEach((l, i) => {
+      if (l.name === conn.from) fromMatches.push({ line: l, idx: i });
+      if (l.name === conn.to) toMatches.push({ line: l, idx: i });
+    });
+    if (fromMatches.length === 0 || toMatches.length === 0) {
+      console.warn(`[CONNECTION] Line not found: from="${conn.from}"${fromMatches.length === 0 ? ' (missing)' : ''}, to="${conn.to}"${toMatches.length === 0 ? ' (missing)' : ''}`);
       continue;
     }
 
-    const fromLineIdx = state.lines.indexOf(fromLine);
-    const toLineIdx   = state.lines.indexOf(toLine);
+    for (const fromMatch of fromMatches) {
+    for (const toMatch of toMatches) {
+    const fromLine = fromMatch.line, fromLineIdx = fromMatch.idx;
+    const toLine = toMatch.line, toLineIdx = toMatch.idx;
 
     // Resolve the junction station on the source line
     let fromJunctionIdx = -1;
@@ -1803,10 +1810,7 @@ function resolveConnections() {
       toJunctionIdx = toLine.stations.findIndex(s => s.ja === conn.toStation);
     }
 
-    if (fromJunctionIdx === -1 || toJunctionIdx === -1) {
-      console.warn(`[CONNECTION] Junction not found: "${conn.from}" ${conn.fromEnd || conn.fromStation || '?'}(idx=${fromJunctionIdx}), "${conn.to}" ${conn.toEnd || conn.toStation || '?'}(idx=${toJunctionIdx})`);
-      continue;
-    }
+    if (fromJunctionIdx === -1 || toJunctionIdx === -1) continue;
 
     // Determine which direction the source line approaches the junction from
     // 'start' means the junction is at index 0 (or near start), 'end' means at N-1
@@ -1864,7 +1868,10 @@ function resolveConnections() {
       name: conn.name, ja: conn.ja, color: conn.color,
       displayName: conn.displayName,
       toUntilIdx, destinations, express,
+      lineDests: conn.lineDests || null,
     });
+    } // end toMatch loop
+    } // end fromMatch loop
   }
 }
 
@@ -1994,9 +2001,10 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     // Compute total max: source-line express to junction + target express from junction
     let totalMax = platform.maxStops; // fallback
     let chainStops = null;
+    const srcEi = [];
     if (connObj) {
       // Count source-line express stops between player and junction
-      const srcEi = [];
+      srcEi.length = 0;
       for (let i = 0; i < line.stations.length; i++) {
         if (joinedNames.has(normalize(line.stations[i].name))) srcEi.push(i);
       }
@@ -2046,6 +2054,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax };
     // Attach chain express stops for downstream filtering in getStationsAlongRoute
     if (chainStops) entry._chainExpressStops = chainStops;
+    // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
+    if (connObj && srcEi.length > 0) entry._srcExpIndices = srcEi;
     results.push(entry);
   }
   return results;
@@ -3079,26 +3089,53 @@ function showBranchButtons(p) {
 // Show destination picker for a connection with destinations.
 // Returns true if picker shown, false if auto-selected.
 function showDestinationPicker(p, conn, onLineStops) {
+  const choices = [];
+
+  // Source-line short-turn destinations (lineDests): trains that terminate
+  // before reaching the connection junction (e.g. Hashimoto, Machida on Yokohama Line)
+  if (conn.lineDests) {
+    const line = state.lines[p.lineIdx];
+    for (const d of conn.lineDests) {
+      const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+      if (untilIdx === -1) continue;
+      const stopsToEnd = p.direction === 'end'
+        ? untilIdx - p.fromIdx
+        : p.fromIdx - untilIdx;
+      if (stopsToEnd <= 0) continue;
+      choices.push({
+        name: d.name, ja: d.ja, color: d.color || p.lineColor,
+        effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+        onSelect: () => {
+          // Within-line: set destination limit but NOT selectedConnection
+          state.selectedDestination = { totalMax: stopsToEnd, untilIdx };
+        },
+      });
+    }
+  }
+
+  // Target-line destinations (through-running to connected line)
   const dests = conn.destinations.filter(d => d.untilIdx !== -1);
-  const choices = dests.map(d => {
+  const viaCount = effectiveViaCount(conn, state.currentStation.name);
+  for (const d of dests) {
     const stopsOnTarget = conn.toDir === 'start'
       ? conn.toJunctionIdx - d.untilIdx
       : d.untilIdx - conn.toJunctionIdx;
-    const viaCount = effectiveViaCount(conn, state.currentStation.name);
     const totalMax = onLineStops + viaCount + Math.max(0, stopsOnTarget);
-    return {
+    choices.push({
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
       effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
       onSelect: () => {
         state.selectedConnection = conn;
         state.selectedDestination = { totalMax };
       },
-    };
-  }).filter(c => c.effectiveMax > 0);
+    });
+  }
+
+  const filtered = choices.filter(c => c.effectiveMax > 0);
 
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent)
   const seen = new Set();
-  const unique = choices.filter(c => {
+  const unique = filtered.filter(c => {
     if (seen.has(c.effectiveMax)) return false;
     seen.add(c.effectiveMax);
     return true;
@@ -3109,7 +3146,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     state.selectedConnection = conn;
     return false;
   }
-  return showBranchPickerUI(p, unique, false);
+  return showBranchPickerUI(p, unique, !!conn.express);
 }
 
 // Shared UI for branch/connection picker buttons
@@ -3368,6 +3405,30 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
     if (!conn) conn = platform._connections[0] || null;
   }
   let stopsLeft = stops;
+
+  // Source-line express for terminus connection services (e.g. Yokohama Line Rapid → Negishi Line)
+  // When the source line has no EXPRESS_SERVICES of its own and the connection express has
+  // _srcExpIndices, apply express filtering on the source line before extending onto the target.
+  const srcEi = state.selectedTrainType?._srcExpIndices;
+  if (srcEi && connTargetLineIdx != null && result.length === 0
+      && conn && conn.fromJunctionIdx === (platform.direction === 'start' ? 0 : N - 1)
+      && !EXPRESS_SERVICES[platform.lineName]) {
+    const pos = srcEi.indexOf(platform.fromIdx);
+    if (pos !== -1) {
+      const terminusIdx = conn.fromJunctionIdx;
+      for (let i = 1; i <= stopsLeft; i++) {
+        let p;
+        if (platform.direction === 'start') p = pos - i;
+        else p = pos + i;
+        p = Math.max(0, Math.min(srcEi.length - 1, p));
+        if (result.length > 0 && result[result.length - 1] === line.stations[srcEi[p]]) break;
+        result.push(line.stations[srcEi[p]]);
+        // Stop at junction — remaining stops continue on the connected line
+        if (srcEi[p] === terminusIdx) break;
+      }
+      stopsLeft -= result.length;
+    }
+  }
 
   // If express fell through (result already has express stops), skip on-line local routing —
   // the express already reached the terminus, remaining stops continue on the connected line.
