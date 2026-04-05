@@ -3359,16 +3359,40 @@ function refreshStopsLabel() {
   dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
 }
 
-// ── Transfer Check ─────────────────────────────────────────────────────────
-function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
+// ── Transfer Check ────────────────────────────────────────��────────────────
+
+// Walk stations on a connected line, filtering by chain-express stops if active.
+// Returns an array of station objects (up to maxStops).
+function walkConnectionStations(conn, maxStops, chainExpStops) {
+  if (chainExpStops) {
+    const toLine = state.lines[conn.toLineIdx];
+    const step = conn.toDir === 'start' ? -1 : 1;
+    const result = [];
+    for (let k = conn.toJunctionIdx + step; result.length < maxStops; k += step) {
+      if (k < 0 || k >= toLine.stations.length) break;
+      if (conn.toUntilIdx >= 0) {
+        if (step === 1 && k > conn.toUntilIdx) break;
+        if (step === -1 && k < conn.toUntilIdx) break;
+      }
+      if (chainExpStops.has(normalize(toLine.stations[k].name))) {
+        result.push(toLine.stations[k]);
+      }
+    }
+    return result;
+  }
+  return getConnectionStations(conn, maxStops);
+}
+
+function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainType) {
+  const tt = trainType || state.selectedTrainType;
   const line = state.lines[platform.lineIdx];
   const N = line.stations.length;
   const result = [];
 
   // Express routing: only include express stop stations
   // Skip if express is on a connected target line (handled in connection extension below)
-  const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : state.selectedTrainType?.expressIndices;
-  if (ei && !state.selectedTrainType?._connTargetLineIdx) {
+  const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : tt?.expressIndices;
+  if (ei && !tt?._connTargetLineIdx) {
     const pos = ei.indexOf(platform.fromIdx);
     if (pos !== -1) {
       for (let i = 1; i <= stops; i++) {
@@ -3406,7 +3430,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   // Normal routing (with connection extension)
   // Use selected connection, or fall back to platform's first connection for route preview.
   // For mid-line connections (express branch), find the matching connection by _connTargetLineIdx.
-  const connTargetLineIdx = state.selectedTrainType?._connTargetLineIdx;
+  const connTargetLineIdx = tt?._connTargetLineIdx;
   let conn = state.selectedConnection;
   if (!conn && platform._connections) {
     if (connTargetLineIdx != null) {
@@ -3420,7 +3444,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   // Source-line express for terminus connection services (e.g. Yokohama Line Rapid → Negishi Line)
   // When the source line has no EXPRESS_SERVICES of its own and the connection express has
   // _srcExpIndices, apply express filtering on the source line before extending onto the target.
-  const srcEi = state.selectedTrainType?._srcExpIndices;
+  const srcEi = tt?._srcExpIndices;
   if (srcEi && connTargetLineIdx != null && result.length === 0
       && conn && conn.fromJunctionIdx === (platform.direction === 'start' ? 0 : N - 1)
       && !EXPRESS_SERVICES[platform.lineName]) {
@@ -3472,7 +3496,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
   // (skip if train terminates at junction). Follow chained connections if stops remain.
   const visitedLines = new Set([platform.lineName]);
   let currentConn = conn;
-  if (currentConn && result.length < stops && !state.selectedTrainType?._terminatesAtJunction) {
+  if (currentConn && result.length < stops && !tt?._terminatesAtJunction) {
     stopsLeft = stops - result.length;
     // Add via stations (skip any that match the starting station or last station in route)
     const startName = state.lines[platform.lineIdx].stations[platform.fromIdx]?.name;
@@ -3485,7 +3509,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
     }
     // Add target line stations (express-filtered if a target-line train type is selected)
     if (stopsLeft > 0) {
-      const connTargetEi = (state.selectedTrainType?._connTargetLineIdx != null) ? ei : null;
+      const connTargetEi = (tt?._connTargetLineIdx != null) ? ei : null;
       if (connTargetEi) {
         const toLine = state.lines[currentConn.toLineIdx];
         const pos = connTargetEi.indexOf(currentConn.toJunctionIdx);
@@ -3502,26 +3526,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
           }
         }
       } else {
-        const chainExpStops = state.selectedTrainType?._chainExpressStops;
-        if (chainExpStops) {
-          // First hop target: express-filter using chain stop set
-          const toLine = state.lines[currentConn.toLineIdx];
-          const step = currentConn.toDir === 'start' ? -1 : 1;
-          for (let k = currentConn.toJunctionIdx + step; stopsLeft > 0; k += step) {
-            if (k < 0 || k >= toLine.stations.length) break;
-            if (currentConn.toUntilIdx >= 0) {
-              if (step === 1 && k > currentConn.toUntilIdx) break;
-              if (step === -1 && k < currentConn.toUntilIdx) break;
-            }
-            if (chainExpStops.has(normalize(toLine.stations[k].name))) {
-              result.push(toLine.stations[k]);
-              stopsLeft--;
-            }
-          }
-        } else {
-          const connStations = getConnectionStations(currentConn, stopsLeft);
-          for (const cs of connStations) result.push(cs);
-        }
+        for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
       }
     }
     // Follow chained connections if stops remain (e.g. Seibu → Fukutoshin → Toyoko)
@@ -3543,26 +3548,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride) {
       }
       // Add stations on the next line (express-filtered if chain express active)
       if (stopsLeft > 0) {
-        const chainExpStops = state.selectedTrainType?._chainExpressStops;
-        if (chainExpStops) {
-          // Walk target line, only include stations in the chain express stop set
-          const toLine = state.lines[currentConn.toLineIdx];
-          const step = currentConn.toDir === 'start' ? -1 : 1;
-          for (let k = currentConn.toJunctionIdx + step; stopsLeft > 0; k += step) {
-            if (k < 0 || k >= toLine.stations.length) break;
-            if (currentConn.toUntilIdx >= 0) {
-              if (step === 1 && k > currentConn.toUntilIdx) break;
-              if (step === -1 && k < currentConn.toUntilIdx) break;
-            }
-            if (chainExpStops.has(normalize(toLine.stations[k].name))) {
-              result.push(toLine.stations[k]);
-              stopsLeft--;
-            }
-          }
-        } else {
-          const chainStations = getConnectionStations(currentConn, stopsLeft);
-          for (const cs of chainStations) result.push(cs);
-        }
+        for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
         stopsLeft = stops - result.length;
       }
     }
@@ -3686,7 +3672,7 @@ function destSubHints(station, emoji) {
 // Given a platform and optional express indices, compute the valid (non-drunk-at)
 // destinations along the route. Returns { validCount, physicalStopsMap } where
 // physicalStopsMap[i] = physical stop number for the ith valid destination.
-function getValidRouteInfo(platform, expressIndices, maxPhysical, branchIndicesOverride) {
+function getValidRouteInfo(platform, expressIndices, maxPhysical, branchIndicesOverride, trainType) {
   const bi = branchIndicesOverride || state.selectedBranch?.branchIndices;
   if (maxPhysical === undefined) {
     maxPhysical = expressIndices
@@ -3696,7 +3682,7 @@ function getValidRouteInfo(platform, expressIndices, maxPhysical, branchIndicesO
         : platform.maxStops;
   }
   if (maxPhysical === 0) return { validCount: 0, physicalStopsMap: [] };
-  const fullRoute = getStationsAlongRoute(platform, maxPhysical, expressIndices || null);
+  const fullRoute = getStationsAlongRoute(platform, maxPhysical, expressIndices || null, trainType);
   const physicalStopsMap = [];
   for (let i = 0; i < fullRoute.length; i++) {
     if (!state.drankAt.has(normalize(fullRoute[i].name))) {
@@ -3787,17 +3773,11 @@ function getEffectiveStops(platform, opts = {}) {
   }
   const cappedMax = capStops(rawMax);
 
-  // Temporarily set selectedTrainType for getStationsAlongRoute to use during preview
-  const prevTT = state.selectedTrainType;
-  if (connTargetLineIdx != null || terminates) {
-    state.selectedTrainType = {
-      expressIndices: ei,
-      _connTargetLineIdx: connTargetLineIdx,
-      _terminatesAtJunction: terminates,
-    };
-  }
-  const info = getValidRouteInfo(platform, ei || null, cappedMax, bi);
-  state.selectedTrainType = prevTT;
+  // Pass train type context through to route computation instead of mutating state
+  const ttOverride = (connTargetLineIdx != null || terminates)
+    ? { expressIndices: ei, _connTargetLineIdx: connTargetLineIdx, _terminatesAtJunction: terminates }
+    : undefined;
+  const info = getValidRouteInfo(platform, ei || null, cappedMax, bi, ttOverride);
 
   return { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax };
 }
@@ -4581,6 +4561,34 @@ function destroyMap(key) {
 }
 
 // Shared: create a Leaflet route map on the given element ID
+const MARKER_TYPE_RANK = { start: 0, transfer: 1, drink: 2 };
+
+function collectRouteMarkers(history) {
+  const markers = new Map();
+  function track(lat, lng, name, ja, type) {
+    if (lat == null) return;
+    const key = lat + ',' + lng;
+    const existing = markers.get(key);
+    if (!existing) markers.set(key, { lat, lng, name, ja, type });
+    else if (MARKER_TYPE_RANK[type] > MARKER_TYPE_RANK[existing.type]) {
+      existing.type = type; existing.name = name; existing.ja = ja;
+    }
+  }
+  if (history.length > 0 && history[0].fromLat != null) {
+    track(history[0].fromLat, history[0].fromLng, history[0].from, history[0].fromJa, 'start');
+  }
+  for (const e of history) {
+    if (e.drinkHere || e.flight) {
+      track(e.fromLat, e.fromLng, e.from, e.fromJa, 'drink');
+    } else if (e.transferred || e.drinkAtTransfer) {
+      track(e.toLat, e.toLng, e.to, e.toJa, e.drinkAtTransfer ? 'drink' : 'transfer');
+    } else if (e.toLat != null) {
+      track(e.toLat, e.toLng, e.to, e.toJa, 'drink');
+    }
+  }
+  return markers;
+}
+
 function buildRouteMap(elId) {
   const map = L.map(elId, {
     zoomControl: true,
@@ -4621,20 +4629,7 @@ function buildRouteMap(elId) {
   }).addTo(map);
 
   const bounds = L.latLngBounds();
-  const stopMarkers = new Map();
-  const TYPE_RANK = { start: 0, transfer: 1, drink: 2 };
-
-  function trackStop(lat, lng, name, ja, type) {
-    const key = lat + ',' + lng;
-    const existing = stopMarkers.get(key);
-    if (!existing) stopMarkers.set(key, { lat, lng, name, ja, type });
-    else if (TYPE_RANK[type] > TYPE_RANK[existing.type]) existing.type = type;
-  }
-
-  if (state.history.length > 0 && state.history[0].fromLat != null) {
-    const first = state.history[0];
-    trackStop(first.fromLat, first.fromLng, first.from, first.fromJa, 'start');
-  }
+  const stopMarkers = collectRouteMarkers(state.history);
 
   for (const e of state.history) {
     if (e.fromLat == null) continue;
@@ -4649,16 +4644,8 @@ function buildRouteMap(elId) {
       L.polyline([from, to], { color: e.color || '#8b949e', weight: 3, opacity: 0.85 }).addTo(map);
       bounds.extend(from); bounds.extend(to);
     }
-
-    if (e.drinkHere || e.flight) {
-      trackStop(e.fromLat, e.fromLng, e.from, e.fromJa, 'drink');
-      bounds.extend(L.latLng(e.fromLat, e.fromLng));
-    } else if (e.transferred || e.drinkAtTransfer) {
-      trackStop(e.toLat, e.toLng, e.to, e.toJa, e.drinkAtTransfer ? 'drink' : 'transfer');
-    } else if (e.toLat != null) {
-      trackStop(e.toLat, e.toLng, e.to, e.toJa, 'drink');
-    }
   }
+  for (const [, s] of stopMarkers) bounds.extend(L.latLng(s.lat, s.lng));
 
   const TRANSFER_MARKER = { radius: 3.5, fillColor: '#58a6ff', color: '#30363d', weight: 1, fillOpacity: 0.9 };
   const START_MARKER    = { radius: 5,   fillColor: '#e6edf3', color: '#30363d', weight: 1.5, fillOpacity: 0.9 };
@@ -5032,25 +5019,9 @@ function saveSessionImage() {
     }
 
     // ── Markers ──
-    const markers = new Map();
-    const RANK = { start: 0, transfer: 1, drink: 2 };
-    function mark(lat, lng, type, name) {
-      const k = lat + ',' + lng;
-      const ex = markers.get(k);
-      if (!ex) markers.set(k, { lat, lng, type, name });
-      else if (RANK[type] > RANK[ex.type]) { ex.type = type; ex.name = name; }
-    }
-    if (state.history.length > 0 && state.history[0].fromLat != null) {
-      const e0 = state.history[0];
-      mark(e0.fromLat, e0.fromLng, 'start', currentLang === 'ja' && e0.fromJa ? e0.fromJa : e0.from);
-    }
-    for (const e of state.history) {
-      const fromName = currentLang === 'ja' && e.fromJa ? e.fromJa : e.from;
-      const toName = currentLang === 'ja' && e.toJa ? e.toJa : e.to;
-      if (e.drinkHere || e.flight) mark(e.fromLat, e.fromLng, 'drink', fromName);
-      else if (e.transferred || e.drinkAtTransfer) mark(e.toLat, e.toLng, e.drinkAtTransfer ? 'drink' : 'transfer', toName);
-      else if (e.toLat != null) mark(e.toLat, e.toLng, 'drink', toName);
-    }
+    const markers = collectRouteMarkers(state.history);
+    // Resolve display names for current language
+    for (const [, m] of markers) m.name = currentLang === 'ja' && m.ja ? m.ja : m.name;
     for (const [, m] of markers) {
       const x = toX(m.lng), y = toY(m.lat) + mapY;
       if (m.type === 'drink') {
