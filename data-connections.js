@@ -256,13 +256,88 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Namboku Line', fromEnd: '目黒',
     to:   'Tokyu Meguro Line',        toEnd:   '目黒' },
   { from: 'Tokyu Meguro Line',        fromEnd: '目黒',
-    to:   'Tokyo Metro Namboku Line', toEnd:   '目黒' },
+    to:   'Tokyo Metro Namboku Line', toEnd:   '目黒',
+    name: 'Namboku Line', ja: '南北線', color: '#00AC9B' },
 
   // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
   { from: 'Toei Mita Line',    fromEnd: '目黒',
     to:   'Tokyu Meguro Line', toEnd:   '目黒' },
   { from: 'Tokyu Meguro Line', fromEnd: '目黒',
-    to:   'Toei Mita Line',   toEnd:   '目黒' },
+    to:   'Toei Mita Line',   toEnd:   '目黒',
+    name: 'Mita Line', ja: '三田線', color: '#2B50A1' },
+
+  // ── Tokyu Meguro → Sotetsu at Hiyoshi ──────────────────────────────────
+  // Through-running: Meguro Line trains continue from Hiyoshi via
+  // Shin-Yokohama to Sotetsu Main Line (Ebina) or Izumino Line (Shonandai).
+  // Two connections model the Y-branch at Futamatagawa.
+  { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
+    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉',
+    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#7b4e9e',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#7b4e9e' },
+    ] },
+  { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
+    to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
+    via:  ['新綱島', '新横浜', '羽沢横浜国大'],
+    name: 'Ebina', ja: '海老名方面', color: '#003087',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
+    ] },
+  { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
+    to:   'Sotetsu Izumino Line',        toEnd: '二俣川',
+    via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷', '鶴ヶ峰'],
+    name: 'Shonandai', ja: '湘南台方面', color: '#003087',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#003087' },
+    ] },
+  // Reverse: Shin-Yokohama Line → Meguro at Hiyoshi
+  { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
+    to:   'Tokyu Meguro Line',           toEnd:   '日吉' },
+
+  // ── Tokyu Toyoko ↔ Tokyu Shin-Yokohama at Hiyoshi (mid-line) ─────────
+  // Hiyoshi is mid-line on Toyoko (idx 12). No express — at Hiyoshi the
+  // Shin-Yokohama Line appears as its own platform.
+  { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'end',
+    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉' },
+  { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'start',
+    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉' },
+  { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
+    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'start' },
+  { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
+    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'end' },
+
+  // ── Tokyu Shin-Yokohama ↔ Sotetsu Shin-Yokohama at Shin-Yokohama ────
+  { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '新横浜',
+    to:   'Sotetsu Shin-Yokohama Line',  toEnd:   '新横浜' },
+  { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '新横浜',
+    to:   'Tokyu Shin-Yokohama Line',    toEnd:   '新横浜' },
+
+  // ── Sotetsu Shin-Yokohama ↔ Sotetsu Main at Nishiya ──────────────────
+  // Through-trains enter Main Line at Nishiya heading toward Ebina.
+  { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '西谷',
+    to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end' },
+  { from: 'Sotetsu Main Line',           fromStation: '西谷', fromDir: 'start',
+    to:   'Sotetsu Shin-Yokohama Line',  toEnd: '西谷' },
+
+  // ── Sotetsu Main ↔ Sotetsu Izumino at Futamatagawa ───────────────────
+  // Mid-line on Main, start of Izumino. Trains can branch in both directions.
+  { from: 'Sotetsu Main Line',     fromStation: '二俣川', fromDir: 'end',
+    to:   'Sotetsu Izumino Line',  toEnd: '二俣川' },
+  { from: 'Sotetsu Main Line',     fromStation: '二俣川', fromDir: 'start',
+    to:   'Sotetsu Izumino Line',  toEnd: '二俣川' },
+  { from: 'Sotetsu Izumino Line',  fromEnd: '二俣川',
+    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'start' },
+  { from: 'Sotetsu Izumino Line',  fromEnd: '二俣川',
+    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'end' },
 
   // ── Toei Shinjuku ↔ Keio at Shinjuku ──────────────────────────────────
   // Keio has express services (Sub-Exp, Express, Ltd. Exp)

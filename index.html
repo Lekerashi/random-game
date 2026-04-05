@@ -1625,6 +1625,8 @@ function buildIndex(lines, osmNames = {}) {
       const idx = l.stations.findIndex(s => s.ja === trimJa);
       if (idx >= 0) l.stations.splice(idx + 1);
     }
+    // Deduplicate consecutive stations with the same ja name (e.g. Sotetsu Main Line duplicate Nishiya)
+    l.stations = l.stations.filter((s, i) => i === 0 || s.ja !== l.stations[i - 1].ja);
   }
 
   // Fix upstream station name quirks
@@ -3057,6 +3059,12 @@ function showBranchButtons(p) {
       return showDestinationPicker(p, bestConn, onLineStops);
     }
 
+    // If all connections have destinations, merge into a flat destination picker
+    // (e.g. Meguro → Hiyoshi / Shin-Yokohama / Ebina / Shonandai)
+    if (conns.every(c => c.destinations)) {
+      return showMergedDestinationPicker(p, conns, onLineStops);
+    }
+
     // Show connection picker (different target lines)
     return showBranchPickerUI(p, conns.map(conn => {
       const viaCount = effectiveViaCount(conn, state.currentStation.name);
@@ -3155,6 +3163,66 @@ function showDestinationPicker(p, conn, onLineStops) {
     return false;
   }
   return showBranchPickerUI(p, unique, !!conn.express);
+}
+
+// Merge destinations from multiple connections into a flat picker.
+// Used when terminus connections to different target lines all have destinations
+// (e.g. Meguro → Hiyoshi / Shin-Yokohama / Ebina / Shonandai).
+function showMergedDestinationPicker(p, conns, onLineStops) {
+  const choices = [];
+  const seenNames = new Set();
+  const line = state.lines[p.lineIdx];
+
+  for (const conn of conns) {
+    // lineDests (within-line short-turns, deduplicated across connections)
+    if (conn.lineDests) {
+      for (const d of conn.lineDests) {
+        if (seenNames.has(d.name)) continue;
+        const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+        if (untilIdx === -1) continue;
+        const stopsToEnd = p.direction === 'end'
+          ? untilIdx - p.fromIdx : p.fromIdx - untilIdx;
+        if (stopsToEnd <= 0) continue;
+        seenNames.add(d.name);
+        choices.push({
+          name: d.name, ja: d.ja, color: d.color || p.lineColor,
+          effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+          onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx }; },
+        });
+      }
+    }
+    // destinations (through-running to target line)
+    if (conn.destinations) {
+      const viaCount = effectiveViaCount(conn, state.currentStation.name);
+      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1)) {
+        if (seenNames.has(d.name)) continue;
+        const stopsOnTarget = conn.toDir === 'start'
+          ? conn.toJunctionIdx - d.untilIdx : d.untilIdx - conn.toJunctionIdx;
+        const totalMax = onLineStops + viaCount + Math.max(0, stopsOnTarget);
+        seenNames.add(d.name);
+        choices.push({
+          name: d.name, ja: d.ja, color: d.color || p.lineColor,
+          effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
+          onSelect: () => {
+            state.selectedConnection = conn;
+            state.selectedDestination = { totalMax };
+          },
+        });
+      }
+    }
+  }
+
+  const filtered = choices.filter(c => c.effectiveMax > 0);
+  const seen = new Set();
+  const unique = filtered.filter(c => {
+    if (seen.has(c.effectiveMax)) return false;
+    seen.add(c.effectiveMax); return true;
+  });
+  if (unique.length <= 1) {
+    state.selectedConnection = conns[0];
+    return false;
+  }
+  return showBranchPickerUI(p, unique, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express));
 }
 
 // Shared UI for branch/connection picker buttons
@@ -3767,6 +3835,17 @@ function getEffectiveStops(platform, opts = {}) {
                                      : (i < platform.fromIdx && i >= destUntilIdx)
       ).length;
       rawMax = Math.min(rawMax, expToLimit);
+    } else if (ei && platform._onLineStops != null && destLimit > platform._onLineStops) {
+      // Destination spans a connection — convert limit to express terms:
+      // express stops on source line + local stops on connection portion
+      const line = state.lines[platform.lineIdx];
+      const terminusIdx = platform.direction === 'start' ? 0 : line.stations.length - 1;
+      const expOnLine = ei.filter(i =>
+        platform.direction === 'end' ? (i > platform.fromIdx && i <= terminusIdx)
+                                     : (i < platform.fromIdx && i >= terminusIdx)
+      ).length;
+      const connStops = destLimit - platform._onLineStops;
+      rawMax = Math.min(rawMax, expOnLine + connStops);
     } else {
       rawMax = Math.min(rawMax, destLimit);
     }
