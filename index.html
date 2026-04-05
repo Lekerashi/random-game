@@ -1988,7 +1988,10 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
       continue;
     }
-    const joinedNames = new Set(ex.stops.map(s => normalize(s)));
+    // Resolve schedule-aware stops (e.g. KT Rapid skips Okachimachi on weekdays)
+    const resolvedStops = ex.schedule ? resolveServiceStops(ex, null) : ex.stops;
+    if (resolvedStops.length === 0) continue; // service hidden for this schedule
+    const joinedNames = new Set(resolvedStops.map(s => normalize(s)));
     // For mid-line connections, current station must be in the stop list.
     // For terminus connections (player is on source line, not in target stops), skip this check.
     const isTerminusConn = connObj && connObj.fromJunctionIdx === (platform.direction === 'start' ? 0 : line.stations.length - 1);
@@ -2974,6 +2977,8 @@ function showBranchButtons(p) {
       .map(d => {
         const untilIdx = line.stations.findIndex(s => s.ja === d.until);
         if (untilIdx === -1) return null;
+        // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
+        if (state.selectedBranch?.branchIndices && !state.selectedBranch.branchIndices.includes(untilIdx)) return null;
         // Count stops from current position to destination
         const stopsToEnd = lineDest.direction === 'end'
           ? untilIdx - p.fromIdx
