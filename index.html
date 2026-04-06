@@ -2764,6 +2764,7 @@ function onStationSelected(name, arrivedVia) {
 }
 
 function rollPlatform() {
+  state._preRollThirst = state.stationsSinceDrink;
   gc('roll-platform');
   dom.rollPlatformBtn.disabled = true;
   const n    = state.platforms.length + (state.extraDrinkNums || 0);
@@ -2894,6 +2895,7 @@ function rerollPlatform() {
     state.history.pop();
     renderHistory();
   }
+  state.stationsSinceDrink = state._preRollThirst ?? 0;
   // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
   state._rerollExcludePlatform = state.rolledPlatformNum;
   // Hide reroll, reset step 2 content, and fire a fresh roll
@@ -2914,6 +2916,7 @@ function rerollStops() {
     // Undo drankAt for the destination we're un-arriving from
     state.drankAt.delete(normalize(state.destination.name));
   }
+  state.stationsSinceDrink = state._preRollThirst ?? 0;
   // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
   state._rerollExcludeStops = state.rolledStops;
   dom.rerollStopsBtn.style.display = 'none';
@@ -3778,6 +3781,7 @@ function resetRoundState() {
   state.rolledPlatformNum = null;
   state._rerollExcludePlatform = null;
   state._rerollExcludeStops = null;
+  state._preRollThirst = null;
   state.destination = null;
 }
 
