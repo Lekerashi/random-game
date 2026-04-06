@@ -1614,6 +1614,7 @@ function buildIndex(lines, osmNames = {}) {
   state.lines = lines = lines.filter(l => !LINE_REMOVE.includes(l.name));
   for (const l of lines) {
     if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
+    if (LINE_COLOR_FIXES[l.name]) l.color = LINE_COLOR_FIXES[l.name];
     if (LINE_PREPEND_STATIONS[l.name]) l.stations.unshift(...LINE_PREPEND_STATIONS[l.name]);
     if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
     const trimJa = LINE_TRIM_AFTER[l.name];
@@ -3165,11 +3166,16 @@ function showDestinationPicker(p, conn, onLineStops) {
   // Target-line destinations (through-running to connected line)
   const dests = conn.destinations.filter(d => d.untilIdx !== -1);
   const viaCount = effectiveViaCount(conn, state.currentStation.name);
+  // For mid-line junctions, use stops-to-junction instead of full on-line stops
+  const stopsToJunction = p.direction === 'end'
+    ? conn.fromJunctionIdx - p.fromIdx
+    : p.fromIdx - conn.fromJunctionIdx;
+  const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
   for (const d of dests) {
     const stopsOnTarget = conn.toDir === 'start'
       ? conn.toJunctionIdx - d.untilIdx
       : d.untilIdx - conn.toJunctionIdx;
-    const totalMax = onLineStops + viaCount + Math.max(0, stopsOnTarget);
+    const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
     choices.push({
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
       effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
@@ -3230,15 +3236,21 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     // destinations (through-running to target line)
     if (conn.destinations) {
       const viaCount = effectiveViaCount(conn, state.currentStation.name);
+      // For mid-line junctions, use stops-to-junction instead of full on-line stops
+      const stopsToJunction = p.direction === 'end'
+        ? conn.fromJunctionIdx - p.fromIdx
+        : p.fromIdx - conn.fromJunctionIdx;
+      const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
       for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1)) {
         if (seenNames.has(d.name)) continue;
         const stopsOnTarget = conn.toDir === 'start'
           ? conn.toJunctionIdx - d.untilIdx : d.untilIdx - conn.toJunctionIdx;
-        const totalMax = onLineStops + viaCount + Math.max(0, stopsOnTarget);
+        const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
         seenNames.add(d.name);
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
+          _isConnDest: true,
           onSelect: () => {
             state.selectedConnection = conn;
             state.selectedDestination = { totalMax };
@@ -3249,18 +3261,24 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   }
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
-  const seenMax = new Map();
-  for (const c of filtered) seenMax.set(c.effectiveMax, c);
-  const unique = [...seenMax.values()];
-  if (unique.length <= 1) {
-    if (unique.length === 1) {
-      unique[0].onSelect();
+  if (filtered.length <= 1) {
+    if (filtered.length === 1) {
+      filtered[0].onSelect();
     } else {
       state.selectedConnection = conns[0];
     }
     return false;
   }
-  return showBranchPickerUI(p, unique, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express));
+  // Auto-select only when ALL choices have the same effectiveMax AND are all
+  // lineDests (same routing, just different labels) — not when connection
+  // destinations to different lines happen to cap to the same max.
+  const allSameMax = filtered.every(c => c.effectiveMax === filtered[0].effectiveMax);
+  const allLineDests = filtered.every(c => !c._isConnDest);
+  if (allSameMax && allLineDests) {
+    filtered[filtered.length - 1].onSelect();
+    return false;
+  }
+  return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express));
 }
 
 // Shared UI for branch/connection picker buttons

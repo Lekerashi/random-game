@@ -1,5 +1,61 @@
 const LINE_NAME_FIXES = {};
 
+// Override upstream line colors with official line colors
+const LINE_COLOR_FIXES = {
+  // ── Tokyu — upstream gives all a generic #0066B3 ──
+  'Tokyu Toyoko Line':        '#DA0442', // red
+  'Tokyu Den-en-toshi Line':  '#20A288', // green/teal
+  'Tokyu Meguro Line':        '#009CD2', // light blue
+  'Tokyu Oimachi Line':       '#F18C43', // orange
+  'Tokyu Ikegami Line':       '#EE86A7', // pink
+  'Tokyu Tamagawa Line':      '#AE0378', // magenta
+  'Tokyu Setagaya Line':      '#FCC70D', // yellow
+  'Tokyu Kodomo-no-kuni Line':'#0068B7', // blue
+  'Tokyu Shin-Yokohama Line': '#890d84', // violet
+  // ── Tokyo Metro ──
+  'Tokyo Metro Hibiya Line':  '#B5B5AC', // silver/gray (upstream #9B7A00)
+  // ── Toei — upstream shades are off ──
+  'Toei Asakusa Line':        '#EC6E65', // rose/salmon (upstream #EE0011)
+  'Toei Mita Line':           '#006CB6', // medium blue (upstream #2B50A1)
+  'Toei Shinjuku Line':       '#B0C124', // leaf/yellow-green (upstream #6CBB5A)
+  'Toei Oedo Line':           '#CE045B', // ruby (upstream #B6007A)
+  // ── Keio — upstream gives all #800080 ──
+  'Keio Line':                '#E3379F', // cherry pink
+  'Keio new line':            '#E3379F',
+  'Keio Sagamihara line':     '#E3379F',
+  'Keio Dobutsuen Line':      '#E3379F',
+  'Keio Racecourse Line':     '#E3379F',
+  'Keio Takaoka Line':        '#E3379F',
+  'Keio Inokashira line':     '#1A407B', // dark navy
+  // ── Keikyu — upstream has random colors per line ──
+  'Keikyu Main Line':         '#E4002B', // Keikyu red
+  'Keikyu Airport Line':      '#E4002B',
+  'Keikyu Daishi Line':       '#E4002B',
+  'Keikyu Kurihama Line':     '#E4002B',
+  'Keikyu Zushi Line':        '#E4002B',
+  // ── Seibu — upstream gives generic greens ──
+  'Seibu Ikebukuro Line':     '#ED772D', // orange
+  'Seibu Chichibu Line':      '#ED772D',
+  'Seibu Haijima Line':       '#ED772D',
+  'Seibu Kokubunji Line':     '#ED772D',
+  'Seibu Sayama Line':        '#ED772D',
+  'Seibu Toshima Line':       '#ED772D',
+  'Seibu Tama Lake Line':     '#ED772D',
+  'Seibu Tamaegawa Line':     '#ED772D',
+  'Seibu Seibu-en Line':      '#ED772D',
+  'Seibu Yurakucho Line':     '#F9AA00', // gold (upstream #C9A800)
+  // ── Tobu — upstream gives all #003087 ──
+  'Tobu Isesaki Line':        '#005AAA', // blue
+  'Tobu Kameido Line':        '#005AAA',
+  'Tobu Tojo Line':           '#004098', // dark blue
+  'Tobu Noda line':           '#00BFFF', // sky blue
+  'Tobu Nikko Line':          '#FFA500', // orange
+  'Tobu Utsunomiya Line':     '#FFA500',
+  // ── Other ──
+  'Minato Mirai Line':        '#0068B7', // blue (upstream #f7fccc near-invisible)
+  'Rinkai Line':              '#0065A6', // dark blue (upstream #767c78 gray)
+};
+
 // Stations prepended to the beginning of lines
 const LINE_PREPEND_STATIONS = {};
 

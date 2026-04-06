@@ -192,14 +192,28 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
     to:   'Tobu Isesaki Line',         toStation: '押上(スカイツリー前)', toDir: 'end' },
   { from: 'Tobu Isesaki Line',         fromStation: '押上(スカイツリー前)', fromDir: 'start',
-    to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)' },
+    to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)',
+    name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6',
+    lineDests: [
+      { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6' },
+    ] },
 
   // ── Hibiya ↔ Tobu Isesaki (Skytree) at Kita-Senju ──────────────────────
   // Hibiya terminus at Kita-Senju connects to mid-line Tobu toward Isesaki
   { from: 'Tokyo Metro Hibiya Line', fromEnd: '北千住',
     to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end' },
   { from: 'Tobu Isesaki Line',       fromStation: '北千住', fromDir: 'start',
-    to:   'Tokyo Metro Hibiya Line', toEnd: '北千住' },
+    to:   'Tokyo Metro Hibiya Line', toEnd: '北千住',
+    name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
+    lineDests: [
+      { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '中目黒', name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00' },
+    ] },
 
   // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
   // Sengakuji is mid-line on Asakusa (idx 6), start of Keikyu Main (idx 0)
@@ -230,7 +244,14 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Chiyoda Line', fromEnd: '代々木上原',
     to:   'Odakyu Line',              toEnd:   '新宿' },
   { from: 'Odakyu Line',              fromEnd: '新宿',
-    to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原' },
+    to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
+    name: 'Ayase', ja: '綾瀬方面', color: '#00BB85',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
+    ],
+    destinations: [
+      { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
+    ] },
 
   // ── Tozai ↔ Chuo-Sobu at Nakano and Nishi-Funabashi ───────────────────
   // Two junction points, both local-only
@@ -292,6 +313,13 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
+    name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31',
+    lineDests: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31' },
+    ],
     express: [
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['Yokohama','Kikuna','Hiyoshi','Musashi-Kosugi','Jiyugaoka','Naka-meguro',
@@ -302,7 +330,14 @@ const LINE_CONNECTIONS = [
   // ── Tokyu Toyoko ↔ Minato Mirai at Yokohama ──────────────────────────
   // Through-running to Motomachi-chukagai (chains with Fukutoshin/Seibu above)
   { from: 'Tokyu Toyoko Line',  fromEnd: '横浜',
-    to:   'Minato Mirai Line',  toEnd:   '横浜' },
+    to:   'Minato Mirai Line',  toEnd:   '横浜',
+    name: 'Motomachi-Chukagai', ja: '元町・中華街方面', color: '#015193',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '元町・中華街', name: 'Motomachi-Chukagai', ja: '元町・中華街方面', color: '#015193' },
+    ] },
   { from: 'Minato Mirai Line',  fromEnd: '横浜',
     to:   'Tokyu Toyoko Line',  toEnd:   '横浜' },
 
@@ -365,21 +400,68 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#003087' },
     ] },
-  // Reverse: Shin-Yokohama Line → Meguro at Hiyoshi
+  // Reverse: Shin-Yokohama Line → Meguro / Toyoko at Hiyoshi
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
-    to:   'Tokyu Meguro Line',           toEnd:   '日吉' },
+    to:   'Tokyu Meguro Line',           toEnd:   '日吉',
+    name: 'Meguro', ja: '目黒方面', color: '#6CBB5A',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
+    ],
+    destinations: [
+      { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ] },
 
-  // ── Tokyu Toyoko ↔ Tokyu Shin-Yokohama at Hiyoshi (mid-line) ─────────
-  // Hiyoshi is mid-line on Toyoko (idx 12). No express — at Hiyoshi the
-  // Shin-Yokohama Line appears as its own platform.
+  // ── Tokyu Toyoko ↔ Tokyu Shin-Yokohama / Sotetsu at Hiyoshi (mid-line) ──
+  // Hiyoshi is mid-line on Toyoko (idx 12). Toward-Yokohama direction has
+  // destinations (Shin-Yokohama, Futamatagawa) merged with terminus Minato Mirai.
+  // Toward-Shibuya direction: Shin-Yokohama Line appears as its own platform.
   { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'end',
-    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉' },
+    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉',
+    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#7b4e9e',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#7b4e9e' },
+    ] },
+  { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'end',
+    to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
+    toUntil: '二俣川',
+    via:  ['新綱島', '新横浜', '羽沢横浜国大'],
+    name: 'Futamatagawa', ja: '二俣川方面', color: '#003087',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '二俣川', name: 'Futamatagawa', ja: '二俣川方面', color: '#003087' },
+    ] },
   { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'start',
-    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉' },
+    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉',
+    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
+    lineDests: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
+    ],
+    destinations: [
+      { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84' },
+    ] },
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
-    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'start' },
+    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'start',
+    name: 'Shibuya', ja: '渋谷方面', color: '#0066B3',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
+    ],
+    destinations: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
+    ] },
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
-    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'end' },
+    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'end',
+    name: 'Yokohama', ja: '横浜方面', color: '#da0442',
+    lineDests: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
+    ],
+    destinations: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#da0442' },
+    ] },
 
   // ── Tokyu Shin-Yokohama ↔ Sotetsu Shin-Yokohama at Shin-Yokohama ────
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '新横浜',
@@ -392,41 +474,107 @@ const LINE_CONNECTIONS = [
   { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '西谷',
     to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end' },
   { from: 'Sotetsu Main Line',           fromStation: '西谷', fromDir: 'start',
-    to:   'Sotetsu Shin-Yokohama Line',  toEnd: '西谷' },
+    to:   'Sotetsu Shin-Yokohama Line',  toEnd: '西谷',
+    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84' },
+    ] },
 
   // ── Sotetsu Main ↔ Sotetsu Izumino at Futamatagawa ───────────────────
   // Mid-line on Main, start of Izumino. Trains can branch in both directions.
   { from: 'Sotetsu Main Line',     fromStation: '二俣川', fromDir: 'end',
-    to:   'Sotetsu Izumino Line',  toEnd: '二俣川' },
+    to:   'Sotetsu Izumino Line',  toEnd: '二俣川',
+    name: 'Shonandai', ja: '湘南台方面', color: '#003087',
+    lineDests: [
+      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a' },
+    ] },
   { from: 'Sotetsu Main Line',     fromStation: '二俣川', fromDir: 'start',
-    to:   'Sotetsu Izumino Line',  toEnd: '二俣川' },
+    to:   'Sotetsu Izumino Line',  toEnd: '二俣川',
+    name: 'Shonandai', ja: '湘南台方面', color: '#003087',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a' },
+    ] },
   { from: 'Sotetsu Izumino Line',  fromEnd: '二俣川',
-    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'start' },
+    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'start',
+    name: 'Yokohama', ja: '横浜方面', color: '#003087',
+    lineDests: [
+      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a' },
+    ],
+    destinations: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
+    ] },
   { from: 'Sotetsu Izumino Line',  fromEnd: '二俣川',
-    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'end' },
+    to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'end',
+    name: 'Ebina', ja: '海老名方面', color: '#003087',
+    lineDests: [
+      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a' },
+    ],
+    destinations: [
+      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
+    ] },
 
   // ── Toei Shinjuku ↔ Keio at Shinjuku ──────────────────────────────────
   // Keio has express services (Sub-Exp, Express, Ltd. Exp)
   { from: 'Toei Shinjuku Line', fromEnd: '新宿',
     to:   'Keio Line',          toEnd:   '新宿' },
   { from: 'Keio Line',          fromEnd: '新宿',
-    to:   'Toei Shinjuku Line', toEnd:   '新宿' },
+    to:   'Toei Shinjuku Line', toEnd:   '新宿',
+    name: 'Moto-Yawata', ja: '本八幡方面', color: '#6CBB5A',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#800080' },
+    ],
+    destinations: [
+      { until: '本八幡', name: 'Moto-Yawata', ja: '本八幡方面', color: '#6CBB5A' },
+    ] },
 
   // ── Tobu Tojo ↔ Fukutoshin/Yurakucho at Wakoshi ──────────────────────
   // Wakoshi is mid-line on Tobu Tojo (idx 10), start of Fukutoshin and Yurakucho
   // Both travel directions: heading toward Ikebukuro or away
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
-    name: 'Fukutoshin', ja: '副都心線', color: '#9C5E31' },
+    name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
+    lineDests: [
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31' },
+    ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
-    name: 'Yurakucho', ja: '有楽町線', color: '#C9A800' },
+    name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800',
+    lineDests: [
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
+    ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
     to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
-    name: 'Fukutoshin', ja: '副都心線', color: '#9C5E31' },
+    name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
+    lineDests: [
+      { until: '寄居', name: 'Yorii', ja: '寄居方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31' },
+    ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
     to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
-    name: 'Yurakucho', ja: '有楽町線', color: '#C9A800' },
+    name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800',
+    lineDests: [
+      { until: '寄居', name: 'Yorii', ja: '寄居方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
+    ] },
   // Return: Fukutoshin/Yurakucho terminus → Tobu Tojo
   { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '和光市',
     to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
@@ -475,27 +623,69 @@ const LINE_CONNECTIONS = [
   // ── Keio ↔ Keio Sagamihara at Chofu ───────────────────────────────────
   // Chofu is mid-line on Keio (idx 17), start of Sagamihara (idx 0)
   { from: 'Keio Line',            fromStation: '調布', fromDir: 'start',
-    to:   'Keio Sagamihara line', toEnd: '調布' },
+    to:   'Keio Sagamihara line', toEnd: '調布',
+    name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#800080' },
+    ],
+    destinations: [
+      { until: '橋本', name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa' },
+    ] },
   { from: 'Keio Line',            fromStation: '調布', fromDir: 'end',
-    to:   'Keio Sagamihara line', toEnd: '調布' },
+    to:   'Keio Sagamihara line', toEnd: '調布',
+    name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa',
+    lineDests: [
+      { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
+    ],
+    destinations: [
+      { until: '橋本', name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa' },
+    ] },
   { from: 'Keio Sagamihara line', fromEnd: '調布',
     to:   'Keio Line',            toStation: '調布', toDir: 'start' },
 
   // ── Odakyu ↔ Odakyu Enoshima at Sagami-Ono ───────────────────────────
   // Sagami-Ono is mid-line on Odakyu (idx 27), start of Enoshima (idx 0)
   { from: 'Odakyu Line',          fromStation: '相模大野', fromDir: 'start',
-    to:   'Odakyu Enoshima Line', toEnd: '相模大野' },
+    to:   'Odakyu Enoshima Line', toEnd: '相模大野',
+    name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
+    ],
+    destinations: [
+      { until: '片瀬江ノ島', name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830' },
+    ] },
   { from: 'Odakyu Line',          fromStation: '相模大野', fromDir: 'end',
-    to:   'Odakyu Enoshima Line', toEnd: '相模大野' },
+    to:   'Odakyu Enoshima Line', toEnd: '相模大野',
+    name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830',
+    lineDests: [
+      { until: '小田原', name: 'Odawara', ja: '小田原方面', color: '#0099DD' },
+    ],
+    destinations: [
+      { until: '片瀬江ノ島', name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830' },
+    ] },
   { from: 'Odakyu Enoshima Line', fromEnd: '相模大野',
     to:   'Odakyu Line',          toStation: '相模大野', toDir: 'start' },
 
   // ── Odakyu ↔ Odakyu Tama at Shin-Yurigaoka ───────────────────────────
   // Shin-Yurigaoka is mid-line on Odakyu (idx 22), start of Tama (idx 0)
   { from: 'Odakyu Line',      fromStation: '新百合ヶ丘', fromDir: 'start',
-    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘' },
+    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘',
+    name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
+    ],
+    destinations: [
+      { until: '唐木田', name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8' },
+    ] },
   { from: 'Odakyu Line',      fromStation: '新百合ヶ丘', fromDir: 'end',
-    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘' },
+    to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘',
+    name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8',
+    lineDests: [
+      { until: '小田原', name: 'Odawara', ja: '小田原方面', color: '#0099DD' },
+    ],
+    destinations: [
+      { until: '唐木田', name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8' },
+    ] },
   { from: 'Odakyu Tama Line', fromEnd: '新百合ヶ丘',
     to:   'Odakyu Line',      toStation: '新百合ヶ丘', toDir: 'start' },
 
@@ -527,7 +717,14 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'JR Negishi Line',  fromEnd: '横浜',
     to:   'JR Yokohama Line', toEnd:   '東神奈川',
-    via:  ['横浜'] },
+    via:  ['横浜'],
+    name: 'Hachioji', ja: '八王子方面', color: '#00AD53',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },
+    ],
+    destinations: [
+      { until: '八王子', name: 'Hachioji', ja: '八王子方面', color: '#00AD53' },
+    ] },
 
   // ── Hachiko Line ↔ Kawagoe Line at Komagawa ──────────────────────────
   // Through-running: Hachiko Line trains from Hachioji continue onto
@@ -543,7 +740,14 @@ const LINE_CONNECTIONS = [
       { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
     ] },
   { from: 'JR Kawagoe Line',  fromEnd: '高麗川',
-    to:   'JR Hachiko Line',  toEnd:   '高麗川' },
+    to:   'JR Hachiko Line',  toEnd:   '高麗川',
+    name: 'Takasaki', ja: '高崎方面', color: '#996633',
+    lineDests: [
+      { until: '高麗川', name: 'Komagawa', ja: '高麗川方面', color: '#4a786f' },
+    ],
+    destinations: [
+      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#996633' },
+    ] },
 
   // ── Keihin-Tohoku Line ↔ Negishi Line at Yokohama ────────────────────
   // Through-running: KT Line trains continue from Yokohama onto the Negishi
@@ -578,5 +782,12 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { skip: ['Okachimachi'] } } },
     ] },
   { from: 'JR Negishi Line',       fromEnd: '横浜',
-    to:   'JR Keihin Tohoku Line', toEnd:   '横浜' },
+    to:   'JR Keihin Tohoku Line', toEnd:   '横浜',
+    name: 'Omiya', ja: '大宮方面', color: '#00B2E5',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },
+    ],
+    destinations: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#00B2E5' },
+    ] },
 ];
