@@ -1774,7 +1774,13 @@ function buildSpatialIndex() {
 // Called once from buildIndex after the station index is built.
 function resolveConnections() {
   state.connections = [];
+  state._connectionWarnings = [];
   if (typeof LINE_CONNECTIONS === 'undefined') return;
+  const warn = (conn, field, value, reason) => {
+    const label = (conn.from || '?') + ' → ' + (conn.to || '?');
+    state._connectionWarnings.push({ conn: label, field, value, reason });
+    console.warn(`[CONNECTION] ${reason}: ${field}="${value}" in ${label}`);
+  };
 
   for (const conn of LINE_CONNECTIONS) {
     // Collect all matching lines (handles same-name segments like JR Hachiko Line)
@@ -1785,7 +1791,8 @@ function resolveConnections() {
       if (l.name === conn.to) toMatches.push({ line: l, idx: i });
     });
     if (fromMatches.length === 0 || toMatches.length === 0) {
-      console.warn(`[CONNECTION] Line not found: from="${conn.from}"${fromMatches.length === 0 ? ' (missing)' : ''}, to="${conn.to}"${toMatches.length === 0 ? ' (missing)' : ''}`);
+      if (fromMatches.length === 0) warn(conn, 'from', conn.from, 'line not found');
+      if (toMatches.length === 0) warn(conn, 'to', conn.to, 'line not found');
       continue;
     }
 
@@ -1797,7 +1804,6 @@ function resolveConnections() {
     // Resolve the junction station on the source line
     let fromJunctionIdx = -1;
     if (conn.fromEnd) {
-      // fromEnd = terminus JA name on the source line
       fromJunctionIdx = fromLine.stations.findIndex(s => s.ja === conn.fromEnd);
     } else if (conn.fromStation) {
       fromJunctionIdx = fromLine.stations.findIndex(s => s.ja === conn.fromStation);
@@ -1806,13 +1812,16 @@ function resolveConnections() {
     // Resolve the junction station on the target line
     let toJunctionIdx = -1;
     if (conn.toEnd) {
-      // toEnd = terminus JA name on the target line
       toJunctionIdx = toLine.stations.findIndex(s => s.ja === conn.toEnd);
     } else if (conn.toStation) {
       toJunctionIdx = toLine.stations.findIndex(s => s.ja === conn.toStation);
     }
 
-    if (fromJunctionIdx === -1 || toJunctionIdx === -1) continue;
+    if (fromJunctionIdx === -1 || toJunctionIdx === -1) {
+      if (fromJunctionIdx === -1) warn(conn, conn.fromEnd ? 'fromEnd' : 'fromStation', conn.fromEnd || conn.fromStation || '(none)', 'junction not found on source line');
+      if (toJunctionIdx === -1) warn(conn, conn.toEnd ? 'toEnd' : 'toStation', conn.toEnd || conn.toStation || '(none)', 'junction not found on target line');
+      continue;
+    }
 
     // Determine which direction the source line approaches the junction from
     // 'start' means the junction is at index 0 (or near start), 'end' means at N-1
@@ -1834,7 +1843,7 @@ function resolveConnections() {
           const s = l.stations.find(st => st.ja === ja);
           if (s) { viaStations.push(s); found = true; break; }
         }
-        if (!found) console.warn(`[CONNECTION] Via station not found: "${ja}" in ${conn.from}→${conn.to}`);
+        if (!found) warn(conn, 'via', ja, 'via station not found');
       }
     }
 
@@ -1843,7 +1852,7 @@ function resolveConnections() {
     if (conn.destinations) {
       destinations = conn.destinations.map(d => {
         const untilIdx = toLine.stations.findIndex(s => s.ja === d.until);
-        if (untilIdx === -1) console.warn(`[CONNECTION] Destination not found: until="${d.until}" on "${conn.to}"`);
+        if (untilIdx === -1) warn(conn, 'destinations.until', d.until, 'destination not found on target line');
         return { ...d, untilIdx };
       }).filter(d => d.untilIdx !== -1);
     }
@@ -1860,7 +1869,7 @@ function resolveConnections() {
     let toUntilIdx = -1;
     if (conn.toUntil) {
       toUntilIdx = toLine.stations.findIndex(s => s.ja === conn.toUntil);
-      if (toUntilIdx === -1) console.warn(`[CONNECTION] toUntil not found: "${conn.toUntil}" on "${conn.to}"`);
+      if (toUntilIdx === -1) warn(conn, 'toUntil', conn.toUntil, 'toUntil station not found on target line');
     }
 
     state.connections.push({
@@ -1874,6 +1883,9 @@ function resolveConnections() {
     });
     } // end toMatch loop
     } // end fromMatch loop
+  }
+  if (state._connectionWarnings.length > 0) {
+    console.warn(`[CONNECTION] ${state._connectionWarnings.length} warning(s) during resolution`);
   }
 }
 
@@ -2918,188 +2930,204 @@ function rerollStops() {
   rebuildPickers(state.selectedPlatform, { autoRoll: true });
 }
 
+// ── Physical branches (Tsurumi, Marunouchi, Nambu) ──
+// Returns { pickerShown: true } if picker displayed, { pickerShown: false } otherwise.
+function handlePhysicalBranches(p) {
+  if (!LINE_BRANCHES[p.lineName] || state.selectedBranch) return { pickerShown: false };
+  const line = state.lines[p.lineIdx];
+  const branches = getBranches(p.lineName, state.currentStation.ja, line, p.direction);
+  if (!branches || branches.length === 0) return { pickerShown: false };
+
+  // Filter to branches that have stations ahead in our direction
+  const viable = branches.filter(b => {
+    const pos = b.branchIndices.indexOf(p.fromIdx);
+    if (pos === -1) return false;
+    if (p.direction === 'start') return pos > 0;
+    return pos < b.branchIndices.length - 1;
+  });
+
+  // Check if all viable branches produce the same reachable route (shared trunk)
+  if (viable.length > 1) {
+    const bestMax = Math.max(...viable.map(b => {
+      const raw = getBranchMaxStops(p, b.branchIndices);
+      return capStops(raw);
+    }));
+    const getAhead = b => {
+      const pos = b.branchIndices.indexOf(p.fromIdx);
+      const full = p.direction === 'start'
+        ? b.branchIndices.slice(0, pos).reverse()
+        : b.branchIndices.slice(pos + 1);
+      return full.slice(0, bestMax).join(',');
+    };
+    const firstAhead = getAhead(viable[0]);
+    if (viable.every(b => getAhead(b) === firstAhead)) {
+      state.selectedBranch = viable[0];
+      return { pickerShown: false };
+    }
+  }
+
+  if (viable.length <= 1) {
+    state.selectedBranch = viable[0] || branches[0] || null;
+    return { pickerShown: false };
+  }
+
+  // Show branch picker buttons
+  showBranchPickerUI(p, viable.map(b => ({
+    name: b.name, ja: b.ja, color: b.color,
+    effectiveMax: getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount,
+    onSelect: () => { state.selectedBranch = b; },
+  })), !!EXPRESS_SERVICES[p.lineName]);
+  return { pickerShown: true };
+}
+
+// ── Line destinations (trains terminating at different stations) ──
+// Returns { pickerShown: true } if picker displayed, { pickerShown: false } otherwise.
+function handleLineDestinations(p) {
+  const lineDest = LINE_DESTINATIONS[p.lineName];
+  if (!lineDest || p.direction !== lineDest.direction || state.selectedDestination) return { pickerShown: false };
+
+  const line = state.lines[p.lineIdx];
+  const dests = lineDest.destinations
+    .map(d => {
+      const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+      if (untilIdx === -1) return null;
+      // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
+      if (state.selectedBranch?.branchIndices && !state.selectedBranch.branchIndices.includes(untilIdx)) return null;
+      // Count stops from current position to destination
+      const stopsToEnd = lineDest.direction === 'end'
+        ? untilIdx - p.fromIdx
+        : p.fromIdx - untilIdx;
+      if (stopsToEnd <= 0) return null;
+      return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)) };
+    })
+    .filter(d => d && d.effectiveMax > 0);
+  if (dests.length === 0) return { pickerShown: false };
+
+  // If all destinations have the same effectiveMax (cap makes them equivalent),
+  // auto-select the furthest one — no meaningful choice to make.
+  const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
+  if (allSameMax) {
+    state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx };
+    return { pickerShown: false };
+  }
+  if (dests.length > 1) {
+    showBranchPickerUI(p, dests.map(d => ({
+      name: d.name, ja: d.ja, color: d.color,
+      effectiveMax: d.effectiveMax,
+      onSelect: () => {
+        state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx };
+      },
+    })), !!EXPRESS_SERVICES[p.lineName]);
+    return { pickerShown: true };
+  }
+  if (dests.length === 1) {
+    state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx };
+  }
+  return { pickerShown: false };
+}
+
+// ── Connection branches (through-running) ──
+// Returns { pickerShown: true } if picker displayed, { pickerShown: false } otherwise.
+function handleConnectionRouting(p) {
+  if (!p._connections || p._connections.length === 0 || state.selectedConnection || state.selectedDestination) return { pickerShown: false };
+
+  const conns = p._connections;
+  const onLineStops = p._onLineStops || 0;
+  const rollableMax = capStops(p.maxStops);
+
+  // If we can't even reach the junction, no connection matters
+  // (but still show picker when connections have destinations — e.g. mid-line Y-junctions)
+  if (rollableMax <= onLineStops && !conns.some(c => c.destinations || c.lineDests)) {
+    state.selectedConnection = conns[0];
+    return { pickerShown: false };
+  }
+
+  // Single connection with destinations = destination picker
+  if (conns.length === 1 && conns[0].destinations) {
+    return { pickerShown: showDestinationPicker(p, conns[0], onLineStops) };
+  }
+
+  // Single connection without destinations — auto-select
+  if (conns.length === 1) {
+    state.selectedConnection = conns[0];
+    return { pickerShown: false };
+  }
+
+  // If all connections go to the same target line and any have destinations,
+  // show a destination picker FIRST (before shared-trunk check)
+  const allSameTarget = conns.every(c => c.to === conns[0].to);
+  const connWithDests = conns.find(c => c.destinations && c.destinations.length > 0);
+
+  // Multiple connections without destinations — check for shared-trunk auto-select
+  if (!connWithDests) {
+    const getConnRoute = conn => {
+      const available = rollableMax - onLineStops;
+      const via = conn.viaStations.map(s => s.ja).join(',');
+      const targetStops = getConnectionStations(conn, available - effectiveViaCount(conn, state.currentStation.name));
+      return via + '|' + targetStops.map(s => s.ja).join(',');
+    };
+    const firstRoute = getConnRoute(conns[0]);
+    if (conns.every(c => getConnRoute(c) === firstRoute)) {
+      state.selectedConnection = conns[0];
+      return { pickerShown: false };
+    }
+  }
+
+  // If all connections go to the same target line and have destinations,
+  // show a destination picker (e.g. merged UTL southbound at Ueno)
+  if (allSameTarget && connWithDests) {
+    const bestConn = conns.reduce((a, b) =>
+      (b.destinations?.length || 0) > (a.destinations?.length || 0) ? b : a, conns[0]);
+    return { pickerShown: showDestinationPicker(p, bestConn, onLineStops) };
+  }
+
+  // If all connections have destinations, merge into a flat destination picker
+  // (e.g. Meguro → Hiyoshi / Shin-Yokohama / Ebina / Shonandai)
+  if (conns.every(c => c.destinations)) {
+    return { pickerShown: showMergedDestinationPicker(p, conns, onLineStops) };
+  }
+
+  // Show connection picker (different target lines)
+  showBranchPickerUI(p, conns.map(conn => {
+    const viaCount = effectiveViaCount(conn, state.currentStation.name);
+    let targetMax = getConnectionMaxStops(conn);
+    // If connection has express but no local (no stops:null entry),
+    // cap targetMax to the express service with the most stops
+    if (conn.express && !conn.express.some(e => e.stops === null)) {
+      const toLine = state.lines[conn.toLineIdx];
+      const jIdx = conn.toJunctionIdx;
+      const maxExpStops = Math.max(...conn.express.map(e => {
+        const indices = getExpressIndices(toLine, e.stops);
+        if (conn.toDir === 'start') return indices.filter(i => i < jIdx).length;
+        return indices.filter(i => i > jIdx).length;
+      }));
+      targetMax = Math.min(targetMax, maxExpStops);
+    }
+    const connMax = viaCount + targetMax + onLineStops;
+    const effectiveMax = Math.min(capStops(connMax), p.maxStops);
+    return {
+      name: conn.name || conn.to, ja: conn.ja || '', color: conn.color || p.lineColor,
+      effectiveMax,
+      onSelect: () => {
+        if (conn.destinations) {
+          state.selectedConnection = conn;
+          showDestinationPicker(p, conn, onLineStops);
+          return 'subpicker';
+        }
+        state.selectedConnection = conn;
+        state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
+      },
+    };
+  }), false);
+  return { pickerShown: true };
+}
+
 // Show branch destination buttons for branching lines. Returns true if shown.
 function showBranchButtons(p) {
   if (!p) return false;
-
-  // ── Physical branches (Tsurumi, Marunouchi, Nambu) ──
-  // Skip if branch already selected (allows fall-through to destinations after branch picker)
-  if (LINE_BRANCHES[p.lineName] && !state.selectedBranch) {
-    const line = state.lines[p.lineIdx];
-    const branches = getBranches(p.lineName, state.currentStation.ja, line, p.direction);
-    if (branches && branches.length > 0) {
-      // Filter to branches that have stations ahead in our direction
-      const viable = branches.filter(b => {
-        const pos = b.branchIndices.indexOf(p.fromIdx);
-        if (pos === -1) return false;
-        if (p.direction === 'start') return pos > 0;
-        return pos < b.branchIndices.length - 1;
-      });
-
-      // Check if all viable branches produce the same reachable route (shared trunk)
-      if (viable.length > 1) {
-        const bestMax = Math.max(...viable.map(b => {
-          const raw = getBranchMaxStops(p, b.branchIndices);
-          return capStops(raw);
-        }));
-        const getAhead = b => {
-          const pos = b.branchIndices.indexOf(p.fromIdx);
-          const full = p.direction === 'start'
-            ? b.branchIndices.slice(0, pos).reverse()
-            : b.branchIndices.slice(pos + 1);
-          return full.slice(0, bestMax).join(',');
-        };
-        const firstAhead = getAhead(viable[0]);
-        if (viable.every(b => getAhead(b) === firstAhead)) {
-          state.selectedBranch = viable[0];
-          return false;
-        }
-      }
-
-      if (viable.length <= 1) {
-        state.selectedBranch = viable[0] || branches[0] || null;
-        return false;
-      }
-
-      // Show branch picker buttons
-      return showBranchPickerUI(p, viable.map(b => ({
-        name: b.name, ja: b.ja, color: b.color,
-        effectiveMax: getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount,
-        onSelect: () => { state.selectedBranch = b; },
-      })), !!EXPRESS_SERVICES[p.lineName]);
-    }
-  }
-
-  // ── Line destinations (trains terminating at different stations) ──
-  // Skip if destination already selected (prevents re-showing after picker handler re-calls)
-  const lineDest = LINE_DESTINATIONS[p.lineName];
-  if (lineDest && p.direction === lineDest.direction && !state.selectedDestination) {
-    const line = state.lines[p.lineIdx];
-    const dests = lineDest.destinations
-      .map(d => {
-        const untilIdx = line.stations.findIndex(s => s.ja === d.until);
-        if (untilIdx === -1) return null;
-        // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
-        if (state.selectedBranch?.branchIndices && !state.selectedBranch.branchIndices.includes(untilIdx)) return null;
-        // Count stops from current position to destination
-        const stopsToEnd = lineDest.direction === 'end'
-          ? untilIdx - p.fromIdx
-          : p.fromIdx - untilIdx;
-        if (stopsToEnd <= 0) return null;
-        return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)) };
-      })
-      .filter(d => d && d.effectiveMax > 0);
-    // If all destinations have the same effectiveMax (cap makes them equivalent),
-    // auto-select the furthest one — no meaningful choice to make.
-    const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
-    if (allSameMax) {
-      state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx };
-    } else if (dests.length > 1) {
-      return showBranchPickerUI(p, dests.map(d => ({
-        name: d.name, ja: d.ja, color: d.color,
-        effectiveMax: d.effectiveMax,
-        onSelect: () => {
-          state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx };
-        },
-      })), !!EXPRESS_SERVICES[p.lineName]);
-    } else if (dests.length === 1) {
-      state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx };
-    }
-  }
-
-  // ── Connection branches (through-running) ──
-  // Skip if connection or destination already selected
-  if (p._connections && p._connections.length > 0 && !state.selectedConnection && !state.selectedDestination) {
-    const conns = p._connections;
-    const onLineStops = p._onLineStops || 0;
-    const rollableMax = capStops(p.maxStops);
-
-    // If we can't even reach the junction, no connection matters
-    // (but still show picker when connections have destinations — e.g. mid-line Y-junctions)
-    if (rollableMax <= onLineStops && !conns.some(c => c.destinations || c.lineDests)) {
-      state.selectedConnection = conns[0];
-      return false;
-    }
-
-    // Single connection with destinations = destination picker
-    if (conns.length === 1 && conns[0].destinations) {
-      return showDestinationPicker(p, conns[0], onLineStops);
-    }
-
-    // Single connection without destinations — auto-select
-    if (conns.length === 1) {
-      state.selectedConnection = conns[0];
-      return false;
-    }
-
-    // If all connections go to the same target line and any have destinations,
-    // show a destination picker FIRST (before shared-trunk check)
-    const allSameTarget = conns.every(c => c.to === conns[0].to);
-    const connWithDests = conns.find(c => c.destinations && c.destinations.length > 0);
-
-    // Multiple connections without destinations — check for shared-trunk auto-select
-    if (!connWithDests) {
-      const getConnRoute = conn => {
-        const available = rollableMax - onLineStops;
-        const via = conn.viaStations.map(s => s.ja).join(',');
-        const targetStops = getConnectionStations(conn, available - effectiveViaCount(conn, state.currentStation.name));
-        return via + '|' + targetStops.map(s => s.ja).join(',');
-      };
-      const firstRoute = getConnRoute(conns[0]);
-      if (conns.every(c => getConnRoute(c) === firstRoute)) {
-        state.selectedConnection = conns[0];
-        return false;
-      }
-    }
-
-    // If all connections go to the same target line and have destinations,
-    // show a destination picker (e.g. merged UTL southbound at Ueno)
-    if (allSameTarget && connWithDests) {
-      const bestConn = conns.reduce((a, b) =>
-        (b.destinations?.length || 0) > (a.destinations?.length || 0) ? b : a, conns[0]);
-      return showDestinationPicker(p, bestConn, onLineStops);
-    }
-
-    // If all connections have destinations, merge into a flat destination picker
-    // (e.g. Meguro → Hiyoshi / Shin-Yokohama / Ebina / Shonandai)
-    if (conns.every(c => c.destinations)) {
-      return showMergedDestinationPicker(p, conns, onLineStops);
-    }
-
-    // Show connection picker (different target lines)
-    return showBranchPickerUI(p, conns.map(conn => {
-      const viaCount = effectiveViaCount(conn, state.currentStation.name);
-      let targetMax = getConnectionMaxStops(conn);
-      // If connection has express but no local (no stops:null entry),
-      // cap targetMax to the express service with the most stops
-      if (conn.express && !conn.express.some(e => e.stops === null)) {
-        const toLine = state.lines[conn.toLineIdx];
-        const jIdx = conn.toJunctionIdx;
-        const maxExpStops = Math.max(...conn.express.map(e => {
-          const indices = getExpressIndices(toLine, e.stops);
-          if (conn.toDir === 'start') return indices.filter(i => i < jIdx).length;
-          return indices.filter(i => i > jIdx).length;
-        }));
-        targetMax = Math.min(targetMax, maxExpStops);
-      }
-      const connMax = viaCount + targetMax + onLineStops;
-      const effectiveMax = Math.min(capStops(connMax), p.maxStops);
-      return {
-        name: conn.name || conn.to, ja: conn.ja || '', color: conn.color || p.lineColor,
-        effectiveMax,
-        onSelect: () => {
-          if (conn.destinations) {
-            state.selectedConnection = conn;
-            showDestinationPicker(p, conn, onLineStops);
-            return 'subpicker';
-          }
-          state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
-        },
-      };
-    }), false);
-  }
-
+  if (handlePhysicalBranches(p).pickerShown) return true;
+  if (handleLineDestinations(p).pickerShown) return true;
+  if (handleConnectionRouting(p).pickerShown) return true;
   return false;
 }
 
@@ -3612,25 +3640,34 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   const tt = trainType || state.selectedTrainType;
   const line = state.lines[platform.lineIdx];
   const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : tt?.expressIndices;
+  const trace = window._routeDebug ? [] : null;
 
   // Express routing on source line (skip if express targets a connected line)
   if (ei && !tt?._connTargetLineIdx) {
+    trace?.push('strategy: source-line express (' + (ei.length) + ' indices)');
     const r = routeExpressStops(platform, line, stops, ei);
-    if (!r.needsExtension) return r.stations;
-    // Express reached terminus — extend onto connected line
+    trace?.push('routeExpressStops: ' + r.stations.length + ' stops, needsExtension=' + r.needsExtension);
+    if (!r.needsExtension) { if (trace) r.stations._trace = trace; return r.stations; }
     const conn = findRouteConnection(platform, tt);
-    return routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
+    trace?.push('findRouteConnection: ' + (conn ? conn.from + ' → ' + conn.to : 'none'));
+    const result = routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
+    trace?.push('routeConnectionExtension: total ' + result.length + ' stops');
+    if (trace) result._trace = trace;
+    return result;
   }
 
   // Branch routing
   const bi = state.selectedBranch?.branchIndices;
   if (bi) {
+    trace?.push('strategy: branch routing (' + bi.length + ' indices)');
     const r = routeBranchStops(platform, line, stops, bi);
-    if (r) return r;
+    if (r) { if (trace) { trace.push('routeBranchStops: ' + r.length + ' stops'); r._trace = trace; } return r; }
+    trace?.push('routeBranchStops: null (fromIdx not on branch), falling through');
   }
 
   // Normal routing with optional connection extension
   const conn = findRouteConnection(platform, tt);
+  trace?.push('strategy: local' + (conn ? ' + connection (' + conn.from + ' → ' + conn.to + ')' : ''));
   let result = [];
 
   // Source-line express for terminus connection services (e.g. Yokohama Line Rapid)
@@ -3638,13 +3675,19 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   if (srcEi && tt?._connTargetLineIdx != null
       && conn && conn.fromJunctionIdx === (platform.direction === 'start' ? 0 : line.stations.length - 1)
       && !EXPRESS_SERVICES[platform.lineName]) {
+    trace?.push('routeSourceExpressToJunction: srcEi has ' + srcEi.length + ' indices');
     result = routeSourceExpressToJunction(platform, line, stops, srcEi, conn);
   }
   if (result.length === 0) {
+    trace?.push('routeOnLineLocal' + (tt?._connTargetLineIdx != null ? ' (connTarget)' : ''));
     result = routeOnLineLocal(platform, line, stops, conn, tt?._connTargetLineIdx);
   }
+  trace?.push('on-line: ' + result.length + ' stops');
 
-  return routeConnectionExtension(platform, stops, result, tt, conn, ei);
+  result = routeConnectionExtension(platform, stops, result, tt, conn, ei);
+  trace?.push('final: ' + result.length + ' total stops');
+  if (trace) result._trace = trace;
+  return result;
 }
 
 function capStops(max) {
@@ -3792,12 +3835,13 @@ function getEffectiveStops(platform, opts = {}) {
   const connTargetLineIdx = opts._connTargetLineIdx !== undefined
     ? opts._connTargetLineIdx
     : state.selectedTrainType?._connTargetLineIdx;
+  const trace = window._routeDebug ? [] : null;
 
   let rawMax;
   const terminates = opts._terminatesAtJunction || state.selectedTrainType?._terminatesAtJunction;
   if (terminates) {
-    // Train terminates at junction — only source line stops, no connection
     rawMax = platform._onLineStops != null ? platform._onLineStops : platform.maxStops;
+    trace?.push('path: terminatesAtJunction, rawMax=' + rawMax);
   } else if (connTargetLineIdx != null) {
     // Express on connected target line: source on-line + via + target express stops
     let conn = state.selectedConnection;
@@ -3820,11 +3864,14 @@ function getEffectiveStops(platform, opts = {}) {
       // source-line count is handled by getStationsAlongRoute which stops at the junction.
       // Use the pre-computed _connTotalMax if available (set by showTrainTypeButtons).
       rawMax = opts._connTotalMax || (onLine + via + targetStops);
+      trace?.push('path: connTarget (line ' + connTargetLineIdx + '), onLine=' + onLine + ' via=' + via + ' target=' + targetStops + ' rawMax=' + rawMax);
     } else {
       rawMax = platform.maxStops;
+      trace?.push('path: connTarget but no conn found, rawMax=' + rawMax);
     }
   } else if (ei) {
     rawMax = getExpressMaxStops(platform, ei);
+    trace?.push('path: source express, baseMax=' + rawMax);
     // Source-line express can continue as local onto connected lines
     // (e.g. Den-en-toshi Express → Hanzomon local at Shibuya)
     // But not when the target line has its own express services — those handle through-running
@@ -3836,13 +3883,18 @@ function getEffectiveStops(platform, opts = {}) {
         const targetHasExpress = conn && EXPRESS_SERVICES[conn.to];
         if (!targetHasExpress) {
           rawMax += (platform.maxStops - platform._onLineStops);
+          trace?.push('express extends as local onto connection, rawMax=' + rawMax);
+        } else {
+          trace?.push('target has express — no extension');
         }
       }
     }
   } else if (bi) {
     rawMax = getBranchMaxStops(platform, bi);
+    trace?.push('path: branch (' + bi.length + ' indices), rawMax=' + rawMax);
   } else {
     rawMax = platform.maxStops;
+    trace?.push('path: default local, rawMax=' + rawMax);
   }
 
   // Apply destination limit (from selectedDestination) before cap.
@@ -3851,15 +3903,15 @@ function getEffectiveStops(platform, opts = {}) {
   const destLimit = state.selectedDestination?.totalMax;
   const destUntilIdx = state.selectedDestination?.untilIdx;
   if (destLimit != null) {
+    trace?.push('destLimit=' + destLimit + ', destUntilIdx=' + destUntilIdx);
     if (destUntilIdx != null && ei && !connTargetLineIdx) {
       const expToLimit = ei.filter(i =>
         platform.direction === 'end' ? (i > platform.fromIdx && i <= destUntilIdx)
                                      : (i < platform.fromIdx && i >= destUntilIdx)
       ).length;
       rawMax = Math.min(rawMax, expToLimit);
+      trace?.push('destLimit (express to untilIdx): rawMax=' + rawMax);
     } else if (ei && platform._onLineStops != null && destLimit > platform._onLineStops) {
-      // Destination spans a connection — convert limit to express terms:
-      // express stops on source line + local stops on connection portion
       const line = state.lines[platform.lineIdx];
       const terminusIdx = platform.direction === 'start' ? 0 : line.stations.length - 1;
       const expOnLine = ei.filter(i =>
@@ -3868,11 +3920,14 @@ function getEffectiveStops(platform, opts = {}) {
       ).length;
       const connStops = destLimit - platform._onLineStops;
       rawMax = Math.min(rawMax, expOnLine + connStops);
+      trace?.push('destLimit (express+conn): expOnLine=' + expOnLine + ' connStops=' + connStops + ' rawMax=' + rawMax);
     } else {
       rawMax = Math.min(rawMax, destLimit);
+      trace?.push('destLimit (simple): rawMax=' + rawMax);
     }
   }
   const cappedMax = capStops(rawMax);
+  trace?.push('cappedMax=' + cappedMax);
 
   // Pass train type context through to route computation instead of mutating state
   const ttOverride = (connTargetLineIdx != null || terminates)
@@ -3880,7 +3935,9 @@ function getEffectiveStops(platform, opts = {}) {
     : undefined;
   const info = getValidRouteInfo(platform, ei || null, cappedMax, bi, ttOverride);
 
-  return { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax };
+  const result = { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax };
+  if (trace) { trace.push('validCount=' + info.validCount); result._trace = trace; }
+  return result;
 }
 
 function hasTransferLines(stationName, currentLineNames) {
