@@ -51,6 +51,13 @@ const LINE_COLOR_FIXES = {
   'Tobu Noda line':           '#00BFFF', // sky blue
   'Tobu Nikko Line':          '#FFA500', // orange
   'Tobu Utsunomiya Line':     '#FFA500',
+  // ── JR — wrong upstream colors ──
+  'JR Chuo-Sobu Line':        '#FFD400', // yellow (upstream #E85B0B = same as Chuo Rapid)
+  'JR Yokosuka Line':         '#0068B7', // navy blue (upstream #7d654a brown)
+  'JR Musashino Line':        '#F77321', // orange (upstream #f1f04d pale yellow)
+  'JR Takasaki Line':         '#F68B1E', // orange (upstream #424d6d dark gray)
+  'JR Negishi Line':          '#00B2E5', // sky blue, matches KT (upstream #d477d1 pink)
+  'JR Sagami Line':           '#8BC31F', // green (upstream #003087 dark navy)
   // ── Other ──
   'Minato Mirai Line':        '#0068B7', // blue (upstream #f7fccc near-invisible)
   'Rinkai Line':              '#0065A6', // dark blue (upstream #767c78 gray)
