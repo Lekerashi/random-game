@@ -1947,7 +1947,15 @@ function getConnectionStations(conn, maxStops) {
 
 // Count effective via stations (skip any matching the starting station name)
 function effectiveViaCount(conn, startStationName) {
-  return conn.viaStations.filter(v => v.name !== startStationName).length;
+  const vias = conn.viaStations.filter(v => v.name !== startStationName);
+  if (!state.wards23Only) return vias.length;
+  // In 23-wards mode, count only consecutive via stations within the wards
+  let count = 0;
+  for (const v of vias) {
+    if (!isIn23Wards(v.lat, v.lng)) break;
+    count++;
+  }
+  return count;
 }
 
 // Find onward connections from a connection's target line far terminus.
@@ -3274,21 +3282,9 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
 
-  // Deduplicate choices with the same effectiveMax WITHIN the same connection
-  // (cap makes them route-equivalent). Don't dedup across connections — same
-  // effectiveMax can route to completely different lines (e.g. Kuki vs Minami-Kurihashi).
-  const groups = new Map();
-  for (const c of filtered) {
-    const key = c._connIdx ?? -1;
-    if (!groups.has(key)) groups.set(key, new Map());
-    groups.get(key).set(c.effectiveMax, c);
-  }
-  const unique = [];
-  for (const group of groups.values()) unique.push(...group.values());
-
-  if (unique.length <= 1) {
-    if (unique.length === 1) {
-      unique[0].onSelect();
+  if (filtered.length <= 1) {
+    if (filtered.length === 1) {
+      filtered[0].onSelect();
     } else {
       state.selectedConnection = conns[0];
     }
@@ -3297,14 +3293,14 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   // Auto-select when all choices have the same effectiveMax and routing is
   // equivalent: either all are lineDests (same line), or the cap keeps the
   // route entirely on the source line (can't reach any junction).
-  const allSameMax = unique.every(c => c.effectiveMax === unique[0].effectiveMax);
-  const allLineDests = unique.every(c => !c._isConnDest);
-  const withinSourceLine = unique[0].effectiveMax <= capStops(onLineStops);
+  const allSameMax = filtered.every(c => c.effectiveMax === filtered[0].effectiveMax);
+  const allLineDests = filtered.every(c => !c._isConnDest);
+  const withinSourceLine = filtered[0].effectiveMax <= capStops(onLineStops);
   if (allSameMax && (allLineDests || withinSourceLine)) {
-    unique[unique.length - 1].onSelect();
+    filtered[filtered.length - 1].onSelect();
     return false;
   }
-  return showBranchPickerUI(p, unique, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)));
+  return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)));
 }
 
 // Shared UI for branch/connection picker buttons
