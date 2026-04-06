@@ -3015,7 +3015,8 @@ function showBranchButtons(p) {
     const rollableMax = capStops(p.maxStops);
 
     // If we can't even reach the junction, no connection matters
-    if (rollableMax <= onLineStops) {
+    // (but still show picker when connections have destinations — e.g. mid-line Y-junctions)
+    if (rollableMax <= onLineStops && !conns.some(c => c.destinations || c.lineDests)) {
       state.selectedConnection = conns[0];
       return false;
     }
@@ -3263,8 +3264,16 @@ function showBranchPickerUI(p, choices, hasExpress) {
 }
 
 // Show train type buttons if express services are available. Returns true if shown.
-function showTrainTypeButtons(p) {
-  // Check the line's own services, connection express, and target line services
+// Build getEffectiveStops options from a train type descriptor
+function trainTypeOpts(g) {
+  return { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax };
+}
+
+// Resolve available train types for a platform, returning grouped/merged types
+// with precomputed stop counts. Returns null if no picker needed, or:
+//   { autoSelect: type } — single reachable express type (auto-select it)
+//   { types: [...] }     — multiple choices for the picker (each has _count, _rawMax)
+function resolveTrainTypes(p) {
   const hasLineExpress = !!EXPRESS_SERVICES[p.lineName];
   const conn = state.selectedConnection;
   const connTargetLine = conn ? state.lines[conn.toLineIdx] : null;
@@ -3283,10 +3292,8 @@ function showTrainTypeButtons(p) {
     }
   }
   const hasConnExpress = allConnExpress.length > 0;
-  if (!p || (!hasLineExpress && !hasConnExpress && !hasTargetExpress)) {
-    showRollStopsUI();
-    return false;
-  }
+  if (!hasLineExpress && !hasConnExpress && !hasTargetExpress) return null;
+
   const line = state.lines[p.lineIdx];
   let trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line) || [];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
@@ -3304,13 +3311,9 @@ function showTrainTypeButtons(p) {
     const junctionStn = connTargetLine.stations[conn.toJunctionIdx];
     const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine) || [];
     // Add a "terminates at junction" option if the source line has no express of its own
-    // This represents trains that don't through-run (e.g. Hanzomon train ending at Shibuya)
     if (!hasLineExpress && trainTypes.length === 0) {
-      const jName = junctionStn.name;
-      const jJa = junctionStn.ja;
-      const onLine = p._onLineStops != null ? p._onLineStops : p.maxStops;
       trainTypes.push({
-        name: 'To ' + jName, ja: jJa + '行き',
+        name: 'To ' + junctionStn.name, ja: junctionStn.ja + '行き',
         color: p.lineColor, stops: null, expressIndices: null,
         _terminatesAtJunction: true,
       });
@@ -3318,13 +3321,11 @@ function showTrainTypeButtons(p) {
     // Skip target Local if source already has one (through-run local covers both lines)
     const srcHasLocal = trainTypes.some(t => t.stops === null && !t._connTargetLineIdx);
     const srcNames = new Set(trainTypes.map(t => normalize(t.name)));
-    // Short label for target line (e.g. "Tobu Tojo Line" → "Tobu Tojo")
     const shortTargetEn = conn.to.replace(/ Line$/, '').replace(/^Tokyo Metro /, '');
     const shortTargetJa = (LINE_NAMES_JA[conn.to] || shortTargetEn).replace(/線$/, '');
     for (const tt of targetTypes) {
       if (srcHasLocal && tt.stops === null) continue;
       const entry = { ...tt, _connTargetLineIdx: conn.toLineIdx };
-      // Disambiguate if source line has a type with the same name
       if (srcNames.has(normalize(tt.name))) {
         entry.name = shortTargetEn + ' ' + tt.name;
         entry.ja = shortTargetJa + ' ' + tt.ja;
@@ -3332,10 +3333,7 @@ function showTrainTypeButtons(p) {
       trainTypes.push(entry);
     }
   }
-  if (!trainTypes || trainTypes.length <= 1) {
-    showRollStopsUI();
-    return false;
-  }
+  if (!trainTypes || trainTypes.length <= 1) return null;
 
   // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi)
   const grouped = [];
@@ -3353,60 +3351,67 @@ function showTrainTypeButtons(p) {
   }
 
   // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya)
-  const reachable = grouped.filter(g => getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount > 0);
+  const reachable = grouped.filter(g => getEffectiveStops(p, trainTypeOpts(g)).validCount > 0);
 
   if (reachable.length <= 1) {
-    // Auto-select the single express type so its indices are used for the roll
     if (reachable.length === 1 && reachable[0].expressIndices) {
-      state.selectedTrainType = { ...reachable[0], expressIndices: reachable[0].expressIndices };
+      return { autoSelect: reachable[0] };
     }
-    showRollStopsUI();
-    return false;
+    return null;
   }
+
   // Merge express types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
-  // Never merge local with express — same count can mean different destinations
-  const withCounts = reachable.map(g => ({ g, count: getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).validCount }));
+  // Never merge local with express, or source-line with connection types — same count can mean different destinations
   const merged = [];
-  for (const { g, count } of withCounts) {
+  for (const g of reachable) {
+    const eff = getEffectiveStops(p, trainTypeOpts(g));
     const isLocal = !g.expressIndices;
-    const existing = merged.find(m => m._count === count && !m.expressIndices === isLocal);
+    const cat = g._terminatesAtJunction ? 'term' : g._connTargetLineIdx != null ? 'conn' : 'src';
+    const existing = merged.find(m => {
+      const mCat = m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' : 'src';
+      return m._count === eff.validCount && !m.expressIndices === isLocal && mCat === cat;
+    });
     if (existing) {
       existing._members.push(...g._members);
       existing.name += ' / ' + g.name;
       existing.ja += ' / ' + g.ja;
     } else {
-      merged.push({ ...g, _count: count });
+      merged.push({ ...g, _count: eff.validCount, _rawMax: eff.rawMax });
     }
   }
-  // Skip picker if all types produce the same valid stop count (no meaningful choice)
-  if (merged.length <= 1) {
+
+  if (merged.length <= 1) return null;
+  return { types: merged };
+}
+
+function showTrainTypeButtons(p) {
+  if (!p) { showRollStopsUI(); return false; }
+  const resolved = resolveTrainTypes(p);
+  if (!resolved) { showRollStopsUI(); return false; }
+  if (resolved.autoSelect) {
+    state.selectedTrainType = { ...resolved.autoSelect, expressIndices: resolved.autoSelect.expressIndices };
     showRollStopsUI();
     return false;
   }
-  const reachableFinal = merged;
+  const types = resolved.types;
   showTrainTypeUI();
-  dom.trainTypeRow.innerHTML = reachableFinal.map((g, i) => {
-    const effectiveMax = g._count;
-    const physMax = getEffectiveStops(p, { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax }).rawMax;
-    // Local (first) button gets full width when there are exactly 3 types
-    const fullWidth = i === 0 && reachableFinal.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+  dom.trainTypeRow.innerHTML = types.map((g, i) => {
+    const fullWidth = i === 0 && types.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     return `<button class="train-type-btn" style="background:${g.color};${pillTextStyle(g.color)}${fullWidth}"
-      data-type-name="${g.name}" data-max="${physMax}">
+      data-type-name="${g.name}" data-max="${g._rawMax}">
       ${currentLang === 'ja'
-        ? `${g.ja}<small>${g.name} · 1–${effectiveMax}</small>`
-        : `${g.name}<small>${g.ja} · 1–${effectiveMax}</small>`}
+        ? `${g.ja}<small>${g.name} · 1–${g._count}</small>`
+        : `${g.name}<small>${g.ja} · 1–${g._count}</small>`}
     </button>`;
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
-      // If grouped, randomly pick one of the member services for the label
-      const g = reachableFinal[i];
+      const g = types[i];
       const pick = g._members[Math.floor(Math.random() * g._members.length)];
       state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
       const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
-      // In debug mode, show roll button so user can set force value first
       if (window.game) {
         showRollStopsUI();
         dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
@@ -3451,178 +3456,195 @@ function walkConnectionStations(conn, maxStops, chainExpStops) {
   return getConnectionStations(conn, maxStops);
 }
 
-function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainType) {
-  const tt = trainType || state.selectedTrainType;
-  const line = state.lines[platform.lineIdx];
-  const N = line.stations.length;
-  const result = [];
-
-  // Express routing: only include express stop stations
-  // Skip if express is on a connected target line (handled in connection extension below)
-  const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : tt?.expressIndices;
-  if (ei && !tt?._connTargetLineIdx) {
-    const pos = ei.indexOf(platform.fromIdx);
-    if (pos !== -1) {
-      for (let i = 1; i <= stops; i++) {
-        let p;
-        if (platform.direction === 'start') p = pos - i;
-        else p = pos + i;
-        p = Math.max(0, Math.min(ei.length - 1, p));
-        if (result.length > 0 && result[result.length - 1] === line.stations[ei[p]]) break;
-        const stn = line.stations[ei[p]];
-        result.push(stn);
-      }
-      // If express reaches the terminus and there are connections, fall through
-      // to the connection extension (e.g. Den-en-toshi Express → Hanzomon local)
-      if (!(platform._connections && result.length < stops)) return result;
-    }
+// Walk express stop indices on the source line.
+// Returns { stations, needsExtension } — needsExtension=true when express reached
+// the terminus and remaining stops should extend via connections.
+function routeExpressStops(platform, line, stops, ei) {
+  const stations = [];
+  const pos = ei.indexOf(platform.fromIdx);
+  if (pos === -1) return { stations, needsExtension: false };
+  for (let i = 1; i <= stops; i++) {
+    let p = platform.direction === 'start' ? pos - i : pos + i;
+    p = Math.max(0, Math.min(ei.length - 1, p));
+    if (stations.length > 0 && stations[stations.length - 1] === line.stations[ei[p]]) break;
+    stations.push(line.stations[ei[p]]);
   }
+  return { stations, needsExtension: !!(platform._connections && stations.length < stops) };
+}
 
-  // Branch routing: walk the branch's station indices instead of the flat array
-  const bi = state.selectedBranch?.branchIndices;
-  if (bi) {
-    const pos = bi.indexOf(platform.fromIdx);
-    if (pos !== -1) {
-      for (let i = 1; i <= stops; i++) {
-        let p;
-        if (platform.direction === 'start') p = pos - i;
-        else p = pos + i;
-        p = Math.max(0, Math.min(bi.length - 1, p));
-        if (result.length > 0 && result[result.length - 1] === line.stations[bi[p]]) break;
-        result.push(line.stations[bi[p]]);
-      }
-      return result;
-    }
+// Walk branch indices. Returns array of stations, or null if fromIdx not on the branch.
+function routeBranchStops(platform, line, stops, bi) {
+  const pos = bi.indexOf(platform.fromIdx);
+  if (pos === -1) return null;
+  const stations = [];
+  for (let i = 1; i <= stops; i++) {
+    let p = platform.direction === 'start' ? pos - i : pos + i;
+    p = Math.max(0, Math.min(bi.length - 1, p));
+    if (stations.length > 0 && stations[stations.length - 1] === line.stations[bi[p]]) break;
+    stations.push(line.stations[bi[p]]);
   }
+  return stations;
+}
 
-  // Normal routing (with connection extension)
-  // Use selected connection, or fall back to platform's first connection for route preview.
-  // For mid-line connections (express branch), find the matching connection by _connTargetLineIdx.
-  const connTargetLineIdx = tt?._connTargetLineIdx;
+// Resolve which connection to use for routing.
+function findRouteConnection(platform, tt) {
   let conn = state.selectedConnection;
   if (!conn && platform._connections) {
+    const connTargetLineIdx = tt?._connTargetLineIdx;
     if (connTargetLineIdx != null) {
-      // Find the mid-line connection that matches the selected target line
       conn = platform._connections.find(c => c.toLineIdx === connTargetLineIdx) || null;
     }
     if (!conn) conn = platform._connections[0] || null;
   }
-  let stopsLeft = stops;
+  return conn;
+}
 
-  // Source-line express for terminus connection services (e.g. Yokohama Line Rapid → Negishi Line)
-  // When the source line has no EXPRESS_SERVICES of its own and the connection express has
-  // _srcExpIndices, apply express filtering on the source line before extending onto the target.
-  const srcEi = tt?._srcExpIndices;
-  if (srcEi && connTargetLineIdx != null && result.length === 0
-      && conn && conn.fromJunctionIdx === (platform.direction === 'start' ? 0 : N - 1)
-      && !EXPRESS_SERVICES[platform.lineName]) {
-    const pos = srcEi.indexOf(platform.fromIdx);
-    if (pos !== -1) {
-      const terminusIdx = conn.fromJunctionIdx;
-      for (let i = 1; i <= stopsLeft; i++) {
-        let p;
-        if (platform.direction === 'start') p = pos - i;
-        else p = pos + i;
-        p = Math.max(0, Math.min(srcEi.length - 1, p));
-        if (result.length > 0 && result[result.length - 1] === line.stations[srcEi[p]]) break;
-        result.push(line.stations[srcEi[p]]);
-        // Stop at junction — remaining stops continue on the connected line
-        if (srcEi[p] === terminusIdx) break;
-      }
-      stopsLeft -= result.length;
-    }
+// Walk source-line express stops to the junction for connection express services.
+// Used when the source line has no EXPRESS_SERVICES (e.g. Yokohama Line Rapid → Negishi Line).
+function routeSourceExpressToJunction(platform, line, stops, srcEi, conn) {
+  const stations = [];
+  const pos = srcEi.indexOf(platform.fromIdx);
+  if (pos === -1) return stations;
+  const terminusIdx = conn.fromJunctionIdx;
+  for (let i = 1; i <= stops; i++) {
+    let p = platform.direction === 'start' ? pos - i : pos + i;
+    p = Math.max(0, Math.min(srcEi.length - 1, p));
+    if (stations.length > 0 && stations[stations.length - 1] === line.stations[srcEi[p]]) break;
+    stations.push(line.stations[srcEi[p]]);
+    if (srcEi[p] === terminusIdx) break;
   }
+  return stations;
+}
 
-  // If express fell through (result already has express stops), skip on-line local routing —
-  // the express already reached the terminus, remaining stops continue on the connected line.
-  if (result.length === 0) {
-    // Count how many on-line stops we can make before hitting the terminus or mid-line junction
-    let onLineMax = platform.circular ? N - 1
-      : (platform.direction === 'start' ? platform.fromIdx : N - 1 - platform.fromIdx);
-    // For mid-line connections with target express, stop at the junction station
-    if (conn && connTargetLineIdx != null && conn.fromJunctionIdx !== (platform.direction === 'start' ? 0 : N - 1)) {
-      const junctionDist = Math.abs(conn.fromJunctionIdx - platform.fromIdx);
-      onLineMax = Math.min(onLineMax, junctionDist);
-    }
-
-    for (let i = 1; i <= Math.min(stopsLeft, onLineMax); i++) {
-      let idx;
-      if (platform.circular) {
-        idx = platform.direction === 'A'
-          ? ((platform.fromIdx - i) % N + N) % N
-          : (platform.fromIdx + i) % N;
-      } else {
-        idx = platform.direction === 'start'
-          ? platform.fromIdx - i
-          : platform.fromIdx + i;
-      }
-      result.push(line.stations[idx]);
-    }
+// Walk local stops on the source line, limited by terminus or mid-line junction.
+function routeOnLineLocal(platform, line, stops, conn, connTargetLineIdx) {
+  const N = line.stations.length;
+  let onLineMax = platform.circular ? N - 1
+    : (platform.direction === 'start' ? platform.fromIdx : N - 1 - platform.fromIdx);
+  // For mid-line connections with target express, stop at the junction station
+  if (conn && connTargetLineIdx != null
+      && conn.fromJunctionIdx !== (platform.direction === 'start' ? 0 : N - 1)) {
+    onLineMax = Math.min(onLineMax, Math.abs(conn.fromJunctionIdx - platform.fromIdx));
   }
+  const stations = [];
+  for (let i = 1; i <= Math.min(stops, onLineMax); i++) {
+    let idx;
+    if (platform.circular) {
+      idx = platform.direction === 'A'
+        ? ((platform.fromIdx - i) % N + N) % N
+        : (platform.fromIdx + i) % N;
+    } else {
+      idx = platform.direction === 'start'
+        ? platform.fromIdx - i
+        : platform.fromIdx + i;
+    }
+    stations.push(line.stations[idx]);
+  }
+  return stations;
+}
 
-  // If we have a connection and consumed all on-line stops, continue onto connected line
-  // (skip if train terminates at junction). Follow chained connections if stops remain.
+// Extend route onto connected lines: via stations, target line stops, chained connections.
+// Mutates and returns the result array.
+function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
+  if (!conn || result.length >= stops || tt?._terminatesAtJunction) return result;
+
+  let stopsLeft = stops - result.length;
   const visitedLines = new Set([platform.lineName]);
   let currentConn = conn;
-  if (currentConn && result.length < stops && !tt?._terminatesAtJunction) {
-    stopsLeft = stops - result.length;
-    // Add via stations (skip any that match the starting station or last station in route)
-    const startName = state.lines[platform.lineIdx].stations[platform.fromIdx]?.name;
+
+  // Add via stations (skip starting station or consecutive dupes)
+  const startName = state.lines[platform.lineIdx].stations[platform.fromIdx]?.name;
+  for (const vs of currentConn.viaStations) {
+    if (stopsLeft <= 0) break;
+    if (vs.name === startName) continue;
+    if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
+    result.push(vs);
+    stopsLeft--;
+  }
+
+  // Add target line stations (express-filtered if target-line train type selected)
+  if (stopsLeft > 0) {
+    const connTargetEi = (tt?._connTargetLineIdx != null) ? ei : null;
+    if (connTargetEi) {
+      const toLine = state.lines[currentConn.toLineIdx];
+      const pos = connTargetEi.indexOf(currentConn.toJunctionIdx);
+      if (pos !== -1) {
+        const step = currentConn.toDir === 'start' ? -1 : 1;
+        for (let i = 1; i <= stopsLeft; i++) {
+          const ep = pos + step * i;
+          if (ep < 0 || ep >= connTargetEi.length) break;
+          if (currentConn.toUntilIdx >= 0) {
+            if (step === 1 && connTargetEi[ep] > currentConn.toUntilIdx) break;
+            if (step === -1 && connTargetEi[ep] < currentConn.toUntilIdx) break;
+          }
+          result.push(toLine.stations[connTargetEi[ep]]);
+        }
+      }
+    } else {
+      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
+    }
+  }
+
+  // Follow chained connections (e.g. Seibu → Fukutoshin → Toyoko)
+  visitedLines.add(currentConn.to);
+  stopsLeft = stops - result.length;
+  while (stopsLeft > 0) {
+    const onward = getOnwardConnections(currentConn).filter(c => !visitedLines.has(c.to));
+    if (onward.length === 0) break;
+    currentConn = onward[0];
+    visitedLines.add(currentConn.to);
     for (const vs of currentConn.viaStations) {
       if (stopsLeft <= 0) break;
-      if (vs.name === startName) continue;
       if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
       result.push(vs);
       stopsLeft--;
     }
-    // Add target line stations (express-filtered if a target-line train type is selected)
     if (stopsLeft > 0) {
-      const connTargetEi = (tt?._connTargetLineIdx != null) ? ei : null;
-      if (connTargetEi) {
-        const toLine = state.lines[currentConn.toLineIdx];
-        const pos = connTargetEi.indexOf(currentConn.toJunctionIdx);
-        if (pos !== -1) {
-          const step = currentConn.toDir === 'start' ? -1 : 1;
-          for (let i = 1; i <= stopsLeft; i++) {
-            const ep = pos + step * i;
-            if (ep < 0 || ep >= connTargetEi.length) break;
-            if (currentConn.toUntilIdx >= 0) {
-              if (step === 1 && connTargetEi[ep] > currentConn.toUntilIdx) break;
-              if (step === -1 && connTargetEi[ep] < currentConn.toUntilIdx) break;
-            }
-            result.push(toLine.stations[connTargetEi[ep]]);
-          }
-        }
-      } else {
-        for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
-      }
-    }
-    // Follow chained connections if stops remain (e.g. Seibu → Fukutoshin → Toyoko)
-    visitedLines.add(currentConn.to);
-    stopsLeft = stops - result.length;
-    while (stopsLeft > 0) {
-      const onward = getOnwardConnections(currentConn)
-        .filter(c => !visitedLines.has(c.to));
-      if (onward.length === 0) break;
-      // Pick the first onward connection (single transparent chain)
-      currentConn = onward[0];
-      visitedLines.add(currentConn.to);
-      // Add via stations for this hop
-      for (const vs of currentConn.viaStations) {
-        if (stopsLeft <= 0) break;
-        if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
-        result.push(vs);
-        stopsLeft--;
-      }
-      // Add stations on the next line (express-filtered if chain express active)
-      if (stopsLeft > 0) {
-        for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
-        stopsLeft = stops - result.length;
-      }
+      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
+      stopsLeft = stops - result.length;
     }
   }
 
   return result;
+}
+
+function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainType) {
+  const tt = trainType || state.selectedTrainType;
+  const line = state.lines[platform.lineIdx];
+  const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : tt?.expressIndices;
+
+  // Express routing on source line (skip if express targets a connected line)
+  if (ei && !tt?._connTargetLineIdx) {
+    const r = routeExpressStops(platform, line, stops, ei);
+    if (!r.needsExtension) return r.stations;
+    // Express reached terminus — extend onto connected line
+    const conn = findRouteConnection(platform, tt);
+    return routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
+  }
+
+  // Branch routing
+  const bi = state.selectedBranch?.branchIndices;
+  if (bi) {
+    const r = routeBranchStops(platform, line, stops, bi);
+    if (r) return r;
+  }
+
+  // Normal routing with optional connection extension
+  const conn = findRouteConnection(platform, tt);
+  let result = [];
+
+  // Source-line express for terminus connection services (e.g. Yokohama Line Rapid)
+  const srcEi = tt?._srcExpIndices;
+  if (srcEi && tt?._connTargetLineIdx != null
+      && conn && conn.fromJunctionIdx === (platform.direction === 'start' ? 0 : line.stations.length - 1)
+      && !EXPRESS_SERVICES[platform.lineName]) {
+    result = routeSourceExpressToJunction(platform, line, stops, srcEi, conn);
+  }
+  if (result.length === 0) {
+    result = routeOnLineLocal(platform, line, stops, conn, tt?._connTargetLineIdx);
+  }
+
+  return routeConnectionExtension(platform, stops, result, tt, conn, ei);
 }
 
 function capStops(max) {
@@ -4941,18 +4963,10 @@ function formatStatsText() {
 
 // ── Save Session Image ────────────────────────────────────────────────────
 
-function saveSessionImage() {
-  if (state.history.length === 0) return;
-
-  const DPR = 2;
-  const W = 360, MAP_H = 340, STAT_H = 140, PAD = 16;
-  const TITLE_H = 56, FOOTER_H = 28;
-  const H = TITLE_H + MAP_H + STAT_H + FOOTER_H;
-  const mapX = 0, mapY = TITLE_H, mapW = W, mapH = MAP_H;
-
-  // ── Compute bounds from route ──
+// Compute lat/lng bounding box from route history entries
+function computeRouteBounds(history) {
   let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-  for (const e of state.history) {
+  for (const e of history) {
     if (e.routeCoords) for (const c of e.routeCoords) {
       minLat = Math.min(minLat, c[0]); maxLat = Math.max(maxLat, c[0]);
       minLng = Math.min(minLng, c[1]); maxLng = Math.max(maxLng, c[1]);
@@ -4961,18 +4975,20 @@ function saveSessionImage() {
     if (e.toLat != null) { minLat = Math.min(minLat, e.toLat); maxLat = Math.max(maxLat, e.toLat); minLng = Math.min(minLng, e.toLng); maxLng = Math.max(maxLng, e.toLng); }
   }
   if (!isFinite(minLat)) { minLat = 35.5; maxLat = 35.8; minLng = 139.5; maxLng = 139.9; }
-
   // Padding (25%)
   const lp = (maxLat - minLat) * 0.25 || 0.015, gp = (maxLng - minLng) * 0.25 || 0.015;
-  minLat -= lp; maxLat += lp; minLng -= gp; maxLng += gp;
+  return { minLat: minLat - lp, maxLat: maxLat + lp, minLng: minLng - gp, maxLng: maxLng + gp };
+}
 
-  // Pick zoom level for tiles: find z where bounds fit in mapW x mapH pixels
+// Compute Web Mercator projection: zoom, tile range, and coordinate transform functions.
+// Returns { zoom, toX, toY, originX, originY, DPR, txMin, txMax, tyMin, tyMax }
+function computeMapProjection(bounds, mapW, mapH, DPR) {
   const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
-  const mMin = mercY(minLat), mMax = mercY(maxLat);
+  const mMin = mercY(bounds.minLat), mMax = mercY(bounds.maxLat);
   let zoom = 16;
   for (let z = 16; z >= 8; z--) {
     const n = Math.pow(2, z);
-    const pxW = ((maxLng - minLng) / 360) * n * 256;
+    const pxW = ((bounds.maxLng - bounds.minLng) / 360) * n * 256;
     const pxH = ((mMax - mMin) / (2 * Math.PI)) * n * 256;
     if (pxW <= mapW * DPR && pxH <= mapH * DPR) { zoom = z; break; }
   }
@@ -4980,38 +4996,34 @@ function saveSessionImage() {
   const n = Math.pow(2, zoom);
   const neededLng = (mapW * DPR) / (n * 256) * 360;
   const neededMerc = (mapH * DPR) / (n * 256) * 2 * Math.PI;
-  const midLng = (minLng + maxLng) / 2;
+  const midLng = (bounds.minLng + bounds.maxLng) / 2;
   const midM = (mMin + mMax) / 2;
-  minLng = midLng - neededLng / 2; maxLng = midLng + neededLng / 2;
+  const minLng = midLng - neededLng / 2, maxLng = midLng + neededLng / 2;
   const invMerc = (y) => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
-  minLat = invMerc(midM - neededMerc / 2);
-  maxLat = invMerc(midM + neededMerc / 2);
+  const minLat = invMerc(midM - neededMerc / 2), maxLat = invMerc(midM + neededMerc / 2);
 
-  // Tile range
   const lngToTile = (lng) => Math.floor((lng + 180) / 360 * n);
   const latToTile = (lat) => Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
-  const txMin = lngToTile(minLng), txMax = lngToTile(maxLng);
-  const tyMin = latToTile(maxLat), tyMax = latToTile(minLat);
-
-  // World pixel helpers (standard Web Mercator)
   const lngToPx = (lng) => ((lng + 180) / 360) * n * 256;
   const latToPx = (lat) => ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * n * 256;
   const originX = lngToPx(minLng), originY = latToPx(maxLat);
-  // Map world px to canvas px (accounting for DPR)
-  const toCanvasX = (wpx) => (wpx - originX) / DPR;
-  const toCanvasY = (wpx) => (wpx - originY) / DPR;
-  const toX = (lng) => toCanvasX(lngToPx(lng));
-  const toY = (lat) => toCanvasY(latToPx(lat));
+  return {
+    zoom, DPR, originX, originY,
+    toX: (lng) => (lngToPx(lng) - originX) / DPR,
+    toY: (lat) => (latToPx(lat) - originY) / DPR,
+    txMin: lngToTile(minLng), txMax: lngToTile(maxLng),
+    tyMin: latToTile(maxLat), tyMax: latToTile(minLat),
+  };
+}
 
-  // ── Load tiles then draw ──
+// Load map tiles as images (CORS-enabled). Returns Promise<tiles[]>.
+function loadMapTiles(proj) {
   const tileUrls = [];
-  for (let tx = txMin; tx <= txMax; tx++) {
-    for (let ty = tyMin; ty <= tyMax; ty++) {
-      tileUrls.push({ tx, ty, url: 'https://a.basemaps.cartocdn.com/dark_all/' + zoom + '/' + tx + '/' + ty + '.png' });
+  for (let tx = proj.txMin; tx <= proj.txMax; tx++) {
+    for (let ty = proj.tyMin; ty <= proj.tyMax; ty++) {
+      tileUrls.push({ tx, ty, url: 'https://a.basemaps.cartocdn.com/dark_all/' + proj.zoom + '/' + tx + '/' + ty + '.png' });
     }
   }
-
-  // Load all tile images (with CORS)
   const loadTile = (t) => new Promise((res) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -5019,18 +5031,159 @@ function saveSessionImage() {
     img.onerror = () => res({ ...t, img: null });
     img.src = t.url;
   });
+  return Promise.all(tileUrls.map(loadTile));
+}
 
-  Promise.all(tileUrls.map(loadTile)).then(function(tiles) {
+// Draw tile images or TOKYO_GEO vector fallback onto clipped map area
+function renderMapBase(ctx, tiles, proj, mapY) {
+  let tilesDrawn = 0;
+  for (const t of tiles) {
+    if (!t.img) continue;
+    const tx = t.tx * 256, ty = t.ty * 256;
+    const dx = (tx - proj.originX) / proj.DPR, dy = (ty - proj.originY) / proj.DPR + mapY;
+    ctx.drawImage(t.img, dx, dy, 256 / proj.DPR, 256 / proj.DPR);
+    tilesDrawn++;
+  }
+  if (tilesDrawn === 0 && typeof TOKYO_GEO !== 'undefined') {
+    for (const feat of TOKYO_GEO.features) {
+      const ft = feat.properties.type, geom = feat.geometry;
+      if (geom.type === 'Polygon') {
+        const ring = geom.coordinates[0];
+        ctx.beginPath();
+        for (let i = 0; i < ring.length; i++) {
+          const x = proj.toX(ring[i][0]), y = proj.toY(ring[i][1]) + mapY;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        if (ft === 'water') { ctx.fillStyle = '#0f2a45'; ctx.fill(); }
+        else if (ft === 'prefecture') { ctx.fillStyle = '#161b22'; ctx.fill(); ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 1; ctx.stroke(); }
+        else if (ft === 'ward') { ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 0.5; ctx.stroke(); }
+      } else if (geom.type === 'LineString' && ft === 'river') {
+        ctx.beginPath();
+        for (let i = 0; i < geom.coordinates.length; i++) {
+          const x = proj.toX(geom.coordinates[i][0]), y = proj.toY(geom.coordinates[i][1]) + mapY;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#2a6090'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    }
+  }
+}
+
+// Draw route polylines from history onto the map
+function renderRoutePolylines(ctx, history, proj, mapY) {
+  for (const e of history) {
+    if (e.drinkHere || e.flight) continue;
+    ctx.beginPath();
+    if (e.routeCoords && e.routeCoords.length >= 2) {
+      for (let i = 0; i < e.routeCoords.length; i++) {
+        const x = proj.toX(e.routeCoords[i][1]), y = proj.toY(e.routeCoords[i][0]) + mapY;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+    } else if (e.fromLat != null && e.toLat != null) {
+      ctx.moveTo(proj.toX(e.fromLng), proj.toY(e.fromLat) + mapY);
+      ctx.lineTo(proj.toX(e.toLng), proj.toY(e.toLat) + mapY);
+    } else { continue; }
+    ctx.strokeStyle = e.color || '#8b949e'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+  }
+}
+
+// Draw markers and labels with collision avoidance onto the map
+function renderMapMarkers(ctx, history, proj, mapY) {
+  const markers = collectRouteMarkers(history);
+  for (const [, m] of markers) m.name = currentLang === 'ja' && m.ja ? m.ja : m.name;
+  for (const [, m] of markers) {
+    const x = proj.toX(m.lng), y = proj.toY(m.lat) + mapY;
+    if (m.type === 'drink') {
+      ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('\uD83C\uDF7A', x, y);
+    } else if (m.type === 'start') {
+      ctx.fillStyle = '#e6edf3'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1.5; ctx.stroke();
+    } else {
+      ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
+  // Labels with collision avoidance (try above, below, right, left)
+  const labels = [];
+  function lblCollides(lx, ly, tw) {
+    return labels.some(function(p) { return Math.abs(lx - p.x) < (tw + p.w) / 2 + 4 && Math.abs(ly - p.y) < 12; });
+  }
+  for (const [, m] of markers) {
+    if (m.type !== 'start' && m.type !== 'drink') continue;
+    const x = proj.toX(m.lng), y = proj.toY(m.lat) + mapY;
+    ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    const tw = ctx.measureText(m.name).width;
+    const gap = m.type === 'drink' ? 12 : 10;
+    const candidates = [
+      { lx: x, ly: y - gap, align: 'center', base: 'bottom' },
+      { lx: x, ly: y + gap + 4, align: 'center', base: 'top' },
+      { lx: x + gap + 2, ly: y, align: 'left', base: 'middle' },
+      { lx: x - gap - 2, ly: y, align: 'right', base: 'middle' },
+    ];
+    for (const c of candidates) {
+      if (!lblCollides(c.lx, c.ly, tw)) {
+        ctx.textAlign = c.align; ctx.textBaseline = c.base;
+        ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+        ctx.strokeText(m.name, c.lx, c.ly);
+        ctx.fillStyle = '#e6edf3'; ctx.fillText(m.name, c.lx, c.ly);
+        labels.push({ x: c.lx, y: c.ly, w: tw });
+        break;
+      }
+    }
+  }
+}
+
+// Draw stats grid (stations, lines, stops, drinks, distance) below the map
+function renderSessionStats(ctx, W, PAD, statsY) {
+  const s = getSessionStats();
+  ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD, statsY); ctx.lineTo(W - PAD, statsY); ctx.stroke();
+
+  const colW = (W - PAD * 2) / 2;
+  const statItems = [
+    { val: String(s.stations), label: t('statStations') },
+    { val: String(s.lines),    label: t('statLines') },
+    { val: String(s.totalStops), label: t('statStops') },
+    { val: String(s.drinks),   label: t('statDrinks') },
+  ];
+  ctx.textBaseline = 'alphabetic';
+  for (let i = 0; i < 4; i++) {
+    const col = i % 2, row = Math.floor(i / 2);
+    const cx = PAD + col * colW + colW / 2, cy = statsY + 14 + row * 46;
+    ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(statItems[i].val, cx, cy + 16);
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.fillText(statItems[i].label, cx, cy + 30);
+  }
+  ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(s.distKm + ' km', W / 2, statsY + 112);
+  ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  ctx.fillText(t('statDistance'), W / 2, statsY + 126);
+}
+
+function saveSessionImage() {
+  if (state.history.length === 0) return;
+
+  const DPR = 2;
+  const W = 360, MAP_H = 340, STAT_H = 140, PAD = 16;
+  const TITLE_H = 56, FOOTER_H = 28;
+  const H = TITLE_H + MAP_H + STAT_H + FOOTER_H;
+  const mapY = TITLE_H;
+
+  const bounds = computeRouteBounds(state.history);
+  const proj = computeMapProjection(bounds, W, MAP_H, DPR);
+
+  loadMapTiles(proj).then(function(tiles) {
     const canvas = document.createElement('canvas');
     canvas.width = W * DPR; canvas.height = H * DPR;
     const ctx = canvas.getContext('2d');
     ctx.scale(DPR, DPR);
 
-    // ── Background ──
+    // Background + Title
     ctx.fillStyle = '#0d1117';
     ctx.fillRect(0, 0, W, H);
-
-    // ── Title ──
     ctx.fillStyle = '#e6edf3';
     ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.textAlign = 'center';
@@ -5040,146 +5193,20 @@ function saveSessionImage() {
     ctx.fillStyle = '#8b949e'; ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText(dateStr, W / 2, 44);
 
-    // ── Clip map area ──
+    // Map (clipped)
     ctx.save();
-    ctx.beginPath(); ctx.rect(mapX, mapY, mapW, mapH); ctx.clip();
+    ctx.beginPath(); ctx.rect(0, mapY, W, MAP_H); ctx.clip();
+    renderMapBase(ctx, tiles, proj, mapY);
+    renderRoutePolylines(ctx, state.history, proj, mapY);
+    renderMapMarkers(ctx, state.history, proj, mapY);
+    ctx.restore();
 
-    // Draw tiles (fallback to vector if tiles failed)
-    let tilesDrawn = 0;
-    for (const t of tiles) {
-      if (!t.img) continue;
-      const tx = t.tx * 256, ty = t.ty * 256;
-      const dx = (tx - originX) / DPR, dy = (ty - originY) / DPR + mapY;
-      ctx.drawImage(t.img, dx, dy, 256 / DPR, 256 / DPR);
-      tilesDrawn++;
-    }
-
-    // Vector fallback if no tiles loaded
-    if (tilesDrawn === 0 && typeof TOKYO_GEO !== 'undefined') {
-      for (const feat of TOKYO_GEO.features) {
-        const ft = feat.properties.type, geom = feat.geometry;
-        if (geom.type === 'Polygon') {
-          const ring = geom.coordinates[0];
-          ctx.beginPath();
-          for (let i = 0; i < ring.length; i++) {
-            const x = toX(ring[i][0]), y = toY(ring[i][1]) + mapY;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          }
-          ctx.closePath();
-          if (ft === 'water') { ctx.fillStyle = '#0f2a45'; ctx.fill(); }
-          else if (ft === 'prefecture') { ctx.fillStyle = '#161b22'; ctx.fill(); ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 1; ctx.stroke(); }
-          else if (ft === 'ward') { ctx.strokeStyle = '#2a3545'; ctx.lineWidth = 0.5; ctx.stroke(); }
-        } else if (geom.type === 'LineString' && ft === 'river') {
-          ctx.beginPath();
-          for (let i = 0; i < geom.coordinates.length; i++) {
-            const x = toX(geom.coordinates[i][0]), y = toY(geom.coordinates[i][1]) + mapY;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          }
-          ctx.strokeStyle = '#2a6090'; ctx.lineWidth = 1.5; ctx.stroke();
-        }
-      }
-    }
-
-    // ── Route polylines ──
-    for (const e of state.history) {
-      if (e.drinkHere || e.flight) continue;
-      ctx.beginPath();
-      if (e.routeCoords && e.routeCoords.length >= 2) {
-        for (let i = 0; i < e.routeCoords.length; i++) {
-          const x = toX(e.routeCoords[i][1]), y = toY(e.routeCoords[i][0]) + mapY;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-      } else if (e.fromLat != null && e.toLat != null) {
-        // Fallback: straight line from→to
-        ctx.moveTo(toX(e.fromLng), toY(e.fromLat) + mapY);
-        ctx.lineTo(toX(e.toLng), toY(e.toLat) + mapY);
-      } else { continue; }
-      ctx.strokeStyle = e.color || '#8b949e'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
-    }
-
-    // ── Markers ──
-    const markers = collectRouteMarkers(state.history);
-    // Resolve display names for current language
-    for (const [, m] of markers) m.name = currentLang === 'ja' && m.ja ? m.ja : m.name;
-    for (const [, m] of markers) {
-      const x = toX(m.lng), y = toY(m.lat) + mapY;
-      if (m.type === 'drink') {
-        ctx.font = '14px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('🍺', x, y);
-      } else if (m.type === 'start') {
-        ctx.fillStyle = '#e6edf3'; ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1.5; ctx.stroke();
-      } else {
-        ctx.fillStyle = '#58a6ff'; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.stroke();
-      }
-    }
-    // Labels with collision avoidance (try above, below, right, left)
-    const labels = [];
-    function lblCollides(lx, ly, tw) {
-      return labels.some(function(p) { return Math.abs(lx - p.x) < (tw + p.w) / 2 + 4 && Math.abs(ly - p.y) < 12; });
-    }
-    for (const [, m] of markers) {
-      if (m.type !== 'start' && m.type !== 'drink') continue;
-      const x = toX(m.lng), y = toY(m.lat) + mapY;
-      ctx.font = 'bold 9px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      const tw = ctx.measureText(m.name).width;
-      const gap = m.type === 'drink' ? 12 : 10;
-      // Try positions: above, below, right, left
-      const candidates = [
-        { lx: x, ly: y - gap, align: 'center', base: 'bottom' },
-        { lx: x, ly: y + gap + 4, align: 'center', base: 'top' },
-        { lx: x + gap + 2, ly: y, align: 'left', base: 'middle' },
-        { lx: x - gap - 2, ly: y, align: 'right', base: 'middle' },
-      ];
-      let placed = false;
-      for (const c of candidates) {
-        if (!lblCollides(c.lx, c.ly, tw)) {
-          ctx.textAlign = c.align; ctx.textBaseline = c.base;
-          ctx.strokeStyle = '#0d1117'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-          ctx.strokeText(m.name, c.lx, c.ly);
-          ctx.fillStyle = '#e6edf3'; ctx.fillText(m.name, c.lx, c.ly);
-          labels.push({ x: c.lx, y: c.ly, w: tw });
-          placed = true;
-          break;
-        }
-      }
-    }
-
-    ctx.restore(); // unclip
-
-    // ── Stats section ──
-    const s = getSessionStats();
-    const statsY = TITLE_H + MAP_H;
-    ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PAD, statsY); ctx.lineTo(W - PAD, statsY); ctx.stroke();
-
-    const colW = (W - PAD * 2) / 2;
-    const statItems = [
-      { val: String(s.stations), label: t('statStations') },
-      { val: String(s.lines),    label: t('statLines') },
-      { val: String(s.totalStops), label: t('statStops') },
-      { val: String(s.drinks),   label: t('statDrinks') },
-    ];
-    ctx.textBaseline = 'alphabetic';
-    for (let i = 0; i < 4; i++) {
-      const col = i % 2, row = Math.floor(i / 2);
-      const cx = PAD + col * colW + colW / 2, cy = statsY + 14 + row * 46;
-      ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(statItems[i].val, cx, cy + 16);
-      ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-      ctx.fillText(statItems[i].label, cx, cy + 30);
-    }
-    ctx.fillStyle = '#e6edf3'; ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(s.distKm + ' km', W / 2, statsY + 112);
-    ctx.fillStyle = '#8b949e'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-    ctx.fillText(t('statDistance'), W / 2, statsY + 126);
-
-    // ── Footer ──
+    // Stats + Footer
+    renderSessionStats(ctx, W, PAD, TITLE_H + MAP_H);
     ctx.fillStyle = '#484f58'; ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('randomgame.tokyo', W / 2, H - 8);
 
-    // ── Export ──
+    // Export
     canvas.toBlob(function(blob) {
       if (!blob) return;
       const url = URL.createObjectURL(blob);

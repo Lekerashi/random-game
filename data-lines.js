@@ -227,8 +227,8 @@ const EXPRESS_SERVICES = {
     { name: "Ltd. Express", ja: "特急", color: "#e84040", stops: [
       "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
       "Keikyu Kawasaki","Kanagawa-shimmachi","Yokohama",
-      "Kamiooka","Sugita","Nokendai","Kanazawa-bunko","Kanazawa-Hakkei",
-      "Yokosuka-chuo","Horinouchi","Uraga",
+      "Kamiooka","Kanazawa-bunko","Kanazawa-Hakkei",
+      "Oppama","Shioiri","Yokosuka-chuo","Horinouchi","Uraga",
     ]},
     { name: "Rapid Ltd. Exp", ja: "快特", color: "#e83080", stops: [
       "Sengakuji","Shinagawa","Keikyu Kamata","Keikyu Kawasaki","Yokohama",
@@ -236,14 +236,7 @@ const EXPRESS_SERVICES = {
       "Horinouchi","Uraga",
     ]},
   ],
-  "Keikyu Airport Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
-      "Kojiya","Otorii","Anamori-Inari","Tenkubashi",
-      "Haneda Airport Terminal 3","Haneda Airport Terminal 1 & 2",
-    ]},
-  ],
+  // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
   "Tokaido Shinkansen": [
     { name: "Kodama", ja: "こだま", color: "#0073CF", stops: null },
     { name: "Hikari", ja: "ひかり", color: "#f07000", stops: [

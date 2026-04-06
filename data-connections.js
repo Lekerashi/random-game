@@ -29,9 +29,19 @@ const LINE_CONNECTIONS = [
     to:   'Keikyu Main Line',     toStation: '京急蒲田', toDir: 'start',
     name: 'Shinagawa', ja: '品川方面', color: '#e57053',
     express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['Sengakuji','Shinagawa','Keikyu Kamata',
+                'Haneda Airport Terminal 1 & 2'] },
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Shinagawa',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
     ] },
   { from: 'Keikyu Airport Line',  fromEnd: '京急蒲田',
@@ -39,32 +49,68 @@ const LINE_CONNECTIONS = [
     toUntil: '横浜',
     name: 'Yokohama', ja: '横浜方面', color: '#1a8fe8',
     express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Keikyu Kamata','Keikyu Kawasaki','Kanagawa-shimmachi','Yokohama',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['Yokohama','Keikyu Kawasaki','Keikyu Kamata',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['Yokohama','Keikyu Kamata',
+                'Haneda Airport Terminal 1 & 2'] },
     ] },
 
   // From Main Line past Keikyu Kamata → branch onto Airport Line (both directions)
   { from: 'Keikyu Main Line',     fromStation: '京急蒲田', fromDir: 'end',
     to:   'Keikyu Airport Line',   toEnd: '京急蒲田',
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
+    lineDests: [
+      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#c83030' },
+    ],
+    destinations: [
+      { until: '羽田空港国内線ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8' },
+    ],
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['Sengakuji','Shinagawa','Keikyu Kamata',
+                'Haneda Airport Terminal 1 & 2'] },
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Shinagawa',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
     ] },
   { from: 'Keikyu Main Line',     fromStation: '京急蒲田', fromDir: 'start',
     to:   'Keikyu Airport Line',   toEnd: '京急蒲田',
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
+    lineDests: [
+      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+      { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
+    ],
+    destinations: [
+      { until: '羽田空港国内線ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8' },
+    ],
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['Yokohama','Kanagawa-shimmachi','Keikyu Kawasaki','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['Yokohama','Keikyu Kawasaki','Keikyu Kamata',
+                'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['Yokohama','Keikyu Kamata',
+                'Haneda Airport Terminal 1 & 2'] },
     ] },
 
   // ── Tokaido UTL northbound ──────────────────────────────────────────────
@@ -160,9 +206,17 @@ const LINE_CONNECTIONS = [
   // Asakusa trains heading toward Nishi-magome (start) pass Sengakuji → branch onto Keikyu
   { from: 'Toei Asakusa Line', fromStation: '泉岳寺', fromDir: 'start',
     to:   'Keikyu Main Line',  toEnd: '泉岳寺' },
-  // Keikyu trains from Haneda arrive at Sengakuji → continue onto Asakusa toward Oshiage (end)
+  // Keikyu trains from Haneda arrive at Sengakuji → continue onto Asakusa toward Oshiage/Aoto (end)
   { from: 'Keikyu Main Line',  fromEnd: '泉岳寺',
-    to:   'Toei Asakusa Line', toStation: '泉岳寺', toDir: 'end' },
+    to:   'Toei Asakusa Line', toStation: '泉岳寺', toDir: 'end',
+    name: 'Aoto', ja: '青砥方面', color: '#0073CF',
+    lineDests: [
+      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+      { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
+    ],
+    destinations: [
+      { until: '押上(スカイツリー前)', name: 'Aoto', ja: '青砥方面', color: '#0073CF' },
+    ] },
 
   // ── Asakusa ↔ Keisei Oshiage at Oshiage (toward Narita) ──────────────
   // Oshiage is end of Asakusa (idx 19), start of Keisei Oshiage (idx 0)
@@ -257,14 +311,26 @@ const LINE_CONNECTIONS = [
     to:   'Tokyu Meguro Line',        toEnd:   '目黒' },
   { from: 'Tokyu Meguro Line',        fromEnd: '目黒',
     to:   'Tokyo Metro Namboku Line', toEnd:   '目黒',
-    name: 'Namboku Line', ja: '南北線', color: '#00AC9B' },
+    name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
+    lineDests: [
+      { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ],
+    destinations: [
+      { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B' },
+    ] },
 
   // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
   { from: 'Toei Mita Line',    fromEnd: '目黒',
     to:   'Tokyu Meguro Line', toEnd:   '目黒' },
   { from: 'Tokyu Meguro Line', fromEnd: '目黒',
     to:   'Toei Mita Line',   toEnd:   '目黒',
-    name: 'Mita Line', ja: '三田線', color: '#2B50A1' },
+    name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1',
+    lineDests: [
+      { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ],
+    destinations: [
+      { until: '西高島平', name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1' },
+    ] },
 
   // ── Tokyu Meguro → Sotetsu at Hiyoshi ──────────────────────────────────
   // Through-running: Meguro Line trains continue from Hiyoshi via
