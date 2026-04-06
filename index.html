@@ -2086,7 +2086,7 @@ const ANCHOR_STATIONS = new Set([
   'Yokohama', 'Kawasaki', 'Omiya', 'Tachikawa', 'Hachioji',
   'Ofuna', 'Chiba', 'Kashiwa', 'Funabashi', 'Machida', 'Kichijoji',
   // Secondary hubs for better direction labels
-  'Akihabara', 'Ochanomizu', 'Nakano',
+  'Ochanomizu', 'Nakano',
   'Kawagoe', 'Odawara', 'Fuchu', 'Urawa',
   'Tsudanuma', 'Tokorozawa', 'Chofu', 'Kasukabe',
   // Private railway hubs
@@ -2328,9 +2328,9 @@ function getLinearPlatforms(line, entry, si, N) {
         hint = line.stations[bIdx]?.name || hint;
       }
     } else if (connExtra > 0) {
-      if (conns.length === 1) {
-        // Single transparent connection: keep the on-line hint (e.g. "toward Shibuya")
-        // The connection extends the route but the player navigates by the source line
+      if (conns.length === 1 || conns.every(c => c.destinations)) {
+        // Keep the on-line hint when single transparent connection or all
+        // connections have destinations (picker will show the branching)
       } else {
         // Multiple connections: hint to the target line's junction station
         const toLine = state.lines[conns[0].toLineIdx];
@@ -3101,10 +3101,14 @@ function handleConnectionRouting(p) {
     if (conn.express && !conn.express.some(e => e.stops === null)) {
       const toLine = state.lines[conn.toLineIdx];
       const jIdx = conn.toJunctionIdx;
+      const step = conn.toDir === 'start' ? -1 : 1;
+      const wardLimit = state.wards23Only ? wardMaxStops(toLine, jIdx, step) : Infinity;
       const maxExpStops = Math.max(...conn.express.map(e => {
         const indices = getExpressIndices(toLine, e.stops);
-        if (conn.toDir === 'start') return indices.filter(i => i < jIdx).length;
-        return indices.filter(i => i > jIdx).length;
+        return indices.filter(i => {
+          const dist = (i - jIdx) * step;
+          return dist > 0 && dist <= wardLimit;
+        }).length;
       }));
       targetMax = Math.min(targetMax, maxExpStops);
     }
@@ -3116,11 +3120,12 @@ function handleConnectionRouting(p) {
       onSelect: () => {
         if (conn.destinations) {
           state.selectedConnection = conn;
-          showDestinationPicker(p, conn, onLineStops);
-          return 'subpicker';
+          if (showDestinationPicker(p, conn, onLineStops)) return 'subpicker';
+          // Destinations auto-selected (all capped to same max) — continue flow
+        } else {
+          state.selectedConnection = conn;
+          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
         }
-        state.selectedConnection = conn;
-        state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
       },
     };
   }), false);
@@ -3171,17 +3176,21 @@ function showDestinationPicker(p, conn, onLineStops) {
     ? conn.fromJunctionIdx - p.fromIdx
     : p.fromIdx - conn.fromJunctionIdx;
   const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
+  // Connection-specific max: cap by this connection's own range (not the platform's
+  // overall max which may include other connections' larger contributions)
+  const connSpecificMax = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
   for (const d of dests) {
     const stopsOnTarget = conn.toDir === 'start'
       ? conn.toJunctionIdx - d.untilIdx
       : d.untilIdx - conn.toJunctionIdx;
     const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
+    const cappedMax = Math.min(totalMax, connSpecificMax);
     choices.push({
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
-      effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
+      effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
       onSelect: () => {
         state.selectedConnection = conn;
-        state.selectedDestination = { totalMax };
+        state.selectedDestination = { totalMax: cappedMax };
       },
     });
   }
@@ -3204,7 +3213,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     }
     return false;
   }
-  return showBranchPickerUI(p, unique, !!conn.express);
+  return showBranchPickerUI(p, unique, conn.express && conn.express.some(e => e.stops !== null));
 }
 
 // Merge destinations from multiple connections into a flat picker.
@@ -3215,7 +3224,8 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   const seenNames = new Set();
   const line = state.lines[p.lineIdx];
 
-  for (const conn of conns) {
+  for (let ci = 0; ci < conns.length; ci++) {
+    const conn = conns[ci];
     // lineDests (within-line short-turns, deduplicated across connections)
     if (conn.lineDests) {
       for (const d of conn.lineDests) {
@@ -3246,14 +3256,16 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
         const stopsOnTarget = conn.toDir === 'start'
           ? conn.toJunctionIdx - d.untilIdx : d.untilIdx - conn.toJunctionIdx;
         const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
+        const connSpecificMax = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
+        const cappedMax = Math.min(totalMax, connSpecificMax);
         seenNames.add(d.name);
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: capStops(Math.min(totalMax, p.maxStops)),
-          _isConnDest: true,
+          effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+          _isConnDest: true, _connIdx: ci,
           onSelect: () => {
             state.selectedConnection = conn;
-            state.selectedDestination = { totalMax };
+            state.selectedDestination = { totalMax: cappedMax };
           },
         });
       }
@@ -3261,31 +3273,45 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   }
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
-  if (filtered.length <= 1) {
-    if (filtered.length === 1) {
-      filtered[0].onSelect();
+
+  // Deduplicate choices with the same effectiveMax WITHIN the same connection
+  // (cap makes them route-equivalent). Don't dedup across connections — same
+  // effectiveMax can route to completely different lines (e.g. Kuki vs Minami-Kurihashi).
+  const groups = new Map();
+  for (const c of filtered) {
+    const key = c._connIdx ?? -1;
+    if (!groups.has(key)) groups.set(key, new Map());
+    groups.get(key).set(c.effectiveMax, c);
+  }
+  const unique = [];
+  for (const group of groups.values()) unique.push(...group.values());
+
+  if (unique.length <= 1) {
+    if (unique.length === 1) {
+      unique[0].onSelect();
     } else {
       state.selectedConnection = conns[0];
     }
     return false;
   }
-  // Auto-select only when ALL choices have the same effectiveMax AND are all
-  // lineDests (same routing, just different labels) — not when connection
-  // destinations to different lines happen to cap to the same max.
-  const allSameMax = filtered.every(c => c.effectiveMax === filtered[0].effectiveMax);
-  const allLineDests = filtered.every(c => !c._isConnDest);
-  if (allSameMax && allLineDests) {
-    filtered[filtered.length - 1].onSelect();
+  // Auto-select when all choices have the same effectiveMax and routing is
+  // equivalent: either all are lineDests (same line), or the cap keeps the
+  // route entirely on the source line (can't reach any junction).
+  const allSameMax = unique.every(c => c.effectiveMax === unique[0].effectiveMax);
+  const allLineDests = unique.every(c => !c._isConnDest);
+  const withinSourceLine = unique[0].effectiveMax <= capStops(onLineStops);
+  if (allSameMax && (allLineDests || withinSourceLine)) {
+    unique[unique.length - 1].onSelect();
     return false;
   }
-  return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express));
+  return showBranchPickerUI(p, unique, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)));
 }
 
 // Shared UI for branch/connection picker buttons
 function showBranchPickerUI(p, choices, hasExpress) {
   showTrainTypeUI();
   dom.trainTypeRow.innerHTML = choices.map((c, i) => {
-    const fullWidth = i === 0 && choices.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
+    const fullWidth = i === 0 && choices.length % 2 === 1 && choices.length >= 3 ? 'flex:1 1 100%;min-width:100%;' : '';
     const stopLabel = hasExpress ? '' : ` · ${c.effectiveMax > 0 ? '1\u2013' + c.effectiveMax : '\u2014'}`;
     return `<button class="train-type-btn" style="background:${c.color};${pillTextStyle(c.color)}${fullWidth}"
       ${c.effectiveMax === 0 ? ' disabled' : ''}>
@@ -3476,8 +3502,11 @@ function showTrainTypeButtons(p) {
       }
     };
   });
-  const localEffective = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-  dom.stopsRangeText.textContent = t('selectTrainType', { max: localEffective });
+  const hasLocal = types.some(g => !g.expressIndices);
+  const headerMax = hasLocal
+    ? getEffectiveStops(p, { ei: null, bi: null }).validCount
+    : Math.max(...types.map(g => g._count));
+  dom.stopsRangeText.textContent = t('selectTrainType', { max: headerMax });
   return true;
 }
 

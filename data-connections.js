@@ -119,7 +119,12 @@ const LINE_CONNECTIONS = [
     to:   'Utsunomiya Line',      toEnd:   '上野',
     via:  ['上野'],
     name: 'Utsunomiya', ja: '宇都宮線', color: '#40d46e',
-    displayName: 'Ueno Tokyo Line' },
+    displayName: 'Ueno Tokyo Line',
+    toUntil: '宇都宮',
+    destinations: [
+      { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e' },
+      { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848' },
+    ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Takasaki Line',     toEnd:   '上野',
     via:  ['上野'],
@@ -187,10 +192,29 @@ const LINE_CONNECTIONS = [
       { until: '品川',   name: 'Shinagawa', ja: '品川方面', color: '#009BBF' },
     ] },
 
-  // ── Hanzomon ↔ Tobu Isesaki (Skytree) at Oshiage ─────────────────────
-  // Through-running to Tobu Skytree Line (= Tobu Isesaki from Oshiage)
+  // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
+  // Hanzomon through-runs to Tobu Skytree Line. Express services apply.
+  // Trains terminate at Kuki (Isesaki) or Minami-Kurihashi (Nikko).
   { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
-    to:   'Tobu Isesaki Line',         toStation: '押上(スカイツリー前)', toDir: 'end' },
+    to:   'Tobu Isesaki Line',         toStation: '押上(スカイツリー前)', toDir: 'end',
+    toUntil: '久喜',
+    lineDests: [
+      { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
+    ],
+    destinations: [
+      { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
+      { until: '久喜', name: 'Kuki', ja: '久喜方面', color: '#005AAA' },
+    ] },
+  { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
+    to:   'Tobu Nikko Line',           toEnd: '東武動物公園',
+    via: ['曳舟', '東向島', '鐘ヶ淵', '堀切', '牛田', '北千住',
+          '小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加',
+          '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
+          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮'],
+    toUntil: '南栗橋',
+    destinations: [
+      { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
+    ] },
   { from: 'Tobu Isesaki Line',         fromStation: '押上(スカイツリー前)', fromDir: 'start',
     to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)',
     name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6',
@@ -201,10 +225,32 @@ const LINE_CONNECTIONS = [
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6' },
     ] },
 
-  // ── Hibiya ↔ Tobu Isesaki (Skytree) at Kita-Senju ──────────────────────
-  // Hibiya terminus at Kita-Senju connects to mid-line Tobu toward Isesaki
+  // ── Hibiya → Tobu Skytree / Nikko at Kita-Senju ────────────────────────
+  // Hibiya through-runs to Tobu Skytree Line (= Isesaki southern section).
+  // Trains terminate at Takenotsuka, Kita-Koshigaya, or Tobu-Dobutsu-Koen,
+  // with some extending to Minami-Kurihashi on the Nikko Line.
   { from: 'Tokyo Metro Hibiya Line', fromEnd: '北千住',
-    to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end' },
+    to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end',
+    toUntil: '東武動物公園',
+    lineDests: [
+      { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#9B7A00' },
+    ],
+    destinations: [
+      { until: '竹ノ塚', name: 'Takenotsuka', ja: '竹ノ塚方面', color: '#3890c8' },
+      { until: '北越谷', name: 'Kita-Koshigaya', ja: '北越谷方面', color: '#005AAA' },
+      { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
+    ],
+    // Hibiya through-trains are all-station Local only
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
+  { from: 'Tokyo Metro Hibiya Line', fromEnd: '北千住',
+    to:   'Tobu Nikko Line',        toEnd: '東武動物公園',
+    via: ['小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加',
+          '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
+          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮'],
+    toUntil: '南栗橋',
+    destinations: [
+      { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
+    ] },
   { from: 'Tobu Isesaki Line',       fromStation: '北千住', fromDir: 'start',
     to:   'Tokyo Metro Hibiya Line', toEnd: '北千住',
     name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
@@ -218,8 +264,14 @@ const LINE_CONNECTIONS = [
   // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
   // Sengakuji is mid-line on Asakusa (idx 6), start of Keikyu Main (idx 0)
   // Asakusa trains heading toward Nishi-magome (start) pass Sengakuji → branch onto Keikyu
+  // Through-trains terminate at Kanazawa-bunko, Uraga, or onto Kurihama Line
   { from: 'Toei Asakusa Line', fromStation: '泉岳寺', fromDir: 'start',
-    to:   'Keikyu Main Line',  toEnd: '泉岳寺' },
+    to:   'Keikyu Main Line',  toEnd: '泉岳寺',
+    destinations: [
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053' },
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030' },
+      { until: '浦賀', name: 'Uraga', ja: '浦賀方面', color: '#8a2020' },
+    ] },
   // Keikyu trains from Haneda arrive at Sengakuji → continue onto Asakusa toward Oshiage/Aoto (end)
   { from: 'Keikyu Main Line',  fromEnd: '泉岳寺',
     to:   'Toei Asakusa Line', toStation: '泉岳寺', toDir: 'end',
@@ -576,10 +628,24 @@ const LINE_CONNECTIONS = [
       { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
     ] },
   // Return: Fukutoshin/Yurakucho terminus → Tobu Tojo
+  // Through-trains terminate at Kawagoe-shi, Shinrin-Koen, or Ogawamachi
   { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '和光市',
-    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
+    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end',
+    toUntil: '小川町',
+    destinations: [
+      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8' },
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
+      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878' },
+    ] },
+  // Yurakucho through-trains are local only (no express on Tojo)
   { from: 'Tokyo Metro Yurakucho Line',  fromEnd: '和光市',
-    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end' },
+    to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end',
+    toUntil: '森林公園',
+    destinations: [
+      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8' },
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
 
   // ── Chuo → Ome at Tachikawa ─────────────────────────────────────────
   // Mid-line connection: some Chuo rapid trains through-run onto Ome Line
