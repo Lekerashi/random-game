@@ -50,12 +50,6 @@ const LINE_EXTRA_STATIONS = {
   ],
 };
 
-// (LINE_REVERSE removed — Tokaido through-running now handled by LINE_CONNECTIONS)
-const LINE_REVERSE = [];
-
-// (LINE_THROUGH_STATIONS removed — through-running now handled by LINE_CONNECTIONS)
-const LINE_THROUGH_STATIONS = {};
-
 // Trim lines at a given station (inclusive) — drop everything beyond it
 const LINE_TRIM_AFTER = {};
 

@@ -1213,8 +1213,6 @@ _langRefreshers.push(function refreshDestSub() {
   } else if (p.drinkHere) {
     dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
       + destSubHints(state.currentStation, 'inline');
-  } else if (p.drinkHere === undefined && state.selectedPlatform.drinkHere) {
-    // drink at transfer — handled above
   } else {
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
     dom.destSub.innerHTML =
@@ -1225,7 +1223,7 @@ _langRefreshers.push(function refreshDestSub() {
 
 _langRefreshers.push(function refreshDestWard() {
   if (state._destWard) {
-    var ws = state._destWard.isWard ? ' Ward' : state._destWard.ja.endsWith('市') ? ' City' : '';
+    const ws = state._destWard.isWard ? ' Ward' : state._destWard.ja.endsWith('市') ? ' City' : '';
     dom.destWard.textContent = currentLang === 'ja' ? state._destWard.ja : state._destWard.name + ws;
   }
 });
@@ -1446,14 +1444,14 @@ function getTrainTypes(lineName, stationName, line) {
   if (!services) return null;
   const norm = normalize(stationName);
   return services
-    .filter(t => {
-      const stops = resolveServiceStops(t, line);
+    .filter(svc => {
+      const stops = resolveServiceStops(svc, line);
       return stops === null || stops.some(s => normalize(s) === norm);
     })
-    .map(t => {
-      const stops = resolveServiceStops(t, line);
+    .map(svc => {
+      const stops = resolveServiceStops(svc, line);
       return {
-        ...t,
+        ...svc,
         expressIndices: getExpressIndices(line, stops),
       };
     });
@@ -1618,8 +1616,6 @@ function buildIndex(lines, osmNames = {}) {
     if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
     if (LINE_PREPEND_STATIONS[l.name]) l.stations.unshift(...LINE_PREPEND_STATIONS[l.name]);
     if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
-    if (LINE_REVERSE.includes(l.name)) l.stations.reverse();
-    if (LINE_THROUGH_STATIONS[l.name]) l.stations.push(...LINE_THROUGH_STATIONS[l.name]);
     const trimJa = LINE_TRIM_AFTER[l.name];
     if (trimJa) {
       const idx = l.stations.findIndex(s => s.ja === trimJa);
@@ -2003,7 +1999,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       continue;
     }
     // Resolve schedule-aware stops (e.g. KT Rapid skips Okachimachi on weekdays)
-    const resolvedStops = ex.schedule ? resolveServiceStops(ex, null) : ex.stops;
+    const resolvedStops = ex.schedule ? resolveServiceStops(ex, targetLine) : ex.stops;
     if (resolvedStops.length === 0) continue; // service hidden for this schedule
     const joinedNames = new Set(resolvedStops.map(s => normalize(s)));
     // For mid-line connections, current station must be in the stop list.
@@ -2020,8 +2016,6 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     let chainStops = null;
     const srcEi = [];
     if (connObj) {
-      // Count source-line express stops between player and junction
-      srcEi.length = 0;
       for (let i = 0; i < line.stations.length; i++) {
         if (joinedNames.has(normalize(line.stations[i].name))) srcEi.push(i);
       }
@@ -2281,20 +2275,6 @@ function getCircularPlatforms(line, entry, si, N) {
   return platforms;
 }
 
-function getLineDisplayOverride(line, si, direction) {
-  const entries = LINE_DISPLAY_OVERRIDE[line.name];
-  if (!entries) return null;
-  const list = Array.isArray(entries) ? entries : [entries];
-  for (const ovr of list) {
-    if (ovr.direction !== direction) continue;
-    const refIdx = line.stations.findIndex(s => s.ja === ovr.afterJa);
-    if (refIdx === -1) continue;
-    if (direction === 'start' && si > refIdx) return ovr.name;
-    if (direction === 'end' && (ovr.inclusive ? si >= refIdx : si > refIdx)) return ovr.name;
-  }
-  return null;
-}
-
 function getLinearPlatforms(line, entry, si, N) {
   const platforms = [];
   const branchConfig = LINE_BRANCHES[line.name];
@@ -2377,9 +2357,6 @@ function getLinearPlatforms(line, entry, si, N) {
       p._onLineStops = maxStops - connExtra; // stops on the source line only
     }
 
-    // Display name overrides
-    const dn = getLineDisplayOverride(line, si, dir);
-    if (dn) p.displayName = dn;
     // Connection displayName overrides line name (if all connections share same displayName)
     if (conns.length > 0 && !branchConfig) {
       const connDn = conns[0].displayName;
@@ -2692,7 +2669,7 @@ function onStationSelected(name, arrivedVia) {
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
 
   // Clear any ward-restriction warning now that a valid station is chosen
-  if (dom.locationHint.textContent.includes('23') && (dom.locationHint.textContent.includes('wards') || dom.locationHint.textContent.includes('区'))) dom.locationHint.textContent = '';
+  if (state._wards23Hint) { dom.locationHint.textContent = ''; state._wards23Hint = false; }
 
   // Switch button to "New Game" mode
   dom.randomStationBtn.innerHTML = t('newGame');
@@ -2811,7 +2788,6 @@ function rollPlatform() {
       } else {
         pick = opts[Math.floor(Math.random() * opts.length)];
       }
-      pick.isShinkansen = true;
       state.selectedPlatform = pick;
     }
     const p = state.selectedPlatform;
@@ -2894,6 +2870,10 @@ function rerollPlatform() {
   if (state.history.length > 0 && (state.selectedPlatform?.drinkHere || state.destination)) {
     state.history.pop();
     renderHistory();
+    // Undo drankAt if the previous roll was "Drink here!"
+    if (state.selectedPlatform?.drinkHere) {
+      state.drankAt.delete(normalize(state.currentStation.name));
+    }
   }
   state.stationsSinceDrink = state._preRollThirst ?? 0;
   // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
@@ -3181,17 +3161,20 @@ function showDestinationPicker(p, conn, onLineStops) {
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
 
-  // Deduplicate choices with the same effectiveMax (cap makes them equivalent)
-  const seen = new Set();
-  const unique = filtered.filter(c => {
-    if (seen.has(c.effectiveMax)) return false;
-    seen.add(c.effectiveMax);
-    return true;
-  });
+  // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
+  // Keep the last (connection destination) when a lineDests and connection dest collide,
+  // since connection destinations have richer routing (express, through-running).
+  const seenMax = new Map();
+  for (const c of filtered) seenMax.set(c.effectiveMax, c);
+  const unique = [...seenMax.values()];
 
   if (unique.length <= 1) {
-    // Auto-select: set connection but no destination limit (full range available)
-    state.selectedConnection = conn;
+    if (unique.length === 1) {
+      unique[0].onSelect();
+    } else {
+      // No valid choices — set connection for full range
+      state.selectedConnection = conn;
+    }
     return false;
   }
   return showBranchPickerUI(p, unique, !!conn.express);
@@ -3245,13 +3228,15 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   }
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
-  const seen = new Set();
-  const unique = filtered.filter(c => {
-    if (seen.has(c.effectiveMax)) return false;
-    seen.add(c.effectiveMax); return true;
-  });
+  const seenMax = new Map();
+  for (const c of filtered) seenMax.set(c.effectiveMax, c);
+  const unique = [...seenMax.values()];
   if (unique.length <= 1) {
-    state.selectedConnection = conns[0];
+    if (unique.length === 1) {
+      unique[0].onSelect();
+    } else {
+      state.selectedConnection = conns[0];
+    }
     return false;
   }
   return showBranchPickerUI(p, unique, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express));
@@ -3737,7 +3722,7 @@ function showDestCard(station, subHtml) {
   const ward = station.lat != null ? getWardOrCity(station.lat, station.lng) : null;
   if (ward) {
     state._destWard = ward;
-    var wardSuffix = ward.isWard ? ' Ward' : ward.ja.endsWith('市') ? ' City' : '';
+    const wardSuffix = ward.isWard ? ' Ward' : ward.ja.endsWith('市') ? ' City' : '';
     dom.destWard.textContent = currentLang === 'ja' ? ward.ja : ward.name + wardSuffix;
     dom.destWard.style.display = '';
   } else {
@@ -5308,6 +5293,7 @@ function onWards23Change(checked) {
     showStep(null);
     hideAllCards();
     setLocationHint(t('outsideWards'), true);
+    state._wards23Hint = true;
     return;
   }
 
@@ -5401,7 +5387,7 @@ function setupSettings() {
     localStorage.setItem(LTW_KEY, new Date().toDateString());
   });
   function onCapChange() {
-    if (state.selectedPlatform && !state.selectedPlatform.drinkHere) {
+    if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
       const p = state.selectedPlatform;
       clearSelectionState();
       rebuildPickers(p);

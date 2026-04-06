@@ -32,11 +32,11 @@ const LINE_NAMES_JA = {
   'JR Togane Line':            'JR東金線',
   'JR Tsurumi Line':           'JR鶴見線',
   'JR Ryomo Line':             'JR両毛線',
-  'JR Hachiaki Line':          'JR八高線',
+  'JR Hachiko Line':           'JR八高線',
   'JR Gotemba Line':           'JR御殿場線',
   'JR Minobu Line':            'JR身延線',
   'JR Shinetsu main line':     'JR信越本線',
-  'JR Goto-city line':         'JR五日市線',
+  'JR Itsukaichi Line':        'JR五日市線',
   // Tokyo Metro
   'Tokyo Metro Ginza Line':      '東京メトロ銀座線',
   'Tokyo Metro Marunouchi Line': '東京メトロ丸ノ内線',
@@ -111,7 +111,7 @@ const LINE_NAMES_JA = {
   // Keikyu
   'Keikyu Main Line':     '京急本線',
   'Keikyu Airport Line':  '京急空港線',
-  'Keikyu Daisen Line':   '京急大師線',
+  'Keikyu Daishi Line':   '京急大師線',
   'Keikyu Kurihama Line': '京急久里浜線',
   'Keikyu Zushi Line':    '京急逗子線',
   // Sotetsu

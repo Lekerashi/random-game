@@ -342,10 +342,6 @@ const LINE_DESTINATIONS = {
   },
 };
 
-// ── Line display name overrides by direction ──
-// (Tokaido UTL branding now handled by connection displayName)
-const LINE_DISPLAY_OVERRIDE = {};
-
 // ── Station Aliases (physically connected stations with different names) ──
 const STATION_ALIASES = {
   "Mizonokuchi":                ["Musashi-Mizonokuchi"],
