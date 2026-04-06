@@ -2662,10 +2662,24 @@ function setupAutocomplete() {
 function onStationSelected(name, arrivedVia) {
   state._arrivedVia = arrivedVia || null;
   const key   = normalize(name);
-  const first = (state.stationIndex[key] || [])[0];
-  if (!first) return;
+  const entries = state.stationIndex[key] || [];
+  if (!entries.length) return;
 
-  // Get representative lat/lng from the first occurrence
+  // Pick the right station when multiple share the same name (e.g. Ogawamachi in Chiyoda vs Saitama).
+  // Prefer the entry on the line we arrived from, or closest to current position.
+  let first = entries[0];
+  if (arrivedVia && entries.length > 1) {
+    const match = entries.find(e => state.lines[e.lineIdx].name === arrivedVia.lineName);
+    if (match) first = match;
+  } else if (state.currentStation && entries.length > 1) {
+    let bestDist = Infinity;
+    for (const e of entries) {
+      const s = state.lines[e.lineIdx].stations[e.stationIdx];
+      const d = Math.abs(s.lat - state.currentStation.lat) + Math.abs(s.lng - state.currentStation.lng);
+      if (d < bestDist) { bestDist = d; first = e; }
+    }
+  }
+
   const stn   = state.lines[first.lineIdx].stations[first.stationIdx];
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
 
