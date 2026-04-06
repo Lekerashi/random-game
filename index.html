@@ -2660,6 +2660,7 @@ function setupAutocomplete() {
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 function onStationSelected(name, arrivedVia) {
+  state._arrivedVia = arrivedVia || null;
   const key   = normalize(name);
   const first = (state.stationIndex[key] || [])[0];
   if (!first) return;
@@ -4259,15 +4260,18 @@ function rollStops() {
     dom.rollStopsRow.style.display = 'flex';
     dom.rerollStopsBtn.style.display = 'inline-flex';
 
+    // Capture platform before async transfer checks (state may change during await)
+    const p = state.selectedPlatform;
+
     // Check for transfers along the route (using physical stop count)
-    const result = await checkTransfers(state.selectedPlatform, physicalStops);
+    const result = await checkTransfers(p, physicalStops);
 
     if (result.type === 'transfer') {
       // Determine which line the transfer occurred on (source or connected target)
-      const onLineStops = state.selectedPlatform._onLineStops;
+      const onLineStops = p._onLineStops;
       const transferLine = (state.selectedConnection && onLineStops != null && result.stopsUsed > onLineStops)
         ? state.selectedConnection.to
-        : state.selectedPlatform.lineName;
+        : p.lineName;
 
       state.destination = result.station;
       addHistory({ transferred: true, stopsUsed: result.stopsUsed });
@@ -4282,7 +4286,7 @@ function rollStops() {
     if (result.type === 'drink') {
       // Drink at transfer station
       state.destination = result.station;
-      state.selectedPlatform = { ...state.selectedPlatform, drinkHere: true };
+      state.selectedPlatform = { ...p, drinkHere: true };
 
       showDestCard(result.station,
         t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
@@ -4300,7 +4304,7 @@ function rollStops() {
 
     const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
     showDestCard(dest,
-      `${lineDisplayName(state.selectedPlatform.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
+      `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
       + destSubHints(dest, 'wrap'));
 
     state.drankAt.add(normalize(dest.name));
@@ -5357,7 +5361,7 @@ function onWards23Change(checked) {
     refreshPlatformGrid();
   } else {
     // No platform selected yet, or drink/flight — rebuild from scratch
-    onStationSelected(state.currentStation.name);
+    onStationSelected(state.currentStation.name, state._arrivedVia);
   }
 }
 
