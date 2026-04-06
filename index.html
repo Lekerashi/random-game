@@ -2711,8 +2711,14 @@ function onStationSelected(name, arrivedVia) {
       }
     }
   }
-  // Filter out platforms where all destinations have been drunk-at
-  allPlatforms = allPlatforms.filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
+  // Filter out platforms with 0 reachable stops (e.g. wards boundary, all-drunk destinations)
+  const reachable = allPlatforms.filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
+  if (reachable.length > 0) {
+    allPlatforms = reachable;
+  } else {
+    // Dead end: all directions have 0 stops — rebuild without the via filter so player can go back
+    allPlatforms = getPlatforms(name, !!arrivedVia);
+  }
   // Separate shinkansen platforms — they get 5% roll treatment like flights
   // Merge platforms sharing the same next station (same track section)
   const rawShinkansen = allPlatforms.filter(p => SHINKANSEN_LINES.has(p.lineName));
