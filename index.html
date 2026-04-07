@@ -2979,7 +2979,7 @@ function handlePhysicalBranches(p) {
     name: b.name, ja: b.ja, color: b.color,
     effectiveMax: getEffectiveStops(p, { ei: null, bi: b.branchIndices }).validCount,
     onSelect: () => { state.selectedBranch = b; },
-  })), !!EXPRESS_SERVICES[p.lineName]);
+  })), !!EXPRESS_SERVICES[p.lineName], 'branch');
   return { pickerShown: true };
 }
 
@@ -3018,7 +3018,7 @@ function handleLineDestinations(p) {
       onSelect: () => {
         state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx };
       },
-    })), !!EXPRESS_SERVICES[p.lineName]);
+    })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
     return { pickerShown: true };
   }
   if (dests.length === 1) {
@@ -3126,7 +3126,7 @@ function handleConnectionRouting(p) {
         }
       },
     };
-  }), false);
+  }), false, 'connectionBranch');
   return { pickerShown: true };
 }
 
@@ -3258,7 +3258,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     }
     return false;
   }
-  return showBranchPickerUI(p, unique, conn.express && conn.express.some(e => e.stops !== null));
+  return showBranchPickerUI(p, unique, conn.express && conn.express.some(e => e.stops !== null), 'destination');
 }
 
 // Merge destinations from multiple connections into a flat picker.
@@ -3334,11 +3334,12 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     filtered[filtered.length - 1].onSelect();
     return false;
   }
-  return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)));
+  return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)), 'destination');
 }
 
 // Shared UI for branch/connection picker buttons
-function showBranchPickerUI(p, choices, hasExpress) {
+function showBranchPickerUI(p, choices, hasExpress, pickerType) {
+  state._pickerType = pickerType || 'branch';
   showTrainTypeUI();
   dom.trainTypeRow.innerHTML = choices.map((c, i) => {
     const fullWidth = i === 0 && choices.length % 2 === 1 && choices.length >= 3 ? 'flex:1 1 100%;min-width:100%;' : '';
@@ -3529,6 +3530,7 @@ function showTrainTypeButtons(p) {
     return false;
   }
   const types = resolved.types;
+  state._pickerType = 'trainType';
   showTrainTypeUI();
   dom.trainTypeRow.innerHTML = types.map((g, i) => {
     const fullWidth = i === 0 && types.length === 3 ? 'flex:1 1 100%;min-width:100%;' : '';
@@ -3836,6 +3838,7 @@ function clearSelectionState() {
   state.selectedBranch = null;
   state.selectedConnection = null;
   state.selectedDestination = null;
+  state._pickerType = null;
 }
 
 function rebuildPickers(p, opts) {
