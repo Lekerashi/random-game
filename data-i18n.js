@@ -250,7 +250,7 @@ const translations = {
     // Dynamic labels
     platformCount:        '{n} train line{s} at <strong style="color:#fff">{name}</strong> — rolling 1–{total}',
     rollingStops:         'Rolling 1–{max} stop{s}{dest}',
-    selectBranch:         'Select destination branch',
+    selectBranch:         'Where is the next train heading?',
     selectTrainType:      'Select train type · 1–{max} stops (local){dest}',
     trainTypeStops:       '{name} ({ja}) · 1–{max} stop{s}{dest}',
     stopsResult:          '{n} stop{s}',

@@ -270,6 +270,28 @@ const LINE_CONNECTIONS = [
       { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
     ] },
 
+  // ── Yokosuka ↔ Sobu Rapid at Tokyo (横須賀・総武快速線) ──────────────
+  // Nearly all Yokosuka trains continue onto Sobu Rapid at Tokyo and vice versa.
+  { from: 'JR Yokosuka Line', fromEnd: '東京',
+    to:   'JR Sobu Line',     toEnd: '東京',
+    lineDests: [
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7' },
+    ],
+    destinations: [
+      { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
+      { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
+    ] },
+  { from: 'JR Sobu Line',     fromEnd: '東京',
+    to:   'JR Yokosuka Line', toEnd: '東京',
+    lineDests: [
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#F7C948' },
+    ],
+    destinations: [
+      { until: '大船', name: 'Ofuna',    ja: '大船方面',   color: '#4a9ec0' },
+      { until: '逗子', name: 'Zushi',    ja: '逗子方面',   color: '#0068B7' },
+      { until: '久里浜', name: 'Kurihama', ja: '久里浜方面', color: '#003868' },
+    ] },
+
   // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
   // Hanzomon through-runs to Tobu Skytree Line. Express services apply.
   // Trains terminate at Kuki (Isesaki) or Minami-Kurihashi (Nikko).
@@ -422,6 +444,12 @@ const LINE_CONNECTIONS = [
   { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'end',
     to:   'Tokyo Metro Tozai Line', toEnd: '西船橋' },
 
+  // ── Tozai ↔ Toyo Rapid Railway at Nishi-Funabashi ─────────────────────
+  { from: 'Tokyo Metro Tozai Line',   fromEnd: '西船橋',
+    to:   'Toyo Rapid Railway Line',  toEnd: '西船橋' },
+  { from: 'Toyo Rapid Railway Line',  fromEnd: '西船橋',
+    to:   'Tokyo Metro Tozai Line',   toEnd: '西船橋' },
+
   // ── Seibu Yurakucho ↔ Fukutoshin at Kotake-mukaihara ──────────────────
   // Seibu Yurakucho connects to Fukutoshin for through-running to Shibuya/Toyoko
   // F-Liner: Seibu Rapid Exp → Fukutoshin Express → Toyoko Express (all-express through-service)
@@ -506,6 +534,13 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B' },
     ] },
+
+  // ── Namboku ↔ Saitama Railway at Akabane-iwabuchi ─────────────────────
+  // Chains with Meguro → Namboku above for through-running to Urawa-misono.
+  { from: 'Tokyo Metro Namboku Line',     fromEnd: '赤羽岩淵',
+    to:   'Saitama high-speed rail line', toEnd: '赤羽岩淵' },
+  { from: 'Saitama high-speed rail line', fromEnd: '赤羽岩淵',
+    to:   'Tokyo Metro Namboku Line',     toEnd: '赤羽岩淵' },
 
   // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
   { from: 'Toei Mita Line',    fromEnd: '目黒',

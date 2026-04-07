@@ -1194,7 +1194,9 @@ _langRefreshers.push(function refreshTrainTypeButtons() {
 });
 
 _langRefreshers.push(function refreshStopsRange() {
-  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
+  // Skip when branch/train-type picker is visible — refreshTrainTypeButtons handles that.
+  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight
+      && state.selectedTrainType) {
     refreshStopsLabel();
   }
 });
