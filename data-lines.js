@@ -237,6 +237,17 @@ const EXPRESS_SERVICES = {
     ]},
   ],
   // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
+  "JR Shonan Shinjuku Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "Omiya","Urawa","Akabane","Ikebukuro","Shinjuku","Shibuya",
+      "Ebisu","Osaki","Musashi-Kosugi","Yokohama","Totsuka","Ōfuna",
+    ]},
+    { name: "Special Rapid", ja: "特別快速", color: "#e83080", stops: [
+      "Omiya","Urawa","Akabane","Ikebukuro","Shinjuku","Shibuya",
+      "Osaki","Musashi-Kosugi","Yokohama","Totsuka","Ōfuna",
+    ]},
+  ],
   "Keisei Oshiage Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Ltd. Express", ja: "特急", color: "#f07000", stops: [

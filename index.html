@@ -3008,7 +3008,7 @@ function handleLineDestinations(p) {
   // auto-select the furthest one — no meaningful choice to make.
   const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
   if (allSameMax) {
-    state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx };
+    state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx, name: dests[dests.length - 1].name, ja: dests[dests.length - 1].ja };
     return { pickerShown: false };
   }
   if (dests.length > 1) {
@@ -3016,13 +3016,13 @@ function handleLineDestinations(p) {
       name: d.name, ja: d.ja, color: d.color,
       effectiveMax: d.effectiveMax,
       onSelect: () => {
-        state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx };
+        state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx, name: d.name, ja: d.ja };
       },
     })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
     return { pickerShown: true };
   }
   if (dests.length === 1) {
-    state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx };
+    state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx, name: dests[0].name, ja: dests[0].ja };
   }
   return { pickerShown: false };
 }
@@ -3122,7 +3122,7 @@ function handleConnectionRouting(p) {
           // Destinations auto-selected (all capped to same max) — continue flow
         } else {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) + chainExtra };
+          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) + chainExtra, name: conn.name || conn.to, ja: conn.ja || '' };
         }
       },
     };
@@ -3158,7 +3158,7 @@ function showDestinationPicker(p, conn, onLineStops) {
         effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
         onSelect: () => {
           // Within-line: set destination limit but NOT selectedConnection
-          state.selectedDestination = { totalMax: stopsToEnd, untilIdx };
+          state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja };
         },
       });
     }
@@ -3185,7 +3185,7 @@ function showDestinationPicker(p, conn, onLineStops) {
       _services: d.services || null,
       onSelect: () => {
         state.selectedConnection = conn;
-        state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
+        state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
       },
     });
   }
@@ -3215,7 +3215,7 @@ function showDestinationPicker(p, conn, onLineStops) {
           _services: d.services || null,
           onSelect: () => {
             state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
+            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
           },
         });
       }
@@ -3283,7 +3283,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
-          onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx }; },
+          onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja }; },
         });
       }
     }
@@ -3307,7 +3307,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
           _isConnDest: true, _connIdx: ci,
           onSelect: () => {
             state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
+            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
           },
         });
       }
@@ -3363,7 +3363,7 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
       if (!showTrainTypeButtons(p)) {
         const ei = state.selectedTrainType?.expressIndices || null;
         const effectiveMax = getEffectiveStops(p, { ei }).validCount;
-        dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
+        dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         resetStopsBtn();
         rollStops();
@@ -3547,11 +3547,11 @@ function showTrainTypeButtons(p) {
       const pick = g._members[Math.floor(Math.random() * g._members.length)];
       state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
       const effectiveMax = getEffectiveStops(p).validCount;
-      dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, max: effectiveMax, s: pl(effectiveMax) });
+      dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       if (window.game) {
         showRollStopsUI();
-        dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
+        dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
       } else {
         rollStops();
@@ -3562,14 +3562,20 @@ function showTrainTypeButtons(p) {
   const headerMax = hasLocal
     ? getEffectiveStops(p, { ei: null, bi: null }).validCount
     : Math.max(...types.map(g => g._count));
-  dom.stopsRangeText.textContent = t('selectTrainType', { max: headerMax });
+  dom.stopsRangeText.textContent = t('selectTrainType', { dest: destLabel(), max: headerMax });
   return true;
+}
+
+function destLabel() {
+  const d = state.selectedDestination;
+  if (!d || !d.name) return '';
+  return currentLang === 'ja' ? ' · ' + d.ja.replace(/方面$/, '') + '行き' : ' towards ' + d.name;
 }
 
 function refreshStopsLabel() {
   if (!state.selectedPlatform) return;
   const max = getEffectiveStops(state.selectedPlatform).validCount;
-  dom.stopsRangeText.textContent = t('rollingStops', { max, s: pl(max) });
+  dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max, s: pl(max) });
 }
 
 // ── Transfer Check ────────────────────────────────────────��────────────────
@@ -3845,7 +3851,7 @@ function rebuildPickers(p, opts) {
   if (showBranchButtons(p)) return true;
   if (showTrainTypeButtons(p)) return true;
   const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
-  dom.stopsRangeText.textContent = t('rollingStops', { max: effectiveMax, s: pl(effectiveMax) });
+  dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
   showRollStopsUI();
   dom.rollStopsBtn.disabled = false;
   if (opts && opts.autoRoll) rollStops();

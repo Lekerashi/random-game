@@ -223,6 +223,53 @@ const LINE_CONNECTIONS = [
       { until: '品川',   name: 'Shinagawa', ja: '品川方面', color: '#009BBF' },
     ] },
 
+  // ── Shonan-Shinjuku Line southbound at Ofuna ─────────────────────────
+  // SS Line through-runs onto Yokosuka Line (Zushi) or Tokaido Line (Odawara).
+  // Utsunomiya-Yokosuka system = local only; Takasaki-Tokaido = Rapid/Special Rapid.
+  { from: 'JR Shonan Shinjuku Line', fromEnd: '大船',
+    to:   'JR Yokosuka Line',        toStation: '大船', toDir: 'end',
+    name: 'Zushi', ja: '逗子方面', color: '#0068B7',
+    lineDests: [
+      { until: '大船', name: 'Ofuna', ja: '大船方面', color: '#E9003F' },
+    ],
+    destinations: [
+      { until: '逗子', name: 'Zushi', ja: '逗子方面', color: '#0068B7',
+        services: ['Local'] },
+    ] },
+  { from: 'JR Shonan Shinjuku Line', fromEnd: '大船',
+    to:   'JR Tokaido Main Line',    toStation: '大船', toDir: 'end',
+    name: 'Odawara', ja: '小田原方面', color: '#F7A600',
+    destinations: [
+      { until: '平塚',   name: 'Hiratsuka', ja: '平塚方面', color: '#48a842' },
+      { until: '国府津', name: 'Kozu',      ja: '国府津方面', color: '#1a8fe8' },
+      { until: '小田原', name: 'Odawara',   ja: '小田原方面', color: '#e87830' },
+    ] },
+
+  // ── Shonan-Shinjuku Line northbound at Omiya ───────────────────────────
+  // SS Line through-runs onto Utsunomiya Line or Takasaki Line.
+  { from: 'JR Shonan Shinjuku Line', fromEnd: '大宮',
+    to:   'Utsunomiya Line',         toStation: '大宮', toDir: 'end',
+    name: 'Utsunomiya', ja: '宇都宮線', color: '#40d46e',
+    toUntil: '宇都宮',
+    lineDests: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#E9003F' },
+    ],
+    destinations: [
+      { until: '古河',   name: 'Koga',       ja: '古河方面',   color: '#6ebc5e',
+        services: ['Local'] },
+      { until: '小金井', name: 'Koganei',    ja: '小金井方面', color: '#5ebc6e',
+        services: ['Local'] },
+      { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848',
+        services: ['Local'] },
+    ] },
+  { from: 'JR Shonan Shinjuku Line', fromEnd: '大宮',
+    to:   'JR Takasaki Line',        toStation: '大宮', toDir: 'end',
+    name: 'Takasaki', ja: '高崎線', color: '#F68B1E',
+    destinations: [
+      { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d' },
+      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
+    ] },
+
   // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
   // Hanzomon through-runs to Tobu Skytree Line. Express services apply.
   // Trains terminate at Kuki (Isesaki) or Minami-Kurihashi (Nikko).
