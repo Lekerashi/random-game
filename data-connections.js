@@ -784,10 +784,14 @@ const LINE_CONNECTIONS = [
     express: [{ stops: null, name: 'Local', ja: '各停' }] },
 
   // ── Chuo → Ome at Tachikawa ─────────────────────────────────────────
-  // Mid-line connection: some Chuo rapid trains through-run onto Ome Line
+  // Mid-line connection: some Chuo rapid trains through-run onto Ome Line.
+  // Destinations merged into Chuo LINE_DESTINATIONS picker via handleLineDestinations.
   { from: 'JR Chuo Line',  fromStation: '立川', fromDir: 'end',
     to:   'JR Ome Line',   toStation: '立川', toDir: 'end',
     toUntil: '青梅',
+    destinations: [
+      { until: '青梅', name: 'Ome', ja: '青梅方面', color: '#6a5020' },
+    ],
     express: [
       { name: 'Ome Sp. Rapid', ja: '青梅特快', color: '#f07000',
         stops: ['Tokyo','Kanda','Ochanomizu','Yotsuya','Shinjuku',
@@ -795,6 +799,29 @@ const LINE_CONNECTIONS = [
                 'Nishi-Tachikawa','Higashi-Nakagami','Nakagami','Akishima',
                 'Haijima','Ushihama','Fussa','Hamura','Ozaku','Kabe',
                 'Higashi-Ome','Ome'] },
+    ] },
+
+  // ── Chuo → Fuji Express at Otsuki ────────────────────────────────────
+  // 2 weekday evening Commuter Rapid trains through-run to Kawaguchiko.
+  // Destinations merged into Chuo LINE_DESTINATIONS picker via handleLineDestinations.
+  { from: 'JR Chuo Line',      fromStation: '大月', fromDir: 'end',
+    to:   'Fuji Express Line', toStation: '大月', toDir: 'end',
+    destinations: [
+      { until: '河口湖', name: 'Kawaguchiko', ja: '河口湖方面', color: '#67db56',
+        services: ['Commuter Rapid'] },
+    ],
+    express: [
+      { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030',
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 20] } },
+        stops: ['Tokyo','Kanda','Ochanomizu','Yotsuya','Shinjuku',
+                'Nakano','Ogikubo','Kichijoji','Mitaka','Kokubunji',
+                'Tachikawa','Hino','Toyoda','Hachioji','Nishi-Hachioji','Takao',
+                'Sagamiko','Fujino','Uenohara','Shiotsu','Yanagawa',
+                'Torisawa','Saruhashi','Otsuki',
+                'Kamiotsuki','Tanokura','Kasei','Akasaka','Tsurushi',
+                'Yamuramachi','Tsurubunkadaigakumae','Tokaichiba','Higashikatsura',
+                'Mitsutouge','Kotobuki','Yoshiikeonsenmae','Shimoyoshida',
+                'Gekkoji','Mt Fuji','Fujikyu Highland','Kawaguchiko'] },
     ] },
 
   // ── Chiyoda ↔ JR Joban at Ayase ───────────────────────────────────────

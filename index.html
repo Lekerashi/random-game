@@ -3004,27 +3004,58 @@ function handleLineDestinations(p) {
       return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)) };
     })
     .filter(d => d && d.effectiveMax > 0);
+
+  // Merge mid-line connection destinations (e.g. Chuo → Ome at Tachikawa)
+  if (p._connections) {
+    for (const conn of p._connections) {
+      if (!conn.destinations) continue;
+      const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
+      if (stopsToJunction <= 0) continue;
+      const viaCount = effectiveViaCount(conn, state.currentStation.name);
+      const connMax = stopsToJunction + viaCount + getConnectionMaxStops(conn);
+      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1)) {
+        const stopsOnTarget = conn.toDir === 'start'
+          ? conn.toJunctionIdx - d.untilIdx
+          : d.untilIdx - conn.toJunctionIdx;
+        const totalMax = stopsToJunction + viaCount + Math.max(0, stopsOnTarget);
+        const cappedMax = Math.min(totalMax, connMax);
+        dests.push({
+          name: d.name, ja: d.ja, color: d.color || p.lineColor,
+          effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+          _conn: conn, _totalMax: cappedMax, _services: d.services || null,
+        });
+      }
+    }
+  }
+
   if (dests.length === 0) return { pickerShown: false };
+
+  function selectDest(d) {
+    if (d._conn) {
+      state.selectedConnection = d._conn;
+      state.selectedDestination = { totalMax: d._totalMax, services: d._services, name: d.name, ja: d.ja };
+    } else {
+      state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx, name: d.name, ja: d.ja };
+    }
+  }
 
   // If all destinations have the same effectiveMax (cap makes them equivalent),
   // auto-select the furthest one — no meaningful choice to make.
   const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
   if (allSameMax) {
-    state.selectedDestination = { totalMax: dests[dests.length - 1].effectiveMax, untilIdx: dests[dests.length - 1].untilIdx, name: dests[dests.length - 1].name, ja: dests[dests.length - 1].ja };
+    selectDest(dests[dests.length - 1]);
     return { pickerShown: false };
   }
   if (dests.length > 1) {
     showBranchPickerUI(p, dests.map(d => ({
       name: d.name, ja: d.ja, color: d.color,
       effectiveMax: d.effectiveMax,
-      onSelect: () => {
-        state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx, name: d.name, ja: d.ja };
-      },
+      onSelect: () => selectDest(d),
     })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
     return { pickerShown: true };
   }
   if (dests.length === 1) {
-    state.selectedDestination = { totalMax: dests[0].effectiveMax, untilIdx: dests[0].untilIdx, name: dests[0].name, ja: dests[0].ja };
+    selectDest(dests[0]);
   }
   return { pickerShown: false };
 }
@@ -3640,9 +3671,10 @@ function routeOnLineLocal(platform, line, stops, conn, connTargetLineIdx) {
   const N = line.stations.length;
   let onLineMax = platform.circular ? N - 1
     : Math.abs(platform.fromIdx - dirEnd(N, platform.direction));
-  // For mid-line connections with target express, stop at the junction station
-  if (conn && connTargetLineIdx != null
-      && conn.fromJunctionIdx !== dirEnd(N, platform.direction)) {
+  // For mid-line connections, stop at the junction station
+  // (connTargetLineIdx set = connection express; selectedConnection = user chose connection dest)
+  if (conn && conn.fromJunctionIdx !== dirEnd(N, platform.direction)
+      && (connTargetLineIdx != null || state.selectedConnection === conn)) {
     onLineMax = Math.min(onLineMax, Math.abs(conn.fromJunctionIdx - platform.fromIdx));
   }
   const stations = [];
@@ -3758,11 +3790,9 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   trace?.push('strategy: local' + (conn ? ' + connection (' + conn.from + ' → ' + conn.to + ')' : ''));
   let result = [];
 
-  // Source-line express for terminus connection services (e.g. Yokohama Line Rapid)
+  // Source-line express for connection services (e.g. Yokohama Line Rapid, Ome Sp. Rapid)
   const srcEi = tt?._srcExpIndices;
-  if (srcEi && tt?._connTargetLineIdx != null
-      && conn && conn.fromJunctionIdx === dirEnd(line.stations.length, platform.direction)
-      && !EXPRESS_SERVICES[platform.lineName]) {
+  if (srcEi && tt?._connTargetLineIdx != null && conn) {
     trace?.push('walkIndices(srcExpress→junction): srcEi has ' + srcEi.length + ' indices');
     result = walkIndices(line, srcEi, platform.fromIdx, platform.direction, stops, { boundIdx: conn.fromJunctionIdx }).stations;
   }
@@ -4007,7 +4037,7 @@ function getEffectiveStops(platform, opts = {}) {
       ).length;
       rawMax = Math.min(rawMax, expToLimit);
       trace?.push('destLimit (express to untilIdx): rawMax=' + rawMax);
-    } else if (ei && platform._onLineStops != null && destLimit > platform._onLineStops) {
+    } else if (ei && !connTargetLineIdx && platform._onLineStops != null && destLimit > platform._onLineStops) {
       const line = state.lines[platform.lineIdx];
       const terminusIdx = dirEnd(line.stations.length, platform.direction);
       const expOnLine = ei.filter(i =>
@@ -5500,9 +5530,8 @@ function setupSettings() {
     if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
       const p = state.selectedPlatform;
       clearSelectionState();
-      rebuildPickers(p);
+      if (!rebuildPickers(p)) refreshStopsLabel();
     }
-    refreshStopsLabel();
   }
   dom.stopsCap.addEventListener('change', e => {
     state.stopsCap = e.target.checked;
