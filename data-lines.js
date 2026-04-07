@@ -237,6 +237,12 @@ const EXPRESS_SERVICES = {
     ]},
   ],
   // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
+  "Keisei Oshiage Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Ltd. Express", ja: "特急", color: "#f07000", stops: [
+      "Oshiage (Skytree)","Aoto","Keisei Takasago",
+    ]},
+  ],
   "Tokaido Shinkansen": [
     { name: "Kodama", ja: "こだま", color: "#0073CF", stops: null },
     { name: "Hikari", ja: "ひかり", color: "#f07000", stops: [

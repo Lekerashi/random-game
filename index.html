@@ -2001,9 +2001,11 @@ function resolveConnectionExpress(connExInfo, platform, line) {
   for (const ex of express) {
     if (ex.stops === null) {
       // Local service — all stations, no express filtering on target line
-      const localMax = connObj
+      let localMax = connObj
         ? Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx) + getConnectionMaxStops(connObj)
         : platform.maxStops;
+      // Include chain extensions from onward connections
+      if (connObj) localMax += computeConnectionExtra(getOnwardConnections(connObj), '', new Set([connObj.to]));
       results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
       continue;
     }
@@ -3068,7 +3070,7 @@ function handleConnectionRouting(p) {
 
   // If all connections go to the same target line and any have destinations,
   // show a destination picker FIRST (before shared-trunk check)
-  const allSameTarget = conns.every(c => c.to === conns[0].to);
+  const allSameTarget = conns.every(c => c.to === conns[0].to && c.toDir === conns[0].toDir);
   const connWithDests = conns.find(c => c.destinations && c.destinations.length > 0);
 
   // Multiple connections without destinations — check for shared-trunk auto-select
@@ -3104,6 +3106,8 @@ function handleConnectionRouting(p) {
   showBranchPickerUI(p, conns.map(conn => {
     const viaCount = effectiveViaCount(conn, state.currentStation.name);
     let targetMax = getConnectionMaxStops(conn);
+    // Include chain extensions from onward connections (e.g. Keikyu→Asakusa→Keisei)
+    const chainExtra = computeConnectionExtra(getOnwardConnections(conn), '', new Set([conn.to]));
     // If connection has express but no local (no stops:null entry),
     // cap targetMax to the express service with the most stops
     if (conn.express && !conn.express.some(e => e.stops === null)) {
@@ -3120,7 +3124,7 @@ function handleConnectionRouting(p) {
       }));
       targetMax = Math.min(targetMax, maxExpStops);
     }
-    const connMax = viaCount + targetMax + onLineStops;
+    const connMax = viaCount + targetMax + chainExtra + onLineStops;
     const effectiveMax = Math.min(capStops(connMax), p.maxStops);
     return {
       name: conn.name || conn.to, ja: conn.ja || '', color: conn.color || p.lineColor,
@@ -3132,7 +3136,7 @@ function handleConnectionRouting(p) {
           // Destinations auto-selected (all capped to same max) — continue flow
         } else {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) };
+          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) + chainExtra };
         }
       },
     };
@@ -3196,11 +3200,49 @@ function showDestinationPicker(p, conn, onLineStops) {
     choices.push({
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
       effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+      _services: d.services || null,
       onSelect: () => {
         state.selectedConnection = conn;
-        state.selectedDestination = { totalMax: cappedMax };
+        state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
       },
     });
+  }
+
+  // Chained destinations: follow onward connections recursively for through-running
+  // beyond the target line (e.g. Keikyu Airport → Keikyu Main → Asakusa → Keisei Oshiage)
+  let chainConn = conn;
+  let chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
+  const chainVisited = new Set([conn.from, conn.to]);
+  while (chainConn) {
+    const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
+    let nextChain = null;
+    for (const nextConn of onward) {
+      if (!nextConn.destinations) { nextChain = nextConn; chainVisited.add(nextConn.to); continue; }
+      const nextDests = nextConn.destinations.filter(d => d.untilIdx !== -1);
+      if (nextDests.length === 0) continue;
+      const nextVia = effectiveViaCount(nextConn, '');
+      for (const d of nextDests) {
+        const stopsOnNext = nextConn.toDir === 'start'
+          ? nextConn.toJunctionIdx - d.untilIdx
+          : d.untilIdx - nextConn.toJunctionIdx;
+        const totalMax = chainBase + nextVia + Math.max(0, stopsOnNext);
+        const cappedMax = Math.min(totalMax, p.maxStops);
+        choices.push({
+          name: d.name, ja: d.ja, color: d.color || p.lineColor,
+          effectiveMax: capStops(cappedMax),
+          _services: d.services || null,
+          onSelect: () => {
+            state.selectedConnection = conn;
+            state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
+          },
+        });
+      }
+      nextChain = nextConn;
+      chainVisited.add(nextConn.to);
+    }
+    if (!nextChain) break;
+    chainBase += effectiveViaCount(nextChain, '') + getConnectionMaxStops(nextChain);
+    chainConn = nextChain;
   }
 
   const filtered = choices.filter(c => c.effectiveMax > 0);
@@ -3208,9 +3250,22 @@ function showDestinationPicker(p, conn, onLineStops) {
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
   // Keep the last (connection destination) when a lineDests and connection dest collide,
   // since connection destinations have richer routing (express, through-running).
-  const seenMax = new Map();
-  for (const c of filtered) seenMax.set(c.effectiveMax, c);
-  const unique = [...seenMax.values()];
+  // When multiple entries collapse, label as "Nearest & beyond" to indicate a group.
+  const grouped = new Map();
+  for (const c of filtered) {
+    if (!grouped.has(c.effectiveMax)) grouped.set(c.effectiveMax, []);
+    grouped.get(c.effectiveMax).push(c);
+  }
+  const unique = [...grouped.values()].flatMap(group => {
+    if (group.length <= 1) return group;
+    // Don't merge destinations with different services — they represent different trains
+    const svcKey = c => c._services ? c._services.slice().sort().join(',') : '';
+    if (!group.every(c => svcKey(c) === svcKey(group[0]))) return group;
+    const kept = group[group.length - 1];
+    const nearest = group[0];
+    return [{ ...kept,
+      name: nearest.name + ' & beyond', ja: nearest.ja.replace(/方面$/, '') + '〜' }];
+  });
 
   if (unique.length <= 1) {
     if (unique.length === 1) {
@@ -3273,7 +3328,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
           _isConnDest: true, _connIdx: ci,
           onSelect: () => {
             state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax };
+            state.selectedDestination = { totalMax: cappedMax, services: d.services || null };
           },
         });
       }
@@ -3356,8 +3411,10 @@ function resolveTrainTypes(p) {
   const connTargetLine = conn ? state.lines[conn.toLineIdx] : null;
   const hasTargetExpress = connTargetLine && !!EXPRESS_SERVICES[conn.to];
   // Collect all connection express services (from selected connection + mid-line connections on platform)
+  // Skip when a lineDest was selected (ride stays on source line, connection express is irrelevant)
+  const isLineDest = state.selectedDestination?.untilIdx != null;
   const allConnExpress = [];
-  if (conn?.express) allConnExpress.push({ express: conn.express, targetLineIdx: conn.toLineIdx, targetLine: connTargetLine, connObj: conn });
+  if (conn?.express && !isLineDest) allConnExpress.push({ express: conn.express, targetLineIdx: conn.toLineIdx, targetLine: connTargetLine, connObj: conn });
   // Only add mid-line connection express when no branch connection or line destination is selected
   // (if user picked Yokohama branch, don't add Shinagawa branch's express)
   // (if user picked a line destination like Takao, don't add Ome connection express)
@@ -3383,7 +3440,8 @@ function resolveTrainTypes(p) {
 
   // Add target line's express services (e.g. Den-en-toshi Semi-Exp/Express via Hanzomon)
   // Skip if connection express already covered this target line (avoid duplicates)
-  const connAlreadyCovered = allConnExpress.some(a => a.targetLineIdx === conn?.toLineIdx);
+  // Skip if a lineDest was selected (ride stays on source line, target express irrelevant)
+  const connAlreadyCovered = isLineDest || allConnExpress.some(a => a.targetLineIdx === conn?.toLineIdx);
   if (hasTargetExpress && connTargetLine && !connAlreadyCovered) {
     const junctionStn = connTargetLine.stations[conn.toJunctionIdx];
     const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine) || [];
@@ -3415,7 +3473,7 @@ function resolveTrainTypes(p) {
   // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi)
   const grouped = [];
   for (const tt of trainTypes) {
-    const key = (tt._terminatesAtJunction ? 'term:' : tt._connTargetLineIdx != null ? 'conn:' : '')
+    const key = (tt._terminatesAtJunction ? 'term:' : tt._connTargetLineIdx != null ? 'conn' + (tt._connTotalMax || '') + ':' : '')
       + (tt.expressIndices ? tt.expressIndices.join(',') : 'local');
     const existing = grouped.find(g => g._key === key);
     if (existing) {
@@ -3428,7 +3486,25 @@ function resolveTrainTypes(p) {
   }
 
   // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya)
-  const reachable = grouped.filter(g => getEffectiveStops(p, trainTypeOpts(g)).validCount > 0);
+  let reachable = grouped.filter(g => getEffectiveStops(p, trainTypeOpts(g)).validCount > 0);
+  // Filter train types to match the selected destination's real signboard.
+  // When `services` is declared, only show types whose name matches the allowlist.
+  // Fallback heuristic for destinations without `services`: chain express types that
+  // pass through (don't terminate at) the destination are filtered.
+  if (state.selectedDestination && conn) {
+    if (state.selectedDestination.services) {
+      const allowed = new Set(state.selectedDestination.services.map(s => normalize(s)));
+      reachable = reachable.filter(g => {
+        const members = g._members || [g];
+        return members.some(m => allowed.has(normalize(m.name)));
+      });
+    } else {
+      // Heuristic fallback: chain express types pass through intermediate destinations
+      if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, state.currentStation.name) + getConnectionMaxStops(conn)) {
+        reachable = reachable.filter(g => !g._chainExpressStops);
+      }
+    }
+  }
 
   if (reachable.length <= 1) {
     if (reachable.length === 1 && reachable[0].expressIndices) {
@@ -3444,9 +3520,11 @@ function resolveTrainTypes(p) {
     const eff = getEffectiveStops(p, trainTypeOpts(g));
     const isLocal = !g.expressIndices;
     const cat = g._terminatesAtJunction ? 'term' : g._connTargetLineIdx != null ? 'conn' : 'src';
+    const hasChain = !!g._chainExpressStops;
     const existing = merged.find(m => {
       const mCat = m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' : 'src';
-      return m._count === eff.validCount && !m.expressIndices === isLocal && mCat === cat;
+      return m._count === eff.validCount && !m.expressIndices === isLocal && mCat === cat
+        && !!m._chainExpressStops === hasChain;
     });
     if (existing) {
       existing._members.push(...g._members);
@@ -3916,7 +3994,8 @@ function getEffectiveStops(platform, opts = {}) {
       // For mid-line express, onLine is raw (local) distance — the actual express
       // source-line count is handled by getStationsAlongRoute which stops at the junction.
       // Use the pre-computed _connTotalMax if available (set by showTrainTypeButtons).
-      rawMax = opts._connTotalMax || (onLine + via + targetStops);
+      const connMax = opts._connTotalMax !== undefined ? opts._connTotalMax : state.selectedTrainType?._connTotalMax;
+      rawMax = connMax || (onLine + via + targetStops);
       trace?.push('path: connTarget (line ' + connTargetLineIdx + '), onLine=' + onLine + ' via=' + via + ' target=' + targetStops + ' rawMax=' + rawMax);
     } else {
       rawMax = platform.maxStops;

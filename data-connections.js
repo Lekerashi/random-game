@@ -28,6 +28,13 @@ const LINE_CONNECTIONS = [
   { from: 'Keikyu Airport Line',  fromEnd: '京急蒲田',
     to:   'Keikyu Main Line',     toStation: '京急蒲田', toDir: 'start',
     name: 'Shinagawa', ja: '品川方面', color: '#e57053',
+    lineDests: [
+      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+    ],
+    destinations: [
+      { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#0073CF',
+        services: ['Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp'] },
+    ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
@@ -281,15 +288,41 @@ const LINE_CONNECTIONS = [
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
     ],
     destinations: [
-      { until: '押上(スカイツリー前)', name: 'Aoto', ja: '青砥方面', color: '#0073CF' },
+      { until: '押上(スカイツリー前)', name: 'Aoto', ja: '青砥方面', color: '#0073CF',
+        services: ['Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp'] },
+    ],
+    express: [
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Shinagawa','Sengakuji','Mita','Daimon','Shimbashi','Nihombashi',
+                'Higashi-nihombashi','Asakusa','Oshiage (Skytree)'] },
     ] },
 
   // ── Asakusa ↔ Keisei Oshiage at Oshiage (toward Narita) ──────────────
   // Oshiage is end of Asakusa (idx 19), start of Keisei Oshiage (idx 0)
+  // Airport Rapid (エアポート快特) chains from Keikyu→Asakusa→Oshiage→Keisei Main.
+  // Local entry needed since Asakusa has no EXPRESS_SERVICES of its own.
   { from: 'Toei Asakusa Line',  fromEnd: '押上(スカイツリー前)',
-    to:   'Keisei Oshiage Line', toEnd: '押上(スカイツリー前)' },
+    to:   'Keisei Oshiage Line', toEnd: '押上(スカイツリー前)',
+    destinations: [
+      { until: '京成高砂', name: 'Keisei Takasago', ja: '京成高砂方面', color: '#0073CF',
+        services: ['Local', 'Rapid Ltd. Exp'] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Sengakuji','Mita','Daimon','Shimbashi','Nihombashi',
+                'Higashi-nihombashi','Asakusa','Oshiage (Skytree)',
+                'Aoto','Keisei Takasago'] },
+    ] },
   { from: 'Keisei Oshiage Line', fromEnd: '押上(スカイツリー前)',
-    to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)' },
+    to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Keisei Takasago','Aoto','Oshiage (Skytree)',
+                'Asakusa','Higashi-nihombashi','Nihombashi',
+                'Shimbashi','Daimon','Mita','Sengakuji'] },
+    ] },
 
   // ── Chiyoda ↔ Odakyu at Yoyogi-Uehara ─────────────────────────────────
   // 1:1 through-running with rich Odakyu express services
@@ -366,9 +399,6 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
     name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31',
-    lineDests: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
-    ],
     destinations: [
       { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31' },
     ],
@@ -679,12 +709,24 @@ const LINE_CONNECTIONS = [
   { from: 'JR Saikyo Line', fromEnd: '大崎',
     to:   'Rinkai Line',    toEnd:   '大崎' },
 
-  // ── Keisei Main ↔ Keisei Oshiage at Aoto ──────────────────────────────
-  // Connects Asakusa→Keisei Oshiage chain to Keisei Main → Narita Airport
-  { from: 'Keisei Oshiage Line', fromStation: '青砥', fromDir: 'end',
-    to:   'Keisei Main Line',    toStation: '青砥', toDir: 'end' },
-  { from: 'Keisei Main Line',    fromStation: '青砥', fromDir: 'start',
-    to:   'Keisei Oshiage Line', toStation: '青砥', toDir: 'start' },
+  // ── Keisei Main ↔ Keisei Oshiage at Keisei Takasago ─────────────────
+  // Terminus on Oshiage side (idx 6) so chains extend to Keisei Main (Haneda→Narita)
+  // Aoto (on both lines) still provides Y-junction platforms naturally
+  { from: 'Keisei Oshiage Line', fromEnd: '京成高砂',
+    to:   'Keisei Main Line',    toStation: '京成高砂', toDir: 'end',
+    destinations: [
+      { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport', ja: '成田空港方面', color: '#003878',
+        services: ['Local', 'Airport Rapid'] },
+    ],
+    express: [
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+        stops: ['Oshiage (Skytree)','Aoto','Keisei Takasago',
+                'Keisei Yawata','Keisei Funabashi','Keisei Tsudanuma',
+                'Yachiyodai','Katsutadai','Keisei-Sakura','Keisei-Narita',
+                'Airport Second Building (NRT Terminal 2)','Narita Airport (NRT Terminal 1)'] },
+    ] },
+  { from: 'Keisei Main Line',    fromStation: '京成高砂', fromDir: 'start',
+    to:   'Keisei Oshiage Line', toEnd: '京成高砂' },
 
   // ── Keio ↔ Keio Sagamihara at Chofu ───────────────────────────────────
   // Chofu is mid-line on Keio (idx 17), start of Sagamihara (idx 0)
@@ -769,9 +811,12 @@ const LINE_CONNECTIONS = [
       { until: '東神奈川', name: 'Higashi-Kanagawa', ja: '東神奈川方面', color: '#00AD53' },
     ],
     destinations: [
-      { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1' },
-      { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0' },
-      { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090' },
+      { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1',
+        services: ['Local', 'Rapid'] },
+      { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0',
+        services: ['Local'] },
+      { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090',
+        services: ['Local'] },
     ],
     express: [
       { name: 'Local', ja: '各停', color: '#00a0e8', stops: null },
