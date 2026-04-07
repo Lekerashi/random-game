@@ -2,16 +2,40 @@
 // Defines directed connections between lines resolved at runtime.
 // No line mutation needed — lines stay as-is from upstream data.
 //
-// Fields:
-//   from, fromEnd     — source line + its terminus (JA) where connection starts
-//   to, toEnd         — target line + its terminus for terminus-to-terminus connections
-//   toStation, toDir  — target line station + direction for mid-line junctions
-//   via               — intermediate station JA names between the two lines
-//   name, ja, color   — button label when multiple connections = branch picker
-//   destinations      — array of { until (JA), name, ja } for train terminus picker
-//   express           — express services spanning the full connected route
-//   displayName       — override platform pill label (e.g. "Ueno Tokyo Line")
-//   toUntil           — JA name of last station on target line (limits range)
+// ── FIELD REFERENCE ──
+//   ROUTING (required):
+//     from              — source line name
+//     fromEnd / fromStation — JA terminus or mid-line station on source line
+//     fromDir           — 'start'|'end' (auto-inferred for terminus; required for mid-line)
+//     to                — target line name
+//     toEnd / toStation — JA terminus or mid-line station on target line
+//     toDir             — 'start'|'end' travel direction on target (auto-inferred for terminus)
+//     via               — intermediate station JA names between the two lines
+//     toUntil           — JA name: limit traversal on target line (stops chaining)
+//
+//   DISPLAY:
+//     name, ja, color   — button label for branch picker (when multiple conns from same platform)
+//     displayName       — override platform pill label (e.g. "Ueno Tokyo Line")
+//
+//   SERVICES:
+//     destinations      — [{ until (JA), name, ja, color?, services? }] train terminus picker
+//     lineDests         — [{ until (JA), name, ja, color? }] within-line short-turn picker
+//     express           — [{ name, ja, color?, stops, schedule? }] cross-line express services
+//
+// ── PICKER BEHAVIOR (resolved as _type) ──
+//   transparent    — no name/destinations/express → auto-extends (e.g. Hanzomon↔DET)
+//   destination    — destinations present → destination picker (e.g. UTL southbound)
+//   named          — name present, no destinations → branch picker label (e.g. Keikyu Kamata N/S)
+//   express-only   — express present, no name/dest → custom train types only (e.g. F-Liner)
+//
+// ── FIELD EFFECTS ──
+//   destinations + services   → filtered train types per destination
+//   lineDests                 → within-line short-turn options in destination picker
+//   express + stops:null      → local (all-stop) service through connection
+//   express + stops:[...]     → express service with named stops across both lines
+//   toUntil                   → limits route extent on target line, stops chaining
+//   via                       → intermediate stations counted toward stops
+//   displayName               → overrides platform pill label
 
 const LINE_CONNECTIONS = [
 
