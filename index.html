@@ -721,6 +721,14 @@
     <button class="last-train-dismiss" id="dismiss-train-warning" data-i18n-title="dismiss" title="Dismiss">✕</button>
   </div>
 
+  <!-- Inline resume prompt (same-evening returns) -->
+  <div id="resume-inline" class="card hidden" style="text-align:center; padding:12px 16px;">
+    <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
+      <button class="btn btn-primary" id="resume-inline-btn" data-i18n="resumeBtn">Resume</button>
+      <button class="btn btn-ghost btn-sm" id="new-game-inline-btn" data-i18n="dismissBtn">New Game</button>
+    </div>
+  </div>
+
   <!-- Station picker -->
   <div class="card" id="station-card">
     <div class="card-title" data-i18n="startingStation">Starting Station</div>
@@ -2097,7 +2105,7 @@ const ANCHOR_STATIONS = new Set([
   'Yokohama', 'Kawasaki', 'Omiya', 'Tachikawa', 'Hachioji',
   'Ofuna', 'Chiba', 'Kashiwa', 'Funabashi', 'Machida', 'Kichijoji',
   // Secondary hubs for better direction labels
-  'Ochanomizu', 'Nakano',
+  'Akihabara', 'Nakano',
   'Kawagoe', 'Odawara', 'Fuchu', 'Urawa',
   'Tsudanuma', 'Tokorozawa', 'Chofu', 'Kasukabe',
   // Private railway hubs
@@ -3899,6 +3907,7 @@ function resetRoundState() {
   state._rerollExcludeStops = null;
   state._preRollThirst = null;
   state.destination = null;
+  state._pendingRound = null;
 }
 
 // emoji: 'wrap' = always show emoji in <span> (normal arrival),
@@ -4113,7 +4122,8 @@ function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
 }
 
 function waitForUndo(afterEl) {
-  if (window._skipAnimation) { return Promise.resolve(false); }
+  // Undo only available in debug mode (dev server injects debug.js which sets window.game)
+  if (window._skipAnimation || !window.game) { return Promise.resolve(false); }
   if (afterEl) afterEl.after(dom.undoTransferBtn);
   dom.undoTransferBtn.style.display = 'block';
   return new Promise(resolve => {
@@ -4189,10 +4199,13 @@ function buildThirstTracker(platform, rolledStops) {
     }
   }
   const _mult = platform.isShinkansen ? SHINKANSEN_THIRST : 1;
-  return function thirstBetween(a, b) {
+  function thirstBetween(a, b) {
     const raw = _cumPhysical ? _cumPhysical[b + 1] - _cumPhysical[a + 1] : b - a;
     return raw * _mult;
-  };
+  }
+  thirstBetween._cumPhysical = _cumPhysical;
+  thirstBetween._mult = _mult;
+  return thirstBetween;
 }
 
 // ── Transfer check: journey card rendering ───────────────────────────────
@@ -4322,6 +4335,9 @@ async function checkTransfers(platform, rolledStops) {
 
   renderJourneyCard(route, transferIndices);
 
+  // Save initial checkpoint so page unload during first transfer is recoverable
+  savePendingRound(route, transferIndices, 0, thirstBetween, platform, rolledStops);
+
   // Walk through each transfer station
   for (let ti = 0; ti < transferIndices.length; ti++) {
     const i = transferIndices[ti];
@@ -4333,18 +4349,61 @@ async function checkTransfers(platform, rolledStops) {
     const result = await resolveTransfer(route, i, ti, transferIndices);
 
     if (result.outcome === 'transfer') {
+      clearPendingRound();
       return { type: 'transfer', station: result.station, stopsUsed: result.stopsUsed };
     }
     if (result.outcome === 'drink') {
+      clearPendingRound();
       return { type: 'drink', station: result.station, stopsUsed: result.stopsUsed };
     }
+    // Stay — save checkpoint after each resolved transfer
+    savePendingRound(route, transferIndices, ti + 1, thirstBetween, platform, rolledStops);
   }
 
   // No transfer triggered — count remaining stations to destination
+  clearPendingRound();
   const lastChecked = transferIndices[transferIndices.length - 1];
   state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
   if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
   return { type: 'arrive', station: route[route.length - 1] };
+}
+
+// ── Post-transfer result handling (shared by rollStops and resume) ──────
+async function handleRoundResult(result, p, roll) {
+  if (result.type === 'transfer') {
+    const onLineStops = p._onLineStops;
+    const transferLine = (state.selectedConnection && onLineStops != null && result.stopsUsed > onLineStops)
+      ? state.selectedConnection.to : p.lineName;
+    state.destination = result.station;
+    addHistory({ transferred: true, stopsUsed: result.stopsUsed, _transferLine: transferLine });
+    if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
+    setStationInput(result.station.name);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    onStationSelected(result.station.name, { lineName: transferLine, isTransfer: true });
+    return;
+  }
+  if (result.type === 'drink') {
+    state.destination = result.station;
+    state.selectedPlatform = { ...p, drinkHere: true };
+    showDestCard(result.station,
+      t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
+    state.drankAt.add(normalize(result.station.name));
+    const drinkTransferThirst = state.stationsSinceDrink;
+    state.stationsSinceDrink = 0;
+    addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed, thirst: drinkTransferThirst });
+    return;
+  }
+  // Normal arrival
+  const dest = result.station;
+  state.destination = dest;
+  const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
+  showDestCard(dest,
+    `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
+    + destSubHints(dest, 'wrap'));
+  state.drankAt.add(normalize(dest.name));
+  const arrivalThirst = state.stationsSinceDrink;
+  state.stationsSinceDrink = 0;
+  addHistory({ drinkAtArrival: true, thirst: arrivalThirst });
 }
 
 function rollStops() {
@@ -4395,52 +4454,7 @@ function rollStops() {
 
     // Check for transfers along the route (using physical stop count)
     const result = await checkTransfers(p, physicalStops);
-
-    if (result.type === 'transfer') {
-      // Determine which line the transfer occurred on (source or connected target)
-      const onLineStops = p._onLineStops;
-      const transferLine = (state.selectedConnection && onLineStops != null && result.stopsUsed > onLineStops)
-        ? state.selectedConnection.to
-        : p.lineName;
-
-      state.destination = result.station;
-      addHistory({ transferred: true, stopsUsed: result.stopsUsed });
-
-      if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
-      setStationInput(result.station.name);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      onStationSelected(result.station.name, { lineName: transferLine, isTransfer: true });
-      return;
-    }
-
-    if (result.type === 'drink') {
-      // Drink at transfer station
-      state.destination = result.station;
-      state.selectedPlatform = { ...p, drinkHere: true };
-
-      showDestCard(result.station,
-        t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
-
-      state.drankAt.add(normalize(result.station.name));
-      const drinkTransferThirst = state.stationsSinceDrink;
-      state.stationsSinceDrink = 0;
-      addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed, thirst: drinkTransferThirst });
-      return;
-    }
-
-    // Normal arrival — you're drinking here!
-    const dest = result.station;
-    state.destination = dest;
-
-    const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-    showDestCard(dest,
-      `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
-      + destSubHints(dest, 'wrap'));
-
-    state.drankAt.add(normalize(dest.name));
-    const arrivalThirst = state.stationsSinceDrink;
-    state.stationsSinceDrink = 0;
-    addHistory({ drinkAtArrival: true, thirst: arrivalThirst });
+    await handleRoundResult(result, p, roll);
   });
 }
 
@@ -4632,6 +4646,20 @@ function addHistory(transferInfo) {
   }
   const drinkHere = state.selectedPlatform?.drinkHere && !(transferInfo?.transferred || transferInfo?.drinkAtTransfer || transferInfo?.drinkAtArrival || transferInfo?.flight);
   const flight    = transferInfo?.flight || false;
+  // Compute effective arrival line/direction for backtracking prevention on resume.
+  // For connections, the destination may be on the target line, not the source.
+  const p = state.selectedPlatform;
+  let _arrivalLine = null, _arrivalDir = null;
+  if (!drinkHere && !flight && p?.lineName) {
+    if (transferInfo?.transferred) {
+      // Transfer: the line the player was on (computed by handleRoundResult)
+      _arrivalLine = transferInfo._transferLine || p.lineName;
+    } else {
+      const eff = getEffectiveArrival(p);
+      _arrivalLine = eff.lineName;
+      _arrivalDir = eff.direction;
+    }
+  }
   const entry = {
     from:      state.currentStation.name,
     fromJa:    state.currentStation.ja || '',
@@ -4639,8 +4667,8 @@ function addHistory(transferInfo) {
     fromLng:   state.currentStation.lng,
     drinkHere: drinkHere || false,
     flight:    flight,
-    line:      (drinkHere || flight) ? null : state.selectedPlatform.lineName,
-    color:     (drinkHere || flight) ? null : state.selectedPlatform.lineColor,
+    line:      (drinkHere || flight) ? null : p.lineName,
+    color:     (drinkHere || flight) ? null : p.lineColor,
     stops:     (drinkHere || flight) ? 0   : state.rolledStops,
     trainType: (drinkHere || flight) ? null : (state.selectedTrainType?.ja || null),
     to:        state.destination.name,
@@ -4653,6 +4681,8 @@ function addHistory(transferInfo) {
     stopsUsed:      transferInfo?.stopsUsed || null,
     routeCoords:    null,
     thirst:         transferInfo?.thirst != null ? transferInfo.thirst : state.stationsSinceDrink,
+    _arrivalLine,    // internal line name at destination (for backtracking filter on resume)
+    _arrivalDir,     // direction on that line (null for transfers — whole line filtered)
   };
   // Save intermediate station coordinates for route map (prepend departure station)
   if (!drinkHere && !flight && state.route && state.route.length > 0) {
@@ -4744,14 +4774,32 @@ function undoClearHistory() {
 // ── Session save/resume ───────────────────────────────────────────────────
 
 function saveSession() {
-  if (state.history.length === 0) {
+  const mrP = state.selectedPlatform;
+  const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum;
+  if (state.history.length === 0 && !state._pendingRound && !hasMidRound) {
     localStorage.removeItem(SESSION_KEY);
     return;
   }
-  const last = state.history[state.history.length - 1];
-  const currentStation = last.drinkHere
-    ? { name: last.from, ja: last.fromJa, lat: last.fromLat, lng: last.fromLng }
-    : { name: last.to,   ja: last.toJa,   lat: last.toLat,   lng: last.toLng };
+  const last = state.history.length > 0 ? state.history[state.history.length - 1] : null;
+  const currentStation = state._pendingRound
+    ? state._pendingRound.currentStation
+    : hasMidRound && !last
+      ? { name: state.currentStation.name, ja: state.currentStation.ja,
+          lat: state.currentStation.lat, lng: state.currentStation.lng }
+      : last.drinkHere
+      ? { name: last.from, ja: last.fromJa, lat: last.fromLat, lng: last.fromLng }
+      : { name: last.to,   ja: last.toJa,   lat: last.toLat,   lng: last.toLng };
+  // Save mid-round platform/picker state so it survives page unload
+  const midRound = hasMidRound
+    ? {
+      lineName: mrP.lineName, direction: mrP.direction,
+      rolledNum: state.rolledPlatformNum,
+      branch: state.selectedBranch?.name || null,
+      connectionTo: state.selectedConnection?.to || null,
+      destination: state.selectedDestination,
+      trainType: state.selectedTrainType?.name || null,
+    } : null;
+
   localStorage.setItem(SESSION_KEY, JSON.stringify({
     timestamp: Date.now(),
     history: state.history,
@@ -4759,7 +4807,107 @@ function saveSession() {
     stationsSinceDrink: state.stationsSinceDrink,
     currentStation,
     wards23Only: state.wards23Only,
+    stopsCap: state.stopsCap,
+    stopsCapValue: state.stopsCapValue,
+    pendingRound: state._pendingRound || null,
+    midRound,
   }));
+}
+
+function savePendingRound(route, transferIndices, resolvedCount, thirstBetween, platform, rolledStops) {
+  state._pendingRound = {
+    currentStation: { name: state.currentStation.name, ja: state.currentStation.ja,
+                      lat: state.currentStation.lat, lng: state.currentStation.lng },
+    route: route.map(s => ({ name: s.name, ja: s.ja, lat: s.lat, lng: s.lng })),
+    transferIndices,
+    resolvedCount,
+    stationsSinceDrink: state.stationsSinceDrink,
+    thirstCum: thirstBetween._cumPhysical,
+    thirstMult: thirstBetween._mult,
+    rolledStops,
+    platform: {
+      lineName: platform.lineName, lineColor: platform.lineColor,
+      lineIdx: platform.lineIdx, direction: platform.direction,
+      fromIdx: platform.fromIdx, maxStops: platform.maxStops,
+      _onLineStops: platform._onLineStops, isShinkansen: platform.isShinkansen || false,
+    },
+    trainType: state.selectedTrainType ? { name: state.selectedTrainType.name, ja: state.selectedTrainType.ja } : null,
+    connectionTo: state.selectedConnection?.to || null,
+  };
+  saveSession();
+}
+
+function clearPendingRound() {
+  state._pendingRound = null;
+  saveSession();
+}
+
+// Resume a transfer check that was interrupted by page unload
+async function resumePendingRound(pr) {
+  const route = pr.route;
+  const transferIndices = pr.transferIndices;
+  const resolvedCount = pr.resolvedCount;
+
+  // Restore game state
+  state.currentStation = pr.currentStation;
+  state.selectedPlatform = pr.platform;
+  state.selectedTrainType = pr.trainType;
+  state.selectedConnection = pr.connectionTo ? { to: pr.connectionTo } : null;
+  state.rolledStops = pr.rolledStops;
+  state.route = route;
+  state.stationsSinceDrink = pr.stationsSinceDrink;
+  state._pendingRound = pr;
+
+  // Reconstruct thirst tracker from saved data
+  const _cumPhysical = pr.thirstCum;
+  const _mult = pr.thirstMult;
+  function thirstBetween(a, b) {
+    const raw = _cumPhysical ? _cumPhysical[b + 1] - _cumPhysical[a + 1] : b - a;
+    return raw * _mult;
+  }
+  thirstBetween._cumPhysical = _cumPhysical;
+  thirstBetween._mult = _mult;
+
+  // Render journey card and replay resolved "stay" outcomes
+  renderJourneyCard(route, transferIndices);
+  for (let ti = 0; ti < resolvedCount; ti++) {
+    const i = transferIndices[ti];
+    const el = document.getElementById(`jstn-${i}`);
+    const die = document.getElementById(`jdie-${i}`);
+    const res = document.getElementById(`jres-${i}`);
+    const nextTI = ti + 1 < transferIndices.length ? transferIndices[ti + 1] : route.length;
+    applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
+    dimStations(i + 1, nextTI);
+  }
+
+  // Continue from remaining transfers
+  for (let ti = resolvedCount; ti < transferIndices.length; ti++) {
+    const i = transferIndices[ti];
+    const prevTransferIdx = ti > 0 ? transferIndices[ti - 1] : -1;
+    state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
+
+    const result = await resolveTransfer(route, i, ti, transferIndices);
+
+    if (result.outcome === 'transfer') {
+      clearPendingRound();
+      await handleRoundResult({ type: 'transfer', station: result.station, stopsUsed: result.stopsUsed }, pr.platform, pr.rolledStops);
+      return;
+    }
+    if (result.outcome === 'drink') {
+      clearPendingRound();
+      await handleRoundResult({ type: 'drink', station: result.station, stopsUsed: result.stopsUsed }, pr.platform, pr.rolledStops);
+      return;
+    }
+    // Stay — update checkpoint
+    savePendingRound(route, transferIndices, ti + 1, thirstBetween, pr.platform, pr.rolledStops);
+  }
+
+  // All transfers resolved — arrive at destination
+  clearPendingRound();
+  const lastChecked = transferIndices[transferIndices.length - 1];
+  state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
+  if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
+  await handleRoundResult({ type: 'arrive', station: route[route.length - 1] }, pr.platform, pr.rolledStops);
 }
 
 function loadSession() {
@@ -4783,12 +4931,82 @@ function resumeSession(data) {
     state.wards23Only = data.wards23Only;
     dom.wards23Check.checked = data.wards23Only;
   }
+  if (data.stopsCap !== undefined) {
+    state.stopsCap = data.stopsCap;
+    dom.stopsCap.checked = data.stopsCap;
+  }
+  if (data.stopsCapValue !== undefined) {
+    state.stopsCapValue = data.stopsCapValue;
+    dom.stopsCapValue.value = data.stopsCapValue;
+  }
   renderHistory();
+
+  // Reconstruct arrivedVia from last history entry to prevent backtracking on resume
+  const last = data.history[data.history.length - 1];
+  let arrivedVia = null;
+  if (last && last._arrivalLine) {
+    arrivedVia = last.transferred
+      ? { lineName: last._arrivalLine, isTransfer: true }
+      : { lineName: last._arrivalLine, direction: last._arrivalDir };
+  }
 
   // Set up current station so the player can roll again
   const stn = data.currentStation;
   setStationInput(stn.name);
-  onStationSelected(stn.name);
+
+  if (data.pendingRound) {
+    // Resume interrupted transfer check
+    onStationSelected(stn.name, arrivedVia);
+    resumePendingRound(data.pendingRound);
+  } else {
+    onStationSelected(stn.name, arrivedVia);
+    if (data.midRound) restoreMidRound(data.midRound);
+  }
+}
+
+// Restore a platform selection that was interrupted by page unload.
+// Finds the matching platform in the rebuilt list, pre-sets any saved picker
+// selections, and shows the roll-stops UI.
+function restoreMidRound(mr) {
+  const matchP = state.platforms.find(p => p.lineName === mr.lineName && p.direction === mr.direction);
+  if (!matchP) return;
+
+  state.selectedPlatform = matchP;
+  state.rolledPlatformNum = mr.rolledNum;
+
+  // Restore picker selections so re-entry guards skip them
+  if (mr.branch) {
+    const line = state.lines[matchP.lineIdx];
+    const branches = getBranches(matchP.lineName, state.currentStation.ja, line, matchP.direction);
+    state.selectedBranch = branches.find(b => b.name === mr.branch) || null;
+  }
+  if (mr.connectionTo && matchP._connections) {
+    state.selectedConnection = matchP._connections.find(c => c.to === mr.connectionTo) || null;
+  }
+  if (mr.destination) {
+    state.selectedDestination = mr.destination;
+  }
+  if (mr.trainType) {
+    const resolved = resolveTrainTypes(matchP);
+    if (resolved?.types) {
+      state.selectedTrainType = resolved.types.find(t => t.name === mr.trainType) || null;
+    } else if (resolved?.autoSelect?.name === mr.trainType) {
+      state.selectedTrainType = resolved.autoSelect;
+    }
+  }
+
+  // Show platform banner (same UI as rollPlatform callback)
+  const pLabel = platformLabel(matchP);
+  const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+  const ln = lineDisplayName(matchP.displayName || matchP.lineName);
+  dom.selectedPlatformDot.style.background = matchP.lineColor;
+  dom.selectedPlatformText.innerHTML =
+    `<strong>#${mr.rolledNum} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+  dom.rerollPlatformBtn.style.display = 'block';
+
+  // Rebuild pickers — guards skip already-selected ones, falls through to roll stops
+  rebuildPickers(matchP);
+  showStep('step-stops');
 }
 
 function getSessionStats() {
@@ -5086,6 +5304,38 @@ function detectLocation() {
 }
 
 // ── Roll Again ────────────────────────────────────────────────────────────
+// Determine the effective line/direction at the destination, accounting for connections.
+// If the player rode through a connection, the destination may be on the target line (or a
+// chained onward line), not the source line they started on.
+function getEffectiveArrival(p) {
+  const conn = state.selectedConnection;
+  if (!conn) return { lineName: p.lineName, direction: p.direction };
+
+  const dest = state.destination;
+  const srcLine = state.lines[p.lineIdx];
+
+  // If destination is on the source line, use source line/direction
+  if (srcLine.stations.some(s => s.name === dest.name)) {
+    return { lineName: p.lineName, direction: p.direction };
+  }
+
+  // Walk connection chain to find which target line the destination is on
+  let effConn = conn;
+  const visited = new Set([p.lineName]);
+  while (effConn) {
+    visited.add(effConn.to);
+    const toLine = state.lines[effConn.toLineIdx];
+    if (toLine && toLine.stations.some(s => s.name === dest.name)) {
+      return { lineName: effConn.to, direction: effConn.toDir };
+    }
+    const onward = getOnwardConnections(effConn).filter(c => !visited.has(c.to));
+    effConn = onward.length > 0 ? onward[0] : null;
+  }
+
+  // Fallback to source line
+  return { lineName: p.lineName, direction: p.direction };
+}
+
 function rollAgainFromHere() {
   const dest = state.destination;
   if (!dest) return;
@@ -5097,7 +5347,7 @@ function rollAgainFromHere() {
   setStationInput(dest.name);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const via = state.selectedPlatform?.lineName
-    ? { lineName: state.selectedPlatform.lineName, direction: state.selectedPlatform.direction }
+    ? getEffectiveArrival(state.selectedPlatform)
     : null;
   onStationSelected(dest.name, via);
 }
@@ -5421,6 +5671,7 @@ function copyToClipboard(text, feedbackBtn) {
 // ── Init ──────────────────────────────────────────────────────────────────
 function onWards23Change(checked) {
   state.wards23Only = checked;
+  saveSession();
   if (!state.currentStation) return;
 
   if (state.wards23Only && !isIn23Wards(state.currentStation.lat, state.currentStation.lng)) {
@@ -5522,11 +5773,17 @@ function setupGameControls() {
 }
 
 function setupSettings() {
+  // Sync cap state from DOM — browsers may restore form values from cache
+  state.stopsCap = dom.stopsCap.checked;
+  const capVal = parseInt(dom.stopsCapValue.value, 10);
+  if (!isNaN(capVal) && capVal >= 1) state.stopsCapValue = capVal;
+
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
     localStorage.setItem(LTW_KEY, new Date().toDateString());
   });
   function onCapChange() {
+    saveSession();
     if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
       const p = state.selectedPlatform;
       clearSelectionState();
@@ -5548,9 +5805,42 @@ function setupSettings() {
   setInterval(checkLastTrainWarning, 5 * 60 * 1000);
 }
 
+// Check if a timestamp is on the same "game day" as now (day boundary at 2am)
+function sameGameDay(timestamp) {
+  const shift = SCHEDULE_DAY_BOUNDARY * 3600000;
+  const nowDay = new Date(Date.now() - shift).toDateString();
+  const thenDay = new Date(timestamp - shift).toDateString();
+  return nowDay === thenDay;
+}
+
 function setupSessionResume() {
   const saved = loadSession();
-  if (!saved || !saved.history || saved.history.length === 0) return;
+  if (!saved) return;
+  // Session with only mid-round state (no completed rounds yet): restore silently
+  if ((!saved.history || saved.history.length === 0) && (saved.midRound || saved.pendingRound)) {
+    resumeSession(saved);
+    return;
+  }
+  if (!saved.history || saved.history.length === 0) return;
+
+  // Same evening → lightweight inline prompt; next morning → full recap overlay
+  if (sameGameDay(saved.timestamp)) {
+    const inlineEl = document.getElementById('resume-inline');
+    inlineEl.classList.remove('hidden');
+    document.getElementById('resume-inline-btn').addEventListener('click', () => {
+      inlineEl.classList.add('hidden');
+      // Temporarily populate history for resumeSession
+      state.history = saved.history;
+      resumeSession(saved);
+    }, { once: true });
+    document.getElementById('new-game-inline-btn').addEventListener('click', () => {
+      inlineEl.classList.add('hidden');
+      localStorage.removeItem(SESSION_KEY);
+    }, { once: true });
+    return;
+  }
+
+  // Full recap overlay for next-morning returns
   const overlay = document.getElementById('recap-overlay');
 
   // Temporarily populate state.history so stats + map functions work
@@ -5605,6 +5895,11 @@ function setupSessionResume() {
   if (typeof L !== 'undefined') tryBuildRecapMap();
   else document.querySelector('script[src*="leaflet"]').addEventListener('load', tryBuildRecapMap);
 }
+
+// Save session when page is backgrounded (iOS Safari may evict otherwise)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') saveSession();
+});
 
 (async function init() {
   if (currentLang !== 'en') applyLang();
