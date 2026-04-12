@@ -722,7 +722,7 @@
   </div>
 
   <!-- Inline resume prompt (same-evening returns) -->
-  <div id="resume-inline" class="card hidden" style="text-align:center; padding:12px 16px;">
+  <div id="resume-inline" class="card" style="text-align:center; padding:12px 16px; display:none;">
     <div style="display:flex; gap:10px; justify-content:center; align-items:center;">
       <button class="btn btn-primary" id="resume-inline-btn" data-i18n="resumeBtn">Resume</button>
       <button class="btn btn-ghost btn-sm" id="new-game-inline-btn" data-i18n="dismissBtn">New Game</button>
@@ -5826,15 +5826,15 @@ function setupSessionResume() {
   // Same evening → lightweight inline prompt; next morning → full recap overlay
   if (sameGameDay(saved.timestamp)) {
     const inlineEl = document.getElementById('resume-inline');
-    inlineEl.classList.remove('hidden');
+    inlineEl.style.display = '';
     document.getElementById('resume-inline-btn').addEventListener('click', () => {
-      inlineEl.classList.add('hidden');
+      inlineEl.style.display = 'none';
       // Temporarily populate history for resumeSession
       state.history = saved.history;
       resumeSession(saved);
     }, { once: true });
     document.getElementById('new-game-inline-btn').addEventListener('click', () => {
-      inlineEl.classList.add('hidden');
+      inlineEl.style.display = 'none';
       localStorage.removeItem(SESSION_KEY);
     }, { once: true });
     return;

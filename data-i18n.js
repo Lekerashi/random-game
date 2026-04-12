@@ -52,7 +52,7 @@ const LINE_NAMES_JA = {
   'Toei Mita Line':       '都営三田線',
   'Toei Shinjuku Line':   '都営新宿線',
   'Toei Oedo Line':       '都営大江戸線',
-  'Toden Arakawa Line':   '都電荒川線',
+  'Tokyo Sakura Tram':    '東京さくらトラム',
   'Nippori-Toneri Liner': '日暮里・舎人ライナー',
   // Tokyu
   'Tokyu Toyoko Line':         '東急東横線',

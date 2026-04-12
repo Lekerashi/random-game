@@ -292,6 +292,18 @@ const EXPRESS_SERVICES = {
       "Inagi-Naganuma","Fuchu-Hommachi","Bubaigawara","Tachikawa",
     ]},
   ],
+  "JR Saikyo Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "Osaki","Ebisu","Shibuya","Shinjuku","Ikebukuro",
+      "Akabane","Musashi-Urawa","Omiya",
+    ]},
+    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", stops: [
+      "Osaki","Shibuya","Shinjuku","Ikebukuro",
+      "Akabane","Musashi-Urawa","Omiya",
+    ],
+      schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
+  ],
 };
 
 // ── Branch definitions for lines with multiple routes ──
@@ -369,6 +381,15 @@ const STATION_ALIASES = {
   "Mita":                       ["Tamachi"],
   "Daimon":                     ["Hamamatsucho"],
   "Hamamatsucho":               ["Daimon"],
+  "Itabashi":                   ["Shin-Itabashi"],
+  "Shin-Itabashi":              ["Itabashi"],
+  // Tokyo Sakura Tram "-ekimae" stops next to train stations
+  "Otsuka-ekimae":              ["Otsuka"],
+  "Otsuka":                     ["Otsuka-ekimae"],
+  "Oji-ekimae":                 ["Oji"],
+  "Oji":                        ["Oji-ekimae"],
+  "Machiya-ekimae":             ["Machiya"],
+  "Machiya":                    ["Machiya-ekimae"],
 };
 
 // Walkable connections — stations linked by walkway, not rail transfer.

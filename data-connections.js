@@ -524,7 +524,13 @@ const LINE_CONNECTIONS = [
 
   // ── Namboku ↔ Tokyu Meguro at Meguro ──────────────────────────────────
   { from: 'Tokyo Metro Namboku Line', fromEnd: '目黒',
-    to:   'Tokyu Meguro Line',        toEnd:   '目黒' },
+    to:   'Tokyu Meguro Line',        toEnd:   '目黒',
+    lineDests: [
+      { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ],
+    destinations: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
+    ] },
   { from: 'Tokyu Meguro Line',        fromEnd: '目黒',
     to:   'Tokyo Metro Namboku Line', toEnd:   '目黒',
     name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
@@ -544,7 +550,13 @@ const LINE_CONNECTIONS = [
 
   // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
   { from: 'Toei Mita Line',    fromEnd: '目黒',
-    to:   'Tokyu Meguro Line', toEnd:   '目黒' },
+    to:   'Tokyu Meguro Line', toEnd:   '目黒',
+    lineDests: [
+      { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ],
+    destinations: [
+      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
+    ] },
   { from: 'Tokyu Meguro Line', fromEnd: '目黒',
     to:   'Toei Mita Line',   toEnd:   '目黒',
     name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1',
@@ -837,10 +849,18 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end' },
 
   // ── Rinkai ↔ Saikyo at Osaki ──────────────────────────────────────────
+  // Saikyo southbound: some trains terminate at Shinjuku, others continue to Osaki or Shin-Kiba
   { from: 'Rinkai Line',    fromEnd: '大崎',
     to:   'JR Saikyo Line', toEnd:   '大崎' },
   { from: 'JR Saikyo Line', fromEnd: '大崎',
-    to:   'Rinkai Line',    toEnd:   '大崎' },
+    to:   'Rinkai Line',    toEnd:   '大崎',
+    lineDests: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿行き', color: '#007540' },
+      { until: '大崎', name: 'Osaki',    ja: '大崎方面', color: '#007540' },
+    ],
+    destinations: [
+      { until: '新木場', name: 'Shin-Kiba', ja: '新木場方面', color: '#767c78' },
+    ] },
 
   // ── Keisei Main ↔ Keisei Oshiage at Keisei Takasago ─────────────────
   // Terminus on Oshiage side (idx 6) so chains extend to Keisei Main (Haneda→Narita)

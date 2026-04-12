@@ -1,4 +1,6 @@
-const LINE_NAME_FIXES = {};
+const LINE_NAME_FIXES = {
+  'Toden Arakawa Line': 'Tokyo Sakura Tram',
+};
 
 // Override upstream line colors with official line colors
 const LINE_COLOR_FIXES = {
