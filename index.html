@@ -1035,6 +1035,11 @@ function getAliasKeys(stationName) {
   return aliases ? aliases.map(a => normalize(a)) : [];
 }
 
+function markDrankAt(stationName) {
+  state.drankAt.add(normalize(stationName));
+  for (const ak of getAliasKeys(stationName)) state.drankAt.add(ak);
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 const state = {
   lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
@@ -2862,7 +2867,7 @@ function rollPlatform() {
         t(eggStayingKey(state.currentStation.ja))
         + destSubHints(state.currentStation, 'inline'));
 
-      state.drankAt.add(normalize(state.currentStation.name));
+      markDrankAt(state.currentStation.name);
       const drinkHereThirst = state.stationsSinceDrink;
       state.stationsSinceDrink = 0;
       addHistory({ thirst: drinkHereThirst });
@@ -4387,7 +4392,7 @@ async function handleRoundResult(result, p, roll) {
     state.selectedPlatform = { ...p, drinkHere: true };
     showDestCard(result.station,
       t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
-    state.drankAt.add(normalize(result.station.name));
+    markDrankAt(result.station.name);
     const drinkTransferThirst = state.stationsSinceDrink;
     state.stationsSinceDrink = 0;
     addHistory({ drinkAtTransfer: true, stopsUsed: result.stopsUsed, thirst: drinkTransferThirst });
@@ -4400,7 +4405,7 @@ async function handleRoundResult(result, p, roll) {
   showDestCard(dest,
     `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
     + destSubHints(dest, 'wrap'));
-  state.drankAt.add(normalize(dest.name));
+  markDrankAt(dest.name);
   const arrivalThirst = state.stationsSinceDrink;
   state.stationsSinceDrink = 0;
   addHistory({ drinkAtArrival: true, thirst: arrivalThirst });
