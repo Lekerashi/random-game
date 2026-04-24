@@ -316,7 +316,7 @@ const translations = {
     htpAdvancedBtn:       'Advanced',
     htpHideBtn:           'Hide',
     htpAdv0:              'When you arrive at a station, follow a crowd of people until you find a place that you want to try drinking at.',
-    htpAdv1:              'If you end up wandering a bit to find a drink and find yourself closer to a different station, feel free to roll from that station instead after you drink.',
+    htpAdv1:              'Wandered a bit and ended up closer to another station? Roll from that one instead after you drink.',
     htpAdv2:              'The game is optimized to be played within the 23 wards of Tokyo, but is still fun throughout the greater Tokyo area.',
     htpAdv3:              'To optimize for more drinking or to not end up too far when last train is approaching, you can cap the max stops you can roll. Between 5 and 10 is usually the sweet spot.',
     // RNG tool
@@ -471,7 +471,7 @@ const translations = {
     htpAdvancedBtn:       '上級者向け',
     htpHideBtn:           '閉じる',
     htpAdv0:              '駅に着いたら、人の流れについていって、気になるお店を見つけたらそこで飲みましょう。',
-    htpAdv1:              '飲み屋を探してうろうろした結果、別の駅の方が近くなったら、その駅から再開してもOK。',
+    htpAdv1:              '飲み屋を探してうろうろしていたら別の駅の方が近くなった？ その駅から再開してもOKです。',
     htpAdv2:              'このゲームは東京23区内で遊ぶのが最適ですが、首都圏全体でも楽しめます。',
     htpAdv3:              'もっと飲みたい時や終電が近い時は、最大駅数に上限を設定できます。5〜10駅がちょうどいい目安。',
     footer:               '企画：Shane、改良：Shane & Zack、バイブコーディング：Logan — the Kens',

@@ -1,0 +1,22 @@
+# Random Game — Tokyo
+
+> A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city. Bilingual English / 日本語 single-page web app.
+
+## How to play
+- Pick a starting Tokyo train station (GPS, search, or random).
+- Roll a die to pick a train line and direction.
+- Roll again to pick how many stops to ride.
+- Along the way, roll at each transfer station to decide whether to switch lines, stay on, or get off and drink.
+- Arrive at the destination, grab a drink, and roll again from there.
+
+## About
+- Single-page web app at [randomgame.tokyo](https://randomgame.tokyo/).
+- No login, no tracking, no ads, no audio.
+- Offline-capable PWA (service worker + cached train data).
+- Covers the greater Tokyo area. Optimized for the 23 wards but works throughout the Kanto region.
+- Uses real train line data: local / semi-express / express / rapid / limited-express services, through-running connections, and schedule-aware stop patterns (e.g. weekend vs weekday).
+
+## Useful links
+- [Home](https://randomgame.tokyo/)
+- [GitHub repository](https://github.com/Lekerashi/random-game)
+- [Sitemap](https://randomgame.tokyo/sitemap.xml)

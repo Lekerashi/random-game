@@ -8,8 +8,10 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0d1117">
   <meta name="description" content="A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city. 東京の駅でサイコロを振って飲み歩く、電車すごろくゲーム。">
-  <meta name="keywords" content="tokyo, drinking game, train, station, dice, 東京, 飲み歩き, 電車, すごろく, サイコロ">
   <link rel="canonical" href="https://randomgame.tokyo/">
+  <link rel="alternate" hreflang="en" href="https://randomgame.tokyo/">
+  <link rel="alternate" hreflang="ja" href="https://randomgame.tokyo/">
+  <link rel="alternate" hreflang="x-default" href="https://randomgame.tokyo/">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -18,13 +20,28 @@
     "alternateName": "ランダムゲーム — 東京",
     "url": "https://randomgame.tokyo/",
     "description": "A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city.",
-    "applicationCategory": "Game",
+    "applicationCategory": "GameApplication",
     "operatingSystem": "Any",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
     "inLanguage": ["en", "ja"],
-    "offers": { "@type": "Offer", "price": "0" }
+    "image": "https://randomgame.tokyo/og-image.png",
+    "screenshot": "https://randomgame.tokyo/og-image.png",
+    "featureList": [
+      "Tokyo-area train line, express, and through-running data",
+      "Bilingual English / 日本語 interface",
+      "Offline-capable PWA — no login, no tracking, no ads",
+      "Dice-based routing with transfers and destination pickers"
+    ],
+    "author": {
+      "@type": "Person",
+      "name": "Logan Hobson",
+      "url": "https://github.com/Lekerashi"
+    },
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" }
   }
   </script>
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Random Game — Tokyo">
   <meta property="og:url" content="https://randomgame.tokyo/">
   <meta property="og:locale" content="en_US">
   <meta property="og:locale:alternate" content="ja_JP">
@@ -71,7 +88,7 @@
       align-items: center; justify-content: center;
       gap: 20px; z-index: 9999;
     }
-    #loading-overlay h1 { font-size: 1.8rem; letter-spacing: .05em; }
+    #loading-overlay .loading-title { font-size: 1.8rem; letter-spacing: .05em; }
     #loading-status { color: var(--muted); font-size: .9rem; }
     .spinner {
       width: 40px; height: 40px;
@@ -614,7 +631,8 @@
     .htp-overlay               { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .htp-overlay.hidden        { display: none; }
     .htp-card                  { background: var(--surface); border: 1px solid var(--surface2); border-radius: 12px; max-width: 420px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; font-size: 0.9rem; line-height: 1.5; color: var(--muted); }
-    .htp-card h3               { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--text); }
+    .htp-card h2,
+    .htp-card h3               { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--text); font-weight: 600; }
     .htp-card ol               { margin: 0.5rem 0; padding-left: 1.4rem; }
     .htp-card ol li            { margin-bottom: 0.4rem; }
     .htp-card .htp-goal        { margin-top: 0.75rem; font-style: italic; color: var(--muted); }
@@ -702,7 +720,7 @@
 <!-- Loading overlay -->
 <div id="loading-overlay">
   <div class="spinner"></div>
-  <h1 data-i18n="loadingTitle">🎲 Random Game</h1>
+  <p class="loading-title" data-i18n="loadingTitle">🎲 Random Game</p>
   <div id="loading-status" data-i18n="loadingData">Loading Tokyo train data…<br><small style="opacity:.6">東京の鉄道データを読み込み中…</small></div>
 </div>
 
@@ -5952,7 +5970,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div id="htp-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
   <div class="htp-card">
     <button class="htp-close" onclick="document.getElementById('htp-overlay').classList.add('hidden')">&times;</button>
-    <h3 data-i18n="howToPlay">How to Play</h3>
+    <h2 data-i18n="howToPlay">How to Play</h2>
     <ol>
       <li data-i18n="htpStep1">Pick your starting station — GPS, search, or random.</li>
       <li data-i18n="htpStep2">Roll the dice to pick a train line and direction.</li>
@@ -5967,7 +5985,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="htp-advanced hidden">
       <ul>
         <li data-i18n="htpAdv0">When you arrive at a station, follow a crowd of people until you find a place that you want to try drinking at.</li>
-        <li data-i18n="htpAdv1">If you end up wandering a bit to find a drink and find yourself closer to a different station, feel free to roll from that station instead after you drink.</li>
+        <li data-i18n="htpAdv1">Wandered a bit and ended up closer to another station? Roll from that one instead after you drink.</li>
         <li data-i18n="htpAdv2">The game is optimized to be played within the 23 wards of Tokyo, but is still fun throughout the greater Tokyo area.</li>
         <li data-i18n="htpAdv3">To optimize for more drinking or to not end up too far when last train is approaching, you can cap the max stops you can roll. Between 5 and 10 is usually the sweet spot.</li>
       </ul>
