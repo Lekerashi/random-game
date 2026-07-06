@@ -3289,10 +3289,11 @@ function outOfWards(line, untilIdx) {
 
 // Collapse out-of-ward destination choices into a single option per
 // distinct clamped range — the direction stays rollable to the ward
-// boundary without a board full of unreachable termini. The collapsed
-// button is labeled with the LAST REACHABLE station (players unfamiliar
-// with the geography shouldn't have to know what lies "beyond"), falling
-// back to "X & beyond" when the clamped ride crosses onto another line.
+// boundary without a board full of unreachable termini. Real trains still
+// display out-of-ward termini on their signboards, so the button keeps the
+// nearest signboard name and appends the last reachable station:
+// "Yokohama (until Rokugodote)" / 横浜方面（六郷土手まで）. Falls back to
+// "X & beyond" when the clamped ride crosses onto another line.
 // A collapsed option is dropped when an in-ward choice of the same kind on
 // the same connection already covers its range (UTL's Hiratsuka vs Shinagawa).
 function collapseOutOfWardChoices(p, choices) {
@@ -3316,7 +3317,7 @@ function collapseOutOfWardChoices(p, choices) {
     const boundaryStn = c.effectiveMax <= toJunction
       ? line.stations[p.fromIdx + c.effectiveMax * step] : null;
     kept.push(boundaryStn
-      ? { ...c, name: boundaryStn.name, ja: boundaryStn.ja + '方面' }
+      ? { ...c, name: `${c.name} (until ${boundaryStn.name})`, ja: `${c.ja}（${boundaryStn.ja}まで）` }
       : { ...c, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
   }
   return kept;
