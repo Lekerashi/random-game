@@ -973,7 +973,6 @@ function eggRollKey(stationJa) { return getEgg(stationJa)?.rollKey || 'drinkRoll
 function eggStayingKey(stationJa) { return getEgg(stationJa)?.stayingKey || 'stayingForDrink'; }
 function eggStayedKey(stationJa) { return getEgg(stationJa)?.stayedKey || 'stayedForDrink'; }
 function eggLabelKey(stationJa) { return getEgg(stationJa)?.labelKey || 'drinkHereLabel'; }
-function eggHintKey(stationJa) { return getEgg(stationJa)?.hintKey; }
 function eggDrinkAtArrival(stationJa) { return getEgg(stationJa)?.emoji || t('drinkAtArrivalHist'); }
 
 // Greater Tokyo bounding box (line center coordinates)
@@ -2561,43 +2560,6 @@ function mergeConnectionPlatforms(platforms) {
   }
 
   return merged;
-}
-
-function getDestination(platform, stops) {
-  const line = state.lines[platform.lineIdx];
-  const N    = line.stations.length;
-
-  // Express routing: step through express stop indices
-  const ei = state.selectedTrainType?.expressIndices;
-  if (ei) {
-    const pos = ei.indexOf(platform.fromIdx);
-    if (pos !== -1) {
-      let destPos = pos + dirStep(platform.direction) * stops;
-      destPos = Math.max(0, Math.min(ei.length - 1, destPos));
-      return line.stations[ei[destPos]];
-    }
-  }
-
-  // Branch routing: step through branch indices
-  const bi = state.selectedBranch?.branchIndices;
-  if (bi) {
-    const pos = bi.indexOf(platform.fromIdx);
-    if (pos !== -1) {
-      let destPos = pos + dirStep(platform.direction) * stops;
-      destPos = Math.max(0, Math.min(bi.length - 1, destPos));
-      return line.stations[bi[destPos]];
-    }
-  }
-
-  let destIdx;
-  if (platform.circular) {
-    destIdx = ((platform.fromIdx + dirStep(platform.direction) * stops) % N + N) % N;
-  } else {
-    destIdx = platform.fromIdx + dirStep(platform.direction) * stops;
-    destIdx = Math.max(0, Math.min(N - 1, destIdx));
-  }
-
-  return line.stations[destIdx];
 }
 
 // ── Roll Animation ────────────────────────────────────────────────────────
