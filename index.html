@@ -1748,6 +1748,28 @@ function buildIndex(lines, osmNames = {}) {
     ],
   });
 
+  // EN names referenced by gameplay data (express stops, aliases, walkable
+  // links, anchors). An OSM name:en edit that changes one of these stations'
+  // normalized keys would silently break the matching (the Tobu-Dobutsukoen
+  // failure class), so such renames are skipped with a console warning.
+  // Cosmetic renames (same normalized key) still apply.
+  const gameplayNameRefs = new Set();
+  const addRef = s => gameplayNameRefs.add(normalize(s));
+  const addServiceRefs = t => {
+    for (const s of (t.stops || [])) addRef(s);
+    for (const sched of Object.values(t.schedule || {})) {
+      for (const s of (sched.skip || [])) addRef(s);
+      for (const s of (sched.stops || [])) addRef(s);
+    }
+  };
+  for (const types of Object.values(EXPRESS_SERVICES)) types.forEach(addServiceRefs);
+  for (const conn of LINE_CONNECTIONS) (conn.express || []).forEach(addServiceRefs);
+  for (const [k, vals] of [...Object.entries(STATION_ALIASES), ...Object.entries(WALKABLE_STATIONS)]) {
+    addRef(k);
+    vals.forEach(addRef);
+  }
+  ANCHOR_STATIONS.forEach(addRef);
+
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
@@ -1756,7 +1778,14 @@ function buildIndex(lines, osmNames = {}) {
 
       // OSM name:en overrides the pre-baked fix from the build step
       const osmEn = osmNames[stn.ja];
-      if (osmEn) stn.name = osmEn;
+      if (osmEn) {
+        const oldKey = normalize(stn.name);
+        if (normalize(osmEn) !== oldKey && gameplayNameRefs.has(oldKey)) {
+          console.warn(`OSM rename skipped for ${stn.ja}: "${stn.name}" → "${osmEn}" (name referenced by game data)`);
+        } else {
+          stn.name = osmEn;
+        }
+      }
       // Strip "Station" suffix from bad upstream translations
       if (stn.name.endsWith(' Station')) stn.name = stn.name.slice(0, -8);
 
