@@ -3106,7 +3106,7 @@ function handleLineDestinations(p) {
         const cappedMax = Math.min(totalMax, connMax);
         dests.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+          effectiveMax: destRollCap(p, conn, cappedMax),
           _conn: conn, _totalMax: cappedMax, _services: d.services || null,
         });
       }
@@ -3257,6 +3257,19 @@ function showBranchButtons(p) {
   return false;
 }
 
+// Roll-range cap for a connection destination button. Mid-line connections
+// don't extend p.maxStops, so a destination past the junction must not be
+// clamped by it (e.g. Ayase from Machida via the Chiyoda branch at
+// Yoyogi-Uehara). Terminus connections already include their extension in
+// p.maxStops, and in 23-wards mode the platform clamp carries the ward
+// truncation — keep it in both cases.
+function destRollCap(p, conn, cappedMax) {
+  const line = state.lines[p.lineIdx];
+  const isMidLine = conn.fromJunctionIdx !== dirEnd(line.stations.length, p.direction);
+  if (isMidLine && !state.wards23Only) return capStops(cappedMax);
+  return capStops(Math.min(cappedMax, p.maxStops));
+}
+
 // A destination with a `services` allowlist only appears on the departure
 // board at stations one of its allowed services actually calls at.
 // Express-class services match when a stop list with their name (connection
@@ -3330,7 +3343,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     const cappedMax = Math.min(totalMax, connSpecificMax);
     choices.push({
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
-      effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+      effectiveMax: destRollCap(p, conn, cappedMax),
       _services: d.services || null,
       onSelect: () => {
         state.selectedConnection = conn;
@@ -3452,7 +3465,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
         seenNames.add(d.name);
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: capStops(Math.min(cappedMax, p.maxStops)),
+          effectiveMax: destRollCap(p, conn, cappedMax),
           _isConnDest: true, _connIdx: ci,
           onSelect: () => {
             state.selectedConnection = conn;
@@ -4165,8 +4178,20 @@ function getEffectiveStops(platform, opts = {}) {
       rawMax = Math.min(rawMax, expOnLine + connStops);
       trace?.push('destLimit (express+conn): expOnLine=' + expOnLine + ' connStops=' + connStops + ' rawMax=' + rawMax);
     } else {
-      rawMax = Math.min(rawMax, destLimit);
-      trace?.push('destLimit (simple): rawMax=' + rawMax);
+      // Mid-line connection destinations extend past the platform's on-line
+      // max (which mid-line conns don't extend) — on the plain-local path
+      // (rawMax = platform.maxStops) the destination's own range is
+      // authoritative. Type-aware paths (connTargetLineIdx/ei) already exceed
+      // the platform max when appropriate and must still be clamped DOWN by
+      // destLimit. 23-wards mode keeps the platform clamp (ward truncation).
+      const dConn = state.selectedConnection;
+      const dMidLine = dConn && dConn.fromJunctionIdx !==
+        dirEnd(state.lines[platform.lineIdx].stations.length, platform.direction);
+      const plainLocal = connTargetLineIdx == null && !ei && !terminates;
+      rawMax = dMidLine && plainLocal && !state.wards23Only
+        ? destLimit
+        : Math.min(rawMax, destLimit);
+      trace?.push('destLimit (' + (dMidLine && plainLocal ? 'mid-line local' : 'simple') + '): rawMax=' + rawMax);
     }
   }
   const cappedMax = capStops(rawMax);
