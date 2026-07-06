@@ -1473,11 +1473,18 @@ function resolveServiceStops(service, line) {
 
 // ── Express Service Helpers ───────────────────────────────────────────────
 // Convert stop names to sorted station indices for a line
+// Stop lists may name stations in English or Japanese — JA entries are
+// immune to upstream/OSM English-name drift and can be pasted straight
+// from Japanese timetable sources.
+function stopSetHas(nameSet, stn) {
+  return nameSet.has(normalize(stn.name)) || (stn.ja && nameSet.has(normalize(stn.ja)));
+}
+
 function getExpressIndices(line, stopNames) {
   if (!stopNames) return null;
   const nameSet = new Set(stopNames.map(n => normalize(n)));
   return line.stations
-    .map((s, i) => nameSet.has(normalize(s.name)) ? i : -1)
+    .map((s, i) => stopSetHas(nameSet, s) ? i : -1)
     .filter(i => i >= 0);
 }
 
@@ -2108,11 +2115,11 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     // For mid-line connections, current station must be in the stop list.
     // For terminus connections (player is on source line, not in target stops), skip this check.
     const isTerminusConn = connObj && connObj.fromJunctionIdx === dirEnd(line.stations.length, platform.direction);
-    if (!isTerminusConn && !joinedNames.has(normalize(currentName))) continue;
+    if (!isTerminusConn && !stopSetHas(joinedNames, state.currentStation)) continue;
     // Target line express indices
     const targetIndices = [];
     for (let i = 0; i < targetLine.stations.length; i++) {
-      if (joinedNames.has(normalize(targetLine.stations[i].name))) targetIndices.push(i);
+      if (stopSetHas(joinedNames, targetLine.stations[i])) targetIndices.push(i);
     }
     // Compute total max: source-line express to junction + target express from junction
     let totalMax = platform.maxStops; // fallback
@@ -2120,7 +2127,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     const srcEi = [];
     if (connObj) {
       for (let i = 0; i < line.stations.length; i++) {
-        if (joinedNames.has(normalize(line.stations[i].name))) srcEi.push(i);
+        if (stopSetHas(joinedNames, line.stations[i])) srcEi.push(i);
       }
       const pos = srcEi.indexOf(platform.fromIdx);
       let srcExpStops = Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx); // fallback to raw
@@ -2156,7 +2163,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
           const step = dirStep(onward[0].toDir);
           for (let k = onward[0].toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
             if (onward[0].toUntilIdx >= 0 && (step === 1 ? k > onward[0].toUntilIdx : k < onward[0].toUntilIdx)) break;
-            if (chainStops.has(normalize(nextLine.stations[k].name))) totalMax++;
+            if (stopSetHas(chainStops, nextLine.stations[k])) totalMax++;
           }
         }
         chainVisited.add(onward[0].to);
@@ -3349,13 +3356,14 @@ function collapseOutOfWardChoices(p, choices) {
 function destServesStation(conn, d, p) {
   if (!d.services) return true;
   const line = state.lines[p.lineIdx];
-  const cur = normalize(state.currentStation.name);
+  const curKeys = new Set([normalize(state.currentStation.name),
+                           normalize(state.currentStation.ja || '')]);
   const defs = [...(conn.express || []), ...(EXPRESS_SERVICES[p.lineName] || [])];
   for (const svc of d.services) {
     const n = normalize(svc);
     const matches = defs.filter(t => normalize(t.name) === n);
     // Express-class: allowed service stops at the current station
-    if (matches.some(t => t.stops && t.stops.some(s => normalize(s) === cur))) return true;
+    if (matches.some(t => t.stops && t.stops.some(s => curKeys.has(normalize(s))))) return true;
     // Local-class: stops:null def, or an undefined "Local" name (implicit local)
     const isLocalClass = matches.length ? matches.some(t => t.stops === null) : n === 'local';
     if (isLocalClass) {
@@ -3827,7 +3835,7 @@ function walkConnectionStations(conn, maxStops, chainExpStops) {
         if (step === 1 && k > conn.toUntilIdx) break;
         if (step === -1 && k < conn.toUntilIdx) break;
       }
-      if (chainExpStops.has(normalize(toLine.stations[k].name))) {
+      if (stopSetHas(chainExpStops, toLine.stations[k])) {
         result.push(toLine.stations[k]);
       }
     }

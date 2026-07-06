@@ -752,7 +752,8 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'end',
     to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
     toUntil: '二俣川',
-    via:  ['新綱島', '新横浜', '羽沢横浜国大'],
+    via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷'],
+    impliedLines: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line'],
     name: 'Futamatagawa', ja: '二俣川方面', color: '#003087',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
