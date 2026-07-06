@@ -492,8 +492,32 @@ const LINE_CONNECTIONS = [
   // 1:1 through-running with rich Odakyu express services.
   // Anchored at Yoyogi-Uehara (mid-line on Odakyu, idx 4) — NOT Shinjuku:
   // through-trains never pass Minami-Shinjuku/Sangubashi/Yoyogi-Hachiman.
+  // Real through-types are 準急/急行 only (all-stations within the Chiyoda
+  // Line, hence every Chiyoda station in the stop lists — Kamata pattern).
+  // The explicit express list suppresses Odakyu's 快速急行, which never runs
+  // through. Through-急行 terminate at Isehara at the furthest.
   { from: 'Tokyo Metro Chiyoda Line', fromEnd: '代々木上原',
-    to:   'Odakyu Line',              toStation: '代々木上原', toDir: 'end' },
+    to:   'Odakyu Line',              toStation: '代々木上原', toDir: 'end',
+    express: [
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['Kita-ayase','Ayase','Kita-Senju','Machiya','Nishi-nippori','Sendagi',
+                'Nezu','Yushima','Shin-ochanomizu','Otemachi','Nijubashimae','Hibiya',
+                'Kasumigaseki','Kokkai-gijidomae','Akasaka','Nogizaka','Omote-sando',
+                "Meiji-jingumae 'Harajuku'",'Yoyogi-koen','Yoyogi-Uehara',
+                'Shimo-Kitazawa','Kyodo','Chitose-Funabashi','Soshigaya-Okura',
+                'Seijogakuen-mae','Kitami','Komae','Izumi-Tamagawa','Noborito',
+                'Mukogaoka-Yuen','Ikuta','Yomiuriland-mae','Yurigaoka','Shin-Yurigaoka',
+                'Kakio','Tsurukawa','Tamagawagakuen-mae','Machida','Sagami-Ono',
+                'Odakyu-Sagamihara','Soubudai-Mae','Zama','Ebina','Atsugi','Hon-Atsugi'] },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['Kita-ayase','Ayase','Kita-Senju','Machiya','Nishi-nippori','Sendagi',
+                'Nezu','Yushima','Shin-ochanomizu','Otemachi','Nijubashimae','Hibiya',
+                'Kasumigaseki','Kokkai-gijidomae','Akasaka','Nogizaka','Omote-sando',
+                "Meiji-jingumae 'Harajuku'",'Yoyogi-koen','Yoyogi-Uehara',
+                'Shimo-Kitazawa','Kyodo','Seijogakuen-mae','Noborito','Mukogaoka-Yuen',
+                'Shin-Yurigaoka','Machida','Sagami-Ono','Ebina','Hon-Atsugi',
+                'Aiko-Ishida','Isehara'] },
+    ] },
   { from: 'Odakyu Line',              fromStation: '代々木上原', fromDir: 'start',
     to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
     name: 'Ayase', ja: '綾瀬方面', color: '#00BB85',

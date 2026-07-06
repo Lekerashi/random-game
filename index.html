@@ -1637,6 +1637,11 @@ function buildIndex(lines, osmNames = {}) {
     if (LINE_COLOR_FIXES[l.name]) l.color = LINE_COLOR_FIXES[l.name];
     if (LINE_PREPEND_STATIONS[l.name]) l.stations.unshift(...LINE_PREPEND_STATIONS[l.name]);
     if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
+    for (const ins of (LINE_INSERT_STATIONS[l.name] || [])) {
+      const idx = l.stations.findIndex(s => s.ja === ins.after);
+      if (idx === -1 || l.stations.some(s => s.ja === ins.ja)) continue;
+      l.stations.splice(idx + 1, 0, { name: ins.name, ja: ins.ja, lat: ins.lat, lng: ins.lng });
+    }
     const trimJa = LINE_TRIM_AFTER[l.name];
     if (trimJa) {
       const idx = l.stations.findIndex(s => s.ja === trimJa);

@@ -2,6 +2,16 @@ const LINE_NAME_FIXES = {
   'Toden Arakawa Line': 'Tokyo Sakura Tram',
 };
 
+// Stations opened after the upstream data snapshot, inserted mid-line
+// (LINE_EXTRA_STATIONS only appends to line ends). `after` is the JA name
+// of the preceding station in the line's station order.
+const LINE_INSERT_STATIONS = {
+  'JR Keiyo Line': [
+    // Opened March 2023, between Shin-Narashino and Kaihin-Makuhari
+    { after: '新習志野', name: 'Makuhari-Toyosuna', ja: '幕張豊砂', lat: 35.6597, lng: 140.0284 },
+  ],
+};
+
 // Override upstream line colors with official line colors
 const LINE_COLOR_FIXES = {
   // ── Tokyu — upstream gives all a generic #0066B3 ──
