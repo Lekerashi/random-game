@@ -899,6 +899,28 @@ const LINE_CONNECTIONS = [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ] },
 
+  // ── Saikyo ↔ Kawagoe Line at Omiya ────────────────────────────────────
+  // Nearly all Saikyo trains through-run onto the Kawagoe Line to Kawagoe.
+  // Beyond Kawagoe (toward Komagawa) is a separate shuttle — toUntil stops there.
+  { from: 'JR Saikyo Line',  fromEnd: '大宮',
+    to:   'JR Kawagoe Line', toEnd:   '大宮',
+    toUntil: '川越',
+    lineDests: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#007540' },
+    ],
+    destinations: [
+      { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
+    ] },
+  { from: 'JR Kawagoe Line', fromEnd: '大宮',
+    to:   'JR Saikyo Line',  toEnd:   '大宮',
+    lineDests: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#4a786f' },
+    ],
+    destinations: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#007540' },
+      { until: '大崎', name: 'Osaki',    ja: '大崎方面', color: '#007540' },
+    ] },
+
   // ── Keisei Main ↔ Keisei Oshiage at Keisei Takasago ─────────────────
   // Terminus on Oshiage side (idx 6) so chains extend to Keisei Main (Haneda→Narita)
   // Aoto (on both lines) still provides Y-junction platforms naturally
