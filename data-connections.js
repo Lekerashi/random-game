@@ -259,7 +259,7 @@ const LINE_CONNECTIONS = [
   // From northern lines heading south onto Tokaido
   { from: 'Utsunomiya Line',      fromEnd: '上野',
     to:   'JR Tokaido Main Line',  toEnd:   '東京',
-    via:  ['上野'],
+    via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
     destinations: [
       { until: '東京',   name: 'Tokyo',     ja: '東京方面', color: '#F7A600' },
@@ -272,7 +272,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'JR Takasaki Line',     fromEnd: '上野',
     to:   'JR Tokaido Main Line',  toEnd:   '東京',
-    via:  ['上野'],
+    via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
     destinations: [
       { until: '東京',   name: 'Tokyo',     ja: '東京方面', color: '#F7A600' },
@@ -285,7 +285,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'JR Joban Line',        fromEnd: '上野',
     to:   'JR Tokaido Main Line',  toEnd:   '東京',
-    via:  ['上野'],
+    via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
     destinations: [
       { until: '東京',   name: 'Tokyo',     ja: '東京方面', color: '#F7A600' },
@@ -379,7 +379,8 @@ const LINE_CONNECTIONS = [
     via: ['曳舟', '東向島', '鐘ヶ淵', '堀切', '牛田', '北千住',
           '小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加',
           '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
-          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮'],
+          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮',
+          '東武動物公園'],
     toUntil: '南栗橋',
     destinations: [
       { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
@@ -415,7 +416,8 @@ const LINE_CONNECTIONS = [
     to:   'Tobu Nikko Line',        toEnd: '東武動物公園',
     via: ['小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加',
           '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
-          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮'],
+          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮',
+          '東武動物公園'],
     toUntil: '南栗橋',
     destinations: [
       { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
@@ -487,17 +489,19 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Chiyoda ↔ Odakyu at Yoyogi-Uehara ─────────────────────────────────
-  // 1:1 through-running with rich Odakyu express services
+  // 1:1 through-running with rich Odakyu express services.
+  // Anchored at Yoyogi-Uehara (mid-line on Odakyu, idx 4) — NOT Shinjuku:
+  // through-trains never pass Minami-Shinjuku/Sangubashi/Yoyogi-Hachiman.
   { from: 'Tokyo Metro Chiyoda Line', fromEnd: '代々木上原',
-    to:   'Odakyu Line',              toEnd:   '新宿' },
-  { from: 'Odakyu Line',              fromEnd: '新宿',
+    to:   'Odakyu Line',              toStation: '代々木上原', toDir: 'end' },
+  { from: 'Odakyu Line',              fromStation: '代々木上原', fromDir: 'start',
     to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
     name: 'Ayase', ja: '綾瀬方面', color: '#00BB85',
     lineDests: [
       { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
     ],
     destinations: [
-      { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
+      { until: '綾瀬', name: 'Ayase', ja: '綾瀬方面', color: '#00BB85' },
     ] },
 
   // ── Tozai ↔ Chuo-Sobu at Nakano and Nishi-Funabashi ───────────────────
@@ -651,7 +655,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
     to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
-    via:  ['新綱島', '新横浜', '羽沢横浜国大'],
+    via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷'],
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     lineDests: [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -661,7 +665,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
     to:   'Sotetsu Izumino Line',        toEnd: '二俣川',
-    via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷', '鶴ヶ峰'],
+    via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷', '鶴ヶ峰', '二俣川'],
     name: 'Shonandai', ja: '湘南台方面', color: '#003087',
     lineDests: [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -939,14 +943,14 @@ const LINE_CONNECTIONS = [
   // (buildIndex) makes the link boardable at its four stations.
   { from: 'JR Saikyo Line',    fromEnd: '大崎',
     to:   'Sotetsu Main Line', toStation: '西谷', toDir: 'end',
-    via:  ['西大井', '武蔵小杉', '羽沢横浜国大'],
+    via:  ['西大井', '武蔵小杉', '羽沢横浜国大', '西谷'],
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ] },
   { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
     to:   'JR Saikyo Line',    toEnd: '大崎',
-    via:  ['羽沢横浜国大', '武蔵小杉', '西大井'],
+    via:  ['羽沢横浜国大', '武蔵小杉', '西大井', '大崎'],
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
@@ -964,6 +968,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Sotetsu-JR Direct Line', fromEnd: '羽沢横浜国大',
     to:   'Sotetsu Main Line',      toStation: '西谷', toDir: 'end',
+    via:  ['西谷'],
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ] },
@@ -1109,7 +1114,7 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'JR Negishi Line',  fromEnd: '横浜',
     to:   'JR Yokohama Line', toEnd:   '東神奈川',
-    via:  ['横浜'],
+    via:  ['東神奈川'],
     name: 'Hachioji', ja: '八王子方面', color: '#00AD53',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },
