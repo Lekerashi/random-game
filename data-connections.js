@@ -12,6 +12,9 @@
 //     toDir             — 'start'|'end' travel direction on target (auto-inferred for terminus)
 //     via               — intermediate station JA names between the two lines
 //     toUntil           — JA name: limit traversal on target line (stops chaining)
+//     impliedLines      — line names whose tracks the via stations ride over
+//                         (excluded from mid-route transfer offers — you can't
+//                         "transfer" to the train you're already on)
 //
 //   DISPLAY:
 //     name, ja, color   — button label for branch picker (when multiple conns from same platform)
@@ -381,6 +384,7 @@ const LINE_CONNECTIONS = [
           '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
           '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮',
           '東武動物公園'],
+    impliedLines: ['Tobu Isesaki Line'],
     toUntil: '南栗橋',
     destinations: [
       { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
@@ -418,6 +422,7 @@ const LINE_CONNECTIONS = [
           '獨協大学前駅〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
           '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮',
           '東武動物公園'],
+    impliedLines: ['Tobu Isesaki Line'],
     toUntil: '南栗橋',
     destinations: [
       { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
@@ -701,6 +706,7 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
     to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
     via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷'],
+    impliedLines: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line'],
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     lineDests: [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -711,6 +717,7 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Meguro Line',          fromEnd: '日吉',
     to:   'Sotetsu Izumino Line',        toEnd: '二俣川',
     via:  ['新綱島', '新横浜', '羽沢横浜国大', '西谷', '鶴ヶ峰', '二俣川'],
+    impliedLines: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line', 'Sotetsu Main Line'],
     name: 'Shonandai', ja: '湘南台方面', color: '#003087',
     lineDests: [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -989,6 +996,7 @@ const LINE_CONNECTIONS = [
   { from: 'JR Saikyo Line',    fromEnd: '大崎',
     to:   'Sotetsu Main Line', toStation: '西谷', toDir: 'end',
     via:  ['西大井', '武蔵小杉', '羽沢横浜国大', '西谷'],
+    impliedLines: ['Sotetsu-JR Direct Line'],
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
@@ -996,6 +1004,7 @@ const LINE_CONNECTIONS = [
   { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
     to:   'JR Saikyo Line',    toEnd: '大崎',
     via:  ['羽沢横浜国大', '武蔵小杉', '西大井', '大崎'],
+    impliedLines: ['Sotetsu-JR Direct Line'],
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
@@ -1058,6 +1067,14 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Keisei Main Line',    fromStation: '京成高砂', fromDir: 'start',
     to:   'Keisei Oshiage Line', toEnd: '京成高砂' },
+
+  // ── Keisei Matsudo ↔ Keisei Chiba at Keisei-Tsudanuma ─────────────────
+  // Through service (Matsudo↔Chiba-Chuo) continues post-2025 merger.
+  // All-local on both lines — transparent 1:1 through-running.
+  { from: 'Keisei Matsudo Line', fromEnd: '京成津田沼',
+    to:   'Keisei Chiba Line',   toEnd:   '京成津田沼' },
+  { from: 'Keisei Chiba Line',   fromEnd: '京成津田沼',
+    to:   'Keisei Matsudo Line', toEnd:   '京成津田沼' },
 
   // ── Keio ↔ Keio Sagamihara at Chofu ───────────────────────────────────
   // Chofu is mid-line on Keio (idx 17), start of Sagamihara (idx 0)
@@ -1127,6 +1144,53 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Odakyu Tama Line', fromEnd: '新百合ヶ丘',
     to:   'Odakyu Line',      toStation: '新百合ヶ丘', toDir: 'start' },
+
+  // ── Musashino ↔ Keiyo at Nishi-Funabashi ──────────────────────────────
+  // Musashino trains continue onto the Keiyo Line over the two freight legs:
+  // toward Tokyo via Ichikawa-Shiohama, toward Kaihin-Makuhari via
+  // Minami-Funabashi. Junction stations aren't on the source line → in via.
+  { from: 'JR Musashino Line', fromEnd: '西船橋',
+    to:   'JR Keiyo Line',     toStation: '市川塩浜', toDir: 'start',
+    via:  ['市川塩浜'],
+    name: 'Tokyo', ja: '東京方面', color: '#DC143C',
+    lineDests: [
+      { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321' },
+    ],
+    destinations: [
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#DC143C' },
+    ] },
+  { from: 'JR Musashino Line', fromEnd: '西船橋',
+    to:   'JR Keiyo Line',     toStation: '南船橋', toDir: 'end',
+    toUntil: '海浜幕張',
+    via:  ['南船橋'],
+    name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C',
+    lineDests: [
+      { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321' },
+    ],
+    destinations: [
+      { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C' },
+    ] },
+  // Reverse: Keiyo riders branch onto the Musashino Line at both junctions
+  { from: 'JR Keiyo Line',     fromStation: '市川塩浜', fromDir: 'end',
+    to:   'JR Musashino Line', toEnd: '西船橋',
+    via:  ['西船橋'],
+    name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
+    lineDests: [
+      { until: '蘇我', name: 'Soga', ja: '蘇我方面', color: '#DC143C' },
+    ],
+    destinations: [
+      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321' },
+    ] },
+  { from: 'JR Keiyo Line',     fromStation: '南船橋', fromDir: 'start',
+    to:   'JR Musashino Line', toEnd: '西船橋',
+    via:  ['西船橋'],
+    name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
+    lineDests: [
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#DC143C' },
+    ],
+    destinations: [
+      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321' },
+    ] },
 
   // ── Yokohama Line ↔ Negishi Line at Higashi-Kanagawa/Yokohama ────────
   // Through-running: Yokohama Line trains continue from Higashi-Kanagawa

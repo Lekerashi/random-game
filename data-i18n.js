@@ -128,7 +128,7 @@ const LINE_NAMES_JA = {
   'Minato Mirai Line':     'みなとみらい線',
   'Kanazawa Seaside Line': '金沢シーサイドライン',
   'Hokuso Railway Hokuso Line':  '北総鉄道北総線',
-  'Shin-Keisei Line':           '新京成線',
+  'Keisei Matsudo Line':        '京成松戸線',
   'Toyo Rapid Railway Line':    '東葉高速鉄道線',
   'Shibayama Railway Line':     '芝山鉄道線',
   'Saitama high-speed rail line': '埼玉高速鉄道線',

@@ -3266,17 +3266,31 @@ function showBranchButtons(p) {
   return false;
 }
 
+// Ward-truncated max along a connection's route: source stops to the
+// junction (bounded by the platform's ward cap), plus via, plus in-ward
+// stops on the target line. p.maxStops follows the SOURCE line, so it
+// under-counts branches that stay in the wards (e.g. Haneda: the main line
+// leaves the wards at the Tama river, but the airport branch never does).
+function wardConnCap(p, conn) {
+  const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
+  if (stopsToJunction > p.maxStops) return p.maxStops; // boundary before junction
+  const via = effectiveViaCount(conn, state.currentStation.name);
+  const target = wardMaxStops(state.lines[conn.toLineIdx], conn.toJunctionIdx, dirStep(conn.toDir));
+  return stopsToJunction + via + target;
+}
+
 // Roll-range cap for a connection destination button. Mid-line connections
 // don't extend p.maxStops, so a destination past the junction must not be
 // clamped by it (e.g. Ayase from Machida via the Chiyoda branch at
 // Yoyogi-Uehara). Terminus connections already include their extension in
-// p.maxStops, and in 23-wards mode the platform clamp carries the ward
-// truncation — keep it in both cases.
+// p.maxStops. In 23-wards mode, mid-line destinations clamp to the
+// route-aware ward cap instead of the source-line one.
 function destRollCap(p, conn, cappedMax) {
   const line = state.lines[p.lineIdx];
   const isMidLine = conn.fromJunctionIdx !== dirEnd(line.stations.length, p.direction);
-  if (isMidLine && !state.wards23Only) return capStops(cappedMax);
-  return capStops(Math.min(cappedMax, p.maxStops));
+  if (!isMidLine) return capStops(Math.min(cappedMax, p.maxStops));
+  if (state.wards23Only) return capStops(Math.min(cappedMax, wardConnCap(p, conn)));
+  return capStops(cappedMax);
 }
 
 // In 23-wards mode a terminus outside the wards is unreachable (routes
@@ -4241,15 +4255,19 @@ function getEffectiveStops(platform, opts = {}) {
       // (rawMax = platform.maxStops) the destination's own range is
       // authoritative. Type-aware paths (connTargetLineIdx/ei) already exceed
       // the platform max when appropriate and must still be clamped DOWN by
-      // destLimit. 23-wards mode keeps the platform clamp (ward truncation).
+      // destLimit. In 23-wards mode use the route-aware ward cap (the
+      // source-line cap under-counts in-ward branches like Haneda).
       const dConn = state.selectedConnection;
       const dMidLine = dConn && dConn.fromJunctionIdx !==
         dirEnd(state.lines[platform.lineIdx].stations.length, platform.direction);
       const plainLocal = connTargetLineIdx == null && !ei && !terminates;
-      rawMax = dMidLine && plainLocal && !state.wards23Only
-        ? destLimit
-        : Math.min(rawMax, destLimit);
-      trace?.push('destLimit (' + (dMidLine && plainLocal ? 'mid-line local' : 'simple') + '): rawMax=' + rawMax);
+      if (dMidLine && plainLocal) {
+        rawMax = Math.min(destLimit, state.wards23Only ? wardConnCap(platform, dConn) : Infinity);
+        trace?.push('destLimit (mid-line local): rawMax=' + rawMax);
+      } else {
+        rawMax = Math.min(rawMax, destLimit);
+        trace?.push('destLimit (simple): rawMax=' + rawMax);
+      }
     }
   }
   const cappedMax = capStops(rawMax);
@@ -4499,11 +4517,15 @@ async function checkTransfers(platform, rolledStops) {
   // Build set of all line names in the current route (for connection-aware transfer checks)
   const routeLineNames = new Set([platform.lineName]);
   if (state.selectedConnection) {
-    // Add all lines in the connection chain (including onward connections)
+    // Add all lines in the connection chain (including onward connections).
+    // impliedLines: lines whose tracks the connection's via stations ride over
+    // (e.g. Sotetsu-JR Direct for Saikyo↔Sotetsu) — don't offer them as
+    // "transfers" from the very train that's running on them.
     let chainConn = state.selectedConnection;
     const chainVisited = new Set();
     while (chainConn && !chainVisited.has(chainConn.to)) {
       routeLineNames.add(chainConn.to);
+      for (const l of (chainConn.impliedLines || [])) routeLineNames.add(l);
       chainVisited.add(chainConn.to);
       const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
       chainConn = onward.length > 0 ? onward[0] : null;

@@ -1,5 +1,7 @@
 const LINE_NAME_FIXES = {
   'Toden Arakawa Line': 'Tokyo Sakura Tram',
+  // Shin-Keisei was absorbed into Keisei in April 2025
+  'Shin-Keisei Line': 'Keisei Matsudo Line',
 };
 
 // Stations opened after the upstream data snapshot, inserted mid-line
@@ -14,6 +16,7 @@ const LINE_INSERT_STATIONS = {
 
 // Override upstream line colors with official line colors
 const LINE_COLOR_FIXES = {
+  'Keisei Matsudo Line':      '#EF5BA1', // gentle pink (upstream #FF4400)
   // ── Tokyu — upstream gives all a generic #0066B3 ──
   'Tokyu Toyoko Line':        '#DA0442', // red
   'Tokyu Den-en-toshi Line':  '#20A288', // green/teal
