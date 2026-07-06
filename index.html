@@ -3091,7 +3091,8 @@ function handleLineDestinations(p) {
       // Count stops from current position to destination
       const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(lineDest.direction);
       if (stopsToEnd <= 0) return null;
-      return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)) };
+      return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+        _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true };
     })
     .filter(d => d && d.effectiveMax > 0);
 
@@ -3113,12 +3114,15 @@ function handleLineDestinations(p) {
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: destRollCap(p, conn, cappedMax),
           _conn: conn, _totalMax: cappedMax, _services: d.services || null,
+          _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
         });
       }
     }
   }
 
-  if (dests.length === 0) return { pickerShown: false };
+  const wardDests = collapseOutOfWardChoices(dests);
+
+  if (wardDests.length === 0) return { pickerShown: false };
 
   function selectDest(d) {
     if (d._conn) {
@@ -3131,21 +3135,21 @@ function handleLineDestinations(p) {
 
   // If all destinations have the same effectiveMax (cap makes them equivalent),
   // auto-select the furthest one — no meaningful choice to make.
-  const allSameMax = dests.every(d => d.effectiveMax === dests[0].effectiveMax);
+  const allSameMax = wardDests.every(d => d.effectiveMax === wardDests[0].effectiveMax);
   if (allSameMax) {
-    selectDest(dests[dests.length - 1]);
+    selectDest(wardDests[wardDests.length - 1]);
     return { pickerShown: false };
   }
-  if (dests.length > 1) {
-    showBranchPickerUI(p, dests.map(d => ({
+  if (wardDests.length > 1) {
+    showBranchPickerUI(p, wardDests.map(d => ({
       name: d.name, ja: d.ja, color: d.color,
       effectiveMax: d.effectiveMax,
       onSelect: () => selectDest(d),
     })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
     return { pickerShown: true };
   }
-  if (dests.length === 1) {
-    selectDest(dests[0]);
+  if (wardDests.length === 1) {
+    selectDest(wardDests[0]);
   }
   return { pickerShown: false };
 }
@@ -3275,6 +3279,36 @@ function destRollCap(p, conn, cappedMax) {
   return capStops(Math.min(cappedMax, p.maxStops));
 }
 
+// In 23-wards mode a terminus outside the wards is unreachable (routes
+// truncate at the boundary), so its option shouldn't crowd the board.
+function outOfWards(line, untilIdx) {
+  if (!state.wards23Only) return false;
+  const s = line && line.stations[untilIdx];
+  return !!s && !isIn23Wards(s.lat, s.lng);
+}
+
+// Collapse out-of-ward destination choices into a single "X & beyond"
+// option per distinct clamped range — the direction stays rollable to the
+// ward boundary without a board full of unreachable termini. A collapsed
+// option is dropped when an in-ward choice of the same kind on the same
+// connection already covers its range (e.g. UTL's Hiratsuka vs Shinagawa).
+function collapseOutOfWardChoices(choices) {
+  if (!state.wards23Only) return choices;
+  const kept = choices.filter(c => !c._outOfWards);
+  const out = choices.filter(c => c._outOfWards);
+  if (!out.length) return choices;
+  const byMax = new Map();
+  for (const c of out) {
+    const covered = kept.some(k => k._connRef === c._connRef &&
+      !!k._isLineDest === !!c._isLineDest && k.effectiveMax >= c.effectiveMax);
+    if (!covered && !byMax.has(c.effectiveMax)) byMax.set(c.effectiveMax, c);
+  }
+  for (const c of byMax.values()) {
+    kept.push({ ...c, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
+  }
+  return kept;
+}
+
 // A destination with a `services` allowlist only appears on the departure
 // board at stations one of its allowed services actually calls at.
 // Express-class services match when a stop list with their name (connection
@@ -3323,6 +3357,7 @@ function showDestinationPicker(p, conn, onLineStops) {
       choices.push({
         name: d.name, ja: d.ja, color: d.color || p.lineColor,
         effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+        _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
         onSelect: () => {
           // Within-line: set destination limit but NOT selectedConnection
           state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja };
@@ -3350,6 +3385,7 @@ function showDestinationPicker(p, conn, onLineStops) {
       name: d.name, ja: d.ja, color: d.color || p.lineColor,
       effectiveMax: destRollCap(p, conn, cappedMax),
       _services: d.services || null,
+      _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
       onSelect: () => {
         state.selectedConnection = conn;
         state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
@@ -3380,6 +3416,7 @@ function showDestinationPicker(p, conn, onLineStops) {
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: capStops(cappedMax),
           _services: d.services || null,
+          _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
           onSelect: () => {
             state.selectedConnection = conn;
             state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
@@ -3394,7 +3431,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     chainConn = nextChain;
   }
 
-  const filtered = choices.filter(c => c.effectiveMax > 0);
+  const filtered = collapseOutOfWardChoices(choices.filter(c => c.effectiveMax > 0));
 
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
   // Keep the last (connection destination) when a lineDests and connection dest collide,
@@ -3450,6 +3487,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+          _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
           onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja }; },
         });
       }
@@ -3472,6 +3510,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: destRollCap(p, conn, cappedMax),
           _isConnDest: true, _connIdx: ci,
+          _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
           onSelect: () => {
             state.selectedConnection = conn;
             state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
@@ -3481,7 +3520,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     }
   }
 
-  const filtered = choices.filter(c => c.effectiveMax > 0);
+  const filtered = collapseOutOfWardChoices(choices.filter(c => c.effectiveMax > 0));
 
   if (filtered.length <= 1) {
     if (filtered.length === 1) {
