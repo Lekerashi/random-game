@@ -186,7 +186,7 @@ const EXPRESS_SERVICES = {
       "Asakusa","TOKYO SKYTREE","Hikifune","Higashi-mukojima",
       "Kanegafuchi","Horikiri","Ushida","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki","Washinomiya",
+      "Tobu-Dobutsukoen","Wado","Kuki","Washinomiya",
       "Hanasaki","Kazo","Minami-Hanyu","Hanyu","Kawamata","Morinji-mae",
       "Tatebayashi",
     ]},
@@ -194,12 +194,12 @@ const EXPRESS_SERVICES = {
       "Oshiage (Skytree)","Hikifune","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Kita-koshigaya","Obukuro","Sengendai",
       "Takesato","Ichinowari","Kasukabe","Kita-Kasukabe","Himemiya",
-      "Tobu dobutsu-koen (Tobu Zoo)","Wado","Kuki",
+      "Tobu-Dobutsukoen","Wado","Kuki",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Oshiage (Skytree)","Hikifune","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu dobutsu-koen (Tobu Zoo)",
+      "Tobu-Dobutsukoen",
     ]},
   ],
   "Keisei Main Line": [
