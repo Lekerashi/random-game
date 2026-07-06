@@ -62,7 +62,7 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
-        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
+        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Tachiaigawa','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
@@ -82,7 +82,8 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
-        stops: ['Keikyu Kamata','Keikyu Kawasaki','Kanagawa-shimmachi','Yokohama',
+        stops: ['Keikyu Kamata','Keikyu Kawasaki','Keikyu Tsurumi','Kanagawa-shimmachi',
+                'Keikyu-Higashi-Kanagawa','Yokohama',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
@@ -107,7 +108,7 @@ const LINE_CONNECTIONS = [
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
       { name: 'Express', ja: '急行', color: '#e83030',
-        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
+        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Tachiaigawa','Heiwajima','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
@@ -133,7 +134,8 @@ const LINE_CONNECTIONS = [
     express: [
       { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
       { name: 'Express', ja: '急行', color: '#e83030',
-        stops: ['Yokohama','Kanagawa-shimmachi','Keikyu Kawasaki','Keikyu Kamata',
+        stops: ['Yokohama','Keikyu-Higashi-Kanagawa','Kanagawa-shimmachi','Keikyu Tsurumi',
+                'Keikyu Kawasaki','Keikyu Kamata',
                 'Kojiya','Otorii','Anamori-Inari','Tenkubashi',
                 'Haneda Airport Terminal 3','Haneda Airport Terminal 1 & 2'] },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
@@ -142,6 +144,70 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['Yokohama','Keikyu Kamata',
                 'Haneda Airport Terminal 1 & 2'] },
+    ] },
+
+  // ── Keikyu Main → Kurihama Line at Horinouchi ───────────────────────────
+  // Most 快特/特急 through-run to Keikyu Kurihama / Misakiguchi (all stations
+  // within the Kurihama Line since 1999). Uraga is the Main Line stub beyond.
+  // Locals to Misakiguchi don't exist — services filter keeps it 特急/快特.
+  { from: 'Keikyu Main Line',     fromStation: '堀ノ内', fromDir: 'end',
+    to:   'Keikyu Kurihama Line', toEnd: '堀ノ内',
+    lineDests: [
+      { until: '浦賀', name: 'Uraga', ja: '浦賀方面', color: '#8a2020' },
+    ],
+    destinations: [
+      { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f' },
+      { until: '三崎口', name: 'Misakiguchi', ja: '三崎口方面', color: '#e83080',
+        services: ['Ltd. Express', 'Rapid Ltd. Exp'] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['Sengakuji','Shinagawa','Aomono-yokocho','Heiwajima','Keikyu Kamata',
+                'Keikyu Kawasaki','Kanagawa-shimmachi','Yokohama','Kamiooka',
+                'Kanazawa-bunko','Kanazawa-Hakkei','Oppama','Shioiri','Yokosuka-chuo',
+                'Horinouchi','Shin-otsu','Kitakurihama','Keikyu Kurihama','YRP Nobi',
+                'Keikyu Nagasawa','Tsukuihama','Miurakaigan','Misakiguchi'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['Sengakuji','Shinagawa','Keikyu Kamata','Keikyu Kawasaki','Yokohama',
+                'Kamiooka','Kanazawa-bunko','Kanazawa-Hakkei','Yokosuka-chuo',
+                'Horinouchi','Shin-otsu','Kitakurihama','Keikyu Kurihama','YRP Nobi',
+                'Keikyu Nagasawa','Tsukuihama','Miurakaigan','Misakiguchi'] },
+    ] },
+  { from: 'Keikyu Kurihama Line', fromEnd: '堀ノ内',
+    to:   'Keikyu Main Line',     toStation: '堀ノ内', toDir: 'start' },
+
+  // ── Keikyu Main → Zushi Line at Kanazawa-Hakkei ──────────────────────────
+  // 急行 (former エアポート急行, renamed Nov 2023) runs Haneda→Zushi-Hayama via
+  // the Main Line, all stations within the Zushi Line. 特急/快特 never enter
+  // the Zushi Line — services filter restricts the destination to Local/急行.
+  { from: 'Keikyu Main Line',  fromStation: '金沢八景', fromDir: 'end',
+    to:   'Keikyu Zushi Line', toEnd: '金沢八景',
+    lineDests: [
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030' },
+    ],
+    destinations: [
+      { until: '逗子・葉山', name: 'Zushi-Hayama', ja: '逗子・葉山方面', color: '#00a662',
+        services: ['Local', 'Express'] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['Keikyu Kamata','Keikyu Kawasaki','Keikyu Tsurumi','Kanagawa-shimmachi',
+                'Keikyu-Higashi-Kanagawa','Yokohama','Hinodecho','Idogaya','Gumyoji',
+                'Kamiooka','Sugita','Nokendai','Kanazawa-bunko','Kanazawa-Hakkei',
+                'Mutsuura','Jimmuji','Zushi-Hayama'] },
+    ] },
+  { from: 'Keikyu Zushi Line', fromEnd: '金沢八景',
+    to:   'Keikyu Main Line',  toStation: '金沢八景', toDir: 'start',
+    toUntil: '京急蒲田',
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['Zushi-Hayama','Jimmuji','Mutsuura','Kanazawa-Hakkei','Kanazawa-bunko',
+                'Nokendai','Sugita','Kamiooka','Gumyoji','Idogaya','Hinodecho','Yokohama',
+                'Keikyu-Higashi-Kanagawa','Kanagawa-shimmachi','Keikyu Tsurumi',
+                'Keikyu Kawasaki','Keikyu Kamata'] },
     ] },
 
   // ── Tokaido UTL northbound ──────────────────────────────────────────────

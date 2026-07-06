@@ -1408,7 +1408,7 @@ function normalize(s) {
   return (s || '').toLowerCase()
     .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
     .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i')
-    .replace(/[\s\-']+/g, '')
+    .replace(/[\s\-'・]+/g, '')
     .replace(/station$/, '');
 }
 
@@ -1661,6 +1661,13 @@ function buildIndex(lines, osmNames = {}) {
   const shibayamaLine = lines.find(l => l.name === 'Shibayama Railway Line');
   const higashiNaritaStn = shibayamaLine?.stations.find(s => s.ja === '東成田');
   if (higashiNaritaStn) higashiNaritaStn.name = 'Higashi-Narita';
+
+  // 新逗子 was renamed 逗子・葉山 in March 2020 (upstream EN name already updated).
+  // OSM name:en uses a katakana middle dot ("Zushi・Hayama") — prefer the hyphen form.
+  const zushiHayamaStn = lines.find(l => l.name === 'Keikyu Zushi Line')
+    ?.stations.find(s => s.ja === '新逗子');
+  if (zushiHayamaStn) zushiHayamaStn.ja = '逗子・葉山';
+  if (osmNames['逗子・葉山']) osmNames['逗子・葉山'] = 'Zushi-Hayama';
 
   // Keisei Higashi-Narita Line (京成東成田線) — short branch not in upstream data
   // Shares Keisei Narita with the Main Line; Shibayama Railway covers the onward leg

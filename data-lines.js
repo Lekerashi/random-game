@@ -228,7 +228,8 @@ const EXPRESS_SERVICES = {
       "Sengakuji","Shinagawa","Aomono-yokocho","Heiwajima","Keikyu Kamata",
       "Keikyu Kawasaki","Kanagawa-shimmachi","Yokohama",
       "Kamiooka","Kanazawa-bunko","Kanazawa-Hakkei",
-      "Oppama","Shioiri","Yokosuka-chuo","Horinouchi","Uraga",
+      "Oppama","Shioiri","Yokosuka-chuo","Horinouchi",
+      "Keikyu Otsu","Maborikaigan","Uraga",
     ]},
     { name: "Rapid Ltd. Exp", ja: "快特", color: "#e83080", stops: [
       "Sengakuji","Shinagawa","Keikyu Kamata","Keikyu Kawasaki","Yokohama",
