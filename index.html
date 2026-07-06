@@ -1728,6 +1728,19 @@ function buildIndex(lines, osmNames = {}) {
     ],
   });
 
+  // Sotetsu–JR Direct Line (相鉄・JR直通線) — opened 2019, not in upstream data.
+  // Saikyo through-trains run Osaki–Hazawa over the Tokaido freight tracks,
+  // continuing onto the Sotetsu Main Line at Nishiya toward Ebina.
+  lines.push({
+    name: 'Sotetsu-JR Direct Line', ja: '相鉄・JR直通線', color: '#003087',
+    stations: [
+      { name: 'Osaki',                   ja: '大崎',         ..._stnCoord('大崎',         { lat: 35.6197, lng: 139.7286 }) },
+      { name: 'Nishi-Oi',                ja: '西大井',       ..._stnCoord('西大井',       { lat: 35.6017, lng: 139.7217 }) },
+      { name: 'Musashi-Kosugi',          ja: '武蔵小杉',     ..._stnCoord('武蔵小杉',     { lat: 35.5766, lng: 139.6597 }) },
+      { name: 'Hazawa Yokohama-Kokudai', ja: '羽沢横浜国大', ..._stnCoord('羽沢横浜国大', { lat: 35.4801, lng: 139.5934 }) },
+    ],
+  });
+
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {

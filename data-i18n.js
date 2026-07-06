@@ -118,6 +118,7 @@ const LINE_NAMES_JA = {
   'Sotetsu Main Line':           '相鉄本線',
   'Sotetsu Izumino Line':        '相鉄いずみ野線',
   'Sotetsu Shin-Yokohama Line':  '相鉄新横浜線',
+  'Sotetsu-JR Direct Line':      '相鉄・JR直通線',
   // Other
   'Rinkai Line':           'りんかい線',
   'Tsukuba Express':       'つくばエクスプレス',

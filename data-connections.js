@@ -862,6 +862,43 @@ const LINE_CONNECTIONS = [
       { until: '新木場', name: 'Shin-Kiba', ja: '新木場方面', color: '#767c78' },
     ] },
 
+  // ── Sotetsu–JR Direct (相鉄・JR直通線) at Osaki / Nishiya ─────────────
+  // Saikyo trains continue south of Osaki over the Tokaido freight tracks
+  // (Nishi-Oi, Musashi-Kosugi, Hazawa Yokohama-Kokudai), entering the Sotetsu
+  // Main Line at Nishiya and running through to Ebina. Through-riding uses
+  // via-waypoint connections; the injected Sotetsu-JR Direct Line segment
+  // (buildIndex) makes the link boardable at its four stations.
+  { from: 'JR Saikyo Line',    fromEnd: '大崎',
+    to:   'Sotetsu Main Line', toStation: '西谷', toDir: 'end',
+    via:  ['西大井', '武蔵小杉', '羽沢横浜国大'],
+    name: 'Ebina', ja: '海老名方面', color: '#003087',
+    destinations: [
+      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
+    ] },
+  { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
+    to:   'JR Saikyo Line',    toEnd: '大崎',
+    via:  ['羽沢横浜国大', '武蔵小杉', '西大井'],
+    name: 'Shinjuku', ja: '新宿方面', color: '#007540',
+    lineDests: [
+      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
+    ],
+    destinations: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#007540' },
+      { until: '大宮', name: 'Omiya',    ja: '大宮方面', color: '#007540' },
+    ] },
+  // Boardable segment (injected in buildIndex): Osaki–Hazawa Yokohama-Kokudai
+  { from: 'Sotetsu-JR Direct Line', fromEnd: '大崎',
+    to:   'JR Saikyo Line',         toEnd:   '大崎',
+    destinations: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#007540' },
+      { until: '大宮', name: 'Omiya',    ja: '大宮方面', color: '#007540' },
+    ] },
+  { from: 'Sotetsu-JR Direct Line', fromEnd: '羽沢横浜国大',
+    to:   'Sotetsu Main Line',      toStation: '西谷', toDir: 'end',
+    destinations: [
+      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
+    ] },
+
   // ── Keisei Main ↔ Keisei Oshiage at Keisei Takasago ─────────────────
   // Terminus on Oshiage side (idx 6) so chains extend to Keisei Main (Haneda→Narita)
   // Aoto (on both lines) still provides Y-junction platforms naturally
