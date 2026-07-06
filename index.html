@@ -3064,7 +3064,7 @@ function handleLineDestinations(p) {
       if (stopsToJunction <= 0) continue;
       const viaCount = effectiveViaCount(conn, state.currentStation.name);
       const connMax = stopsToJunction + viaCount + getConnectionMaxStops(conn);
-      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1)) {
+      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1 && destServesStation(conn, dd, p))) {
         const stopsOnTarget = conn.toDir === 'start'
           ? conn.toJunctionIdx - d.untilIdx
           : d.untilIdx - conn.toJunctionIdx;
@@ -3223,6 +3223,37 @@ function showBranchButtons(p) {
   return false;
 }
 
+// A destination with a `services` allowlist only appears on the departure
+// board at stations one of its allowed services actually calls at.
+// Express-class services match when a stop list with their name (connection
+// express or source-line EXPRESS_SERVICES) includes the current station.
+// Local-class services (stops: null) count everywhere, unless the destination
+// declares `localFrom` (JA station name on the source line): locals only feed
+// the destination from that station onward toward the junction (e.g. locals
+// to Zushi-Hayama start at Kanazawa-Bunko — Shinagawa's board never shows it).
+// Chained destinations skip this check (their services describe a later hop).
+function destServesStation(conn, d, p) {
+  if (!d.services) return true;
+  const line = state.lines[p.lineIdx];
+  const cur = normalize(state.currentStation.name);
+  const defs = [...(conn.express || []), ...(EXPRESS_SERVICES[p.lineName] || [])];
+  for (const svc of d.services) {
+    const n = normalize(svc);
+    const matches = defs.filter(t => normalize(t.name) === n);
+    // Express-class: allowed service stops at the current station
+    if (matches.some(t => t.stops && t.stops.some(s => normalize(s) === cur))) return true;
+    // Local-class: stops:null def, or an undefined "Local" name (implicit local)
+    const isLocalClass = matches.length ? matches.some(t => t.stops === null) : n === 'local';
+    if (isLocalClass) {
+      if (!d.localFrom) return true;
+      const fromIdx = line.stations.findIndex(s => s.ja === d.localFrom);
+      if (fromIdx === -1) return true;
+      if ((p.fromIdx - fromIdx) * dirStep(p.direction) >= 0) return true;
+    }
+  }
+  return false;
+}
+
 // Show destination picker for a connection with destinations.
 // Returns true if picker shown, false if auto-selected.
 function showDestinationPicker(p, conn, onLineStops) {
@@ -3249,7 +3280,7 @@ function showDestinationPicker(p, conn, onLineStops) {
   }
 
   // Target-line destinations (through-running to connected line)
-  const dests = conn.destinations.filter(d => d.untilIdx !== -1);
+  const dests = conn.destinations.filter(d => d.untilIdx !== -1 && destServesStation(conn, d, p));
   const viaCount = effectiveViaCount(conn, state.currentStation.name);
   // For mid-line junctions, use stops-to-junction instead of full on-line stops
   const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
@@ -3377,7 +3408,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
       // For mid-line junctions, use stops-to-junction instead of full on-line stops
       const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
       const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
-      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1)) {
+      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1 && destServesStation(conn, dd, p))) {
         if (seenNames.has(d.name)) continue;
         const stopsOnTarget = conn.toDir === 'start'
           ? conn.toJunctionIdx - d.untilIdx : d.untilIdx - conn.toJunctionIdx;

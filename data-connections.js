@@ -18,7 +18,10 @@
 //     displayName       — override platform pill label (e.g. "Ueno Tokyo Line")
 //
 //   SERVICES:
-//     destinations      — [{ until (JA), name, ja, color?, services? }] train terminus picker
+//     destinations      — [{ until (JA), name, ja, color?, services?, localFrom? }] train terminus picker
+//                         localFrom (JA, source line): with `services`, local-class services only
+//                         feed this destination from that station onward toward the junction —
+//                         the destination is hidden at earlier stations no allowed service calls at
 //     lineDests         — [{ until (JA), name, ja, color? }] within-line short-turn picker
 //     express           — [{ name, ja, color?, stops, schedule? }] cross-line express services
 //
@@ -188,7 +191,7 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       { until: '逗子・葉山', name: 'Zushi-Hayama', ja: '逗子・葉山方面', color: '#00a662',
-        services: ['Local', 'Express'] },
+        services: ['Local', 'Express'], localFrom: '金沢文庫' },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
