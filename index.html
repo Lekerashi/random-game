@@ -960,6 +960,11 @@ const EASTER_EGGS = {
   '西ケ原': {  // Nishigahara — least-used Tokyo Metro station
     hintKey: 'nishigaharaHint', hintEmoji: '🚇', position: 'prepend',
   },
+  '幕張豊砂': {  // Makuhari-Toyosuna — Costco at the doorstep
+    emoji: '🌭', hintKey: 'hotdogHint', rollKey: 'hotdogRoll',
+    stayingKey: 'stayingForHotdog', stayedKey: 'stayedForHotdog',
+    labelKey: 'hotdogHereLabel', position: 'replace',
+  },
 };
 
 function getEgg(stationJa) { return EASTER_EGGS[stationJa]; }
