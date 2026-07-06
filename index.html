@@ -3120,7 +3120,7 @@ function handleLineDestinations(p) {
     }
   }
 
-  const wardDests = collapseOutOfWardChoices(dests);
+  const wardDests = collapseOutOfWardChoices(p, dests);
 
   if (wardDests.length === 0) return { pickerShown: false };
 
@@ -3287,16 +3287,21 @@ function outOfWards(line, untilIdx) {
   return !!s && !isIn23Wards(s.lat, s.lng);
 }
 
-// Collapse out-of-ward destination choices into a single "X & beyond"
-// option per distinct clamped range — the direction stays rollable to the
-// ward boundary without a board full of unreachable termini. A collapsed
-// option is dropped when an in-ward choice of the same kind on the same
-// connection already covers its range (e.g. UTL's Hiratsuka vs Shinagawa).
-function collapseOutOfWardChoices(choices) {
+// Collapse out-of-ward destination choices into a single option per
+// distinct clamped range — the direction stays rollable to the ward
+// boundary without a board full of unreachable termini. The collapsed
+// button is labeled with the LAST REACHABLE station (players unfamiliar
+// with the geography shouldn't have to know what lies "beyond"), falling
+// back to "X & beyond" when the clamped ride crosses onto another line.
+// A collapsed option is dropped when an in-ward choice of the same kind on
+// the same connection already covers its range (UTL's Hiratsuka vs Shinagawa).
+function collapseOutOfWardChoices(p, choices) {
   if (!state.wards23Only) return choices;
   const kept = choices.filter(c => !c._outOfWards);
   const out = choices.filter(c => c._outOfWards);
   if (!out.length) return choices;
+  const line = state.lines[p.lineIdx];
+  const step = dirStep(p.direction);
   const byMax = new Map();
   for (const c of out) {
     const covered = kept.some(k => k._connRef === c._connRef &&
@@ -3304,7 +3309,15 @@ function collapseOutOfWardChoices(choices) {
     if (!covered && !byMax.has(c.effectiveMax)) byMax.set(c.effectiveMax, c);
   }
   for (const c of byMax.values()) {
-    kept.push({ ...c, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
+    // Ride stays on the source line when it can't reach the junction —
+    // label with the station the max roll actually lands at.
+    const toJunction = c._connRef && !c._isLineDest
+      ? (c._connRef.fromJunctionIdx - p.fromIdx) * step : Infinity;
+    const boundaryStn = c.effectiveMax <= toJunction
+      ? line.stations[p.fromIdx + c.effectiveMax * step] : null;
+    kept.push(boundaryStn
+      ? { ...c, name: boundaryStn.name, ja: boundaryStn.ja + '方面' }
+      : { ...c, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
   }
   return kept;
 }
@@ -3431,7 +3444,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     chainConn = nextChain;
   }
 
-  const filtered = collapseOutOfWardChoices(choices.filter(c => c.effectiveMax > 0));
+  const filtered = collapseOutOfWardChoices(p, choices.filter(c => c.effectiveMax > 0));
 
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
   // Keep the last (connection destination) when a lineDests and connection dest collide,
@@ -3520,7 +3533,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     }
   }
 
-  const filtered = collapseOutOfWardChoices(choices.filter(c => c.effectiveMax > 0));
+  const filtered = collapseOutOfWardChoices(p, choices.filter(c => c.effectiveMax > 0));
 
   if (filtered.length <= 1) {
     if (filtered.length === 1) {
