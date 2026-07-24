@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v21';
+const CACHE_NAME = 'rg-v22';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

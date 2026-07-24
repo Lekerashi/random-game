@@ -2776,14 +2776,17 @@ function onStationSelected(name, arrivedVia) {
       // Transfer: can't ride the line you just got off
       allPlatforms = allPlatforms.filter(p => p.lineName !== arrivedVia.lineName);
     } else if (reverseDir) {
-      // Normal arrival: can't go back the way you came (unless dead end)
-      const sameLinePlatforms = allPlatforms.filter(p => p.lineName === arrivedVia.lineName);
-      const isDeadEnd = sameLinePlatforms.length <= 1;
-      if (!isDeadEnd) {
-        allPlatforms = allPlatforms.filter(p =>
-          !(p.lineName === arrivedVia.lineName && p.direction === reverseDir)
-        );
-      }
+      // Normal arrival: can't go back the way you came — unless it's the only way out.
+      // "Dead end" means no other rideable platform exists (a lone-line terminus), NOT
+      // just that the arriving line has one platform here: a terminus with a transfer
+      // (e.g. Chuo-Rinkan → Odakyu Enoshima) must route onto the other line, not backtrack.
+      const withoutBacktrack = allPlatforms.filter(p =>
+        !(p.lineName === arrivedVia.lineName && p.direction === reverseDir)
+      );
+      const hasOtherOption = withoutBacktrack.some(p =>
+        getEffectiveStops(p, { ei: null, bi: null }).validCount > 0
+      );
+      if (hasOtherOption) allPlatforms = withoutBacktrack;
     }
   }
   // Filter out platforms with 0 reachable stops (e.g. wards boundary, all-drunk destinations)
