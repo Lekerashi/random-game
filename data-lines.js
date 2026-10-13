@@ -163,19 +163,19 @@ const EXPRESS_SERVICES = {
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "Ikebukuro","Kami-itabashi","Narimasu","Wakoshi","Asaka","Asakadai",
       "Shiki","Yanasegawa","Mizuhodai","Tsuruse","Fujimino","Kami-fukuoka",
-      "Shingashi","Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Shingashi","Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
       "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Ikebukuro","Narimasu","Wakoshi","Asaka","Asakadai","Shiki","Fujimino",
-      "Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
       "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Ikebukuro","Wakoshi","Asakadai",
-      "Kawagoe","Kawagoeshi","Kasumigaseki","Tsurugashima","Wakaba",
+      "Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
       "Tsukinowa","Musashi-ranzan","Ogawamachi",
     ]},

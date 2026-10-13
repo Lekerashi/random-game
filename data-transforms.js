@@ -134,3 +134,10 @@ const LINE_TRIM_AFTER = {};
 // Lines absorbed into other lines
 // Ueno Tokyo Line is a brand name for Tokaido↔northern through-service (handled by connections)
 const LINE_REMOVE = ['Ueno Tokyo Line', 'JR Chuo Main Line'];
+
+// Corrections to OpenStreetMap name:en values, which override the built-in
+// station names at load time (JA name → correct EN name)
+const OSM_NAME_FIXES = {
+  '逗子・葉山': 'Zushi-Hayama',     // OSM uses a katakana middle dot
+  '海浜幕張':   'Kaihin-Makuhari',  // OSM typo "Kaihim-Makuhari"
+};

@@ -1684,11 +1684,12 @@ function buildIndex(lines, osmNames = {}) {
   if (higashiNaritaStn) higashiNaritaStn.name = 'Higashi-Narita';
 
   // 新逗子 was renamed 逗子・葉山 in March 2020 (upstream EN name already updated).
-  // OSM name:en uses a katakana middle dot ("Zushi・Hayama") — prefer the hyphen form.
   const zushiHayamaStn = lines.find(l => l.name === 'Keikyu Zushi Line')
     ?.stations.find(s => s.ja === '新逗子');
   if (zushiHayamaStn) zushiHayamaStn.ja = '逗子・葉山';
-  if (osmNames['逗子・葉山']) osmNames['逗子・葉山'] = 'Zushi-Hayama';
+  for (const [ja, en] of Object.entries(OSM_NAME_FIXES)) {
+    if (osmNames[ja]) osmNames[ja] = en;
+  }
 
   // Keisei Higashi-Narita Line (京成東成田線) — short branch not in upstream data
   // Shares Keisei Narita with the Main Line; Shibayama Railway covers the onward leg
@@ -1738,7 +1739,7 @@ function buildIndex(lines, osmNames = {}) {
       { name: 'Tokyo',      ja: '東京',   ..._stnCoord('東京',   { lat: 35.6812, lng: 139.7671 }) },
       { name: 'Ueno',       ja: '上野',   ..._stnCoord('上野',   { lat: 35.7138, lng: 139.7770 }) },
       { name: 'Omiya',      ja: '大宮',   ..._stnCoord('大宮',   { lat: 35.9064, lng: 139.6241 }) },
-      { name: 'Oyama',      ja: '小山',   ..._stnCoord('小山',   { lat: 36.3127, lng: 139.8062 }) },
+      { name: 'Oyama (Tochigi)', ja: '小山',   ..._stnCoord('小山',   { lat: 36.3127, lng: 139.8062 }) },
       { name: 'Utsunomiya', ja: '宇都宮', ..._stnCoord('宇都宮', { lat: 36.5592, lng: 139.8984 }) },
     ],
   });
@@ -1791,6 +1792,18 @@ function buildIndex(lines, osmNames = {}) {
   }
   ANCHOR_STATIONS.forEach(addRef);
 
+  // OSM names drop our disambiguators ("Oyama (Tochigi)" → "Oyama") and so can
+  // merge unrelated stations under one search key. Skip an OSM rename when the
+  // built name is disambiguated, or its key already belongs to another station.
+  const builtKeyOwners = new Map();
+  for (const l of lines) for (const s of l.stations) {
+    const k = normalize(s.name);
+    if (!builtKeyOwners.has(k)) builtKeyOwners.set(k, new Set());
+    builtKeyOwners.get(k).add(s.ja);
+  }
+  const osmClashes = (stn, osmEn) => /\(.+\)$/.test(stn.name)
+    || [...(builtKeyOwners.get(normalize(osmEn)) || [])].some(ja => ja !== stn.ja);
+
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
@@ -1799,7 +1812,7 @@ function buildIndex(lines, osmNames = {}) {
 
       // OSM name:en overrides the pre-baked fix from the build step
       const osmEn = osmNames[stn.ja];
-      if (osmEn) {
+      if (osmEn && !osmClashes(stn, osmEn)) {
         const oldKey = normalize(stn.name);
         if (normalize(osmEn) !== oldKey && gameplayNameRefs.has(oldKey)) {
           console.warn(`OSM rename skipped for ${stn.ja}: "${stn.name}" → "${osmEn}" (name referenced by game data)`);
