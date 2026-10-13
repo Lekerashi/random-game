@@ -1067,6 +1067,21 @@ function markDrankAt(stationName) {
   for (const ak of getAliasKeys(stationName)) state.drankAt.add(ak);
 }
 
+function unmarkDrankAt(stationName) {
+  state.drankAt.delete(normalize(stationName));
+  for (const ak of getAliasKeys(stationName)) state.drankAt.delete(ak);
+}
+
+// Reroll undo: drop the finished round's history entry and the drink mark at
+// the station it ended on (arrival, drink-here, or drink-at-transfer all set
+// state.destination to the station they marked)
+function undoLastRound() {
+  if (state.history.length === 0 || !state.destination) return;
+  state.history.pop();
+  renderHistory();
+  unmarkDrankAt(state.destination.name);
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 const state = {
   lines: [],          // [{id, name, color, circular, stations:[{name,ja,lat,lng}]}]
@@ -2816,6 +2831,7 @@ function setupAutocomplete() {
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 function onStationSelected(name, arrivedVia) {
+  state._sessionSettled = true; // playing on without answering the Resume prompt = new game
   state._arrivedVia = arrivedVia || null;
   const key   = normalize(name);
   const entries = state.stationIndex[key] || [];
@@ -2903,11 +2919,12 @@ function onStationSelected(name, arrivedVia) {
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD) : 0;
   // Airport stations always show a flight option (5% chance when rolled)
   const isAirport = /airport/i.test(name) || stn.ja === '東成田';
+  // Drink-here must stay last: extra thirst numbers extend past the end of the list
   state.platforms = [
     ...allPlatforms,
     ...shinkansenPlatforms,
-    ...(canDrinkHere ? [{ drinkHere: true }] : []),
     ...(isAirport ? [{ takeFlight: true }] : []),
+    ...(canDrinkHere ? [{ drinkHere: true }] : []),
   ];
   state.extraDrinkNums = extraDrinkNums;
   const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight && !p.isShinkansen).length;
@@ -3055,15 +3072,7 @@ function rollPlatform() {
 }
 
 function rerollPlatform() {
-  // Undo history entry added by the previous roll
-  if (state.history.length > 0 && (state.selectedPlatform?.drinkHere || state.destination)) {
-    state.history.pop();
-    renderHistory();
-    // Undo drankAt if the previous roll was "Drink here!"
-    if (state.selectedPlatform?.drinkHere) {
-      state.drankAt.delete(normalize(state.currentStation.name));
-    }
-  }
+  undoLastRound();
   state.stationsSinceDrink = state._preRollThirst ?? 0;
   // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
   state._rerollExcludePlatform = state.rolledPlatformNum;
@@ -3078,13 +3087,7 @@ function rerollPlatform() {
 }
 
 function rerollStops() {
-  // Undo history entry added by the previous roll
-  if (state.history.length > 0 && state.destination) {
-    state.history.pop();
-    renderHistory();
-    // Undo drankAt for the destination we're un-arriving from
-    state.drankAt.delete(normalize(state.destination.name));
-  }
+  undoLastRound();
   state.stationsSinceDrink = state._preRollThirst ?? 0;
   // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
   state._rerollExcludeStops = state.rolledStops;
@@ -4738,7 +4741,11 @@ function rollStops() {
       dom.rollStopsBtn.style.width = 'auto';
     }
     dom.rollStopsRow.style.display = 'flex';
-    dom.rerollStopsBtn.style.display = 'inline-flex';
+    // Rerolls stay hidden until the round resolves — rerolling mid-transfer
+    // would start a second round that races this one
+    dom.rerollStopsBtn.style.display = 'none';
+    const showRerollPlatform = dom.rerollPlatformBtn.style.display;
+    dom.rerollPlatformBtn.style.display = 'none';
 
     // Capture platform before async transfer checks (state may change during await)
     const p = state.selectedPlatform;
@@ -4746,6 +4753,10 @@ function rollStops() {
     // Check for transfers along the route (using physical stop count)
     const result = await checkTransfers(p, physicalStops);
     await handleRoundResult(result, p, roll);
+    if (result.type !== 'transfer') {
+      dom.rerollStopsBtn.style.display = 'inline-flex';
+      dom.rerollPlatformBtn.style.display = showRerollPlatform;
+    }
   });
 }
 
@@ -4777,11 +4788,16 @@ function showMap() {
 const PLACES_PAGE_SIZE = 5;
 const _placesCache = { bars: null, cafes: null };
 
+// Escape third-party text (HERE place names) before it goes into innerHTML
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
 function renderPlaceItems(items, shown) {
   return items.slice(0, shown).map(p =>
     `<div class="bar-item">
       <span class="bar-icon">${p.icon}</span>
-      <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${p.name}</a>${p.placeType ? `<small class="text-muted" style="margin-left:6px">${p.placeType}</small>` : ''}</span>
+      <span class="bar-name"><a href="${p.mapsUrl}" target="_blank" rel="noopener">${escHtml(p.name)}</a>${p.placeType ? `<small class="text-muted" style="margin-left:6px">${escHtml(p.placeType)}</small>` : ''}</span>
       <span class="bar-dist">${Math.round(p.dist)} m</span>
     </div>`
   ).join('');
@@ -5065,6 +5081,9 @@ function undoClearHistory() {
 // ── Session save/resume ───────────────────────────────────────────────────
 
 function saveSession() {
+  // Until the saved session is resumed or declined, saving would delete or
+  // overwrite it (e.g. app backgrounded while the Resume prompt is up)
+  if (!state._sessionSettled) return;
   const mrP = state.selectedPlatform;
   const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum;
   if (state.history.length === 0 && !state._pendingRound && !hasMidRound) {
@@ -6022,15 +6041,15 @@ function onWards23Change(checked) {
     let _allP = getPlatforms(state.currentStation.name)
       .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
     const _rawShin = _allP.filter(p => SHINKANSEN_LINES.has(p.lineName));
-    _allP = _allP.filter(p => !SHINKANSEN_LINES.has(p.lineName));
+    _allP = mergeSharedTrackPlatforms(_allP.filter(p => !SHINKANSEN_LINES.has(p.lineName)), state.currentStation.ja);
     const _mergedShin = mergeShinkansenPlatforms(_rawShin);
     const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
     const isAirport = /airport/i.test(state.currentStation.name);
     state.platforms = [
       ..._allP,
       ..._mergedShin,
-      ...(canDrinkHere ? [{ drinkHere: true }] : []),
       ...(isAirport ? [{ takeFlight: true }] : []),
+      ...(canDrinkHere ? [{ drinkHere: true }] : []),
     ];
     refreshPlatformGrid();
   } else {
@@ -6108,13 +6127,15 @@ function sameGameDay(timestamp) {
 
 function setupSessionResume() {
   const saved = loadSession();
-  if (!saved) return;
+  const settle = () => { state._sessionSettled = true; };
+  if (!saved) return settle();
   // Session with only mid-round state (no completed rounds yet): restore silently
   if ((!saved.history || saved.history.length === 0) && (saved.midRound || saved.pendingRound)) {
+    settle();
     resumeSession(saved);
     return;
   }
-  if (!saved.history || saved.history.length === 0) return;
+  if (!saved.history || saved.history.length === 0) return settle();
 
   // Same evening → lightweight inline prompt; next morning → full recap overlay
   if (sameGameDay(saved.timestamp)) {
@@ -6122,12 +6143,14 @@ function setupSessionResume() {
     inlineEl.style.display = '';
     document.getElementById('resume-inline-btn').addEventListener('click', () => {
       inlineEl.style.display = 'none';
+      settle();
       // Temporarily populate history for resumeSession
       state.history = saved.history;
       resumeSession(saved);
     }, { once: true });
     document.getElementById('new-game-inline-btn').addEventListener('click', () => {
       inlineEl.style.display = 'none';
+      settle();
       localStorage.removeItem(SESSION_KEY);
     }, { once: true });
     return;
@@ -6167,10 +6190,12 @@ function setupSessionResume() {
 
   document.getElementById('resume-btn').addEventListener('click', () => {
     dismissRecap();
+    settle();
     resumeSession(saved);
   }, { once: true });
   document.getElementById('dismiss-resume-btn').addEventListener('click', () => {
     dismissRecap();
+    settle();
     state.history = [];
     localStorage.removeItem(SESSION_KEY);
   }, { once: true });

@@ -1279,7 +1279,7 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         'Omiya','Saitama-Shintoshin','Yono','Kita-Urawa','Urawa',
         'Minami-Urawa','Warabi','Nishi-Kawaguchi','Kawaguchi','Akabane',
-        'Higashi-Jūjō','Oji','Kami-Nakazato','Tabata',
+        'Higashi-Jūjō','Oji','Kami-Nakazato','Tabata','Ueno',
         'Okachimachi','Akihabara','Kanda','Tokyo',
         'Hamamatsucho','Tamachi','Takanawa Gateway','Shinagawa',
         'Oimachi','Ōmori','Kamata','Kawasaki','Tsurumi',

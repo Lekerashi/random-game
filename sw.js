@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v26';
+const CACHE_NAME = 'rg-v27';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -61,6 +61,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // APIs and analytics (HERE places, Overpass, GoatCounter) go straight to the
+  // network — caching them would freeze a one-off error or stale result
+  if (e.request.method !== 'GET' || /hereapi\.com|overpass-api\.de|goatcounter\.com/.test(url.hostname)) return;
+
   // Cache-first for CDN assets (Leaflet, map tiles)
   // Normalize tile subdomain (a/b/c) so cache hits regardless of subdomain
   const tileMatch = url.href.match(/^https:\/\/[abc]\.basemaps\.cartocdn\.com\/(.+)$/);
@@ -71,8 +75,11 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(cacheKey)
       .then(cached => cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then(c => c.put(cacheKey, clone));
+        // Opaque = no-cors tile <img>; its status is unreadable but it's normally fine
+        if (res.ok || res.type === 'opaque') {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(cacheKey, clone));
+        }
         return res;
       }))
   );

@@ -52,7 +52,7 @@ const EXPRESS_SERVICES = {
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "Ikebukuro","Shakujii-kōen","Oizumi-gakuen","Hoya","Hibarigaoka",
+      "Ikebukuro","練馬","Shakujii-kōen","Oizumi-gakuen","Hoya","Hibarigaoka",
       "Higashi-Kurume","Kiyose","Akitsu","Tokorozawa",
       "Nishi-Tokorozawa","Kotesashi","Sayamagaoka","Musashi Fujisawa",
       "Inariyama-koen","Iruma-shi","Bushi","Moto-Kaji","Hanno",
@@ -92,7 +92,7 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Shibuya","Shimo-Kitazawa","Meidaimae","Eifukucho","Kugayama",
-      "Inokashira-koen","Kichijōji",
+      "Kichijōji",
     ]},
   ],
   "Odakyu Line": [
@@ -109,7 +109,8 @@ const EXPRESS_SERVICES = {
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Kyodo","Seijogakuen-mae",
       "Noborito","Mukogaoka-Yuen","Shin-Yurigaoka","Machida","Sagami-Ono",
       "Ebina","Hon-Atsugi","Aiko-Ishida","Isehara","Tsurumaki-Onsen",
-      "Tokaidaigaku-mae","Hadano","Shibusawa","Shin-Matsuda","Odawara",
+      "Tokaidaigaku-mae","Hadano","Shibusawa","Shin-Matsuda",
+      "開成","栢山","富水","螢田","足柄","Odawara",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Shinjuku","Yoyogi-Uehara","Shimo-Kitazawa","Noborito","Shin-Yurigaoka",
@@ -199,17 +200,15 @@ const EXPRESS_SERVICES = {
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Oshiage (Skytree)","Hikifune","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Sengendai","Kasukabe",
-      "Tobu-Dobutsukoen",
+      "Tobu-Dobutsukoen","Wado","Kuki",
     ]},
   ],
   "Keisei Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
       "Keisei-Ueno","Nippori","Senjuohashi","Aoto","Keisei Takasago",
-      "Keisei Koiwa","Edogawa","Konodai","Ichikawamama","Sugano",
-      "Keisei Yawata","Onigoe","Keisei-Nakayama","Higashi-Nakayama",
-      "Keisei Nishifuna","Kaijin","Keisei Funabashi","Daijingu-Shita",
-      "Funabashi-Keibajo","Yatsu","Keisei Tsudanuma","Keisei-Okubo",
+      "Keisei Koiwa","Keisei Yawata","Higashi-Nakayama","Keisei Funabashi",
+      "Funabashi-Keibajo","Keisei Tsudanuma","Keisei-Okubo",
       "Mimomi","Yachiyodai","Keisei-Owada","Katsutadai","Shizu",
       "Yūkarigaoka","Keisei-Usui","Keisei-Sakura","Osakura",
       "Keisei-Shisui","Sogosando","Kozunomori","Keisei-Narita",
@@ -296,11 +295,11 @@ const EXPRESS_SERVICES = {
   "JR Saikyo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
-      "Osaki","Ebisu","Shibuya","Shinjuku","Ikebukuro",
-      "Akabane","Musashi-Urawa","Omiya",
+      "Osaki","Ebisu","Shibuya","Shinjuku","Ikebukuro","板橋","十条",
+      "Akabane","戸田公園","Musashi-Urawa","中浦和","南与野","与野本町","北与野","Omiya",
     ]},
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", stops: [
-      "Osaki","Shibuya","Shinjuku","Ikebukuro",
+      "Osaki","Ebisu","Shibuya","Shinjuku","Ikebukuro","板橋","十条",
       "Akabane","Musashi-Urawa","Omiya",
     ],
       schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
