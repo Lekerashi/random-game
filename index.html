@@ -670,8 +670,8 @@
     #route-map, #inline-route-map { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
     #recap-map { height: 220px; border-radius: 8px; overflow: hidden; background: var(--bg); }
     #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a, #recap-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
-    #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution, #recap-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
-    #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a, #recap-map .leaflet-control-attribution a { color: var(--accent2); }
+    #map .leaflet-control-attribution, #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution, #recap-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
+    #map .leaflet-control-attribution a, #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a, #recap-map .leaflet-control-attribution a { color: var(--accent2); }
     .route-map-drink { background: none !important; border: none !important; font-size: 14px; line-height: 18px; text-align: center; }
     .route-map-tooltip { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 4px; font-size: 0.7rem; padding: 3px 6px; }
     .route-map-tooltip::before { border-top-color: var(--border) !important; }
@@ -1117,8 +1117,16 @@ const state = {
 };
 window._state = state; // expose for debug.js
 
+// localStorage that never throws: it can raise SecurityError (site data
+// blocked) or QuotaExceededError (full) — the game must keep running
+const store = {
+  get(k)    { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { console.warn('storage write failed:', k, e); } },
+  remove(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } },
+};
+
 // ── Internationalization ──────────────────────────────────────────────────
-let currentLang = localStorage.getItem(LANG_KEY) || 'en';
+let currentLang = store.get(LANG_KEY) || 'en';
 if (currentLang === 'ja') document.documentElement.lang = 'ja';
 function gc(path) { if (typeof goatcounter !== 'undefined') goatcounter.count({ path, title: path, event: true }); }
 
@@ -1330,7 +1338,7 @@ _langRefreshers.push(function refreshPlacesBtns() {
 function switchLang(lang) {
   if (lang === currentLang) return;
   currentLang = lang;
-  localStorage.setItem(LANG_KEY, lang);
+  store.set(LANG_KEY, lang);
   document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
   applyLang();
   for (const fn of _langRefreshers) fn();
@@ -3221,67 +3229,38 @@ function handleLineDestinations(p) {
       // Count stops from current position to destination
       const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(lineDest.direction);
       if (stopsToEnd <= 0) return null;
-      return { ...d, untilIdx, effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
-        _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true };
+      const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
+      return { ...d, untilIdx, effectiveMax,
+        _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true,
+        onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
 
   // Merge mid-line connection destinations (e.g. Chuo → Ome at Tachikawa)
-  if (p._connections) {
-    for (const conn of p._connections) {
-      if (!conn.destinations) continue;
-      const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
-      if (stopsToJunction <= 0) continue;
-      const viaCount = effectiveViaCount(conn, state.currentStation.name);
-      const connMax = stopsToJunction + viaCount + getConnectionMaxStops(conn);
-      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1 && destServesStation(conn, dd, p))) {
-        const stopsOnTarget = conn.toDir === 'start'
-          ? conn.toJunctionIdx - d.untilIdx
-          : d.untilIdx - conn.toJunctionIdx;
-        const totalMax = stopsToJunction + viaCount + Math.max(0, stopsOnTarget);
-        const cappedMax = Math.min(totalMax, connMax);
-        dests.push({
-          name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: destRollCap(p, conn, cappedMax),
-          _conn: conn, _totalMax: cappedMax, _services: d.services || null,
-          _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
-        });
-      }
-    }
+  for (const conn of p._connections || []) {
+    if (!conn.destinations) continue;
+    const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
+    if (stopsToJunction <= 0) continue;
+    for (const d of servedDests(conn, p)) dests.push(connDestChoice(p, conn, d, stopsToJunction));
   }
 
   const wardDests = collapseOutOfWardChoices(p, dests);
 
   if (wardDests.length === 0) return { pickerShown: false };
 
-  function selectDest(d) {
-    if (d._conn) {
-      state.selectedConnection = d._conn;
-      state.selectedDestination = { totalMax: d._totalMax, services: d._services, name: d.name, ja: d.ja };
-    } else {
-      state.selectedDestination = { totalMax: d.effectiveMax, untilIdx: d.untilIdx, name: d.name, ja: d.ja };
-    }
-  }
-
   // If all destinations have the same effectiveMax (cap makes them equivalent),
   // auto-select the furthest one — no meaningful choice to make.
   const allSameMax = wardDests.every(d => d.effectiveMax === wardDests[0].effectiveMax);
-  if (allSameMax) {
-    selectDest(wardDests[wardDests.length - 1]);
+  if (allSameMax || wardDests.length === 1) {
+    wardDests[wardDests.length - 1].onSelect();
     return { pickerShown: false };
   }
-  if (wardDests.length > 1) {
-    showBranchPickerUI(p, wardDests.map(d => ({
-      name: d.name, ja: d.ja, color: d.color,
-      effectiveMax: d.effectiveMax,
-      onSelect: () => selectDest(d),
-    })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
-    return { pickerShown: true };
-  }
-  if (wardDests.length === 1) {
-    selectDest(wardDests[0]);
-  }
-  return { pickerShown: false };
+  showBranchPickerUI(p, wardDests.map(d => ({
+    name: d.name, ja: d.ja, color: d.color,
+    effectiveMax: d.effectiveMax,
+    onSelect: d.onSelect,
+  })), !!EXPRESS_SERVICES[p.lineName], 'lineDestination');
+  return { pickerShown: true };
 }
 
 // ── Connection branches (through-running) ──
@@ -3501,56 +3480,68 @@ function destServesStation(conn, d, p) {
 
 // Show destination picker for a connection with destinations.
 // Returns true if picker shown, false if auto-selected.
+// ── Destination choice builders (shared by the destination pickers) ──
+
+// Source-line short-turn destination (conn.lineDests): trains that terminate
+// before the junction (e.g. Hashimoto, Machida on the Yokohama Line). The ride
+// stays on the source line: sets selectedDestination but NOT selectedConnection.
+function lineDestChoice(p, conn, d) {
+  const line = state.lines[p.lineIdx];
+  const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+  if (untilIdx === -1) return null;
+  const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(p.direction);
+  if (stopsToEnd <= 0) return null;
+  return {
+    name: d.name, ja: d.ja, color: d.color || p.lineColor,
+    effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+    _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
+    onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja }; },
+  };
+}
+
+// Through-running destination d on conn, reached after `onLine` source-line
+// stops. Its range is capped by this connection's own reach, not the
+// platform's overall max (which another connection may set).
+function connDestChoice(p, conn, d, onLine) {
+  const via = effectiveViaCount(conn, state.currentStation.name);
+  const stopsOnTarget = conn.toDir === 'start'
+    ? conn.toJunctionIdx - d.untilIdx
+    : d.untilIdx - conn.toJunctionIdx;
+  const cappedMax = Math.min(onLine + via + Math.max(0, stopsOnTarget),
+                             onLine + via + getConnectionMaxStops(conn));
+  return {
+    name: d.name, ja: d.ja, color: d.color || p.lineColor,
+    effectiveMax: destRollCap(p, conn, cappedMax),
+    _services: d.services || null,
+    _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
+    onSelect: () => {
+      state.selectedConnection = conn;
+      state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
+    },
+  };
+}
+
+// Destinations of conn that resolved and whose trains serve this station
+function servedDests(conn, p) {
+  return conn.destinations.filter(d => d.untilIdx !== -1 && destServesStation(conn, d, p));
+}
+
+// Source-line stops ridden before conn's junction (mid-line junctions use
+// stops-to-junction instead of the full on-line count)
+function stopsBeforeJunction(p, conn, onLineStops) {
+  const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
+  return Math.min(onLineStops, Math.max(0, stopsToJunction));
+}
+
 function showDestinationPicker(p, conn, onLineStops) {
   const choices = [];
-
-  // Source-line short-turn destinations (lineDests): trains that terminate
-  // before reaching the connection junction (e.g. Hashimoto, Machida on Yokohama Line)
-  if (conn.lineDests) {
-    const line = state.lines[p.lineIdx];
-    for (const d of conn.lineDests) {
-      const untilIdx = line.stations.findIndex(s => s.ja === d.until);
-      if (untilIdx === -1) continue;
-      const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(p.direction);
-      if (stopsToEnd <= 0) continue;
-      choices.push({
-        name: d.name, ja: d.ja, color: d.color || p.lineColor,
-        effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
-        _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
-        onSelect: () => {
-          // Within-line: set destination limit but NOT selectedConnection
-          state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja };
-        },
-      });
-    }
+  for (const d of conn.lineDests || []) {
+    const c = lineDestChoice(p, conn, d);
+    if (c) choices.push(c);
   }
-
-  // Target-line destinations (through-running to connected line)
-  const dests = conn.destinations.filter(d => d.untilIdx !== -1 && destServesStation(conn, d, p));
+  const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
+  for (const d of servedDests(conn, p)) choices.push(connDestChoice(p, conn, d, effectiveOnLine));
   const viaCount = effectiveViaCount(conn, state.currentStation.name);
-  // For mid-line junctions, use stops-to-junction instead of full on-line stops
-  const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
-  const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
-  // Connection-specific max: cap by this connection's own range (not the platform's
-  // overall max which may include other connections' larger contributions)
-  const connSpecificMax = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
-  for (const d of dests) {
-    const stopsOnTarget = conn.toDir === 'start'
-      ? conn.toJunctionIdx - d.untilIdx
-      : d.untilIdx - conn.toJunctionIdx;
-    const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
-    const cappedMax = Math.min(totalMax, connSpecificMax);
-    choices.push({
-      name: d.name, ja: d.ja, color: d.color || p.lineColor,
-      effectiveMax: destRollCap(p, conn, cappedMax),
-      _services: d.services || null,
-      _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
-      onSelect: () => {
-        state.selectedConnection = conn;
-        state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
-      },
-    });
-  }
 
   // Chained destinations: follow onward connections recursively for through-running
   // beyond the target line (e.g. Keikyu Airport → Keikyu Main → Asakusa → Keisei Oshiage)
@@ -3634,51 +3625,24 @@ function showDestinationPicker(p, conn, onLineStops) {
 function showMergedDestinationPicker(p, conns, onLineStops) {
   const choices = [];
   const seenNames = new Set();
-  const line = state.lines[p.lineIdx];
 
   for (let ci = 0; ci < conns.length; ci++) {
     const conn = conns[ci];
     // lineDests (within-line short-turns, deduplicated across connections)
-    if (conn.lineDests) {
-      for (const d of conn.lineDests) {
-        if (seenNames.has(d.name)) continue;
-        const untilIdx = line.stations.findIndex(s => s.ja === d.until);
-        if (untilIdx === -1) continue;
-        const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(p.direction);
-        if (stopsToEnd <= 0) continue;
-        seenNames.add(d.name);
-        choices.push({
-          name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
-          _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
-          onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja }; },
-        });
-      }
+    for (const d of conn.lineDests || []) {
+      if (seenNames.has(d.name)) continue;
+      const c = lineDestChoice(p, conn, d);
+      if (!c) continue;
+      seenNames.add(d.name);
+      choices.push(c);
     }
     // destinations (through-running to target line)
     if (conn.destinations) {
-      const viaCount = effectiveViaCount(conn, state.currentStation.name);
-      // For mid-line junctions, use stops-to-junction instead of full on-line stops
-      const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
-      const effectiveOnLine = Math.min(onLineStops, Math.max(0, stopsToJunction));
-      for (const d of conn.destinations.filter(dd => dd.untilIdx !== -1 && destServesStation(conn, dd, p))) {
+      const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
+      for (const d of servedDests(conn, p)) {
         if (seenNames.has(d.name)) continue;
-        const stopsOnTarget = conn.toDir === 'start'
-          ? conn.toJunctionIdx - d.untilIdx : d.untilIdx - conn.toJunctionIdx;
-        const totalMax = effectiveOnLine + viaCount + Math.max(0, stopsOnTarget);
-        const connSpecificMax = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
-        const cappedMax = Math.min(totalMax, connSpecificMax);
         seenNames.add(d.name);
-        choices.push({
-          name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: destRollCap(p, conn, cappedMax),
-          _isConnDest: true, _connIdx: ci,
-          _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
-          onSelect: () => {
-            state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
-          },
-        });
+        choices.push({ ...connDestChoice(p, conn, d, effectiveOnLine), _isConnDest: true, _connIdx: ci });
       }
     }
   }
@@ -4816,6 +4780,14 @@ function rollStops() {
 }
 
 // ── Map ───────────────────────────────────────────────────────────────────
+// CARTO dark basemap used by every Leaflet map in the game
+function cartoTileLayer() {
+  return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
+    maxZoom: 19,
+    attribution: CARTO_ATTRIBUTION,
+  });
+}
+
 function showMap() {
   dom.mapCard.style.display = 'block';
   dom.mapCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4824,11 +4796,9 @@ function showMap() {
 
   if (!state.leafletMap) {
     state.leafletMap = L.map('map', { zoomControl: true }).setView([lat, lng], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
-      maxZoom: 19,
-    }).addTo(state.leafletMap);
+    cartoTileLayer().addTo(state.leafletMap);
   } else {
+    state.leafletMap.invalidateSize(); // card was hidden; Leaflet cached a 0×0 size
     state.leafletMap.setView([lat, lng], 15);
     if (state.mapMarker) state.leafletMap.removeLayer(state.mapMarker);
   }
@@ -4912,8 +4882,11 @@ async function togglePlaces(mode) {
 
   content.innerHTML = `<div class="bars-empty">${isBars ? t('searchingBars') : t('searchingCafes')}</div>`;
 
-  const { lat, lng } = state.destination;
+  const dest = state.destination;
+  const { lat, lng } = dest;
   const circle = `circle:${lat},${lng};r=${PLACES_RADIUS}`;
+  // The player may roll on while HERE responds — drop results for an old stop
+  const stale = () => state.destination !== dest;
 
   try {
     let items;
@@ -4960,6 +4933,7 @@ async function togglePlaces(mode) {
         .sort((a, b) => a.dist - b.dist);
     }
 
+    if (stale()) return;
     if (items.length === 0) {
       content.innerHTML = `<div class="bars-empty">${isBars ? t('noBars') : t('noCafes')}</div>`;
       return;
@@ -4968,6 +4942,7 @@ async function togglePlaces(mode) {
     _placesCache[mode] = items;
     renderPlacesContent(mode, items, PLACES_PAGE_SIZE);
   } catch (err) {
+    if (stale()) return;
     content.innerHTML = `<div class="bars-empty">${isBars ? t('fetchBarFail', { msg: err.message }) : t('fetchCafeFail', { msg: err.message })}</div>`;
   }
 }
@@ -5142,7 +5117,7 @@ function saveSession() {
   const mrP = state.selectedPlatform;
   const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum;
   if (state.history.length === 0 && !state._pendingRound && !hasMidRound) {
-    localStorage.removeItem(SESSION_KEY);
+    store.remove(SESSION_KEY);
     return;
   }
   const last = state.history.length > 0 ? state.history[state.history.length - 1] : null;
@@ -5165,7 +5140,7 @@ function saveSession() {
       trainType: state.selectedTrainType?.name || null,
     } : null;
 
-  localStorage.setItem(SESSION_KEY, JSON.stringify({
+  store.set(SESSION_KEY, JSON.stringify({
     timestamp: Date.now(),
     history: state.history,
     drankAt: [...state.drankAt],
@@ -5286,11 +5261,11 @@ async function resumePendingRound(pr) {
 
 function loadSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = store.get(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (Date.now() - data.timestamp > SESSION_TTL) {
-      localStorage.removeItem(SESSION_KEY);
+      store.remove(SESSION_KEY);
       return null;
     }
     return data;
@@ -5326,16 +5301,34 @@ function resumeSession(data) {
 
   // Set up current station so the player can roll again
   const stn = data.currentStation;
-  setStationInput(stn.name);
+  const name = resolveSavedStationName(stn);
+  if (!name) return; // station gone from the data: keep history, let the player pick again
+  setStationInput(name);
 
-  if (data.pendingRound) {
+  // A renamed station invalidates the saved mid-round state (it stores names)
+  const renamed = name !== stn.name;
+  if (data.pendingRound && !renamed) {
     // Resume interrupted transfer check
-    onStationSelected(stn.name, arrivedVia);
+    onStationSelected(name, arrivedVia);
     resumePendingRound(data.pendingRound);
   } else {
-    onStationSelected(stn.name, arrivedVia);
-    if (data.midRound) restoreMidRound(data.midRound);
+    onStationSelected(name, arrivedVia);
+    if (data.midRound && !renamed) restoreMidRound(data.midRound);
   }
+}
+
+// Current EN name for a saved station. Saved names can go stale when station
+// names change between visits (data update, OSM rename) — fall back to the
+// JA name, nearest to the saved coordinates. Returns null if not found.
+function resolveSavedStationName(stn) {
+  if (state.stationIndex[normalize(stn.name)]?.length) return stn.name;
+  let best = null, bestDist = Infinity;
+  for (const l of state.lines) for (const s of l.stations) {
+    if (s.ja !== stn.ja) continue;
+    const d = (Math.abs(s.lat - stn.lat) + Math.abs(s.lng - stn.lng)) || 0; // NaN if coords missing
+    if (d < bestDist) { bestDist = d; best = s; }
+  }
+  return best?.name || null;
 }
 
 // Restore a platform selection that was interrupted by page unload.
@@ -5502,10 +5495,7 @@ function buildRouteMap(elId) {
   }
 
   // Tile layer (covers vector base when online)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
-    maxZoom: 19,
-    attribution: CARTO_ATTRIBUTION,
-  }).addTo(map);
+  cartoTileLayer().addTo(map);
 
   const bounds = L.latLngBounds();
   const stopMarkers = collectRouteMarkers(state.history);
@@ -5597,7 +5587,7 @@ function resetGame() {
 
   dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
   dom.randomStationBtn.title     = t('pickRandom');
-  localStorage.removeItem(SESSION_KEY);
+  store.remove(SESSION_KEY);
 }
 
 // ── Geolocation ───────────────────────────────────────────────────────────
@@ -5734,7 +5724,7 @@ function checkLastTrainWarning() {
   const today = gameDay(now.getTime());
   // Last trains run until ~1am: warn from 23:30 until the game-day boundary
   const lateNight = (h === 23 && m >= 30) || h < SCHEDULE_DAY_BOUNDARY;
-  if (lateNight && localStorage.getItem(LTW_KEY) !== today) {
+  if (lateNight && store.get(LTW_KEY) !== today) {
     dom.lastTrainWarning.style.display = 'block';
   } else if (!lateNight) {
     dom.lastTrainWarning.style.display = 'none'; // reset before 11:30pm so it can show again tonight
@@ -6157,7 +6147,7 @@ function setupSettings() {
 
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
-    localStorage.setItem(LTW_KEY, gameDay());
+    store.set(LTW_KEY, gameDay());
   });
   function onCapChange() {
     saveSession();
@@ -6218,7 +6208,7 @@ function setupSessionResume() {
     document.getElementById('new-game-inline-btn').addEventListener('click', () => {
       inlineEl.style.display = 'none';
       settle();
-      localStorage.removeItem(SESSION_KEY);
+      store.remove(SESSION_KEY);
     }, { once: true });
     return;
   }
@@ -6264,7 +6254,7 @@ function setupSessionResume() {
     dismissRecap();
     settle();
     state.history = [];
-    localStorage.removeItem(SESSION_KEY);
+    store.remove(SESSION_KEY);
   }, { once: true });
 
   // Show overlay BEFORE building map — Leaflet needs a visible container for bounds
