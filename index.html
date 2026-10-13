@@ -630,7 +630,7 @@
     .how-to-play-btn:hover     { color: #333; }
     .htp-overlay               { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .htp-overlay.hidden        { display: none; }
-    .htp-card                  { background: var(--surface); border: 1px solid var(--surface2); border-radius: 12px; max-width: 420px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; font-size: 0.9rem; line-height: 1.5; color: var(--muted); }
+    .htp-card                  { background: var(--surface); border: 1px solid var(--surface2); border-radius: 12px; max-width: 420px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; font-size: 0.9rem; line-height: 1.5; color: var(--muted); max-height: 90vh; max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain; }
     .htp-card h2,
     .htp-card h3               { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--text); font-weight: 600; }
     .htp-card ol               { margin: 0.5rem 0; padding-left: 1.4rem; }
@@ -669,7 +669,6 @@
     /* ── Route map (shared styles) ────────────── */
     #route-map, #inline-route-map { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
     #recap-map { height: 220px; border-radius: 8px; overflow: hidden; background: var(--bg); }
-    #stats-overlay .htp-card, #recap-overlay .htp-card { max-height: 90vh; overflow-y: auto; }
     #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a, #recap-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
     #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution, #recap-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
     #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a, #recap-map .leaflet-control-attribution a { color: var(--accent2); }
