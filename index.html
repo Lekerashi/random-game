@@ -1140,6 +1140,13 @@ function lineDisplayName(englishName) {
   return englishName;
 }
 
+// Line label for a platform: its displayName (through-service brand or
+// shared-track combo, which carries its own JA label) or its line
+function platformLineName(p) {
+  if (currentLang === 'ja' && p.displayNameJa) return p.displayNameJa;
+  return lineDisplayName(p.displayName || p.lineName);
+}
+
 function t(key, params) {
   let str = translations[currentLang]?.[key] || translations.en[key] || key;
   if (params) {
@@ -1372,7 +1379,7 @@ function refreshPlatformGrid() {
       : `<div class="platform-pill">
            <span class="platform-num">${i + 1}</span>
            <span class="line-dot" style="background:${p.lineColor}"></span>
-           <span>${lineDisplayName(p.displayName || p.lineName)}<br><small class="text-muted">${platformHint(p)}</small></span>
+           <span>${platformLineName(p)}<br><small class="text-muted">${platformHint(p)}</small></span>
          </div>`
   ).join('');
 }
@@ -1527,11 +1534,16 @@ function resolveServiceStops(service, line) {
     }
   }
   if (sched.skip) {
+    // Names may be EN or JA on either side: match against the line's stations
     const skipSet = new Set(sched.skip.map(n => normalize(n)));
     if (service.stops === null) {
-      return line.stations.filter(s => !skipSet.has(normalize(s.name))).map(s => s.name);
+      return line.stations.filter(s => !stopSetHas(skipSet, s)).map(s => s.name);
     }
-    return service.stops.filter(s => !skipSet.has(normalize(s)));
+    const stationOf = n => line?.stations.find(s => normalize(s.name) === normalize(n) || normalize(s.ja) === normalize(n));
+    return service.stops.filter(n => {
+      const s = stationOf(n);
+      return !(s ? stopSetHas(skipSet, s) : skipSet.has(normalize(n)));
+    });
   }
   if (sched.stops !== undefined) return sched.stops;
   return service.stops;
@@ -2326,7 +2338,7 @@ function setStationInput(englishName) {
 
 // Compute display label and hint for a platform using i18n
 function platformLabel(p) {
-  const ln = lineDisplayName(p.displayName || p.lineName);
+  const ln = platformLineName(p);
   if (p.dirKey === 'loopCCW')         return `${ln} — ${t('loopCCW')}`;
   if (p.dirKey === 'loopCW')          return `${ln} — ${t('loopCW')}`;
   if (p.dirKey === 'clockwise')       return `${ln} — ${t('clockwise')}`;
@@ -2410,15 +2422,13 @@ function mergeSharedTrackPlatforms(platforms, stnJa) {
     if (opts.length === 1) return opts[0];
     const best = opts.reduce((a, b) => b.maxStops > a.maxStops ? b : a, opts[0]);
     // Keep a through-service name every train shares (e.g. "Ueno Tokyo Line")
-    let displayName = opts[0].displayName;
+    let displayName = opts[0].displayName, displayNameJa;
     if (!displayName || opts.some(o => o.displayName !== displayName)) {
-      const names = sharedTrackName(opts);
-      LINE_NAMES_JA[names.en] ||= names.ja;
-      displayName = names.en;
+      ({ en: displayName, ja: displayNameJa } = sharedTrackName(opts));
     }
     return {
       _sharedTrackOptions: opts,
-      lineName: best.lineName, displayName, lineColor: best.lineColor,
+      lineName: best.lineName, displayName, displayNameJa, lineColor: best.lineColor,
       direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
       dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
       maxStops: Math.max(...opts.map(o => o.maxStops)), circular: false,
@@ -2840,20 +2850,9 @@ function onStationSelected(name, arrivedVia) {
   const entries = state.stationIndex[key] || [];
   if (!entries.length) return;
 
-  // Pick the right station when multiple share the same name (e.g. Ogawamachi in Chiyoda vs Saitama).
-  // Prefer the entry on the line we arrived from, or closest to current position.
-  let first = entries[0];
-  if (arrivedVia && entries.length > 1) {
-    const match = entries.find(e => state.lines[e.lineIdx].name === arrivedVia.lineName);
-    if (match) first = match;
-  } else if (state.currentStation && entries.length > 1) {
-    let bestDist = Infinity;
-    for (const e of entries) {
-      const s = state.lines[e.lineIdx].stations[e.stationIdx];
-      const d = Math.abs(s.lat - state.currentStation.lat) + Math.abs(s.lng - state.currentStation.lng);
-      if (d < bestDist) { bestDist = d; first = e; }
-    }
-  }
+  // A name is one physical station (disambiguateSharedNames splits distant
+  // namesakes); prefer the arrival line's entry for its exact JA/coords
+  const first = entries.find(e => state.lines[e.lineIdx].name === arrivedVia?.lineName) || entries[0];
 
   const stn   = state.lines[first.lineIdx].stations[first.stationIdx];
   state.currentStation = { name, ja: stn.ja, lat: stn.lat, lng: stn.lng };
@@ -3051,7 +3050,7 @@ function rollPlatform() {
     // ── Normal train line (or shinkansen) ──────────────────────────────────
     const pLabel = platformLabel(p);
     const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-    const ln = lineDisplayName(p.displayName || p.lineName);
+    const ln = platformLineName(p);
     const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
     if (p.isShinkansen) {
       dom.diePlatformLabel.innerHTML = `<strong>${t('shinkansenRoll', { n: roll })}</strong> ${dirPart ? ` ${dirPart}` : ''}
@@ -3844,7 +3843,9 @@ function showTrainTypeButtons(p) {
       const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
-      if (window.game) {
+      // Players roll stops right away; debug.js pauses here so scripted tests
+      // can force the stop roll first (window._pauseBeforeStops)
+      if (window._pauseBeforeStops) {
         showRollStopsUI();
         dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
@@ -4573,6 +4574,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
 // ── Transfer check main ─────────────────────────────────────────────────
 
 async function checkTransfers(platform, rolledStops) {
+  const roundGen = state._roundGen; // a reset mid-journey aborts this round
   const route = getStationsAlongRoute(platform, rolledStops);
   state.route = route;
 
@@ -4623,6 +4625,7 @@ async function checkTransfers(platform, rolledStops) {
     state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
 
     const result = await resolveTransfer(route, i, ti, transferIndices);
+    if (state._roundGen !== roundGen) return { type: 'aborted' }; // New Game mid-journey
 
     if (result.outcome === 'transfer') {
       clearPendingRound();
@@ -4641,6 +4644,7 @@ async function checkTransfers(platform, rolledStops) {
   const lastChecked = transferIndices[transferIndices.length - 1];
   state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
   if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
+  if (state._roundGen !== roundGen) return { type: 'aborted' };
   return { type: 'arrive', station: route[route.length - 1] };
 }
 
@@ -4652,7 +4656,9 @@ async function handleRoundResult(result, p, roll) {
     // connection chain, so mid-line hops like Chuo→Ome count)
     const transferLine = getEffectiveArrival(p).lineName;
     addHistory({ transferred: true, stopsUsed: result.stopsUsed, _transferLine: transferLine });
+    const roundGen = state._roundGen;
     if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
+    if (state._roundGen !== roundGen) return; // New Game during the redirect pause
     setStationInput(result.station.name);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     onStationSelected(result.station.name, { lineName: transferLine, isTransfer: true });
@@ -4734,6 +4740,7 @@ function rollStops() {
 
     // Check for transfers along the route (using physical stop count)
     const result = await checkTransfers(p, physicalStops);
+    if (result.type === 'aborted') return; // reset mid-journey: this round is gone
     await handleRoundResult(result, p, roll);
     if (result.type !== 'transfer') {
       dom.rerollStopsBtn.style.display = 'inline-flex';
@@ -5157,6 +5164,7 @@ async function resumePendingRound(pr) {
   const route = pr.route;
   const transferIndices = pr.transferIndices;
   const resolvedCount = pr.resolvedCount;
+  const roundGen = state._roundGen; // a reset mid-journey aborts this round
 
   // Restore game state
   state.currentStation = pr.currentStation;
@@ -5204,6 +5212,7 @@ async function resumePendingRound(pr) {
     state.stationsSinceDrink += thirstBetween(prevTransferIdx, i);
 
     const result = await resolveTransfer(route, i, ti, transferIndices);
+    if (state._roundGen !== roundGen) return; // New Game mid-journey
 
     if (result.outcome === 'transfer') {
       clearPendingRound();
@@ -5224,6 +5233,7 @@ async function resumePendingRound(pr) {
   const lastChecked = transferIndices[transferIndices.length - 1];
   state.stationsSinceDrink += thirstBetween(lastChecked, route.length - 1);
   if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
+  if (state._roundGen !== roundGen) return;
   await handleRoundResult({ type: 'arrive', station: route[route.length - 1] }, pr.platform, pr.rolledStops);
 }
 
@@ -5335,7 +5345,7 @@ function restoreMidRound(mr) {
   // Show platform banner (same UI as rollPlatform callback)
   const pLabel = platformLabel(matchP);
   const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-  const ln = lineDisplayName(matchP.displayName || matchP.lineName);
+  const ln = platformLineName(matchP);
   dom.selectedPlatformDot.style.background = matchP.lineColor;
   dom.selectedPlatformText.innerHTML =
     `<strong>#${mr.rolledNum} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;

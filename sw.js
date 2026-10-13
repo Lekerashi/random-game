@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v30';
+const CACHE_NAME = 'rg-v31';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -6,7 +6,18 @@ const CDN_ASSETS = [
 
 // Map tiles aren't pre-cached: CARTO needs a per-host API key, and tiles
 // viewed online are cached on the fly below; offline maps fall back to
-// the TOKYO_GEO vector layer.
+// the TOKYO_GEO vector layer. Tiles live in their own unversioned cache
+// (they don't change with app releases), capped at MAX_TILES, oldest out first.
+const TILE_CACHE = 'rg-tiles';
+const MAX_TILES = 500;
+
+async function putTile(key, res) {
+  const cache = await caches.open(TILE_CACHE);
+  await cache.put(key, res);
+  const keys = await cache.keys(); // insertion order
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_TILES)).map(k => cache.delete(k)));
+}
+
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -19,7 +30,7 @@ self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_NAME && k !== TILE_CACHE).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -39,7 +50,8 @@ self.addEventListener('fetch', e => {
           }
           return res;
         })
-        .catch(() => caches.match(e.request))
+        // Offline: cached copy, or a proper network error (not undefined)
+        .catch(() => caches.match(e.request).then(r => r || Response.error()))
     );
     return;
   }
@@ -65,7 +77,8 @@ self.addEventListener('fetch', e => {
         // Opaque = no-cors tile <img>; its status is unreadable but it's normally fine
         if (res.ok || res.type === 'opaque') {
           const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(cacheKey, clone));
+          if (tileMatch) putTile(cacheKey, clone);
+          else caches.open(CACHE_NAME).then(c => c.put(cacheKey, clone));
         }
         return res;
       }))
