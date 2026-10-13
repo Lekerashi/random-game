@@ -1,33 +1,16 @@
-const CACHE_NAME = 'rg-v27';
+const CACHE_NAME = 'rg-v28';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
 ];
 
-// Pre-cache CartoDB dark tiles for greater Tokyo area (zoom 10-11)
-// Covers the area where train routes go (~1MB total)
-function tokyoTileUrls() {
-  const urls = [];
-  const ranges = [
-    // zoom 10: broad view (Kofu to Chiba, bay to Saitama)
-    { z: 10, xMin: 906, xMax: 911, yMin: 402, yMax: 405 },
-    // zoom 11: core Tokyo metro area
-    { z: 11, xMin: 1813, xMax: 1822, yMin: 805, yMax: 810 },
-  ];
-  for (const r of ranges) {
-    for (let x = r.xMin; x <= r.xMax; x++) {
-      for (let y = r.yMin; y <= r.yMax; y++) {
-        urls.push(`https://a.basemaps.cartocdn.com/dark_all/${r.z}/${x}/${y}.png`);
-      }
-    }
-  }
-  return urls;
-}
-
+// Map tiles aren't pre-cached: CARTO needs a per-host API key, and tiles
+// viewed online are cached on the fly below; offline maps fall back to
+// the TOKYO_GEO vector layer.
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(c => c.addAll([...CDN_ASSETS, ...tokyoTileUrls()]))
+      .then(c => c.addAll(CDN_ASSETS))
       .then(() => self.skipWaiting())
   );
 });

@@ -908,6 +908,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v12';
+const OSM_FETCH_TIMEOUT_MS = 8000; // give up on OSM station names and use built-in ones
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ← Paste your HERE Maps API key here (free at developer.here.com)
@@ -1453,10 +1454,44 @@ const SCHEDULE_DAY_BOUNDARY = 2; // schedule rolls over at 2am, not midnight
 // Returns 'weekday' or 'weekend'. Override with window._forceSchedule for testing.
 function getScheduleType() {
   if (window._forceSchedule) return window._forceSchedule;
-  const now = new Date();
-  let day = now.getDay();
-  if (now.getHours() < SCHEDULE_DAY_BOUNDARY) day = (day + 6) % 7; // still previous day
-  return (day === 0 || day === 6) ? 'weekend' : 'weekday';
+  // Shift back past the 2am boundary: 1am Saturday is still Friday night
+  const d = new Date(Date.now() - SCHEDULE_DAY_BOUNDARY * 3600000);
+  const day = d.getDay();
+  return (day === 0 || day === 6 || runsHolidayTimetable(d)) ? 'weekend' : 'weekday';
+}
+
+// Japanese national holiday (rules valid 1980–2099). Railways run their
+// weekend/holiday (土休日) timetable on these.
+function isJapaneseHoliday(d) {
+  const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+  const base = (y, m, day) => {
+    const nthMonday = n => { const first = new Date(y, m - 1, 1).getDay(); return 1 + ((8 - first) % 7) + (n - 1) * 7; };
+    const leap = Math.floor((y - 1980) / 4);
+    const fixed = { 1: [1], 2: [11, 23], 4: [29], 5: [3, 4, 5], 8: [11], 11: [3, 23] }[m] || [];
+    if (fixed.includes(day)) return true;
+    if ((m === 1 || m === 10) && day === nthMonday(2)) return true;   // Coming of Age, Sports Day
+    if ((m === 7 || m === 9) && day === nthMonday(3)) return true;    // Marine Day, Respect for the Aged
+    if (m === 3 && day === Math.floor(20.8431 + 0.242194 * (y - 1980) - leap)) return true; // spring equinox
+    if (m === 9 && day === Math.floor(23.2488 + 0.242194 * (y - 1980) - leap)) return true; // autumn equinox
+    return false;
+  };
+  if (base(y, m, day)) return true;
+  // Substitute holiday: the first non-holiday after a holiday that fell on Sunday
+  for (let back = 1; back <= 3; back++) {
+    const prev = new Date(y, m - 1, day - back);
+    if (!base(prev.getFullYear(), prev.getMonth() + 1, prev.getDate())) break;
+    if (prev.getDay() === 0) return true;
+  }
+  // Citizens' holiday: a weekday sandwiched between two holidays
+  const before = new Date(y, m - 1, day - 1), after = new Date(y, m - 1, day + 1);
+  return base(before.getFullYear(), before.getMonth() + 1, before.getDate())
+      && base(after.getFullYear(), after.getMonth() + 1, after.getDate());
+}
+
+// Holiday timetable days: national holidays plus the New Year break (Dec 30 – Jan 3)
+function runsHolidayTimetable(d) {
+  const m = d.getMonth() + 1, day = d.getDate();
+  return (m === 12 && day >= 30) || (m === 1 && day <= 3) || isJapaneseHoliday(d);
 }
 // Returns current hour (0-23). Override with window._forceHour for testing.
 function getCurrentHour() {
@@ -1584,9 +1619,12 @@ async function fetchOSMNames() {
     `node["railway"="station"]["name:en"]` +
     `(${BOUNDS.minLat},${BOUNDS.minLng},${BOUNDS.maxLat},${BOUNDS.maxLng});` +
     `out body;`;
+  // Overpass often queues for 20-60s; don't hold the loading screen for it —
+  // callers fall back to the built-in names on failure
   const res = await fetch('https://overpass-api.de/api/interpreter', {
     method: 'POST',
     body: 'data=' + encodeURIComponent(query),
+    signal: AbortSignal.timeout?.(OSM_FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
   const data = await res.json();
@@ -1653,9 +1691,11 @@ async function loadData() {
     return;
   }
 
-  // Cache topology + OSM names together
+  // Cache topology + OSM names together (empty names = fetch failed; leave
+  // them out so the next load retries)
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines, osmNames }));
+    const okNames = Object.keys(osmNames).length ? osmNames : null;
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines, osmNames: okNames }));
   } catch (_) { /* storage full — no problem */ }
 
   buildIndex(lines, osmNames);
@@ -2087,6 +2127,16 @@ function getOnwardConnections(conn) {
   const farIdx = dirEnd(toLine.stations.length, conn.toDir);
   return state.connections.filter(c =>
     c.from === conn.to && c.fromJunctionIdx === farIdx);
+}
+
+// Next hop when following a through-running chain past conn: the hop the
+// chosen destination needs (selectedDestination.chain, set by chained picks
+// like Meguro → Hiyoshi → Shonandai), else the first onward connection.
+function nextChainConn(conn, visited) {
+  const onward = getOnwardConnections(conn).filter(c => !visited.has(c.to));
+  const chain = state.selectedDestination?.chain;
+  return (chain && onward.find(c => chain.some(h => h.to === c.to && h.toDir === c.toDir)))
+    || onward[0] || null;
 }
 
 // Compute max additional stops available through terminus connections.
@@ -3507,6 +3557,7 @@ function showDestinationPicker(p, conn, onLineStops) {
   let chainConn = conn;
   let chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
   const chainVisited = new Set([conn.from, conn.to]);
+  const chainPath = []; // hops after conn that lead to chainConn
   while (chainConn) {
     const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
     let nextChain = null;
@@ -3521,6 +3572,8 @@ function showDestinationPicker(p, conn, onLineStops) {
           : d.untilIdx - nextConn.toJunctionIdx;
         const totalMax = chainBase + nextVia + Math.max(0, stopsOnNext);
         const cappedMax = Math.min(totalMax, p.maxStops);
+        // Hops routing must follow to reach this destination (see nextChainConn)
+        const chain = [...chainPath, nextConn].map(c => ({ to: c.to, toDir: c.toDir }));
         choices.push({
           name: d.name, ja: d.ja, color: d.color || p.lineColor,
           effectiveMax: capStops(cappedMax),
@@ -3528,7 +3581,7 @@ function showDestinationPicker(p, conn, onLineStops) {
           _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
           onSelect: () => {
             state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
+            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja, chain };
           },
         });
       }
@@ -3537,6 +3590,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     }
     if (!nextChain) break;
     chainBase += effectiveViaCount(nextChain, '') + getConnectionMaxStops(nextChain);
+    chainPath.push(nextChain);
     chainConn = nextChain;
   }
 
@@ -3926,9 +3980,8 @@ function walkIndices(line, indices, fromIdx, dir, stops, opts) {
   const step = dirStep(dir);
   const stations = [];
   for (let i = 1; i <= stops; i++) {
-    let p = pos + step * i;
-    p = Math.max(0, Math.min(indices.length - 1, p));
-    if (stations.length > 0 && stations[stations.length - 1] === line.stations[indices[p]]) break;
+    const p = pos + step * i;
+    if (p < 0 || p >= indices.length) break; // past the last stop (never re-add the departure)
     stations.push(line.stations[indices[p]]);
     if (opts?.boundIdx != null && indices[p] === opts.boundIdx) break;
   }
@@ -4018,9 +4071,9 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
   visitedLines.add(currentConn.to);
   stopsLeft = stops - result.length;
   while (stopsLeft > 0) {
-    const onward = getOnwardConnections(currentConn).filter(c => !visitedLines.has(c.to));
-    if (onward.length === 0) break;
-    currentConn = onward[0];
+    const next = nextChainConn(currentConn, visitedLines);
+    if (!next) break;
+    currentConn = next;
     visitedLines.add(currentConn.to);
     for (const vs of currentConn.viaStations) {
       if (stopsLeft <= 0) break;
@@ -4450,7 +4503,10 @@ function undimStations(start, end) {
 // Uses cumulative physical station counts so express→connection transitions
 // count correctly (express portion = local stations skipped, connection = 1 each).
 function buildThirstTracker(platform, rolledStops) {
-  const _ei = state.selectedTrainType?.expressIndices;
+  // Connection express: expressIndices are TARGET-line indices — use the
+  // source-line ones (past the junction, each stop counts 1)
+  const tt = state.selectedTrainType;
+  const _ei = tt?._connTargetLineIdx != null ? tt._srcExpIndices : tt?.expressIndices;
   const _eiPos = _ei ? _ei.indexOf(platform.fromIdx) : -1;
   let _cumPhysical = null;
   if (_ei && _eiPos !== -1) {
@@ -4608,8 +4664,7 @@ async function checkTransfers(platform, rolledStops) {
       routeLineNames.add(chainConn.to);
       for (const l of (chainConn.impliedLines || [])) routeLineNames.add(l);
       chainVisited.add(chainConn.to);
-      const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
-      chainConn = onward.length > 0 ? onward[0] : null;
+      chainConn = nextChainConn(chainConn, chainVisited);
     }
   }
 
@@ -4665,10 +4720,10 @@ async function checkTransfers(platform, rolledStops) {
 // ── Post-transfer result handling (shared by rollStops and resume) ──────
 async function handleRoundResult(result, p, roll) {
   if (result.type === 'transfer') {
-    const onLineStops = p._onLineStops;
-    const transferLine = (state.selectedConnection && onLineStops != null && result.stopsUsed > onLineStops)
-      ? state.selectedConnection.to : p.lineName;
     state.destination = result.station;
+    // Line the rider is actually on at the transfer station (walks the
+    // connection chain, so mid-line hops like Chuo→Ome count)
+    const transferLine = getEffectiveArrival(p).lineName;
     addHistory({ transferred: true, stopsUsed: result.stopsUsed, _transferLine: transferLine });
     if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_REDIRECT_DELAY));
     setStationInput(result.station.name);
@@ -5143,6 +5198,8 @@ function savePendingRound(route, transferIndices, resolvedCount, thirstBetween, 
     },
     trainType: state.selectedTrainType ? { name: state.selectedTrainType.name, ja: state.selectedTrainType.ja } : null,
     connectionTo: state.selectedConnection?.to || null,
+    connectionToDir: state.selectedConnection?.toDir || null,
+    destination: state.selectedDestination,
   };
   saveSession();
 }
@@ -5162,7 +5219,14 @@ async function resumePendingRound(pr) {
   state.currentStation = pr.currentStation;
   state.selectedPlatform = pr.platform;
   state.selectedTrainType = pr.trainType;
-  state.selectedConnection = pr.connectionTo ? { to: pr.connectionTo } : null;
+  // Re-find the real connection object: arrival-line and backtracking logic
+  // walk its toLineIdx/toDir and onward chain
+  const p0 = pr.platform;
+  state.selectedConnection = pr.connectionTo
+    ? getConnections(p0.lineName, p0.lineIdx, p0.direction, p0.fromIdx)
+        .find(c => c.to === pr.connectionTo && (!pr.connectionToDir || c.toDir === pr.connectionToDir)) || null
+    : null;
+  state.selectedDestination = pr.destination || null;
   state.rolledStops = pr.rolledStops;
   state.route = route;
   state.stationsSinceDrink = pr.stationsSinceDrink;
@@ -5638,8 +5702,7 @@ function getEffectiveArrival(p) {
     if (toLine && toLine.stations.some(s => s.name === dest.name)) {
       return { lineName: effConn.to, direction: effConn.toDir };
     }
-    const onward = getOnwardConnections(effConn).filter(c => !visited.has(c.to));
-    effConn = onward.length > 0 ? onward[0] : null;
+    effConn = nextChainConn(effConn, visited);
   }
 
   // Fallback to source line
@@ -5667,11 +5730,13 @@ function checkLastTrainWarning() {
   const now   = new Date();
   const h     = now.getHours();
   const m     = now.getMinutes();
-  const today = now.toDateString();
-  const past1130 = h > 23 || (h === 23 && m >= 30);
-  if (past1130 && localStorage.getItem(LTW_KEY) !== today) {
+  // Game day (2am boundary) so a warning dismissed at 23:45 stays dismissed after midnight
+  const today = gameDay(now.getTime());
+  // Last trains run until ~1am: warn from 23:30 until the game-day boundary
+  const lateNight = (h === 23 && m >= 30) || h < SCHEDULE_DAY_BOUNDARY;
+  if (lateNight && localStorage.getItem(LTW_KEY) !== today) {
     dom.lastTrainWarning.style.display = 'block';
-  } else if (!past1130) {
+  } else if (!lateNight) {
     dom.lastTrainWarning.style.display = 'none'; // reset before 11:30pm so it can show again tonight
   }
 }
@@ -6092,7 +6157,7 @@ function setupSettings() {
 
   dom.dismissTrainWarning.addEventListener('click', () => {
     dom.lastTrainWarning.style.display = 'none';
-    localStorage.setItem(LTW_KEY, new Date().toDateString());
+    localStorage.setItem(LTW_KEY, gameDay());
   });
   function onCapChange() {
     saveSession();
@@ -6117,12 +6182,14 @@ function setupSettings() {
   setInterval(checkLastTrainWarning, 5 * 60 * 1000);
 }
 
-// Check if a timestamp is on the same "game day" as now (day boundary at 2am)
+// "Game day" of a timestamp: the day boundary is 2am, so 1am still counts as last night
+function gameDay(timestamp = Date.now()) {
+  return new Date(timestamp - SCHEDULE_DAY_BOUNDARY * 3600000).toDateString();
+}
+
+// Check if a timestamp is on the same game day as now
 function sameGameDay(timestamp) {
-  const shift = SCHEDULE_DAY_BOUNDARY * 3600000;
-  const nowDay = new Date(Date.now() - shift).toDateString();
-  const thenDay = new Date(timestamp - shift).toDateString();
-  return nowDay === thenDay;
+  return gameDay() === gameDay(timestamp);
 }
 
 function setupSessionResume() {
@@ -6184,7 +6251,7 @@ function setupSessionResume() {
     overlay.classList.add('hidden');
   }
 
-  document.getElementById('recap-save-btn').addEventListener('click', () => saveSessionImage(), { once: true });
+  document.getElementById('recap-save-btn').onclick = () => saveSessionImage();
   const copyBtn = document.getElementById('recap-copy-btn');
   copyBtn.addEventListener('click', () => copyRoute(copyBtn));
 
