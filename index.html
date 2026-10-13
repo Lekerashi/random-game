@@ -2336,6 +2336,84 @@ function mergeShinkansenPlatforms(rawShinkansen) {
   });
 }
 
+// Merge platforms of lines that share one physical track at this station
+// (SHARED_TRACKS). Two platforms head the same way when the first station
+// ahead that both lines serve is the same (works for skip-stop lines like
+// Sky Access). At a `splitAt` station the lines diverge right after the
+// shared platform, so the first common station behind also counts.
+// The roll lands on the merged platform, then picks a random train.
+function mergeSharedTrackPlatforms(platforms, stnJa) {
+  const groups = SHARED_TRACKS.filter(g => g.stations.includes(stnJa));
+  if (!groups.length) return platforms;
+  const out = platforms.map(p => {
+    const g = groups.find(g => g.lines.includes(p.lineName));
+    if (!g || p.circular) return p;
+    const jas = state.lines[p.lineIdx].stations.map(s => s.ja);
+    const ahead = p.direction === 'end' ? jas.slice(p.fromIdx + 1) : jas.slice(0, p.fromIdx).reverse();
+    const behind = p.direction === 'end' ? jas.slice(0, p.fromIdx).reverse() : jas.slice(p.fromIdx + 1);
+    return { g, options: [p], members: [{ ahead, behind, set: new Set(jas) }],
+             split: !!g.splitAt?.includes(stnJa) };
+  });
+  const firstIn = (list, set) => list.find(ja => set.has(ja));
+  const sameWay = (a, b, split) => {
+    const ahead = firstIn(a.ahead, b.set);
+    if (ahead && ahead === firstIn(b.ahead, a.set)) return true;
+    if (!split) return false;
+    const behind = firstIn(a.behind, b.set);
+    return !!behind && behind === firstIn(b.behind, a.set);
+  };
+  // Join buckets with any same-way pair until stable (order-independent)
+  for (let merged = true; merged;) {
+    merged = false;
+    for (let i = 0; i < out.length && !merged; i++) {
+      for (let j = i + 1; j < out.length && !merged; j++) {
+        const a = out[i], b = out[j];
+        if (!a.options || !b.options || a.g !== b.g) continue;
+        if (!a.members.some(x => b.members.some(y => sameWay(x, y, a.split)))) continue;
+        a.options.push(...b.options);
+        a.members.push(...b.members);
+        out.splice(j, 1);
+        merged = true;
+      }
+    }
+  }
+  return out.map(x => {
+    if (!x.options) return x;
+    const opts = x.options;
+    if (opts.length === 1) return opts[0];
+    const best = opts.reduce((a, b) => b.maxStops > a.maxStops ? b : a, opts[0]);
+    // Keep a through-service name every train shares (e.g. "Ueno Tokyo Line")
+    let displayName = opts[0].displayName;
+    if (!displayName || opts.some(o => o.displayName !== displayName)) {
+      const names = sharedTrackName(opts);
+      LINE_NAMES_JA[names.en] ||= names.ja;
+      displayName = names.en;
+    }
+    return {
+      _sharedTrackOptions: opts,
+      lineName: best.lineName, displayName, lineColor: best.lineColor,
+      direction: best.direction, fromIdx: best.fromIdx, lineIdx: best.lineIdx,
+      dirKey: best.dirKey, dirStation: best.dirStation, hintStation: best.hintStation,
+      maxStops: Math.max(...opts.map(o => o.maxStops)), circular: false,
+    };
+  });
+}
+
+// Combined pill label for a shared-track platform, e.g. "Yokosuka / Shonan Shinjuku"
+function sharedTrackName(opts) {
+  const OPERATOR = /^(JR|Tokyo Metro|Toei|Tokyu|Hokuso Railway) /;
+  const OPERATOR_JA = /^(JR|東京メトロ|都営|東急)/;
+  return {
+    en: opts.map(o => o.lineName.replace(OPERATOR, '').replace(/ Line$/i, '')).join(' / '),
+    ja: opts.map(o => (LINE_NAMES_JA[o.lineName] || state.lines[o.lineIdx].ja || o.lineName).replace(OPERATOR_JA, '')).join(' / '),
+  };
+}
+
+// Real platforms behind the merged ones (shinkansen + shared-track)
+function flatPlatforms(platforms) {
+  return platforms.flatMap(p => p._sharedTrackOptions || p._shinkansenOptions || [p]);
+}
+
 // ── Platform builders (used by getPlatforms) ─────────────────────────────
 
 function getOedoTochomaePlatforms(line, entry, N) {
@@ -2807,6 +2885,7 @@ function onStationSelected(name, arrivedVia) {
   const rawShinkansen = allPlatforms.filter(p => SHINKANSEN_LINES.has(p.lineName));
   allPlatforms = allPlatforms.filter(p => !SHINKANSEN_LINES.has(p.lineName));
   const shinkansenPlatforms = mergeShinkansenPlatforms(rawShinkansen);
+  allPlatforms = mergeSharedTrackPlatforms(allPlatforms, stn.ja);
   // Thirst: after 5 stations without drinking, extra roll numbers map to drink
   const extraDrinkNums = canDrinkHere ? Math.max(0, state.stationsSinceDrink - THIRST_THRESHOLD) : 0;
   // Airport stations always show a flight option (5% chance when rolled)
@@ -2878,6 +2957,14 @@ function rollPlatform() {
         pick = opts[Math.floor(Math.random() * opts.length)];
       }
       state.selectedPlatform = pick;
+    }
+    // ── Resolve shared-track platform → pick a random train ───────────────
+    const sharedOpts = state.selectedPlatform._sharedTrackOptions;
+    if (sharedOpts) {
+      const forced = window._forceNextSharedLine;
+      window._forceNextSharedLine = null;
+      state.selectedPlatform = (forced && sharedOpts.find(o => o.lineName === forced))
+        || sharedOpts[Math.floor(Math.random() * sharedOpts.length)];
     }
     const p = state.selectedPlatform;
 
@@ -5159,7 +5246,7 @@ function resumeSession(data) {
 // Finds the matching platform in the rebuilt list, pre-sets any saved picker
 // selections, and shows the roll-stops UI.
 function restoreMidRound(mr) {
-  const matchP = state.platforms.find(p => p.lineName === mr.lineName && p.direction === mr.direction);
+  const matchP = flatPlatforms(state.platforms).find(p => p.lineName === mr.lineName && p.direction === mr.direction);
   if (!matchP) return;
 
   state.selectedPlatform = matchP;

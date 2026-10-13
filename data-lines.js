@@ -393,6 +393,31 @@ const STATION_ALIASES = {
   "Machiya":                    ["Machiya-ekimae"],
 };
 
+// Lines that share one physical platform per direction at these stations (JA).
+// Their platforms merge into one dice slot; the roll then picks a random train.
+// Only same-direction platforms merge (same first common station ahead). `splitAt`:
+// the lines diverge right after the shared platform with no common station ahead,
+// so the first common station behind counts too.
+const SHARED_TRACKS = [
+  { lines: ['JR Yokosuka Line', 'JR Shonan Shinjuku Line', 'Sotetsu-JR Direct Line'],
+    stations: ['大崎', '西大井', '武蔵小杉', '新川崎', '横浜', '保土ケ谷', '東戸塚', '戸塚'],
+    splitAt: ['西大井', '武蔵小杉'] },
+  { lines: ['JR Saikyo Line', 'JR Shonan Shinjuku Line'],
+    stations: ['恵比寿', '渋谷', '新宿'] },
+  { lines: ['Utsunomiya Line', 'JR Takasaki Line'],
+    stations: ['上野', '尾久', '赤羽', '浦和', 'さいたま新都心', '大宮'] },
+  { lines: ['Tokyo Metro Yurakucho Line', 'Tokyo Metro Fukutoshin Line'],
+    stations: ['和光市', '地下鉄成増', '地下鉄赤塚', '平和台', '氷川台', '小竹向原'] },
+  { lines: ['Tokyo Metro Namboku Line', 'Toei Mita Line'],
+    stations: ['白金台', '目黒'] },
+  { lines: ['Tokyu Den-en-toshi Line', 'Tokyu Oimachi Line'],
+    stations: ['二子新地', '高津'] },
+  { lines: ['Keisei Main Line', 'Narita Sky Access', 'Hokuso Railway Hokuso Line'],
+    stations: ['京成上野', '日暮里', '青砥', '京成高砂', '東松戸', '新鎌ヶ谷', '千葉ニュータウン中央', '印旛日本医大'] },
+  { lines: ['JR Sotobo Line', 'JR Uchibo Line'],
+    stations: ['本千葉'] },
+];
+
 // Walkable connections — stations linked by walkway, not rail transfer.
 // Only affects getPlatforms (roll-again), NOT transfer checks mid-route.
 // One-way: Higashi-Narita can access Terminal 2 lines, but not vice versa
