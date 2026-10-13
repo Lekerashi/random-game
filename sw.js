@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v29';
+const CACHE_NAME = 'rg-v30';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -44,9 +44,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // APIs and analytics (HERE places, Overpass, GoatCounter) go straight to the
+  // APIs and analytics (HERE places, GoatCounter) go straight to the
   // network — caching them would freeze a one-off error or stale result
-  if (e.request.method !== 'GET' || /hereapi\.com|overpass-api\.de|goatcounter\.com/.test(url.hostname)) return;
+  if (e.request.method !== 'GET' || /hereapi\.com|goatcounter\.com/.test(url.hostname)) return;
 
   // Cache-first for CDN assets (Leaflet, map tiles)
   // Normalize tile subdomain (a/b/c) so cache hits regardless of subdomain
@@ -55,9 +55,13 @@ self.addEventListener('fetch', e => {
     ? new Request('https://a.basemaps.cartocdn.com/' + tileMatch[1])
     : e.request;
 
+  // An opaque cached copy can't satisfy a CORS request (canvas export would
+  // fail to load it) — fetch fresh instead
+  const usable = cached => cached && !(cached.type === 'opaque' && e.request.mode === 'cors');
+
   e.respondWith(
     caches.match(cacheKey)
-      .then(cached => cached || fetch(e.request).then(res => {
+      .then(cached => usable(cached) ? cached : fetch(e.request).then(res => {
         // Opaque = no-cors tile <img>; its status is unreadable but it's normally fine
         if (res.ok || res.type === 'opaque') {
           const clone = res.clone();

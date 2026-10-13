@@ -166,19 +166,19 @@ const EXPRESS_SERVICES = {
       "Shiki","Yanasegawa","Mizuhodai","Tsuruse","Fujimino","Kami-fukuoka",
       "Shingashi","Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
-      "Tsukinowa","Musashi-ranzan","Ogawamachi",
+      "Tsukinowa","Musashi-ranzan","小川町",
     ]},
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "Ikebukuro","Narimasu","Wakoshi","Asaka","Asakadai","Shiki","Fujimino",
       "Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
-      "Tsukinowa","Musashi-ranzan","Ogawamachi",
+      "Tsukinowa","Musashi-ranzan","小川町",
     ]},
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
       "Ikebukuro","Wakoshi","Asakadai",
       "Kawagoe","Kawagoeshi","霞ヶ関","Tsurugashima","Wakaba",
       "Sakado","Kita-sakado","Takasaka","Higashi-matsuyama","Shinrin-koen",
-      "Tsukinowa","Musashi-ranzan","Ogawamachi",
+      "Tsukinowa","Musashi-ranzan","小川町",
     ]},
   ],
   "Tobu Isesaki Line": [
@@ -190,7 +190,9 @@ const EXPRESS_SERVICES = {
       "Tobu-Dobutsukoen","Wado","Kuki","Washinomiya",
       "Hanasaki","Kazo","Minami-Hanyu","Hanyu","Kawamata","Morinji-mae",
       "Tatebayashi",
-    ]},
+    ],
+      // Rush/early-late only: gone 10–16h weekdays, 10–20h weekends (wrapping ranges)
+      schedule: { weekday: { timeRange: [17, 10] }, weekend: { timeRange: [21, 10] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "Oshiage (Skytree)","Hikifune","Kita-Senju","Nishiarai","Soka",
       "Shin-koshigaya","Koshigaya","Kita-koshigaya","Obukuro","Sengendai",
@@ -302,7 +304,39 @@ const EXPRESS_SERVICES = {
       "Osaki","Ebisu","Shibuya","Shinjuku","Ikebukuro","板橋","十条",
       "Akabane","Musashi-Urawa","Omiya",
     ],
-      schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
+      // Weekdays, both directions, mornings (6–10h) and evenings (16–22h)
+      schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 11] } } },
+  ],
+  "Tsukuba Express": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Sec. Rapid", ja: "区間快速", color: "#f0c000", stops: [
+      "秋葉原","新御徒町","浅草","南千住","北千住","八潮","三郷中央",
+      "南流山","流山おおたかの森","柏の葉キャンパス","守谷",
+      "みらい平","みどりの","万博記念公園","研究学園","つくば",
+    ]},
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
+      "南流山","流山おおたかの森","守谷","つくば",
+    ]},
+    // 通勤快速 omitted: one-way (toward Tsukuba) weekday evenings only
+  ],
+  "Tokyu Oimachi Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
+    ]},
+  ],
+  "Sotetsu Main Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
+      "大和","相模大塚","さがみ野","かしわ台","海老名",
+    ]},
+    { name: "Ltd. Exp", ja: "特急", color: "#e83080", stops: [
+      "横浜","西谷","二俣川","大和","海老名",
+    ]},
+    // 急行 abolished 2023; 通勤特急/通勤急行 omitted (weekday-morning, toward Yokohama only).
+    // Izumino Line: 快速 is all-stations there, so it stays Local-only.
   ],
 };
 

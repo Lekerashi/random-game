@@ -907,8 +907,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
-const CACHE_KEY = 'random_game_v12';
-const OSM_FETCH_TIMEOUT_MS = 8000; // give up on OSM station names and use built-in ones
+const CACHE_KEY = 'random_game_v13';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // ← Paste your HERE Maps API key here (free at developer.here.com)
@@ -981,8 +980,6 @@ function eggStayedKey(stationJa) { return getEgg(stationJa)?.stayedKey || 'staye
 function eggLabelKey(stationJa) { return getEgg(stationJa)?.labelKey || 'drinkHereLabel'; }
 function eggDrinkAtArrival(stationJa) { return getEgg(stationJa)?.emoji || t('drinkAtArrivalHist'); }
 
-// Greater Tokyo bounding box (line center coordinates)
-const BOUNDS = { minLat: 34.9, maxLat: 36.5, minLng: 138.5, maxLng: 141.0 };
 
 
 // 23 Special Wards of Tokyo — polygon approximation
@@ -1058,8 +1055,15 @@ function getWardOrCity(lat, lng) {
   return null;
 }
 
+// STATION_ALIASES / WALKABLE_STATIONS keyed by normalized name: station EN
+// spellings change with data updates ("Oji-ekimae" → "Oji Ekimae"), and an
+// exact-string lookup would silently drop the link
+const byNormalizedKey = obj => new Map(Object.entries(obj).map(([k, v]) => [normalize(k), v]));
+const ALIASES_BY_KEY  = byNormalizedKey(STATION_ALIASES);
+const WALKABLE_BY_KEY = byNormalizedKey(WALKABLE_STATIONS);
+
 function getAliasKeys(stationName) {
-  const aliases = STATION_ALIASES[stationName];
+  const aliases = ALIASES_BY_KEY.get(normalize(stationName));
   return aliases ? aliases.map(a => normalize(a)) : [];
 }
 
@@ -1554,11 +1558,14 @@ function getExpressIndices(line, stopNames) {
 function getTrainTypes(lineName, stationName, line) {
   const services = EXPRESS_SERVICES[lineName];
   if (!services) return null;
+  // Stop lists may name stations in EN or JA — match the station object on
+  // this line by either (stopSetHas), as routing does
   const norm = normalize(stationName);
+  const stn = line.stations.find(s => normalize(s.name) === norm) || { name: stationName };
   return services
     .filter(svc => {
       const stops = resolveServiceStops(svc, line);
-      return stops === null || stops.some(s => normalize(s) === norm);
+      return stops === null || stopSetHas(new Set(stops.map(normalize)), stn);
     })
     .map(svc => {
       const stops = resolveServiceStops(svc, line);
@@ -1617,78 +1624,28 @@ function getBranchMaxStops(platform, branchIndices) {
 }
 
 // ── Data Loading ──────────────────────────────────────────────────────────
-
-// Fetch human-curated station romanizations from OpenStreetMap.
-// Returns a map of { "日本語名": "Romanized Name" }.
-async function fetchOSMNames() {
-  // Query all railway stations in the Tokyo bounding box that have a name:en tag.
-  const query =
-    `[out:json][timeout:60];` +
-    `node["railway"="station"]["name:en"]` +
-    `(${BOUNDS.minLat},${BOUNDS.minLng},${BOUNDS.maxLat},${BOUNDS.maxLng});` +
-    `out body;`;
-  // Overpass often queues for 20-60s; don't hold the loading screen for it —
-  // callers fall back to the built-in names on failure
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: 'data=' + encodeURIComponent(query),
-    signal: AbortSignal.timeout?.(OSM_FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`);
-  const data = await res.json();
-  const map = {};
-  for (const el of data.elements || []) {
-    const ja = el.tags?.['name:ja'] || el.tags?.name;
-    const en = el.tags?.['name:en'];
-    if (ja && en) map[ja] = en;
-  }
-  return map;
-}
+// Station names come only from data-tokyo.json (build-data.js bakes in the
+// fixes, including the OSM name:en values); nothing is fetched at runtime.
 
 async function loadData() {
   setLoadingStatus(t('checkingCache'));
+  store.remove('random_game_v12'); // previous cache format (lines + OSM names)
 
   // ── Try localStorage cache ─────────────────────────────────────────────
-  let cachedLines = null, cachedOsmNames = null;
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Date.now() - parsed.timestamp < CACHE_TTL && parsed.lines?.length > 0) {
-        cachedLines    = parsed.lines;
-        cachedOsmNames = parsed.osmNames || null; // may be absent in older caches
-      }
-    }
-  } catch (_) { /* ignore */ }
-
-  if (cachedLines) {
-    // Topology is cached; fetch OSM names if they weren't cached yet
-    let osmNames = cachedOsmNames || {};
-    if (!cachedOsmNames) {
-      setLoadingStatus(t('fetchingOSM'));
-      try {
-        osmNames = await fetchOSMNames();
-        // Patch the existing cache entry with the freshly fetched OSM names
-        const existing = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
-        existing.osmNames = osmNames;
-        localStorage.setItem(CACHE_KEY, JSON.stringify(existing));
-      } catch (e) { console.warn('OSM name fetch failed, using built-in fixes:', e); }
-    } else {
+    const parsed = JSON.parse(store.get(CACHE_KEY) || 'null');
+    if (parsed && Date.now() - parsed.timestamp < CACHE_TTL && parsed.lines?.length > 0) {
       setLoadingStatus(t('loadingCache'));
+      buildIndex(parsed.lines);
+      return;
     }
-    buildIndex(cachedLines, osmNames);
-    return;
-  }
+  } catch (_) { /* corrupt cache: fetch fresh */ }
 
-  // ── Fetch everything fresh (first load) ───────────────────────────────
+  // ── Fetch fresh ───────────────────────────────────────────────────────
   setLoadingStatus(t('loadingTrain'));
-  let lines, osmNames;
+  let lines;
   try {
-    // Run both fetches in parallel — pre-built topology (~315 KB) + OSM names (~200 KB)
-    [lines, osmNames] = await Promise.all([
-      fetch(DATA_URL).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }),
-      fetchOSMNames().catch(e => { console.warn('OSM name fetch failed, using built-in fixes:', e); return {}; }),
-    ]);
+    lines = await fetch(DATA_URL).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); });
   } catch (err) {
     showError(t('errorLoad', { msg: err.message }));
     return;
@@ -1699,17 +1656,43 @@ async function loadData() {
     return;
   }
 
-  // Cache topology + OSM names together (empty names = fetch failed; leave
-  // them out so the next load retries)
-  try {
-    const okNames = Object.keys(osmNames).length ? osmNames : null;
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines, osmNames: okNames }));
-  } catch (_) { /* storage full — no problem */ }
-
-  buildIndex(lines, osmNames);
+  store.set(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), lines })); // full storage: no problem
+  buildIndex(lines);
 }
 
-function buildIndex(lines, osmNames = {}) {
+// Stations are looked up by normalized EN name, so two different stations
+// with the same name (Iriya on the Hibiya vs the Sagami Line) would merge and
+// offer each other's lines. The station nearest central Tokyo keeps the plain
+// name; each other distinct station (entries > 1 km apart) gets its line
+// appended: "Iriya (JR Sagami)". Returns the new names.
+const SAME_STATION_KM = 1;
+function disambiguateSharedNames(lines) {
+  const km = (a, b) => Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 91);
+  const TOKYO = { lat: 35.681, lng: 139.767 };
+  const added = [];
+  for (const [key, entries] of Object.entries(state.stationIndex)) {
+    if (entries.length < 2) continue;
+    const stnOf = e => lines[e.lineIdx].stations[e.stationIdx];
+    // Group entries into physical stations
+    const clusters = [];
+    for (const e of entries) {
+      const c = clusters.find(c => km(stnOf(c[0]), stnOf(e)) <= SAME_STATION_KM);
+      if (c) c.push(e); else clusters.push([e]);
+    }
+    if (clusters.length < 2) continue;
+    clusters.sort((a, b) => km(stnOf(a[0]), TOKYO) - km(stnOf(b[0]), TOKYO));
+    state.stationIndex[key] = clusters[0];
+    for (const c of clusters.slice(1)) {
+      const name = `${stnOf(c[0]).name} (${c[0].lineName.replace(/ Line$/i, '')})`;
+      for (const e of c) stnOf(e).name = name;
+      (state.stationIndex[normalize(name)] ||= []).push(...c);
+      added.push(name);
+    }
+  }
+  return added;
+}
+
+function buildIndex(lines) {
   state.lines = lines = lines.filter(l => !LINE_REMOVE.includes(l.name));
   for (const l of lines) {
     if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
@@ -1750,9 +1733,6 @@ function buildIndex(lines, osmNames = {}) {
   const zushiHayamaStn = lines.find(l => l.name === 'Keikyu Zushi Line')
     ?.stations.find(s => s.ja === '新逗子');
   if (zushiHayamaStn) zushiHayamaStn.ja = '逗子・葉山';
-  for (const [ja, en] of Object.entries(OSM_NAME_FIXES)) {
-    if (osmNames[ja]) osmNames[ja] = en;
-  }
 
   // Keisei Higashi-Narita Line (京成東成田線) — short branch not in upstream data
   // Shares Keisei Narita with the Main Line; Shibayama Railway covers the onward leg
@@ -1833,56 +1813,12 @@ function buildIndex(lines, osmNames = {}) {
     ],
   });
 
-  // EN names referenced by gameplay data (express stops, aliases, walkable
-  // links, anchors). An OSM name:en edit that changes one of these stations'
-  // normalized keys would silently break the matching (the Tobu-Dobutsukoen
-  // failure class), so such renames are skipped with a console warning.
-  // Cosmetic renames (same normalized key) still apply.
-  const gameplayNameRefs = new Set();
-  const addRef = s => gameplayNameRefs.add(normalize(s));
-  const addServiceRefs = t => {
-    for (const s of (t.stops || [])) addRef(s);
-    for (const sched of Object.values(t.schedule || {})) {
-      for (const s of (sched.skip || [])) addRef(s);
-      for (const s of (sched.stops || [])) addRef(s);
-    }
-  };
-  for (const types of Object.values(EXPRESS_SERVICES)) types.forEach(addServiceRefs);
-  for (const conn of LINE_CONNECTIONS) (conn.express || []).forEach(addServiceRefs);
-  for (const [k, vals] of [...Object.entries(STATION_ALIASES), ...Object.entries(WALKABLE_STATIONS)]) {
-    addRef(k);
-    vals.forEach(addRef);
-  }
-  ANCHOR_STATIONS.forEach(addRef);
-
-  // OSM names drop our disambiguators ("Oyama (Tochigi)" → "Oyama") and so can
-  // merge unrelated stations under one search key. Skip an OSM rename when the
-  // built name is disambiguated, or its key already belongs to another station.
-  const builtKeyOwners = new Map();
-  for (const l of lines) for (const s of l.stations) {
-    const k = normalize(s.name);
-    if (!builtKeyOwners.has(k)) builtKeyOwners.set(k, new Set());
-    builtKeyOwners.get(k).add(s.ja);
-  }
-  const osmClashes = (stn, osmEn) => /\(.+\)$/.test(stn.name)
-    || [...(builtKeyOwners.get(normalize(osmEn)) || [])].some(ja => ja !== stn.ja);
-
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
     for (let si = 0; si < lines[li].stations.length; si++) {
       const stn = lines[li].stations[si];
 
-      // OSM name:en overrides the pre-baked fix from the build step
-      const osmEn = osmNames[stn.ja];
-      if (osmEn && !osmClashes(stn, osmEn)) {
-        const oldKey = normalize(stn.name);
-        if (normalize(osmEn) !== oldKey && gameplayNameRefs.has(oldKey)) {
-          console.warn(`OSM rename skipped for ${stn.ja}: "${stn.name}" → "${osmEn}" (name referenced by game data)`);
-        } else {
-          stn.name = osmEn;
-        }
-      }
       // Strip "Station" suffix from bad upstream translations
       if (stn.name.endsWith(' Station')) stn.name = stn.name.slice(0, -8);
 
@@ -1893,6 +1829,9 @@ function buildIndex(lines, osmNames = {}) {
       state.stationIndex[key].push({ lineName: lines[li].name, lineColor: lines[li].color, lineIdx: li, stationIdx: si });
     }
   }
+
+  for (const renamed of disambiguateSharedNames(lines)) nameSet.add(renamed);
+  for (const name of [...nameSet]) if (!state.stationIndex[normalize(name)]) nameSet.delete(name);
 
   state.stationNames = Array.from(nameSet).sort();
   state.stationNamesNorm = state.stationNames.map(normalize);
@@ -2290,6 +2229,8 @@ const ANCHOR_STATIONS = new Set([
   // Private railway hubs
   'Keikyu Kamata',
 ]);
+// Matched by normalized name, so spelling/style changes in the data can't break it
+const ANCHOR_KEYS = new Set([...ANCHOR_STATIONS].map(normalize));
 
 function findMajorStation(line, fromIdx, direction) {
   const N = line.stations.length;
@@ -2307,7 +2248,7 @@ function findMajorStation(line, fromIdx, direction) {
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
     if (idx < 0 || idx >= N) break;
-    if (ANCHOR_STATIONS.has(line.stations[idx].name)) return line.stations[idx].name;
+    if (ANCHOR_KEYS.has(normalize(line.stations[idx].name))) return line.stations[idx].name;
   }
 
   // Second pass: fall back to any hub station (4+ lines)
@@ -2657,7 +2598,7 @@ function getPlatforms(stationName, includeAliases = true) {
     for (const aliasKey of getAliasKeys(stationName)) {
       for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
     }
-    for (const walkName of (WALKABLE_STATIONS[stationName] || [])) {
+    for (const walkName of (WALKABLE_BY_KEY.get(normalize(stationName)) || [])) {
       for (const e of (state.stationIndex[normalize(walkName)] || [])) entries.push(e);
     }
   }
@@ -2732,7 +2673,11 @@ function mergeConnectionPlatforms(platforms) {
 }
 
 // ── Roll Animation ────────────────────────────────────────────────────────
-function animateRoll(min, max, finalValue, el, onComplete) {
+function animateRoll(min, max, finalValue, el, onCompleteRaw) {
+  // A reset mid-animation (New Game, new station) must not apply this roll
+  // to the new board
+  const gen = state._roundGen;
+  const onComplete = () => { if (state._roundGen === gen) onCompleteRaw(); };
   if (window._skipAnimation) {
     el.textContent = finalValue;
     el.classList.remove('rolling');
@@ -3434,9 +3379,11 @@ function collapseOutOfWardChoices(p, choices) {
   }
   for (const c of byMax.values()) {
     // Ride stays on the source line when it can't reach the junction —
-    // label with the station the max roll actually lands at.
-    const toJunction = c._connRef && !c._isLineDest
-      ? (c._connRef.fromJunctionIdx - p.fromIdx) * step : Infinity;
+    // label with the station the max roll actually lands at. Chained choices
+    // measure to their first hop (_connRef is a later hop on another line).
+    const leaveConn = c._sourceConn || c._connRef;
+    const toJunction = leaveConn && !c._isLineDest
+      ? (leaveConn.fromJunctionIdx - p.fromIdx) * step : Infinity;
     const boundaryStn = c.effectiveMax <= toJunction
       ? line.stations[p.fromIdx + c.effectiveMax * step] : null;
     kept.push(boundaryStn
@@ -3570,6 +3517,7 @@ function showDestinationPicker(p, conn, onLineStops) {
           effectiveMax: capStops(cappedMax),
           _services: d.services || null,
           _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
+          _sourceConn: conn, // first hop: the one that leaves the boarding line
           onSelect: () => {
             state.selectedConnection = conn;
             state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja, chain };
@@ -3799,8 +3747,14 @@ function resolveTrainTypes(p) {
     }
   }
 
-  // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya)
-  let reachable = grouped.filter(g => getEffectiveStops(p, trainTypeOpts(g)).validCount > 0);
+  // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya).
+  // Each type's stop count is computed once here (a full route walk) and reused below.
+  const effOf = new Map();
+  let reachable = grouped.filter(g => {
+    const eff = getEffectiveStops(p, trainTypeOpts(g));
+    effOf.set(g, eff);
+    return eff.validCount > 0;
+  });
   // Filter train types to match the selected destination's real signboard.
   // When `services` is declared, only show types whose name matches the allowlist.
   // Fallback heuristic for destinations without `services`: chain express types that
@@ -3831,7 +3785,7 @@ function resolveTrainTypes(p) {
   // Never merge local with express, or source-line with connection types — same count can mean different destinations
   const merged = [];
   for (const g of reachable) {
-    const eff = getEffectiveStops(p, trainTypeOpts(g));
+    const eff = effOf.get(g);
     const isLocal = !g.expressIndices;
     const cat = g._terminatesAtJunction ? 'term' : g._connTargetLineIdx != null ? 'conn' : 'src';
     const hasChain = !!g._chainExpressStops;
@@ -3853,12 +3807,22 @@ function resolveTrainTypes(p) {
   return { types: merged };
 }
 
+// Board one train from a (possibly grouped) train-type button: a random member
+// ("Yamabiko" from "Yamabiko / Tsubasa") — members share the group's stops.
+// `name` picks a specific member (session restore).
+function pickTrainType(g, name) {
+  const members = g._members || [g];
+  const pick = members.find(m => m.name === name)
+    || members[Math.floor(Math.random() * members.length)];
+  return { ...pick, expressIndices: g.expressIndices };
+}
+
 function showTrainTypeButtons(p) {
   if (!p) { showRollStopsUI(); return false; }
   const resolved = resolveTrainTypes(p);
   if (!resolved) { showRollStopsUI(); return false; }
   if (resolved.autoSelect) {
-    state.selectedTrainType = { ...resolved.autoSelect, expressIndices: resolved.autoSelect.expressIndices };
+    state.selectedTrainType = pickTrainType(resolved.autoSelect);
     showRollStopsUI();
     return false;
   }
@@ -3876,9 +3840,7 @@ function showTrainTypeButtons(p) {
   }).join('');
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
-      const g = types[i];
-      const pick = g._members[Math.floor(Math.random() * g._members.length)];
-      state.selectedTrainType = { ...pick, expressIndices: g.expressIndices };
+      const pick = state.selectedTrainType = pickTrainType(types[i]);
       const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
@@ -4190,6 +4152,7 @@ function rebuildPickers(p, opts) {
 }
 
 function resetRoundState() {
+  state._roundGen = (state._roundGen || 0) + 1; // orphans any dice animation still running
   state.selectedPlatform = null;
   clearSelectionState();
   state.rolledStops = null;
@@ -4784,6 +4747,9 @@ function rollStops() {
 function cartoTileLayer() {
   return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
     maxZoom: 19,
+    // CORS tiles: the SW then caches readable copies that saveSessionImage's
+    // canvas can draw (an opaque cached copy would taint it and be refused)
+    crossOrigin: true,
     attribution: CARTO_ATTRIBUTION,
   });
 }
@@ -5115,7 +5081,8 @@ function saveSession() {
   // overwrite it (e.g. app backgrounded while the Resume prompt is up)
   if (!state._sessionSettled) return;
   const mrP = state.selectedPlatform;
-  const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum;
+  const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum
+    && state.currentStation; // a reset can leave a stale platform with no station
   if (state.history.length === 0 && !state._pendingRound && !hasMidRound) {
     store.remove(SESSION_KEY);
     return;
@@ -5136,6 +5103,7 @@ function saveSession() {
       rolledNum: state.rolledPlatformNum,
       branch: state.selectedBranch?.name || null,
       connectionTo: state.selectedConnection?.to || null,
+      connectionToDir: state.selectedConnection?.toDir || null,
       destination: state.selectedDestination,
       trainType: state.selectedTrainType?.name || null,
     } : null;
@@ -5348,18 +5316,20 @@ function restoreMidRound(mr) {
     state.selectedBranch = branches.find(b => b.name === mr.branch) || null;
   }
   if (mr.connectionTo && matchP._connections) {
-    state.selectedConnection = matchP._connections.find(c => c.to === mr.connectionTo) || null;
+    // Match direction too: a line can connect to the same line both ways
+    // (Keikyu Airport → Main toward Shinagawa vs toward Yokohama)
+    state.selectedConnection = matchP._connections.find(c => c.to === mr.connectionTo
+      && (!mr.connectionToDir || c.toDir === mr.connectionToDir)) || null;
   }
   if (mr.destination) {
     state.selectedDestination = mr.destination;
   }
   if (mr.trainType) {
+    // Saved name is the boarded member ("Yamabiko"), not the button's group name
     const resolved = resolveTrainTypes(matchP);
-    if (resolved?.types) {
-      state.selectedTrainType = resolved.types.find(t => t.name === mr.trainType) || null;
-    } else if (resolved?.autoSelect?.name === mr.trainType) {
-      state.selectedTrainType = resolved.autoSelect;
-    }
+    const candidates = resolved?.types || (resolved?.autoSelect ? [resolved.autoSelect] : []);
+    const g = candidates.find(t => (t._members || [t]).some(m => m.name === mr.trainType));
+    state.selectedTrainType = g ? pickTrainType(g, mr.trainType) : null;
   }
 
   // Show platform banner (same UI as rollPlatform callback)

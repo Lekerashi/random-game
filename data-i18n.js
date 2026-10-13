@@ -172,7 +172,6 @@ const translations = {
     loadingTitle:         '🎲 Random Game',
     loadingData:          'Loading Tokyo train data…',
     checkingCache:        'Checking cache…',
-    fetchingOSM:          'Fetching station name corrections from OpenStreetMap…',
     loadingCache:         'Loading from cache…',
     loadingTrain:         'Loading train data…',
     // Header
@@ -345,7 +344,6 @@ const translations = {
     loadingTitle:         '🎲 ランダムゲーム',
     loadingData:          '東京の鉄道データを読み込み中…',
     checkingCache:        'キャッシュを確認中…',
-    fetchingOSM:          'OpenStreetMapから駅名を取得中…',
     loadingCache:         'キャッシュから読み込み中…',
     loadingTrain:         '鉄道データを読み込み中…',
     headerTitle:          '🎲 ランダムゲーム — 東京',
