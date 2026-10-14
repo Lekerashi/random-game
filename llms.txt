@@ -11,7 +11,7 @@
 
 ## About
 - Single-page web app at [randomgame.tokyo](https://randomgame.tokyo/).
-- No login, no tracking, no ads, no audio.
+- No login, no cookies, no personal data, no ads, no audio. Anonymous page counts only (GoatCounter).
 - Offline-capable PWA (service worker + cached train data).
 - Covers the greater Tokyo area. Optimized for the 23 wards but works throughout the Kanto region.
 - Uses real train line data: local / semi-express / express / rapid / limited-express services, through-running connections, and schedule-aware stop patterns (e.g. weekend vs weekday).

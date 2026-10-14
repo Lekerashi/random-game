@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v31';
+const CACHE_NAME = 'rg-v32';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -18,10 +18,26 @@ async function putTile(key, res) {
   await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_TILES)).map(k => cache.delete(k)));
 }
 
+// App shell: precached on install so the game opens offline right after the
+// first visit and right after an update (activate drops the old cache).
+const APP_SHELL = [
+  '/', '/index.html', '/manifest.json', '/data-tokyo.json',
+  '/data-lines.js', '/data-i18n.js', '/data-transforms.js', '/data-connections.js', '/data-wards.js',
+];
+
+// Same-origin requests go to the network first, but a stalled connection
+// (subway tunnels) falls back to the cached copy after this long.
+const NETWORK_TIMEOUT_MS = 3000;
+
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(c => c.addAll(CDN_ASSETS))
+      .then(c => Promise.all([
+        // cache:'reload' skips the HTTP cache, so a fresh deploy can't precache a stale page
+        c.addAll(APP_SHELL.map(u => new Request(u, { cache: 'reload' }))),
+        // CDN is best-effort: a flaky unpkg must not block the install
+        Promise.allSettled(CDN_ASSETS.map(u => c.add(u))),
+      ]))
       .then(() => self.skipWaiting())
   );
 });
@@ -39,26 +55,39 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // Network-first for same-origin (HTML, data-tokyo.json)
+  // Network-first for same-origin (HTML, data), with a timeout fallback
   if (url.origin === location.origin) {
+    if (e.request.method !== 'GET') return;
+    // Only pages and files (paths with an extension). Extensionless paths are the
+    // dev server's API (/state, /mtime, the /eval/stream bridge) under ?sw=1.
+    if (e.request.mode !== 'navigate' && !/\.[a-z0-9]+$/i.test(url.pathname)) return;
+    // Navigations (/, /index.html, /?utm=…) all resolve to the one cached page
+    const cachedCopy = () => (e.request.mode === 'navigate'
+      ? caches.match(e.request, { ignoreSearch: true })
+          .then(r => r || caches.match('/', { ignoreSearch: true }))
+          .then(r => r || caches.match('/index.html'))
+      : caches.match(e.request));
+    const network = fetch(e.request).then(res => {
+      if (res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+      }
+      return res;
+    });
+    const timedOut = new Promise(resolve => setTimeout(resolve, NETWORK_TIMEOUT_MS))
+      .then(() => cachedCopy())
+      .then(r => r || network);
     e.respondWith(
-      fetch(e.request)
-        .then(res => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-          }
-          return res;
-        })
+      Promise.race([network, timedOut])
         // Offline: cached copy, or a proper network error (not undefined)
-        .catch(() => caches.match(e.request).then(r => r || Response.error()))
+        .catch(() => cachedCopy().then(r => r || Response.error()))
     );
     return;
   }
 
   // APIs and analytics (HERE places, GoatCounter) go straight to the
   // network — caching them would freeze a one-off error or stale result
-  if (e.request.method !== 'GET' || /hereapi\.com|goatcounter\.com/.test(url.hostname)) return;
+  if (e.request.method !== 'GET' || /hereapi\.com|goatcounter\.com|zgo\.at/.test(url.hostname)) return;
 
   // Cache-first for CDN assets (Leaflet, map tiles)
   // Normalize tile subdomain (a/b/c) so cache hits regardless of subdomain

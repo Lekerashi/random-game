@@ -2,6 +2,73 @@ const LINE_NAME_FIXES = {
   'Toden Arakawa Line': 'Tokyo Sakura Tram',
   // Shin-Keisei was absorbed into Keisei in April 2025
   'Shin-Keisei Line': 'Keisei Matsudo Line',
+  'Keio Takaoka Line': 'Keio Takao Line',
+};
+
+// Stations renamed after the upstream snapshot, keyed by old JA name. Applied to
+// every line before the other transforms, so all tables use the new JA name.
+// `name` overrides the EN name (omit when upstream EN is already current).
+const STATION_RENAMES = {
+  // Keikyu, March 2020
+  '花月園前': { ja: '花月総持寺' },
+  '仲木戸': { ja: '京急東神奈川' },
+  '産業道路': { ja: '大師橋' },
+  '羽田空港国際線ターミナル': { ja: '羽田空港第3ターミナル' },
+  '羽田空港国内線ターミナル': { ja: '羽田空港第1・第2ターミナル' },
+  // Tokyo Monorail, March 2020
+  '羽田空港国際線ビル': { ja: '羽田空港第3ターミナル' },
+  '羽田空港第１ビル': { ja: '羽田空港第1ターミナル' },
+  '羽田空港第２ビル': { ja: '羽田空港第2ターミナル' },
+  // Yurikamome, March 2019
+  '船の科学館': { ja: '東京国際クルーズターミナル' },
+  '国際展示場正門': { ja: '東京ビッグサイト' },
+  // Seibu Tamako / Yamaguchi (Leo Liner), March 2021
+  '西武遊園地': { ja: '多摩湖', name: 'Tamako' },
+  '遊園地西': { ja: '西武園ゆうえんち', name: 'Seibuen-yuenchi' },
+  // Tokyu Den-en-toshi, October 2019
+  '南町田': { ja: '南町田グランベリーパーク', name: 'Minami-machida Grandberry Park' },
+  // Hitachinaka Seaside Railway, 2021
+  '日工前': { ja: '工機前', name: 'Koki-mae' },
+  // Upstream quirk: stray 駅 suffix
+  '獨協大学前駅〈草加松原〉': { ja: '獨協大学前〈草加松原〉' },
+};
+
+// Lines upstream stores as several segments joined into one list. Each part
+// lists its stations in travel order (JA); entries are copied from the original.
+const LINE_SPLITS = {
+  'JR Narita Line': [
+    { name: 'JR Narita Line', stations: ['佐倉', '酒々井', '成田', '久住', '滑河', '下総神崎', '大戸', '佐原',
+      '香取', '水郷', '小見川', '笹川', '下総橘', '下総豊里', '椎柴', '松岸', '銚子'] },
+    { name: 'JR Narita Line (Airport)', stations: ['成田', '空港第２ビル（第２旅客ターミナル）', '成田空港（第１旅客ターミナル）'] },
+    { name: 'JR Narita Line (Abiko)', stations: ['我孫子', '東我孫子', '湖北', '新木', '布佐', '木下', '小林', '安食', '下総松崎', '成田'] },
+  ],
+  'Tobu Koizumi Line': [
+    { name: 'Tobu Koizumi Line', stations: ['館林', '成島', '本中野', '篠塚', '東小泉', '小泉町', '西小泉'] },
+    { name: 'Tobu Koizumi Line (Ota)', stations: ['東小泉', '竜舞', '太田'] },
+  ],
+  // One part = reorder: upstream lists Sasazuka second
+  'Keio new line': [
+    { name: 'Keio new line', stations: ['新線新宿', '初台', '幡ヶ谷', '笹塚'] },
+  ],
+  // Odakyu-stock trains run 小田原–箱根湯本; mountain cars run 箱根湯本–強羅 only
+  'Hakone Tozan Railway': [
+    { name: 'Hakone Tozan Railway', stations: ['小田原', '箱根板橋', '風祭', '入生田', '箱根湯本'] },
+    { name: 'Hakone Tozan Railway (Mountain)', stations: ['箱根湯本', '塔ノ沢', '大平台', '宮ノ下', '小涌谷',
+      '彫刻の森', '強羅'] },
+  ],
+};
+
+// Stations upstream lists on a line whose trains no longer call there (JA names)
+const LINE_REMOVE_STATIONS = {
+  // Old Main Line terminus (成田空港 until 1991); now only on the Higashi-Narita branch
+  'Keisei Main Line': ['東成田'],
+  // Main line runs 市川塩浜 → 二俣新町; 西船橋 is on the branches (Musashino connections)
+  'JR Keiyo Line': ['西船橋'],
+  // Keio Line trains run 京王新宿 → 笹塚 nonstop; only Keio New Line trains call here
+  'Keio Line': ['初台', '幡ヶ谷'],
+  // Match-day-only temporary station
+  'JR Kashima Line': ['鹿島サッカースタジアム（臨）'],
+  'Kashima Rinkai Railway Oarai-Kashima Line': ['鹿島サッカースタジアム（臨）'],
 };
 
 // Stations opened after the upstream data snapshot, inserted mid-line
@@ -11,6 +78,24 @@ const LINE_INSERT_STATIONS = {
   'JR Keiyo Line': [
     // Opened March 2023, between Shin-Narashino and Kaihin-Makuhari
     { after: '新習志野', name: 'Makuhari-Toyosuna', ja: '幕張豊砂', lat: 35.6597, lng: 140.0284 },
+  ],
+  'Toei Oedo Line': [
+    // Trains run a 6-shape: Hikarigaoka ↔ Tochomae ↔ loop ↔ Tochomae. Listing
+    // Tochomae again between Shinjuku and Nishi-Shinjuku-Gochome makes the array
+    // follow the track; OEDO_LOOP_END points at this entry.
+    { after: '新宿', ja: '都庁前', repeat: true },
+  ],
+  // Opened October 2020, between Tobu-Takezawa and Obusuma
+  'Tobu Tojo Line': [
+    { after: '東武竹沢', name: 'Minami-Yorii', ja: 'みなみ寄居', lat: 36.0924, lng: 139.2365 },
+  ],
+  // Opened October 2018, between Nagata and Obamada
+  'Chichibu Railway Chichibu Line': [
+    { after: '永田', name: 'Fukaya-Hanazono', ja: 'ふかや花園', lat: 36.1308, lng: 139.2481 },
+  ],
+  // Opened March 2021, between Isozaki and Hiraiso (line runs Ajigaura → Katsuta)
+  'Hitachinaka Seaside Railway Minato Line': [
+    { after: '磯崎', name: 'Minohama-Gakuen', ja: '美乃浜学園', lat: 36.3726, lng: 140.6169 },
   ],
 };
 
@@ -40,7 +125,7 @@ const LINE_COLOR_FIXES = {
   'Keio Sagamihara line':     '#E3379F',
   'Keio Dobutsuen Line':      '#E3379F',
   'Keio Racecourse Line':     '#E3379F',
-  'Keio Takaoka Line':        '#E3379F',
+  'Keio Takao Line':          '#E3379F',
   'Keio Inokashira line':     '#1A407B', // dark navy
   // ── Keikyu — upstream has random colors per line ──
   'Keikyu Main Line':         '#E4002B', // Keikyu red

@@ -3,6 +3,10 @@
 // schedule: optional day-of-week overrides — keys are schedule types ('weekday'|'weekend')
 //   { skip: [...] } = remove these stations from stops for that schedule
 //   { stops: [...] } = completely replace the stop list for that schedule
+//   { timeRange: [start, end] | [[s, e], ...] } = only in these hours (at the origin terminal)
+// direction: optional 'start'|'end' — a one-way service, running toward that end only.
+//   Same-name entries with different directions or stop lists give per-direction /
+//   per-segment hours (they share one button).
 const EXPRESS_SERVICES = {
   "Seibu Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -12,7 +16,7 @@ const EXPRESS_SERVICES = {
       "花小金井","小平","久米川","東村山",
       "所沢","航空公園","新所沢","入曽",
       "狭山市","新狭山","南大塚","本川越",
-    ]},
+    ], schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } }, // not by day
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井",
       "田無","花小金井","小平","久米川",
@@ -23,7 +27,9 @@ const EXPRESS_SERVICES = {
   "JR Chuo Line": [
     { name: "Rapid", ja: "快速", color: "#00b900", stops: null,
       schedule: { weekend: { skip: ["高円寺", "阿佐ケ谷", "西荻窪"] } } },
-    { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", stops: [
+    // Weekday 中央特快 pause in the rush (通勤快速 westbound in the evening, 通勤特快
+    // eastbound in the morning); all day on weekends
+    { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", direction: "end", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
       "中野","三鷹","国分寺","立川",
       "日野","豊田","八王子","西八王子","高尾",
@@ -31,12 +37,24 @@ const EXPRESS_SERVICES = {
       "鳥沢","猿橋","大月","初狩","笹子",
       "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
       "山梨市","春日居町","石和温泉","酒折","甲府",
-    ]},
-    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", stops: [
+    ], schedule: { weekday: { timeRange: [[6, 7], [9, 17], [22, 24]] } } },
+    { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", direction: "start", stops: [
+      "東京","神田","御茶ノ水","四ツ谷","新宿",
+      "中野","三鷹","国分寺","立川",
+      "日野","豊田","八王子","西八王子","高尾",
+      "相模湖","藤野","上野原","四方津","梁川",
+      "鳥沢","猿橋","大月","初狩","笹子",
+      "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
+      "山梨市","春日居町","石和温泉","酒折","甲府",
+    ], schedule: { weekday: { timeRange: [[5, 7], [9, 23]] } } },
+    // Westbound only, weekday evenings; 5 a day run on to 大月 (all stations past 高尾)
+    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
       "中野","荻窪","吉祥寺","三鷹","国分寺","立川",
       "日野","豊田","八王子","西八王子","高尾",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 24] } } },
+      "相模湖","藤野","上野原","四方津","梁川",
+      "鳥沢","猿橋","大月",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -47,7 +65,7 @@ const EXPRESS_SERVICES = {
     { name: "F-Liner", ja: "Fライナー", color: "#e83030", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
-    ]},
+    ], schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } }, // daytime only
   ],
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -62,31 +80,29 @@ const EXPRESS_SERVICES = {
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
     ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
-      "池袋","石神井公園","ひばりヶ丘","所沢",
-      "小手指","入間市","飯能",
-    ],  schedule: { weekday: { stops: [] } } },
+    // 快速急行 omitted: none leave 池袋 since the F-Liner took over (one weekday up train)
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
-      "新宿","笹塚","明大前","桜上水","千歳烏山",
-      "仙川","つつじヶ丘","調布","東府中","府中",
-      "分倍河原","中河原","聖蹟桜ヶ丘","百草園",
-      "高幡不動","南平","平山城址公園",
-      "長沼","北野","京王八王子",
-    ]},
+    // 区間急行 run Toei ↔ Sagamihara Line since 2025-03 (connection express); only
+    // 4 weekday-morning up trains stay on the main line west of 調布, so none here
+    // Weekday mornings/evenings only since 2013 (a lone weekend pair is ignored)
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山",
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ]},
+    ], schedule: { weekday: { timeRange: [16, 10] }, weekend: { stops: [] } } },
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "新宿","笹塚","明大前","千歳烏山",
       "調布","府中","分倍河原",
       "聖蹟桜ヶ丘","高幡不動","北野","京王八王子",
     ]},
+  ],
+  // Local-only so through-running to the Keio Line / Toei keeps a Local type
+  // beside the target line's expresses (all New Line trains stop everywhere)
+  "Keio new line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
   ],
   "Keio Inokashira line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -97,14 +113,7 @@ const EXPRESS_SERVICES = {
   ],
   "Odakyu Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "新宿","代々木上原","下北沢","経堂","千歳船橋",
-      "祖師ヶ谷大蔵","成城学園前","喜多見","狛江","和泉多摩川",
-      "登戸","向ヶ丘遊園",
-      "生田","読売ランド前","百合ヶ丘","新百合ヶ丘",
-      "柿生","鶴川","玉川学園前","町田","相模大野",
-      "小田急相模原","相武台前","座間","海老名","厚木","本厚木",
-    ]},
+    // 準急 omitted: every one is a Chiyoda Line through train (connection express)
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "新宿","代々木上原","下北沢","経堂","成城学園前",
       "登戸","向ヶ丘遊園","新百合ヶ丘","町田","相模大野",
@@ -116,7 +125,7 @@ const EXPRESS_SERVICES = {
       "新宿","代々木上原","下北沢","登戸","新百合ヶ丘",
       "町田","相模大野","海老名","本厚木","愛甲石田","伊勢原",
       "鶴巻温泉","東海大学前","秦野","渋沢",
-      "新松田","開成","小田原",
+      "新松田","開成","栢山","富水","螢田","足柄","小田原", // all stations past 新松田 since 2022
     ]},
   ],
   "Tokyu Toyoko Line": [
@@ -125,10 +134,11 @@ const EXPRESS_SERVICES = {
       "渋谷","中目黒","学芸大学","自由が丘","田園調布",
       "多摩川","武蔵小杉","日吉","綱島","菊名","横浜",
     ]},
+    // Weekday 特急 run by day only (通勤特急 at other times)
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
-      "渋谷","中目黒","自由が丘","武蔵小杉","日吉",
+      "渋谷","中目黒","自由が丘","武蔵小杉",
       "菊名","横浜",
-    ]},
+    ], schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [7, 22] } } },
   ],
   "Tokyu Meguro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -139,9 +149,19 @@ const EXPRESS_SERVICES = {
   ],
   "Toei Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    // Daytime 急行 ended 2023: a few morning and evening trains only
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "新宿","市ヶ谷","神保町","馬喰横山",
       "森下","大島","船堀","本八幡",
+    ], schedule: { weekday: { timeRange: [[7, 10], [17, 22]] }, weekend: { timeRange: [[7, 11], [16, 22]] } } },
+  ],
+  // 快速 run all day both ways and continue as locals onto Toyo Rapid / Chuo-Sobu.
+  // 通勤快速 omitted (one-way, weekday mornings toward Nakano).
+  "Tokyo Metro Tozai Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "中野","落合","高田馬場","早稲田","神楽坂","飯田橋","九段下","竹橋",
+      "大手町","日本橋","茅場町","門前仲町","木場","東陽町","浦安","西船橋",
     ]},
   ],
   "Tokyu Den-en-toshi Line": [
@@ -150,13 +170,20 @@ const EXPRESS_SERVICES = {
       "渋谷","池尻大橋","三軒茶屋","駒沢大学",
       "桜新町","用賀","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","つくし野","すずかけ台",
-      "南町田","つきみ野","中央林間",
+      "南町田グランベリーパーク","つきみ野","中央林間",
     ]},
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    // No weekday 急行 toward 渋谷 in the morning rush, and since 2026-03 準急 replace
+    // them weekday 18–20h toward 中央林間 and weekend 9–14h toward 渋谷
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
-      "たまプラーザ","あざみ野","青葉台","長津田","南町田",
+      "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
       "中央林間",
-    ]},
+    ], schedule: { weekday: { timeRange: [9, 6] }, weekend: { timeRange: [[5, 9], [14, 24]] } } },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
+      "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
+      "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
+      "中央林間",
+    ], schedule: { weekday: { timeRange: [[5, 18], [20, 24]] } } },
   ],
   "Tobu Tojo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -179,7 +206,14 @@ const EXPRESS_SERVICES = {
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
-    ]},
+    ], schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [6, 10] } } }, // a few morning trains (F-Liner by day)
+    // No-extra-fare 川越特急: mostly up trains, twice an hour from late afternoon
+    // (only ~3 down trains, late morning — can't gate by direction, so evening only)
+    { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", stops: [
+      "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
+      "つきのわ","武蔵嵐山","小川町",
+    ],
+      schedule: { weekday: { timeRange: [16, 23] }, weekend: { timeRange: [16, 21] } } },
   ],
   "Tobu Isesaki Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -193,17 +227,40 @@ const EXPRESS_SERVICES = {
     ],
       // Rush/early-late only: gone 10–16h weekdays, 10–20h weekends (wrapping ranges)
       schedule: { weekday: { timeRange: [17, 10] }, weekend: { timeRange: [21, 10] } } },
+    // Rush hours only (mornings and evenings, both ways)
+    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", stops: [
+      "浅草","とうきょうスカイツリー","曳舟","東向島",
+      "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
+      "新越谷","越谷","北越谷","大袋","せんげん台",
+      "武里","一ノ割","春日部","北春日部","姫宮",
+      "東武動物公園","和戸","久喜",
+    ],
+      schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "押上(スカイツリー前)","曳舟","北千住","西新井","草加",
       "新越谷","越谷","北越谷","大袋","せんげん台",
       "武里","一ノ割","春日部","北春日部","姫宮",
       "東武動物公園","和戸","久喜",
-    ]},
+    ], schedule: { weekday: { timeRange: [20, 10] }, weekend: { timeRange: [20, 10] } } }, // early morning and night
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "押上(スカイツリー前)","曳舟","北千住","西新井","草加",
       "新越谷","越谷","せんげん台","春日部",
       "東武動物公園","和戸","久喜",
     ]},
+  ],
+  // Urban Park Line: daytime 急行 run Omiya–Funabashi every 30 min (reversing at
+  // Kashiwa); mornings/evenings they cover Kashiwa–Funabashi only.
+  "Tobu Noda line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "大宮","岩槻","春日部","藤の牛島","南桜井","川間","七光台","清水公園",
+      "愛宕","野田市","梅郷","運河","流山おおたかの森","柏","高柳","新鎌ヶ谷","船橋",
+    ],
+      schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [9, 17] } } },
+    { name: "Express", ja: "急行", color: "#e83030", stops: [
+      "柏","高柳","新鎌ヶ谷","船橋",
+    ],
+      schedule: { weekday: { timeRange: [[6, 9], [16, 23]] }, weekend: { timeRange: [[6, 9], [17, 23]] } } },
   ],
   "Keisei Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -216,6 +273,14 @@ const EXPRESS_SERVICES = {
       "京成酒々井","宗吾参道","公津の杜","京成成田",
       "空港第２ビル（第２旅客ターミナル）","成田空港（第１旅客ターミナル）",
     ]},
+    // No-extra-fare 特急: no daytime service since 2022 (mornings and evenings, both ways)
+    { name: "Ltd. Express", ja: "特急", color: "#e83030", stops: [
+      "京成上野","日暮里","青砥","京成高砂","京成八幡",
+      "京成船橋","京成津田沼","八千代台","勝田台",
+      "京成佐倉","大佐倉","京成酒々井","宗吾参道","公津の杜","京成成田",
+      "空港第２ビル（第２旅客ターミナル）","成田空港（第１旅客ターミナル）",
+    ],
+      schedule: { weekday: { timeRange: [15, 11] }, weekend: { timeRange: [17, 10] } } },
     { name: "Rapid Ltd", ja: "快速特急", color: "#f07000", stops: [
       "京成上野","日暮里","青砥","京成高砂","京成八幡",
       "京成船橋","京成津田沼","八千代台","勝田台",
@@ -292,7 +357,7 @@ const EXPRESS_SERVICES = {
       "川崎","鹿島田","武蔵小杉","武蔵中原",
       "武蔵新城","武蔵溝ノ口","登戸","稲田堤",
       "稲城長沼","府中本町","分倍河原","立川",
-    ]},
+    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 17] } } }, // daytime
   ],
   "JR Saikyo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -307,7 +372,7 @@ const EXPRESS_SERVICES = {
       "赤羽","武蔵浦和","大宮",
     ],
       // Weekdays, both directions, mornings (6–10h) and evenings (16–22h)
-      schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 11] } } },
+      schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 10] } } },
   ],
   "Tsukuba Express": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
@@ -328,15 +393,65 @@ const EXPRESS_SERVICES = {
       "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
     ]},
   ],
-  "Sotetsu Main Line": [
+  // 快速 run ~10:30–15:30 daily, both ways (御徒町 weekends only). The Negishi
+  // through-running version is connection express (data-connections.js).
+  "JR Keihin Tohoku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "大宮","さいたま新都心","与野","北浦和","浦和",
+      "南浦和","蕨","西川口","川口","赤羽",
+      "東十条","王子","上中里","田端","上野",
+      "御徒町","秋葉原","神田","東京",
+      "浜松町","田町","高輪ゲートウェイ","品川",
+      "大井町","大森","蒲田","川崎","鶴見",
+      "新子安","東神奈川","横浜",
+    ],
+      schedule: { weekday: { skip: ["御徒町"], timeRange: [10, 16] }, weekend: { timeRange: [10, 16] } } },
+  ],
+  // 快速 (daytime, both ways) skip 大口/小机/十日市場/成瀬/古淵/淵野辺/矢部
+  "JR Yokohama Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "東神奈川","菊名","新横浜","鴨居","中山",
+      "長津田","町田","相模原","橋本",
+      "相原","八王子みなみ野","片倉","八王子",
+    ],
+      schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [9, 18] } } },
+  ],
+  // 快速 in the 6–7, 9–15 (16 weekends) and 20h hours since 2024-09; 通勤快速 abolished March 2024
+  "JR Keiyo Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "東京","八丁堀","新木場","舞浜","新浦安","南船橋",
+      "海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我",
+    ],
+      schedule: { weekday: { timeRange: [[6, 8], [9, 16], [20, 21]] }, weekend: { timeRange: [[6, 8], [9, 17], [20, 21]] } } },
+  ],
+  // Yokohama Municipal Subway 快速 (every 30 min, both ways)
+  "Blue Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "あざみ野","中川","センター北","センター南","仲町台","新羽","新横浜",
+      "横浜","桜木町","関内","上大岡","上永谷","戸塚",
+      "踊場","中田","立場","下飯田","湘南台",
+    ],
+      schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 21] } } },
+  ],
+  "Sotetsu Main Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    // Toward 横浜 no 快速 on weekday mornings (通勤急行 instead)
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
+      "大和","相模大塚","さがみ野","かしわ台","海老名",
+    ], schedule: { weekday: { timeRange: [9, 5] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
     ]},
+    // Daytime, plus evening trains from 横浜 since 2025-03
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "横浜","西谷","二俣川","大和","海老名",
-    ]},
+    ], schedule: { weekday: { timeRange: [7, 21] }, weekend: { timeRange: [7, 21] } } },
     // 急行 abolished 2023; 通勤特急/通勤急行 omitted (weekday-morning, toward Yokohama only).
     // Izumino Line: 快速 is all-stations there, so it stays Local-only.
   ],
@@ -349,8 +464,10 @@ const LINE_BRANCHES = {
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','武蔵白石','浜川崎','昭和','扇町'] },
     { name: 'Umi-Shibaura', ja: '海芝浦支線', color: '#58a6ff',
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','新芝浦','海芝浦'] },
+    // No 大川 trains by day (9–16h); weekends 2 morning + 1 evening round trips
     { name: 'Okawa', ja: '大川支線', color: '#f07000',
-      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'] },
+      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'],
+      schedule: { weekday: { timeRange: [17, 9] }, weekend: { timeRange: [[6, 9], [17, 19]] } } },
   ],
   'Tokyo Metro Marunouchi Line': [
     { name: 'Ogikubo', ja: '荻窪方面', color: '#e60012',
@@ -378,6 +495,15 @@ const LINE_DESTINATIONS = {
       { until: '八王子',     name: 'Hachioji',         ja: '八王子方面',     color: '#00796b' },
       { until: '高尾',       name: 'Takao',            ja: '高尾方面',       color: '#E85B0B' },
       { until: '大月',       name: 'Otsuki',           ja: '大月方面',       color: '#bf360c' },
+    ],
+  },
+  // From 取手 trains end at 守谷 or 水海道; some run on to 下館
+  'Kanto Railway Joso Line': {
+    direction: 'end',  // away from Toride
+    destinations: [
+      { until: '守谷',   name: 'Moriya',     ja: '守谷方面',   color: '#4aa3d8' },
+      { until: '水海道', name: 'Mitsukaido', ja: '水海道方面', color: '#2a7fb8' },
+      { until: '下館',   name: 'Shimodate',  ja: '下館方面',   color: '#1a5a88' },
     ],
   },
   'JR Ome Line': {
@@ -413,6 +539,8 @@ const STATION_ALIASES = {
   "Musashi-Mizonokuchi":        ["Mizonokuchi"],
   "Harajuku":                   ["Meiji-jingumae 'Harajuku'"],
   "Meiji-jingumae 'Harajuku'":  ["Harajuku"],
+  "Resort Gateway":             ["Maihama"],   // Disney Resort Line, a short walk from JR Maihama
+  "Maihama":                    ["Resort Gateway"],
   "Tamachi":                    ["Mita"],
   "Mita":                       ["Tamachi"],
   "Daimon":                     ["Hamamatsucho"],
@@ -426,6 +554,10 @@ const STATION_ALIASES = {
   "Oji":                        ["Oji-ekimae"],
   "Machiya-ekimae":             ["Machiya"],
   "Machiya":                    ["Machiya-ekimae"],
+  // Keikyu's one Haneda domestic station sits under both monorail terminals
+  "Haneda Airport Terminal 1 & 2": ["Haneda Airport Terminal 1", "Haneda Airport Terminal 2"],
+  "Haneda Airport Terminal 1":     ["Haneda Airport Terminal 1 & 2"],
+  "Haneda Airport Terminal 2":     ["Haneda Airport Terminal 1 & 2"],
 };
 
 // Lines that share one physical platform per direction at these stations (JA).

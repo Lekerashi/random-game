@@ -1,6 +1,10 @@
 {
   "name": "Random Game — Tokyo",
   "short_name": "Random Game",
+  "description": "Tokyo train station drinking game — roll dice to pick lines and stops.",
+  "id": "/",
+  "scope": "/",
+  "lang": "en",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d1117",

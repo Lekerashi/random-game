@@ -29,7 +29,7 @@
     "featureList": [
       "Tokyo-area train line, express, and through-running data",
       "Bilingual English / 日本語 interface",
-      "Offline-capable PWA — no login, no tracking, no ads",
+      "Offline-capable PWA — no login, no cookies, no ads",
       "Dice-based routing with transfers and destination pickers"
     ],
     "author": {
@@ -55,8 +55,24 @@
   <meta name="twitter:title" content="Random Game — Tokyo">
   <meta name="twitter:description" content="A Tokyo train station drinking game. Roll the dice, ride the rails, explore the city.">
   <link rel="apple-touch-icon" href="/icon-192.png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <script>if ('serviceWorker' in navigator && location.hostname !== 'localhost') navigator.serviceWorker.register('/sw.js');</script>
+  <!-- Leaflet is only used after a tap (map / stats), so its CSS doesn't block first paint -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></noscript>
+  <script>
+    // Service worker: always in production. On localhost only with ?sw=1 (remembered
+    // for the tab; ?sw=0 turns it off and unregisters it).
+    if ('serviceWorker' in navigator) {
+      const swFlag = new URLSearchParams(location.search).get('sw');
+      let devSw = false;
+      try {
+        if (swFlag === '1') sessionStorage.setItem('rg_dev_sw', '1');
+        if (swFlag === '0') sessionStorage.removeItem('rg_dev_sw');
+        devSw = sessionStorage.getItem('rg_dev_sw') === '1';
+      } catch (e) { devSw = swFlag === '1'; }
+      if (location.hostname !== 'localhost' || devSw) navigator.serviceWorker.register('/sw.js');
+      else navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -278,8 +294,8 @@
     }
 
     .platform-pill.drink-here {
-      border-color: var(--primary);
-      color: var(--primary);
+      border-color: var(--accent);
+      color: var(--accent);
     }
     .platform-pill.take-flight {
       border-color: #f59e0b;
@@ -452,23 +468,6 @@
       margin-top: 14px;
     }
 
-    /* ── Collapsible Sections ────────────────────────── */
-    .collapsible { display: none; }
-    .collapsible.open { display: block; }
-
-    details summary {
-      cursor: pointer;
-      list-style: none;
-      display: flex; align-items: center; gap: 8px;
-    }
-    details summary::-webkit-details-marker { display: none; }
-    details summary .chevron {
-      transition: transform .2s;
-      font-size: .75rem;
-      color: var(--muted);
-    }
-    details[open] summary .chevron { transform: rotate(90deg); }
-
     /* ── Map ─────────────────────────────────────────── */
     #map { height: 320px; border-radius: 8px; margin-top: 12px; overflow: hidden; }
 
@@ -556,6 +555,8 @@
     /* ── 23 Wards toggle ─────────────────────────────── */
     .wards-toggle-row {
       display: flex;
+      flex-wrap: wrap; /* 320px-wide phones */
+      row-gap: 6px;
       align-items: center;
       margin-top: 10px;
     }
@@ -574,10 +575,10 @@
       accent-color: var(--accent);
     }
     .stops-cap-input {
-      width: 44px;
+      width: 48px;
       margin-left: 6px;
       padding: 1px 5px;
-      font-size: .82rem;
+      font-size: 16px; /* under 16px, iOS Safari zooms the page on focus */
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -627,7 +628,7 @@
     footer                     { text-align: center; padding: 2rem 1rem 3rem; color: #555; font-size: 0.75rem; }
     .how-to-play-wrap          { text-align: center; padding: 0.5rem 1rem 0; }
     .how-to-play-btn           { background: none; border: none; color: #555; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 4px 8px; }
-    .how-to-play-btn:hover     { color: #333; }
+    .how-to-play-btn:hover     { color: var(--text); }
     .htp-overlay               { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .htp-overlay.hidden        { display: none; }
     .htp-card                  { background: var(--surface); border: 1px solid var(--surface2); border-radius: 12px; max-width: 420px; width: 90%; padding: 1.5rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); position: relative; font-size: 0.9rem; line-height: 1.5; color: var(--muted); max-height: 90vh; max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain; }
@@ -648,7 +649,7 @@
     /* ── RNG tool ─────────────────────────────────── */
     .rng-wrap                  { text-align: center; padding: 0.75rem 1rem 0; }
     .rng-btn                   { background: none; border: none; color: #555; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 4px 8px; }
-    .rng-btn:hover             { color: #333; }
+    .rng-btn:hover             { color: var(--text); }
     .rng-card                  { text-align: center; }
     .rng-card h3               { margin: 0 0 1rem; font-size: 1.1rem; color: var(--text); }
     .rng-inputs                { display: flex; gap: 10px; justify-content: center; align-items: center; margin-bottom: 1rem; }
@@ -712,6 +713,10 @@
     .drink-hint   { color: var(--muted); font-size: .85rem; margin-top: 6px; }
     .flight-msg   { color: #f59e0b; font-size: 1.1em; }
     .dest-ja      { color: var(--muted); margin-left: 4px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -880,7 +885,7 @@
     </div>
     <div id="history-empty" class="bars-empty" data-i18n="noRoundsYet">No rounds yet — start rolling!</div>
     <div id="undo-clear-wrap" style="display:none; text-align:center; margin-top:8px;">
-      <button class="btn btn-ghost btn-sm" id="undo-clear-btn" onclick="undoClearHistory()" data-i18n="undoClear">Undo</button>
+      <button class="btn btn-ghost btn-sm" id="undo-clear-btn" data-action="undo-clear" data-i18n="undoClear">Undo</button>
     </div>
     <div class="history-list" id="history-list"></div>
     <div id="history-distance"></div>
@@ -891,7 +896,7 @@
       <div id="inline-route-map"></div>
     </div>
     <div id="inline-save-wrap" style="display:none; text-align:center; margin-top:8px;">
-      <button class="btn btn-ghost btn-sm" id="inline-save-btn" onclick="saveSessionImage()" data-i18n="saveSession">Save Image</button>
+      <button class="btn btn-ghost btn-sm" id="inline-save-btn" data-action="save-image" data-i18n="saveSession">Save Image</button>
     </div>
   </div>
 </div>
@@ -901,7 +906,8 @@
 <script src="data-i18n.js"></script>
 <script src="data-transforms.js"></script>
 <script src="data-connections.js"></script>
-<script src="data-wards.js"></script>
+<!-- Ward/city outlines (311 KB) feed only the ward label and the offline map layer; both handle it missing -->
+<script src="data-wards.js" defer></script>
 <script>
 'use strict';
 
@@ -910,7 +916,7 @@ const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.j
 const CACHE_KEY = 'random_game_v13';
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-// ← Paste your HERE Maps API key here (free at developer.here.com)
+// HERE Maps API key (developer.here.com) for the Bars & Cafes panels
 const HERE_API_KEY = 'h3YRc3suzD_27R6E1lLU5uuCVAyN4odI5OKV57ZO0H4';
 
 // CARTO basemap keys (carto.com/basemaps), each Referer-restricted to one host
@@ -920,7 +926,7 @@ const CARTO_KEY = location.hostname === 'localhost' ? CARTO_KEY_DEV : CARTO_KEY_
 const CARTO_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>';
 
 // ── Game logic constants ─────────────────────────────────────────────────
-const OEDO_LOOP_END     = 29;    // Nakanozaka junction index (end of loop, start of stem)
+const OEDO_LOOP_END     = 28;    // index of the second Tochomae entry (end of loop, start of stem)
 const FLIGHT_PROBABILITY     = 0.05; // 5% chance to trigger flight at airport stations
 const SHINKANSEN_PROBABILITY = 0.05; // 5% chance to roll shinkansen at shared stations
 const SHINKANSEN_LINES = new Set(['Tokaido Shinkansen', 'Tohoku Shinkansen', 'Joetsu Shinkansen']);
@@ -950,6 +956,12 @@ const LTW_KEY            = 'ltw_dismissed';  // last-train warning dismissal
 //   stayedKey:   i18n key for history/copy text (replaces stayedForDrink)
 //   labelKey:    i18n key for platform pill label (replaces drinkHereLabel)
 //   position:    'replace' = swap the main drink hint, 'append'/'prepend' = add extra hint
+// Tokyo Disneyland / DisneySea stations: go into the park instead of drinking
+const DISNEY_PARK_EGG = {
+  emoji: '🏰', hintKey: 'disneyHint', rollKey: 'disneyRoll',
+  stayingKey: 'stayingForDisney', stayedKey: 'stayedForDisney',
+  labelKey: 'disneyHereLabel', position: 'replace',
+};
 const EASTER_EGGS = {
   '海芝浦': {  // Umi-Shibaura — waterfront park, no bars
     emoji: '🌊', hintKey: 'parkHint', rollKey: 'parkRoll',
@@ -959,6 +971,8 @@ const EASTER_EGGS = {
   '舞浜': {  // Maihama — Disney Resort
     emoji: '🏰🐭🎀👑👸🏻', position: 'replace',
   },
+  '東京ディズニーランド・ステーション': DISNEY_PARK_EGG,  // Tokyo Disneyland
+  '東京ディズニーシー・ステーション': DISNEY_PARK_EGG,  // Tokyo DisneySea
   '梶が谷': {  // Kajigaya — Say hi to Shane
     hintKey: 'kajigayaHint', hintEmoji: '👋', position: 'append',
   },
@@ -1084,7 +1098,13 @@ function undoLastRound() {
   if (state.history.length === 0 || !state.destination) return;
   state.history.pop();
   renderHistory();
-  unmarkDrankAt(state.destination.name);
+  // Keep the mark when an earlier round also drank here (or at an alias of it)
+  const keys = new Set([normalize(state.destination.name), ...getAliasKeys(state.destination.name)]);
+  const drankThere = h => !h.flight && (!h.transferred || h.drinkAtTransfer)
+    && (keys.has(normalize(h.to)) || getAliasKeys(h.to).some(k => keys.has(k)));
+  if (!state.history.some(drankThere)) unmarkDrankAt(state.destination.name);
+  // The undone round's destination is gone: a second reroll must not undo another round
+  state.destination = null;
 }
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -1150,9 +1170,8 @@ function platformLineName(p) {
 function t(key, params) {
   let str = translations[currentLang]?.[key] || translations.en[key] || key;
   if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
-    }
+    // split/join: literal replacement ("$&" in a value stays as typed)
+    for (const [k, v] of Object.entries(params)) str = str.split(`{${k}}`).join(String(v));
   }
   return str;
 }
@@ -1246,25 +1265,17 @@ _langRefreshers.push(function refreshSelectedPlatform() {
   } else if (p.takeFlight) {
     dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
   } else {
-    const pLabel = platformLabel(p);
-    const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-    const ln = lineDisplayName(p.lineName);
-    const effectiveHint = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-    dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-      <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHint })}</small>`;
-    dom.selectedPlatformText.innerHTML =
-      `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+    renderPlatformBanner(p, roll);
   }
 });
 
-_langRefreshers.push(function refreshTrainTypeButtons() {
-  if (state.selectedPlatform && !state.selectedTrainType && dom.trainTypeRow.style.display !== 'none') {
-    if (!state.selectedBranch && !state.selectedConnection &&
-        (LINE_BRANCHES[state.selectedPlatform.lineName] || state.selectedPlatform._connections)) {
-      showBranchButtons(state.selectedPlatform);
-    } else {
-      showTrainTypeButtons(state.selectedPlatform);
-    }
+_langRefreshers.push(function refreshPickerButtons() {
+  if (!state.selectedPlatform || state.selectedTrainType || dom.trainTypeRow.style.display === 'none') return;
+  // Re-render the open picker exactly as it was (same choices and handlers)
+  if (state._pickerArgs && state._pickerType && state._pickerType !== 'trainType') {
+    showBranchPickerUI(...state._pickerArgs);
+  } else {
+    showTrainTypeButtons(state.selectedPlatform);
   }
 });
 
@@ -1283,18 +1294,8 @@ _langRefreshers.push(function refreshStopsDie() {
 });
 
 _langRefreshers.push(function refreshDestSub() {
-  if (!state.destination || !state.selectedPlatform) return;
-  const p = state.selectedPlatform;
-  if (p.takeFlight) {
-    dom.destSub.innerHTML = `${state.currentStation.ja}<br><span class="flight-msg">${t('flightMsg')}</span>`;
-  } else if (p.drinkHere) {
-    dom.destSub.innerHTML = `${state.currentStation.ja} &nbsp;·&nbsp; ${t(eggStayingKey(state.currentStation.ja))}`
-      + destSubHints(state.currentStation, 'inline');
-  } else {
-    const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-    dom.destSub.innerHTML =
-      `${state.destination.ja} &nbsp;·&nbsp; ${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: state.rolledStops, s: pl(state.rolledStops), station: stationDisplayName(state.currentStation.name) })}`
-      + destSubHints(state.destination, 'wrap');
+  if (state._destSubRender && dom.destCard.classList.contains('active')) {
+    dom.destSub.innerHTML = state._destSubRender();
   }
 });
 
@@ -1466,7 +1467,7 @@ function haversineM(lat1, lng1, lat2, lng2) {
 // Direction helpers — centralize start/end index math used throughout routing.
 // 'A' (circular CCW) maps to the same step as 'start'; 'B' (CW) maps to 'end'.
 function dirStep(dir) { return (dir === 'start' || dir === 'A') ? -1 : 1; }
-function dirEnd(N, dir) { return dir === 'start' ? 0 : N - 1; }
+function dirEnd(N, dir) { return (dir === 'start' || dir === 'A') ? 0 : N - 1; }
 
 // ── Schedule-aware service stops ──────────────────────────────────────────
 const SCHEDULE_DAY_BOUNDARY = 2; // schedule rolls over at 2am, not midnight
@@ -1520,19 +1521,33 @@ function getCurrentHour() {
 
 // Resolve a service's effective stops for the current schedule.
 // Applies schedule.skip (remove stations), schedule.stops (full override),
-// and schedule.timeRange ([startHour, endHour]) for time-of-day filtering.
-function resolveServiceStops(service, line) {
+// and schedule.timeRange ([startHour, endHour], or a list of them for several
+// windows a day) for time-of-day filtering.
+function timeRangeWindows(tr) {
+  return Array.isArray(tr[0]) ? tr : [tr];
+}
+function inTimeRange(tr) {
+  const hour = getCurrentHour();
+  const inWindow = ([start, end]) => start <= end ? (hour >= start && hour < end) : (hour >= start || hour < end);
+  return timeRangeWindows(tr).some(inWindow);
+}
+// Whether a destination / branch with a `schedule` runs now: today's entry hides
+// it with `stops: []` or outside every `timeRange` window.
+function scheduleActive(schedule) {
+  const sched = schedule?.[getScheduleType()];
+  if (!sched) return true;
+  if (Array.isArray(sched.stops) && sched.stops.length === 0) return false;
+  return !sched.timeRange || inTimeRange(sched.timeRange);
+}
+// dir (optional): the platform's travel direction; a service with
+// `direction: 'start'|'end'` runs only that way (hidden = []).
+function resolveServiceStops(service, line, dir) {
+  if (service.direction && dir && service.direction !== dir) return [];
   if (!service.schedule) return service.stops;
   const sched = service.schedule[getScheduleType()];
   if (!sched) return service.stops;
-  // Time-of-day filter: hide service outside the specified hour range
-  if (sched.timeRange) {
-    const hour = getCurrentHour();
-    const [start, end] = sched.timeRange;
-    if (start <= end ? (hour < start || hour >= end) : (hour < start && hour >= end)) {
-      return []; // empty = hidden
-    }
-  }
+  // Time-of-day filter: hide service outside every specified hour range
+  if (sched.timeRange && !inTimeRange(sched.timeRange)) return []; // empty = hidden
   if (sched.skip) {
     // Names may be EN or JA on either side: match against the line's stations
     const skipSet = new Set(sched.skip.map(n => normalize(n)));
@@ -1566,8 +1581,9 @@ function getExpressIndices(line, stopNames) {
     .filter(i => i >= 0);
 }
 
-// Get train types available at a station on a given line
-function getTrainTypes(lineName, stationName, line) {
+// Get train types available at a station on a given line (dir: travel direction,
+// for one-way services)
+function getTrainTypes(lineName, stationName, line, dir) {
   const services = EXPRESS_SERVICES[lineName];
   if (!services) return null;
   // Stop lists may name stations in EN or JA — match the station object on
@@ -1576,11 +1592,11 @@ function getTrainTypes(lineName, stationName, line) {
   const stn = line.stations.find(s => normalize(s.name) === norm) || { name: stationName };
   return services
     .filter(svc => {
-      const stops = resolveServiceStops(svc, line);
+      const stops = resolveServiceStops(svc, line, dir);
       return stops === null || stopSetHas(new Set(stops.map(normalize)), stn);
     })
     .map(svc => {
-      const stops = resolveServiceStops(svc, line);
+      const stops = resolveServiceStops(svc, line, dir);
       return {
         ...svc,
         expressIndices: getExpressIndices(line, stops),
@@ -1589,13 +1605,25 @@ function getTrainTypes(lineName, stationName, line) {
 }
 
 // Compute maxStops for an express type on a platform
+// Position in a (sorted) express index list of the first stop after fromIdx in
+// direction step. passThrough: fromIdx needn't be a stop itself (a connection
+// junction the express runs through); otherwise -1 when it isn't.
+function firstExpressPos(indices, fromIdx, step, passThrough) {
+  const pos = indices.indexOf(fromIdx);
+  if (pos !== -1) return pos + step;
+  if (!passThrough) return -1;
+  if (step > 0) return indices.findIndex(x => x > fromIdx);
+  for (let i = indices.length - 1; i >= 0; i--) if (indices[i] < fromIdx) return i;
+  return -1;
+}
+
 function getExpressMaxStops(platform, expressIndices) {
   const line = state.lines[platform.lineIdx];
-  const pos = expressIndices.indexOf(platform.fromIdx);
-  if (pos === -1) return 0;
   const step = dirStep(platform.direction);
+  const start = firstExpressPos(expressIndices, platform.fromIdx, step, platform.passThrough);
+  if (start === -1) return 0;
   let count = 0;
-  for (let i = pos + step; i >= 0 && i < expressIndices.length; i += step) {
+  for (let i = start; i >= 0 && i < expressIndices.length; i += step) {
     const stn = line.stations[expressIndices[i]];
     if (state.wards23Only && !isIn23Wards(stn.lat, stn.lng)) break;
     count++;
@@ -1610,13 +1638,15 @@ function getBranchIndices(line, branchJaNames) {
   return branchJaNames.map(ja => jaToIdx[ja]).filter(i => i !== undefined);
 }
 
-// Get branches available at a station, with precomputed indices
-function getBranches(lineName, stationJa, line, direction) {
+// Get branches available at a station, with precomputed indices.
+// Branches whose `schedule` is off now are left out unless anyHour.
+function getBranches(lineName, stationJa, line, direction, anyHour) {
   const config = LINE_BRANCHES[lineName];
   if (!config) return null;
   return config
     .filter(b => b.stations.includes(stationJa))
     .filter(b => !direction || !b.direction || b.direction === direction)
+    .filter(b => anyHour || scheduleActive(b.schedule))
     .map(b => ({ ...b, branchIndices: getBranchIndices(line, b.stations) }));
 }
 
@@ -1709,12 +1739,24 @@ function buildIndex(lines) {
   for (const l of lines) {
     if (LINE_NAME_FIXES[l.name]) l.name = LINE_NAME_FIXES[l.name];
     if (LINE_COLOR_FIXES[l.name]) l.color = LINE_COLOR_FIXES[l.name];
+    // Renamed stations first, so every later table uses the current JA name
+    for (const s of l.stations) {
+      const r = STATION_RENAMES[s.ja];
+      if (r) { s.ja = r.ja; if (r.name) s.name = r.name; }
+    }
     if (LINE_PREPEND_STATIONS[l.name]) l.stations.unshift(...LINE_PREPEND_STATIONS[l.name]);
     if (LINE_EXTRA_STATIONS[l.name]) l.stations.push(...LINE_EXTRA_STATIONS[l.name]);
+    const removeJa = LINE_REMOVE_STATIONS[l.name];
+    if (removeJa) l.stations = l.stations.filter(s => !removeJa.includes(s.ja));
     for (const ins of (LINE_INSERT_STATIONS[l.name] || [])) {
       const idx = l.stations.findIndex(s => s.ja === ins.after);
-      if (idx === -1 || l.stations.some(s => s.ja === ins.ja)) continue;
-      l.stations.splice(idx + 1, 0, { name: ins.name, ja: ins.ja, lat: ins.lat, lng: ins.lng });
+      const existing = l.stations.find(s => s.ja === ins.ja);
+      // repeat: a station the line passes twice — copy the existing entry
+      if (idx === -1 || (existing && !ins.repeat) || (ins.repeat && !existing)) continue;
+      if (ins.repeat && l.stations[idx + 1]?.ja === ins.ja) continue; // already applied
+      l.stations.splice(idx + 1, 0, ins.repeat
+        ? { ...existing }
+        : { name: ins.name, ja: ins.ja, lat: ins.lat, lng: ins.lng });
     }
     const trimJa = LINE_TRIM_AFTER[l.name];
     if (trimJa) {
@@ -1723,6 +1765,20 @@ function buildIndex(lines) {
     }
     // Deduplicate consecutive stations with the same ja name (e.g. Sotetsu Main Line duplicate Nishiya)
     l.stations = l.stations.filter((s, i) => i === 0 || s.ja !== l.stations[i - 1].ja);
+  }
+
+  // Split lines that upstream stores as joined segments (LINE_SPLITS)
+  for (const [name, parts] of Object.entries(LINE_SPLITS)) {
+    const i = lines.findIndex(l => l.name === name);
+    if (i === -1) continue;
+    const src = lines[i];
+    const pieces = parts.map(part => ({ ...src, name: part.name,
+      stations: part.stations.map(ja => src.stations.find(s => s.ja === ja)).filter(Boolean).map(s => ({ ...s })) }));
+    if (pieces.some((p, k) => p.stations.length !== parts[k].stations.length)) {
+      console.warn(`[LINE_SPLITS] a listed station is missing from ${name}; left unsplit`);
+      continue;
+    }
+    lines.splice(i, 1, ...pieces);
   }
 
   // Fix upstream station name quirks
@@ -1825,6 +1881,19 @@ function buildIndex(lines) {
     ],
   });
 
+  // Disney Resort Line (ディズニーリゾートライン) — monorail loop, not in upstream data.
+  // Trains run one way only (counterclockwise): stations in travel order, oneWay keeps direction B (+1).
+  lines.push({
+    name: 'Disney Resort Line', ja: 'ディズニーリゾートライン', color: '#38B6E8',
+    circular: true, oneWay: 'B',
+    stations: [
+      { name: 'Resort Gateway',   ja: 'リゾートゲートウェイ・ステーション', lat: 35.635222, lng: 139.885083 },
+      { name: 'Tokyo Disneyland', ja: '東京ディズニーランド・ステーション', lat: 35.635889, lng: 139.878639 },
+      { name: 'Bayside',          ja: 'ベイサイド・ステーション',           lat: 35.627944, lng: 139.876417 },
+      { name: 'Tokyo DisneySea',  ja: '東京ディズニーシー・ステーション',   lat: 35.627389, lng: 139.889472 },
+    ],
+  });
+
   const nameSet = new Set();
 
   for (let li = 0; li < lines.length; li++) {
@@ -1897,12 +1966,14 @@ function resolveConnections() {
   };
 
   for (const conn of LINE_CONNECTIONS) {
-    // Collect all matching lines (handles same-name segments like JR Hachiko Line)
+    // Collect all matching lines (handles same-name segments like JR Hachiko Line).
+    // fromLineHas/toLineHas (JA) pick the segment that contains that station.
+    const hasStation = (l, ja) => !ja || l.stations.some(s => s.ja === ja);
     const fromMatches = [];
     const toMatches = [];
     state.lines.forEach((l, i) => {
-      if (l.name === conn.from) fromMatches.push({ line: l, idx: i });
-      if (l.name === conn.to) toMatches.push({ line: l, idx: i });
+      if (l.name === conn.from && hasStation(l, conn.fromLineHas)) fromMatches.push({ line: l, idx: i });
+      if (l.name === conn.to && hasStation(l, conn.toLineHas)) toMatches.push({ line: l, idx: i });
     });
     if (fromMatches.length === 0 || toMatches.length === 0) {
       if (fromMatches.length === 0) warn(conn, 'from', conn.from, 'line not found');
@@ -1946,6 +2017,7 @@ function resolveConnections() {
     if (!toDir) {
       if (toJunctionIdx === 0) toDir = 'end';
       else if (toJunctionIdx === toLine.stations.length - 1) toDir = 'start';
+      else { warn(conn, 'toDir', '(none)', 'mid-line target junction needs toDir'); continue; }
     }
 
     // Resolve via stations (intermediate stations between lines)
@@ -1969,15 +2041,18 @@ function resolveConnections() {
         if (untilIdx === -1) warn(conn, 'destinations.until', d.until, 'destination not found on target line');
         return { ...d, untilIdx };
       }).filter(d => d.untilIdx !== -1);
+      // No destination resolved: a picker would have zero buttons
+      if (destinations.length === 0) continue;
     }
 
-    // Resolve express services spanning both lines
-    let express = null;
-    if (conn.express) {
-      express = conn.express.map(ex => ({
-        ...ex,
-        // expressIndices will be computed at platform time across the joined route
-      }));
+    // Express services spanning both lines (stop indices are computed at platform time)
+    const express = conn.express || null;
+
+    // boardFrom: the connection is only offered from this source station onward
+    let boardFromIdx = -1;
+    if (conn.boardFrom) {
+      boardFromIdx = fromLine.stations.findIndex(s => s.ja === conn.boardFrom);
+      if (boardFromIdx === -1) warn(conn, 'boardFrom', conn.boardFrom, 'boardFrom station not found on source line');
     }
 
     let toUntilIdx = -1;
@@ -2001,8 +2076,10 @@ function resolveConnections() {
       viaStations, _type,
       name: conn.name, ja: conn.ja, color: conn.color,
       displayName: conn.displayName,
-      toUntilIdx, destinations, express,
+      toUntilIdx, boardFromIdx, destinations, express,
       lineDests: conn.lineDests || null,
+      impliedLines: conn.impliedLines || null,
+      chainFrom: conn.chainFrom || null,
     });
     } // end toMatch loop
     } // end fromMatch loop
@@ -2021,8 +2098,11 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
   const N = line.stations.length;
   const terminusIdx = dirEnd(N, direction);
   return state.connections.filter(c => {
-    if (c.from !== lineName) return false;
+    // Match by index: same-name segments (JR Hachiko Line) are different lines
+    if (c.fromLineIdx !== lineIdx) return false;
     if (c.fromDir && c.fromDir !== direction) return false;
+    // boardFrom: only stations from there toward the junction
+    if (c.boardFromIdx >= 0 && (fromIdx - c.boardFromIdx) * dirStep(direction) < 0) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
     // Mid-line junction: must be ahead of us in the travel direction
@@ -2079,23 +2159,54 @@ function effectiveViaCount(conn, startStationName) {
 
 // Find onward connections from a connection's target line far terminus.
 // Used for chained through-running (e.g. Seibu → Fukutoshin → Toyoko).
-// Returns [] if the connection has a toUntil limit (chain stops there).
+// Far-terminus hops are dropped when the connection has a toUntil limit
+// (chain stops there). Mid-line hops on the target line join only when the
+// picked destination's chain names them (e.g. Keio Sagamihara → Keio Line →
+// Toei Shinjuku at Sasazuka).
 function getOnwardConnections(conn) {
   const toLine = state.lines[conn.toLineIdx];
-  if (!toLine || conn.toUntilIdx >= 0) return [];
+  if (!toLine) return [];
+  const hops = state.selectedDestination?.chain;
+  const mid = hops ? getMidLineOnward(conn).filter(c => chainNames(hops, c)) : [];
+  if (conn.toUntilIdx >= 0) return mid;
   const farIdx = dirEnd(toLine.stations.length, conn.toDir);
-  return state.connections.filter(c =>
-    c.from === conn.to && c.fromJunctionIdx === farIdx);
+  return [...state.connections.filter(c =>
+    c.fromLineIdx === conn.toLineIdx && c.fromJunctionIdx === farIdx), ...mid];
+}
+
+const chainNames = (hops, c) => hops.some(h => h.to === c.to && h.toDir === c.toDir);
+
+// Mid-line connections with destinations that leave conn's target line
+// strictly between its junction and its far end (or toUntil), heading the
+// same way. Chained destination pickers offer them; rides follow one only
+// when the picked destination's chain names it.
+function getMidLineOnward(conn) {
+  const toLine = state.lines[conn.toLineIdx];
+  if (!toLine) return [];
+  const step = dirStep(conn.toDir);
+  const limitIdx = conn.toUntilIdx >= 0 ? conn.toUntilIdx : dirEnd(toLine.stations.length, conn.toDir);
+  return state.connections.filter(c => c.fromLineIdx === conn.toLineIdx && c.fromDir === conn.toDir
+    && c.destinations && (c.fromJunctionIdx - conn.toJunctionIdx) * step > 0
+    && (limitIdx - c.fromJunctionIdx) * step > 0);
+}
+
+// Target-line index where a ride on conn leaves for the mid-line hop next
+// (null when next is a far-terminus hop or there is none)
+function chainBoundIdx(conn, next) {
+  if (!next) return null;
+  const N = state.lines[conn.toLineIdx].stations.length;
+  return next.fromJunctionIdx === dirEnd(N, conn.toDir) ? null : next.fromJunctionIdx;
 }
 
 // Next hop when following a through-running chain past conn: the hop the
 // chosen destination needs (selectedDestination.chain, set by chained picks
-// like Meguro → Hiyoshi → Shonandai), else the first onward connection.
-function nextChainConn(conn, visited) {
+// like Meguro → Hiyoshi → Shonandai), else the hop a chain express runs on
+// (tt._chainHops, e.g. Airport Rapid onto Sky Access), else the first
+// onward connection.
+function nextChainConn(conn, visited, tt = state.selectedTrainType) {
   const onward = getOnwardConnections(conn).filter(c => !visited.has(c.to));
-  const chain = state.selectedDestination?.chain;
-  return (chain && onward.find(c => chain.some(h => h.to === c.to && h.toDir === c.toDir)))
-    || onward[0] || null;
+  const hops = state.selectedDestination?.chain || tt?._chainHops;
+  return (hops && onward.find(c => chainNames(hops, c))) || onward[0] || null;
 }
 
 // Compute max additional stops available through terminus connections.
@@ -2136,27 +2247,38 @@ function resolveConnectionExpress(connExInfo, platform, line) {
   const { express, targetLineIdx, targetLine, connObj } = connExInfo;
   if (!targetLine) return [];
   const results = [];
-  const currentName = state.currentStation.name;
+  // The platform's own station (differs from currentStation on alias platforms)
+  const here = line.stations[platform.fromIdx];
+  const currentName = here.name;
 
   for (const ex of express) {
+    // Resolve schedule/direction-aware stops ([] = hidden now; e.g. KT Rapid skips Okachimachi on weekdays)
+    const resolvedStops = resolveServiceStops(ex, targetLine, platform.direction);
+    if (resolvedStops?.length === 0) continue;
     if (ex.stops === null) {
       // Local service — all stations, no express filtering on target line
       let localMax = connObj
-        ? Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx) + getConnectionMaxStops(connObj)
+        ? Math.abs(connObj.fromJunctionIdx - platform.fromIdx) + effectiveViaCount(connObj, currentName) + getConnectionMaxStops(connObj)
         : platform.maxStops;
       // Include chain extensions from onward connections
       if (connObj) localMax += computeConnectionExtra(getOnwardConnections(connObj), '', new Set([connObj.to]));
       results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
       continue;
     }
-    // Resolve schedule-aware stops (e.g. KT Rapid skips Okachimachi on weekdays)
-    const resolvedStops = ex.schedule ? resolveServiceStops(ex, targetLine) : ex.stops;
-    if (resolvedStops.length === 0) continue; // service hidden for this schedule
     const joinedNames = new Set(resolvedStops.map(s => normalize(s)));
-    // For mid-line connections, current station must be in the stop list.
-    // For terminus connections (player is on source line, not in target stops), skip this check.
+    // Source-line stops of this service
+    const srcEi = [];
+    if (connObj) {
+      for (let i = 0; i < line.stations.length; i++) {
+        if (stopSetHas(joinedNames, line.stations[i])) srcEi.push(i);
+      }
+    }
+    // The service must call at this station. Exception: a terminus connection
+    // whose list names no source-line stop besides the junction (it only
+    // describes the target line, so every source station feeds it).
     const isTerminusConn = connObj && connObj.fromJunctionIdx === dirEnd(line.stations.length, platform.direction);
-    if (!isTerminusConn && !stopSetHas(joinedNames, state.currentStation)) continue;
+    const anchoredOnSource = srcEi.some(i => i !== connObj.fromJunctionIdx);
+    if ((!isTerminusConn || anchoredOnSource) && !stopSetHas(joinedNames, here)) continue;
     // Target line express indices
     const targetIndices = [];
     for (let i = 0; i < targetLine.stations.length; i++) {
@@ -2165,13 +2287,10 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     // Compute total max: source-line express to junction + target express from junction
     let totalMax = platform.maxStops; // fallback
     let chainStops = null;
-    const srcEi = [];
+    const chainHops = [];
     if (connObj) {
-      for (let i = 0; i < line.stations.length; i++) {
-        if (stopSetHas(joinedNames, line.stations[i])) srcEi.push(i);
-      }
       const pos = srcEi.indexOf(platform.fromIdx);
-      let srcExpStops = Math.abs((connObj.fromJunctionIdx || 0) - platform.fromIdx); // fallback to raw
+      let srcExpStops = Math.abs(connObj.fromJunctionIdx - platform.fromIdx); // fallback to raw
       if (pos !== -1) {
         srcExpStops = 0;
         const step = dirStep(platform.direction);
@@ -2181,40 +2300,47 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         }
       }
       const tgtExpStops = targetIndices.length > 0
-        ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx }, targetIndices)
+        ? getExpressMaxStops({ fromIdx: connObj.toJunctionIdx, direction: connObj.toDir, lineIdx: targetLineIdx, passThrough: true }, targetIndices)
         : getConnectionMaxStops(connObj);
       const viaCount = effectiveViaCount(connObj, currentName);
       totalMax = srcExpStops + viaCount + tgtExpStops;
 
-      // Follow chain: merge express stops from onward connections with the same service name
+      // Follow chain: merge express stops from onward connections running the
+      // same service (same name, or a `chainName` naming it, e.g. Airport Rapid
+      // continuing as Access Express onto Sky Access). The hops are kept in
+      // _chainHops so routing follows the same connections.
       let chainConn = connObj;
       const chainVisited = new Set([connObj.from]);
       chainVisited.add(connObj.to);
+      const sameService = e => e.stops && (normalize(e.name) === normalize(ex.name)
+        || (e.chainName && normalize(e.chainName) === normalize(ex.name)));
       while (chainConn) {
         const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
-        if (onward.length === 0) break;
-        const nextEx = onward[0].express?.find(e => normalize(e.name) === normalize(ex.name));
-        if (!nextEx || !nextEx.stops) break;
-        // Build the chain stops set on first extension
-        if (!chainStops) chainStops = new Set(ex.stops.map(s => normalize(s)));
-        nextEx.stops.forEach(s => chainStops.add(normalize(s)));
+        const nextConn = onward.find(c => c.express?.some(sameService));
+        if (!nextConn) break;
+        const nextEx = nextConn.express.find(sameService);
+        chainHops.push({ to: nextConn.to, toDir: nextConn.toDir });
+        const nextLine = state.lines[nextConn.toLineIdx];
+        // Build the chain stops set on first extension (schedule-resolved stops)
+        if (!chainStops) chainStops = new Set(resolvedStops.map(s => normalize(s)));
+        const nextStops = nextLine ? resolveServiceStops(nextEx, nextLine, nextConn.fromDir) : nextEx.stops;
+        nextStops.forEach(s => chainStops.add(normalize(s)));
         // Count express stops on this chain hop
-        const nextLine = state.lines[onward[0].toLineIdx];
         if (nextLine) {
-          const step = dirStep(onward[0].toDir);
-          for (let k = onward[0].toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
-            if (onward[0].toUntilIdx >= 0 && (step === 1 ? k > onward[0].toUntilIdx : k < onward[0].toUntilIdx)) break;
+          const step = dirStep(nextConn.toDir);
+          for (let k = nextConn.toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
+            if (nextConn.toUntilIdx >= 0 && (step === 1 ? k > nextConn.toUntilIdx : k < nextConn.toUntilIdx)) break;
             if (stopSetHas(chainStops, nextLine.stations[k])) totalMax++;
           }
         }
-        chainVisited.add(onward[0].to);
-        chainConn = onward[0];
+        chainVisited.add(nextConn.to);
+        chainConn = nextConn;
       }
 
     }
     const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax };
     // Attach chain express stops for downstream filtering in getStationsAlongRoute
-    if (chainStops) entry._chainExpressStops = chainStops;
+    if (chainStops) { entry._chainExpressStops = chainStops; entry._chainHops = chainHops; }
     // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
     if (connObj && srcEi.length > 0) entry._srcExpIndices = srcEi;
     results.push(entry);
@@ -2244,13 +2370,17 @@ const ANCHOR_STATIONS = new Set([
 // Matched by normalized name, so spelling/style changes in the data can't break it
 const ANCHOR_KEYS = new Set([...ANCHOR_STATIONS].map(normalize));
 
+// Oedo is a lollipop (see OEDO_LOOP_END): upstream flags it circular, but it has
+// two ends, so it walks like a linear line everywhere except Tochomae.
+function isOedoLine(line) {
+  return line.name.includes('Oedo') || line.name.includes('\u014Cedo');
+}
+
 function findMajorStation(line, fromIdx, direction) {
   const N = line.stations.length;
   const LOOKAHEAD  = 30;
   const HUB_THRESHOLD = 4;
-  // Oedo is marked circular but treated as linear for non-Tochomae stations
-  const isOedo = line.name.includes('Oedo') || line.name.includes('\u014Cedo');
-  const wrap = line.circular && !isOedo;
+  const wrap = line.circular && !isOedoLine(line);
 
   const step = dirStep(direction);
 
@@ -2289,17 +2419,24 @@ function findMajorStation(line, fromIdx, direction) {
 // step direction stay within the ward boundary. Returns 0 if the first stop is outside.
 function wardMaxStops(line, fromIdx, step) {
   const N = line.stations.length;
+  const wrap = line.circular && !isOedoLine(line); // Oedo is flagged circular but has ends
   for (let i = 1; i < N; i++) {
-    let idx = line.circular
+    let idx = wrap
       ? ((fromIdx + step * i) % N + N) % N
       : fromIdx + step * i;
-    if (!line.circular && (idx < 0 || idx >= N)) return i - 1;
+    if (!wrap && (idx < 0 || idx >= N)) return i - 1;
     if (!isIn23Wards(line.stations[idx].lat, line.stations[idx].lng)) return i - 1;
   }
   return N - 1;
 }
 
 // Look up the Japanese name of a station from its English name
+// The station a platform departs from. On alias/walkable platforms this is
+// not state.currentStation (e.g. Fukutoshin at Meiji-jingumae when standing at Harajuku).
+function platformStation(p) {
+  return state.lines[p.lineIdx].stations[p.fromIdx];
+}
+
 function stationJa(englishName) {
   const entries = state.stationIndex[normalize(englishName)];
   if (!entries || !entries.length) return englishName;
@@ -2455,31 +2592,41 @@ function flatPlatforms(platforms) {
 
 function getOedoTochomaePlatforms(line, entry, N) {
   const platforms = [];
+  // Tochomae is listed at 0 (loop start) and at loopEnd (loop end, stem start)
   const loopEnd = OEDO_LOOP_END;
-  const loopMid = Math.floor((loopEnd - 1) / 2);  // = 14, midpoint of the loop
-  const stemLen = N - 1 - (loopEnd - 1);           // = 9 (indices 29–37)
-  const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))          : loopMid;
-  const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1))    : loopMid;
-  const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)): stemLen;
-  if (maxCCW > 0) platforms.push({
-    dirKey: 'loopCCW', dirStation: line.stations[1].name,
+  const loopMid = Math.floor(loopEnd / 2);  // = 14, half the loop
+  const stemLen = N - 1 - loopEnd;           // = 10 (Nishi-Shinjuku-Gochome … Hikarigaoka)
+  // The array runs clockwise on the map, so +1 from index 0 is clockwise
+  const maxCW   = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1))       : loopMid;
+  const maxCCW  = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1)) : loopMid;
+  const maxStem = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd, +1)) : stemLen;
+  if (maxCW > 0) platforms.push({
+    dirKey: 'loopCW', dirStation: line.stations[1].name,
     lineColor: line.color, lineName: line.name,
     circular: false, direction: 'end',
-    fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCCW,
+    fromIdx: 0, lineIdx: entry.lineIdx, maxStops: maxCW,
   });
-  if (maxCW > 0) platforms.push({
-    dirKey: 'loopCW', dirStation: line.stations[loopEnd - 1].name,
+  if (maxCCW > 0) platforms.push({
+    dirKey: 'loopCCW', dirStation: line.stations[loopEnd - 1].name,
     lineColor: line.color, lineName: line.name,
     circular: false, direction: 'start',
-    fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCW,
+    fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxCCW,
   });
   if (maxStem > 0) platforms.push({
     dirKey: 'toward', dirStation: 'Hikarigaoka', hintStation: line.stations[N - 1].name,
     lineColor: line.color, lineName: line.name,
     circular: false, direction: 'end',
-    fromIdx: loopEnd - 1, lineIdx: entry.lineIdx, maxStops: maxStem,
+    fromIdx: loopEnd, lineIdx: entry.lineIdx, maxStops: maxStem,
   });
   return platforms;
+}
+
+// Shoelace sign of a loop's station order: true when increasing index turns clockwise on the map
+function loopTurnsClockwise(stations) {
+  return stations.reduce((a, p, i) => {
+    const q = stations[(i + 1) % stations.length];
+    return a + p.lng * q.lat - q.lng * p.lat;
+  }, 0) < 0;
 }
 
 function getCircularPlatforms(line, entry, si, N) {
@@ -2488,14 +2635,17 @@ function getCircularPlatforms(line, entry, si, N) {
   const majorB = findMajorStation(line, si, 'B');
   const maxA = state.wards23Only ? wardMaxStops(line, si, -1) : N - 1;
   const maxB = state.wards23Only ? wardMaxStops(line, si, +1) : N - 1;
-  if (maxA > 0) platforms.push({
-    dirKey: 'clockwise', dirStation: majorA,
+  // Label each direction by how the station order turns on the map (Yamanote's array runs
+  // clockwise, so B is clockwise; Disney's runs counterclockwise). oneWay drops the other direction.
+  const bIsCW = loopTurnsClockwise(line.stations);
+  if (maxA > 0 && line.oneWay !== 'B') platforms.push({
+    dirKey: bIsCW ? 'counterclockwise' : 'clockwise', dirStation: majorA,
     lineColor: line.color, lineName: line.name,
     circular: true, direction: 'A',
     fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxA,
   });
-  if (maxB > 0) platforms.push({
-    dirKey: 'counterclockwise', dirStation: majorB,
+  if (maxB > 0 && line.oneWay !== 'A') platforms.push({
+    dirKey: bIsCW ? 'clockwise' : 'counterclockwise', dirStation: majorB,
     lineColor: line.color, lineName: line.name,
     circular: true, direction: 'B',
     fromIdx: si, lineIdx: entry.lineIdx, maxStops: maxB,
@@ -2515,6 +2665,9 @@ function getLinearPlatforms(line, entry, si, N) {
     let maxStops = atTerminus ? 0 : (state.wards23Only
       ? wardMaxStops(line, si, step)
       : Math.abs(si - dirEnd(N, dir)));
+    // Oedo stem toward Tochomae: the train passes Tochomae, rounds the loop and
+    // ends there again — stop the ride one short so no station is reached twice
+    if (isOedoLine(line) && dir === 'start' && si > OEDO_LOOP_END) maxStops = Math.min(maxStops, si - 1);
 
     if (branchConfig && !atTerminus) {
       const branches = getBranches(line.name, stnJa, line, dir);
@@ -2524,6 +2677,8 @@ function getLinearPlatforms(line, entry, si, N) {
           const fakeP = { fromIdx: si, direction: dir, lineIdx: entry.lineIdx };
           maxStops = Math.max(maxStops, getBranchMaxStops(fakeP, b.branchIndices));
         }
+      } else if (getBranches(line.name, stnJa, line, dir, true).length > 0) {
+        maxStops = 0; // every branch through here is off-hours (Tsurumi 大川 by day)
       }
     }
 
@@ -2618,10 +2773,12 @@ function getPlatforms(stationName, includeAliases = true) {
     const line = state.lines[entry.lineIdx];
     const si   = entry.stationIdx;
     const N    = line.stations.length;
-    const isOedo = line.name.includes('Oedo') || line.name.includes('\u014Cedo');
+    const isOedo = isOedoLine(line);
 
     if (isOedo && si === 0) {
       platforms.push(...getOedoTochomaePlatforms(line, entry, N));
+    } else if (isOedo && si === OEDO_LOOP_END) {
+      // Second Tochomae entry: its platforms come from getOedoTochomaePlatforms
     } else if (line.circular && !isOedo) {
       platforms.push(...getCircularPlatforms(line, entry, si, N));
     } else {
@@ -2674,6 +2831,7 @@ function mergeConnectionPlatforms(platforms) {
     merged.push({
       ...best,
       _connections: allConns,
+      _mergedLines: group.map(g => g.lineName), // every member line (backtracking matches any)
       lineColor: targetColor,
       maxStops: Math.max(...group.map(g => g.maxStops)),
     });
@@ -2844,7 +3002,10 @@ function setupAutocomplete() {
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 function onStationSelected(name, arrivedVia) {
-  state._sessionSettled = true; // playing on without answering the Resume prompt = new game
+  // Playing on without answering the Resume prompt = new game: hide the prompt
+  // so its Resume button can't later replace this game with the old one
+  state._settleResume?.();
+  state._sessionSettled = true;
   state._arrivedVia = arrivedVia || null;
   const key   = normalize(name);
   const entries = state.stationIndex[key] || [];
@@ -2894,9 +3055,14 @@ function onStationSelected(name, arrivedVia) {
       // "Dead end" means no other rideable platform exists (a lone-line terminus), NOT
       // just that the arriving line has one platform here: a terminus with a transfer
       // (e.g. Chuo-Rinkan → Odakyu Enoshima) must route onto the other line, not backtrack.
-      const withoutBacktrack = allPlatforms.filter(p =>
-        !(p.lineName === arrivedVia.lineName && p.direction === reverseDir)
-      );
+      const twice = (state.stationIndex[normalize(name)] || [])
+        .filter(e => state.lines[e.lineIdx].name === arrivedVia.lineName).length > 1;
+      const nextStop = p => state.lines[p.lineIdx]?.stations[p.fromIdx + dirStep(p.direction)];
+      const onArrivalLine = p => p.lineName === arrivedVia.lineName || !!p._mergedLines?.includes(arrivedVia.lineName);
+      const isBacktrack = p => onArrivalLine(p) && (twice && arrivedVia.prevName
+        ? nextStop(p)?.name === arrivedVia.prevName
+        : p.direction === reverseDir);
+      const withoutBacktrack = allPlatforms.filter(p => !isBacktrack(p));
       const hasOtherOption = withoutBacktrack.some(p =>
         getEffectiveStops(p, { ei: null, bi: null }).validCount > 0
       );
@@ -3009,7 +3175,7 @@ function rollPlatform() {
       state.rolledStops = 0;
 
       showDestCard(state.currentStation,
-        `<span class="flight-msg">${t('flightMsg')}</span>`);
+        () => `<span class="flight-msg">${t('flightMsg')}</span>`);
       // Hide all action buttons — no rolling from here
       dom.rollAgainBtn.style.display = 'none';
       dom.showBarsBtn.style.display = 'none';
@@ -3036,9 +3202,8 @@ function rollPlatform() {
       state.destination = state.currentStation;
       state.rolledStops = 0;
 
-      showDestCard(state.currentStation,
-        t(eggStayingKey(state.currentStation.ja))
-        + destSubHints(state.currentStation, 'inline'));
+      const here = state.currentStation;
+      showDestCard(here, () => t(eggStayingKey(here.ja)) + destSubHints(here, 'inline'));
 
       markDrankAt(state.currentStation.name);
       const drinkHereThirst = state.stationsSinceDrink;
@@ -3048,34 +3213,35 @@ function rollPlatform() {
     }
 
     // ── Normal train line (or shinkansen) ──────────────────────────────────
-    const pLabel = platformLabel(p);
-    const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-    const ln = platformLineName(p);
-    const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-    if (p.isShinkansen) {
-      dom.diePlatformLabel.innerHTML = `<strong>${t('shinkansenRoll', { n: roll })}</strong> ${dirPart ? ` ${dirPart}` : ''}
-        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
-    } else {
-      dom.diePlatformLabel.innerHTML = `<strong>#${roll} → ${ln}</strong>${dirPart ? ` ${dirPart}` : ''}
-        <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
-    }
-
-    // Show which platform was rolled
-    dom.selectedPlatformDot.style.background = p.lineColor;
-    dom.selectedPlatformText.innerHTML =
-      `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
-
+    renderPlatformBanner(p, roll);
     dom.rerollPlatformBtn.style.display = 'block';
     clearSelectionState();
     rebuildPickers(p);
 
     showStep('step-stops');
+    saveSession(); // mid-round checkpoint (tab close may skip visibilitychange)
   });
 }
 
+// Die label + "selected platform" banner for a rolled train platform.
+// Shared by rollPlatform, restoreMidRound, and the language refresher.
+function renderPlatformBanner(p, roll) {
+  const pLabel = platformLabel(p);
+  const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+  const ln = platformLineName(p);
+  const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
+  const head = p.isShinkansen ? `<strong>${t('shinkansenRoll', { n: roll })}</strong> ` : `<strong>#${roll} → ${ln}</strong>`;
+  dom.diePlatformLabel.innerHTML = `${head}${dirPart ? ` ${dirPart}` : ''}
+    <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
+  dom.selectedPlatformDot.style.background = p.lineColor;
+  dom.selectedPlatformText.innerHTML =
+    `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+}
+
 function rerollPlatform() {
+  state._roundGen = (state._roundGen || 0) + 1; // drop a stops roll still animating
   undoLastRound();
-  state.stationsSinceDrink = state._preRollThirst ?? 0;
+  state.stationsSinceDrink = state._preRollThirst ?? state.stationsSinceDrink;
   // Exclude the just-rolled platform from the next roll (alternates on repeated rerolls)
   state._rerollExcludePlatform = state.rolledPlatformNum;
   // Hide reroll, reset step 2 content, and fire a fresh roll
@@ -3090,7 +3256,7 @@ function rerollPlatform() {
 
 function rerollStops() {
   undoLastRound();
-  state.stationsSinceDrink = state._preRollThirst ?? 0;
+  state.stationsSinceDrink = state._preRollThirst ?? state.stationsSinceDrink;
   // Exclude the just-rolled stop count from the next roll (alternates on repeated rerolls)
   state._rerollExcludeStops = state.rolledStops;
   dom.rerollStopsBtn.style.display = 'none';
@@ -3112,7 +3278,7 @@ function rerollStops() {
 function handlePhysicalBranches(p) {
   if (!LINE_BRANCHES[p.lineName] || state.selectedBranch) return { pickerShown: false };
   const line = state.lines[p.lineIdx];
-  const branches = getBranches(p.lineName, state.currentStation.ja, line, p.direction);
+  const branches = getBranches(p.lineName, platformStation(p).ja, line, p.direction);
   if (!branches || branches.length === 0) return { pickerShown: false };
 
   // Filter to branches that have stations ahead in our direction
@@ -3166,6 +3332,7 @@ function handleLineDestinations(p) {
   const line = state.lines[p.lineIdx];
   const dests = lineDest.destinations
     .map(d => {
+      if (!scheduleActive(d.schedule)) return null;
       const untilIdx = line.stations.findIndex(s => s.ja === d.until);
       if (untilIdx === -1) return null;
       // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
@@ -3176,7 +3343,8 @@ function handleLineDestinations(p) {
       const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
       return { ...d, untilIdx, effectiveMax,
         _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true,
-        onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja }; } };
+        onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja,
+          stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
 
@@ -3193,10 +3361,13 @@ function handleLineDestinations(p) {
   if (wardDests.length === 0) return { pickerShown: false };
 
   // If all destinations have the same effectiveMax (cap makes them equivalent),
-  // auto-select the furthest one — no meaningful choice to make.
+  // auto-select the furthest one — no meaningful choice to make. Prefer a
+  // within-line destination so a capped plain ride doesn't become a through-run.
   const allSameMax = wardDests.every(d => d.effectiveMax === wardDests[0].effectiveMax);
   if (allSameMax || wardDests.length === 1) {
-    wardDests[wardDests.length - 1].onSelect();
+    const lineOnly = wardDests.filter(d => d._isLineDest);
+    const pool = lineOnly.length ? lineOnly : wardDests;
+    pool[pool.length - 1].onSelect();
     return { pickerShown: false };
   }
   showBranchPickerUI(p, wardDests.map(d => ({
@@ -3236,7 +3407,7 @@ function handleConnectionRouting(p) {
 
   // If all connections go to the same target line and any have destinations,
   // show a destination picker FIRST (before shared-trunk check)
-  const allSameTarget = conns.every(c => c.to === conns[0].to && c.toDir === conns[0].toDir);
+  const allSameTarget = conns.every(c => c.toLineIdx === conns[0].toLineIdx && c.toDir === conns[0].toDir);
   const connWithDests = conns.find(c => c.destinations && c.destinations.length > 0);
 
   // Multiple connections without destinations — check for shared-trunk auto-select
@@ -3244,7 +3415,7 @@ function handleConnectionRouting(p) {
     const getConnRoute = conn => {
       const available = rollableMax - onLineStops;
       const via = conn.viaStations.map(s => s.ja).join(',');
-      const targetStops = getConnectionStations(conn, available - effectiveViaCount(conn, state.currentStation.name));
+      const targetStops = getConnectionStations(conn, available - effectiveViaCount(conn, platformStation(p).name));
       return via + '|' + targetStops.map(s => s.ja).join(',');
     };
     const firstRoute = getConnRoute(conns[0]);
@@ -3270,7 +3441,7 @@ function handleConnectionRouting(p) {
 
   // Show connection picker (different target lines)
   showBranchPickerUI(p, conns.map(conn => {
-    const viaCount = effectiveViaCount(conn, state.currentStation.name);
+    const viaCount = effectiveViaCount(conn, platformStation(p).name);
     let targetMax = getConnectionMaxStops(conn);
     // Include chain extensions from onward connections (e.g. Keikyu→Asakusa→Keisei)
     const chainExtra = computeConnectionExtra(getOnwardConnections(conn), '', new Set([conn.to]));
@@ -3293,7 +3464,7 @@ function handleConnectionRouting(p) {
     const connMax = viaCount + targetMax + chainExtra + onLineStops;
     const effectiveMax = Math.min(capStops(connMax), p.maxStops);
     return {
-      name: conn.name || conn.to, ja: conn.ja || '', color: conn.color || p.lineColor,
+      name: conn.name || conn.to, ja: conn.ja || LINE_NAMES_JA[conn.to] || conn.to, color: conn.color || p.lineColor,
       effectiveMax,
       onSelect: () => {
         if (conn.destinations) {
@@ -3302,7 +3473,7 @@ function handleConnectionRouting(p) {
           // Destinations auto-selected (all capped to same max) — continue flow
         } else {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) + chainExtra, name: conn.name || conn.to, ja: conn.ja || '' };
+          state.selectedDestination = { totalMax: onLineStops + viaCount + getConnectionMaxStops(conn) + chainExtra, name: conn.name || conn.to, ja: conn.ja || LINE_NAMES_JA[conn.to] || conn.to };
         }
       },
     };
@@ -3327,7 +3498,7 @@ function showBranchButtons(p) {
 function wardConnCap(p, conn) {
   const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
   if (stopsToJunction > p.maxStops) return p.maxStops; // boundary before junction
-  const via = effectiveViaCount(conn, state.currentStation.name);
+  const via = effectiveViaCount(conn, platformStation(p).name);
   const target = wardMaxStops(state.lines[conn.toLineIdx], conn.toJunctionIdx, dirStep(conn.toDir));
   return stopsToJunction + via + target;
 }
@@ -3404,16 +3575,18 @@ function collapseOutOfWardChoices(p, choices) {
 function destServesStation(conn, d, p) {
   if (!d.services) return true;
   const line = state.lines[p.lineIdx];
-  const curKeys = new Set([normalize(state.currentStation.name),
-                           normalize(state.currentStation.ja || '')]);
+  const curKeys = new Set([normalize(platformStation(p).name),
+                           normalize(platformStation(p).ja || '')]);
   const defs = [...(conn.express || []), ...(EXPRESS_SERVICES[p.lineName] || [])];
   for (const svc of d.services) {
     const n = normalize(svc);
     const matches = defs.filter(t => normalize(t.name) === n);
-    // Express-class: allowed service stops at the current station
-    if (matches.some(t => t.stops && t.stops.some(s => curKeys.has(normalize(s))))) return true;
+    // Express-class: allowed service stops at the current station (today's schedule)
+    const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction) : t.stops;
+    if (matches.some(t => stopsOf(t)?.some(s => curKeys.has(normalize(s))))) return true;
     // Local-class: stops:null def, or an undefined "Local" name (implicit local)
-    const isLocalClass = matches.length ? matches.some(t => t.stops === null) : n === 'local';
+    const runsLocal = t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0; // [] = hidden now
+    const isLocalClass = matches.length ? matches.some(runsLocal) : n === 'local';
     if (isLocalClass) {
       if (!d.localFrom) return true;
       const fromIdx = line.stations.findIndex(s => s.ja === d.localFrom);
@@ -3432,6 +3605,7 @@ function destServesStation(conn, d, p) {
 // before the junction (e.g. Hashimoto, Machida on the Yokohama Line). The ride
 // stays on the source line: sets selectedDestination but NOT selectedConnection.
 function lineDestChoice(p, conn, d) {
+  if (!scheduleActive(d.schedule)) return null;
   const line = state.lines[p.lineIdx];
   const untilIdx = line.stations.findIndex(s => s.ja === d.until);
   if (untilIdx === -1) return null;
@@ -3439,9 +3613,10 @@ function lineDestChoice(p, conn, d) {
   if (stopsToEnd <= 0) return null;
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
-    effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)),
+    effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)), _fullMax: stopsToEnd,
     _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
-    onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja }; },
+    onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja,
+      stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
   };
 }
 
@@ -3449,7 +3624,7 @@ function lineDestChoice(p, conn, d) {
 // stops. Its range is capped by this connection's own reach, not the
 // platform's overall max (which another connection may set).
 function connDestChoice(p, conn, d, onLine) {
-  const via = effectiveViaCount(conn, state.currentStation.name);
+  const via = effectiveViaCount(conn, platformStation(p).name);
   const stopsOnTarget = conn.toDir === 'start'
     ? conn.toJunctionIdx - d.untilIdx
     : d.untilIdx - conn.toJunctionIdx;
@@ -3457,19 +3632,20 @@ function connDestChoice(p, conn, d, onLine) {
                              onLine + via + getConnectionMaxStops(conn));
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
-    effectiveMax: destRollCap(p, conn, cappedMax),
+    effectiveMax: destRollCap(p, conn, cappedMax), _fullMax: cappedMax,
     _services: d.services || null,
     _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
     onSelect: () => {
       state.selectedConnection = conn;
-      state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja };
+      state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja,
+        stopAt: { lineIdx: conn.toLineIdx, idx: d.untilIdx, dir: conn.toDir } };
     },
   };
 }
 
 // Destinations of conn that resolved and whose trains serve this station
 function servedDests(conn, p) {
-  return conn.destinations.filter(d => d.untilIdx !== -1 && destServesStation(conn, d, p));
+  return conn.destinations.filter(d => d.untilIdx !== -1 && scheduleActive(d.schedule) && destServesStation(conn, d, p));
 }
 
 // Source-line stops ridden before conn's junction (mid-line junctions use
@@ -3487,7 +3663,7 @@ function showDestinationPicker(p, conn, onLineStops) {
   }
   const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
   for (const d of servedDests(conn, p)) choices.push(connDestChoice(p, conn, d, effectiveOnLine));
-  const viaCount = effectiveViaCount(conn, state.currentStation.name);
+  const viaCount = effectiveViaCount(conn, platformStation(p).name);
 
   // Chained destinations: follow onward connections recursively for through-running
   // beyond the target line (e.g. Keikyu Airport → Keikyu Main → Asakusa → Keisei Oshiage)
@@ -3495,40 +3671,77 @@ function showDestinationPicker(p, conn, onLineStops) {
   let chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
   const chainVisited = new Set([conn.from, conn.to]);
   const chainPath = []; // hops after conn that lead to chainConn
+  // chainFrom: a connection chained rides only continue onto when boarded on one of these lines
+  const chainAllowed = c => !c.chainFrom || c.chainFrom.includes(p.lineName);
+  // Chained rides board one of conn's through trains: none when no conn
+  // destination is served here, and a chained destination without its own
+  // `services` keeps the ones the first hop allows (e.g. Odakyu 準急/急行 to Joban)
+  const served = servedDests(conn, p);
+  const chainBlocked = served.length === 0 && conn.destinations.some(d => d.services);
+  const inheritedServices = served.length && served.every(d => d.services)
+    ? [...new Set(served.flatMap(d => d.services))] : null;
+  // A chained destination's services that the first hop declares must run now
+  // (Haneda → Sky Access needs an エアポート快特: none in the morning)
+  const firstHopRunsNow = services => {
+    if (!services || !conn.express) return true;
+    const want = new Set(services.map(normalize));
+    const declared = conn.express.filter(e => want.has(normalize(e.name)) || (e.chainName && want.has(normalize(e.chainName))));
+    return !declared.length || declared.some(e => resolveServiceStops(e, state.lines[conn.toLineIdx], p.direction)?.length !== 0);
+  };
+  // Destination choices of a chained hop reached after `base` stops (through its via).
+  // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
+  const pushChainDests = (nextConn, base, path, midLine) => {
+    if (chainBlocked) return;
+    for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
+      const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices };
+      if (!firstHopRunsNow(d.services)) continue;
+      const stopsOnNext = nextConn.toDir === 'start'
+        ? nextConn.toJunctionIdx - d.untilIdx
+        : d.untilIdx - nextConn.toJunctionIdx;
+      const totalMax = base + Math.max(0, stopsOnNext);
+      const cappedMax = midLine && !state.wards23Only ? totalMax : Math.min(totalMax, p.maxStops);
+      // Hops routing must follow to reach this destination (see nextChainConn)
+      const chain = [...path, nextConn].map(c => ({ to: c.to, toDir: c.toDir }));
+      choices.push({
+        name: d.name, ja: d.ja, color: d.color || p.lineColor,
+        effectiveMax: capStops(cappedMax), _fullMax: totalMax,
+        _services: d.services || null,
+        _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
+        _sourceConn: conn, // first hop: the one that leaves the boarding line
+        onSelect: () => {
+          state.selectedConnection = conn;
+          state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja, chain,
+            stopAt: { lineIdx: nextConn.toLineIdx, idx: d.untilIdx, dir: nextConn.toDir } };
+        },
+      });
+    }
+  };
+  // Mid-line hops off hop's target line (e.g. Keio Line → Toei Shinjuku at
+  // Sasazuka), recursively. `base`: stops ridden up to hop's target junction.
+  const addMidLineHops = (hop, base, path, visited) => {
+    for (const m of getMidLineOnward(hop)) {
+      if (visited.has(m.to) || !chainAllowed(m)) continue;
+      const mBase = base + Math.abs(m.fromJunctionIdx - hop.toJunctionIdx) + effectiveViaCount(m, '');
+      pushChainDests(m, mBase, path, true);
+      addMidLineHops(m, mBase, [...path, m], new Set([...visited, m.to]));
+    }
+  };
+  addMidLineHops(conn, effectiveOnLine + viaCount, [], chainVisited);
   while (chainConn) {
-    const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
+    const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to) && chainAllowed(c));
     let nextChain = null;
     for (const nextConn of onward) {
       if (!nextConn.destinations) { nextChain = nextConn; chainVisited.add(nextConn.to); continue; }
-      const nextDests = nextConn.destinations.filter(d => d.untilIdx !== -1);
-      if (nextDests.length === 0) continue;
-      const nextVia = effectiveViaCount(nextConn, '');
-      for (const d of nextDests) {
-        const stopsOnNext = nextConn.toDir === 'start'
-          ? nextConn.toJunctionIdx - d.untilIdx
-          : d.untilIdx - nextConn.toJunctionIdx;
-        const totalMax = chainBase + nextVia + Math.max(0, stopsOnNext);
-        const cappedMax = Math.min(totalMax, p.maxStops);
-        // Hops routing must follow to reach this destination (see nextChainConn)
-        const chain = [...chainPath, nextConn].map(c => ({ to: c.to, toDir: c.toDir }));
-        choices.push({
-          name: d.name, ja: d.ja, color: d.color || p.lineColor,
-          effectiveMax: capStops(cappedMax),
-          _services: d.services || null,
-          _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
-          _sourceConn: conn, // first hop: the one that leaves the boarding line
-          onSelect: () => {
-            state.selectedConnection = conn;
-            state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja, chain };
-          },
-        });
-      }
+      if (!nextConn.destinations.some(d => d.untilIdx !== -1)) continue;
+      pushChainDests(nextConn, chainBase + effectiveViaCount(nextConn, ''), chainPath, false);
       nextChain = nextConn;
       chainVisited.add(nextConn.to);
     }
     if (!nextChain) break;
-    chainBase += effectiveViaCount(nextChain, '') + getConnectionMaxStops(nextChain);
+    const junctionBase = chainBase + effectiveViaCount(nextChain, '');
+    chainBase = junctionBase + getConnectionMaxStops(nextChain);
     chainPath.push(nextChain);
+    addMidLineHops(nextChain, junctionBase, chainPath.slice(), chainVisited);
     chainConn = nextChain;
   }
 
@@ -3545,6 +3758,8 @@ function showDestinationPicker(p, conn, onLineStops) {
   }
   const unique = [...grouped.values()].flatMap(group => {
     if (group.length <= 1) return group;
+    // Only a cap makes rides equivalent: two that really end at that count are different trips
+    if (group.filter(c => c._fullMax === c.effectiveMax).length > 1) return group;
     // Don't merge destinations with different services — they represent different trains
     const svcKey = c => c._services ? c._services.slice().sort().join(',') : '';
     if (!group.every(c => svcKey(c) === svcKey(group[0]))) return group;
@@ -3620,6 +3835,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
 // Shared UI for branch/connection picker buttons
 function showBranchPickerUI(p, choices, hasExpress, pickerType) {
   state._pickerType = pickerType || 'branch';
+  state._pickerArgs = [p, choices, hasExpress, pickerType]; // for the language refresher
   showTrainTypeUI();
   dom.trainTypeRow.innerHTML = choices.map((c, i) => {
     const fullWidth = i === 0 && choices.length % 2 === 1 && choices.length >= 3 ? 'flex:1 1 100%;min-width:100%;' : '';
@@ -3635,7 +3851,8 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
   dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach((btn, i) => {
     btn.onclick = () => {
       const result = choices[i].onSelect();
-      if (result === 'subpicker') return;
+      if (result === 'subpicker') return; // saved once the sub-picker is answered
+      saveSession(); // keep the answer in midRound
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
       // After branch/destination/connection selection, check for further pickers
       // (e.g. Nambu Line: branch → destination → train type)
@@ -3659,7 +3876,7 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
 // Maps the routing fields set by resolveConnectionExpress into the opts shape
 // that getEffectiveStops expects (ei, _connTargetLineIdx, _terminatesAtJunction, _connTotalMax).
 function trainTypeOpts(g) {
-  return { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax };
+  return { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax, _tt: g };
 }
 
 // Resolve available train types for a platform, returning grouped/merged types
@@ -3690,13 +3907,20 @@ function resolveTrainTypes(p) {
   if (!hasLineExpress && !hasConnExpress && !hasTargetExpress) return null;
 
   const line = state.lines[p.lineIdx];
-  let trainTypes = getTrainTypes(p.lineName, state.currentStation.name, line) || [];
+  let trainTypes = getTrainTypes(p.lineName, platformStation(p).name, line, p.direction) || [];
+  // Every type the consulted lists declare, before hours/direction/stop filtering
+  const declared = [...(EXPRESS_SERVICES[p.lineName] || []), ...allConnExpress.flatMap(a => a.express)];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
   for (const connExInfo of allConnExpress) {
     trainTypes.push(...resolveConnectionExpress(connExInfo, p, line));
   }
   // Remove source-line services duplicated by connection express (connection version spans both lines)
   const connExpNames = new Set(trainTypes.filter(t => t._connTargetLineIdx != null).map(t => normalize(t.name)));
+  // A connection service hidden by today's schedule still replaces its source-line
+  // namesake (daytime Odakyu 急行 don't run on to Fujisawa as locals)
+  for (const a of allConnExpress) for (const e of a.express) {
+    if (e.stops && resolveServiceStops(e, a.targetLine, p.direction).length === 0) connExpNames.add(normalize(e.name));
+  }
   trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null || !connExpNames.has(normalize(t.name)));
 
   // Add target line's express services (e.g. Den-en-toshi Semi-Exp/Express via Hanzomon)
@@ -3705,7 +3929,8 @@ function resolveTrainTypes(p) {
   const connAlreadyCovered = isLineDest || allConnExpress.some(a => a.targetLineIdx === conn?.toLineIdx);
   if (hasTargetExpress && connTargetLine && !connAlreadyCovered) {
     const junctionStn = connTargetLine.stations[conn.toJunctionIdx];
-    const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine) || [];
+    const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine, conn.toDir) || [];
+    declared.push(...EXPRESS_SERVICES[conn.to]);
     // Add a "terminates at junction" option if the source line has no express of its own
     if (!hasLineExpress && trainTypes.length === 0) {
       trainTypes.push({
@@ -3729,9 +3954,16 @@ function resolveTrainTypes(p) {
       trainTypes.push(entry);
     }
   }
-  if (!trainTypes || trainTypes.length <= 1) return null;
+  // A lone express-class type still applies when the lists declare no Local and
+  // hours/direction/stops hid the others (Joban Rapid while the Special Rapid is
+  // off-hours). A single declared type without a Local still runs local.
+  const loneApplies = trainTypes.length === 1 && trainTypes[0].expressIndices
+    && declared.length >= 2 && !declared.some(t => t.stops === null);
+  if (trainTypes.length === 0 || (trainTypes.length === 1 && !loneApplies)) return null;
 
-  // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi)
+  // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi).
+  // Same-name entries (per-direction / per-segment hours) list their name once.
+  const joinNames = (a, b) => [...new Set([...a.split(' / '), ...b.split(' / ')])].join(' / ');
   const grouped = [];
   for (const tt of trainTypes) {
     const key = (tt._terminatesAtJunction ? 'term:' : tt._connTargetLineIdx != null ? 'conn' + (tt._connTotalMax || '') + ':' : '')
@@ -3739,8 +3971,8 @@ function resolveTrainTypes(p) {
     const existing = grouped.find(g => g._key === key);
     if (existing) {
       existing._members.push(tt);
-      existing.name += ' / ' + tt.name;
-      existing.ja += ' / ' + tt.ja;
+      existing.name = joinNames(existing.name, tt.name);
+      existing.ja = joinNames(existing.ja, tt.ja);
     } else {
       grouped.push({ ...tt, _key: key, _members: [tt] });
     }
@@ -3752,7 +3984,8 @@ function resolveTrainTypes(p) {
   let reachable = grouped.filter(g => {
     const eff = getEffectiveStops(p, trainTypeOpts(g));
     effOf.set(g, eff);
-    return eff.validCount > 0;
+    // reachesDest: false when a picked destination is beyond where this type runs
+    return eff.validCount > 0 && eff.reachesDest !== false;
   });
   // Filter train types to match the selected destination's real signboard.
   // When `services` is declared, only show types whose name matches the allowlist.
@@ -3767,7 +4000,7 @@ function resolveTrainTypes(p) {
       });
     } else {
       // Heuristic fallback: chain express types pass through intermediate destinations
-      if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, state.currentStation.name) + getConnectionMaxStops(conn)) {
+      if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
         reachable = reachable.filter(g => !g._chainExpressStops);
       }
     }
@@ -3795,8 +4028,8 @@ function resolveTrainTypes(p) {
     });
     if (existing) {
       existing._members.push(...g._members);
-      existing.name += ' / ' + g.name;
-      existing.ja += ' / ' + g.ja;
+      existing.name = joinNames(existing.name, g.name);
+      existing.ja = joinNames(existing.ja, g.ja);
     } else {
       merged.push({ ...g, _count: eff.validCount, _rawMax: eff.rawMax });
     }
@@ -3865,7 +4098,7 @@ function showTrainTypeButtons(p) {
 function destLabel() {
   const d = state.selectedDestination;
   if (!d || !d.name) return '';
-  return currentLang === 'ja' ? ' · ' + d.ja.replace(/方面$/, '') + '行き' : ' towards ' + d.name;
+  return currentLang === 'ja' ? ' · ' + (d.ja || d.name).replace(/方面$/, '') + '行き' : ' towards ' + d.name;
 }
 
 function refreshStopsLabel() {
@@ -3877,14 +4110,16 @@ function refreshStopsLabel() {
 // ── Transfer Check ────────────────────────────────────────��────────────────
 
 // Walk stations on a connected line, filtering by chain-express stops if active.
-// Returns an array of station objects (up to maxStops).
-function walkConnectionStations(conn, maxStops, chainExpStops) {
+// Returns an array of station objects (up to maxStops). boundIdx (target-line
+// index, optional): the ride leaves there for a mid-line hop (chainBoundIdx).
+function walkConnectionStations(conn, maxStops, chainExpStops, boundIdx = null) {
+  const step = dirStep(conn.toDir);
   if (chainExpStops) {
     const toLine = state.lines[conn.toLineIdx];
-    const step = dirStep(conn.toDir);
     const result = [];
     for (let k = conn.toJunctionIdx + step; result.length < maxStops; k += step) {
       if (k < 0 || k >= toLine.stations.length) break;
+      if (boundIdx != null && (k - boundIdx) * step > 0) break;
       if (conn.toUntilIdx >= 0) {
         if (step === 1 && k > conn.toUntilIdx) break;
         if (step === -1 && k < conn.toUntilIdx) break;
@@ -3895,7 +4130,8 @@ function walkConnectionStations(conn, maxStops, chainExpStops) {
     }
     return result;
   }
-  return getConnectionStations(conn, maxStops);
+  const bound = boundIdx != null ? (boundIdx - conn.toJunctionIdx) * step : Infinity;
+  return getConnectionStations(conn, Math.min(maxStops, bound));
 }
 
 // Walk through a sparse indices array (express stops or branch stations) in a direction.
@@ -3928,15 +4164,28 @@ function findRouteConnection(platform, tt) {
   return conn;
 }
 
+// Which connection this ride actually takes. A terminus connection always
+// extends the ride; a mid-line one only when a connection train type targets
+// it or the player picked it in a picker (pickers set selectedDestination).
+// handleConnectionRouting also auto-sets selectedConnection just to skip a
+// picker — that alone keeps the ride on the source line.
+function routeConnectionFor(platform, conn, connTargetLineIdx) {
+  if (!conn || platform.circular) return conn;
+  const N = state.lines[platform.lineIdx].stations.length;
+  if (conn.fromJunctionIdx === dirEnd(N, platform.direction)) return conn;
+  const taken = connTargetLineIdx != null
+    || (state.selectedConnection === conn && !!state.selectedDestination);
+  return taken ? conn : null;
+}
+
 // Walk local stops on the source line, limited by terminus or mid-line junction.
-function routeOnLineLocal(platform, line, stops, conn, connTargetLineIdx) {
+// conn: the connection the ride takes (from routeConnectionFor), or null.
+function routeOnLineLocal(platform, line, stops, conn) {
   const N = line.stations.length;
   let onLineMax = platform.circular ? N - 1
     : Math.abs(platform.fromIdx - dirEnd(N, platform.direction));
-  // For mid-line connections, stop at the junction station
-  // (connTargetLineIdx set = connection express; selectedConnection = user chose connection dest)
-  if (conn && conn.fromJunctionIdx !== dirEnd(N, platform.direction)
-      && (connTargetLineIdx != null || state.selectedConnection === conn)) {
+  // Taking a mid-line connection: stop at the junction station
+  if (conn && conn.fromJunctionIdx !== dirEnd(N, platform.direction)) {
     onLineMax = Math.min(onLineMax, Math.abs(conn.fromJunctionIdx - platform.fromIdx));
   }
   const stations = [];
@@ -3971,37 +4220,39 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
     stopsLeft--;
   }
 
+  // The next chained hop: a mid-line one ends this target-line walk at its junction
+  visitedLines.add(currentConn.to);
+  let next = nextChainConn(currentConn, visitedLines, tt);
+
   // Add target line stations (express-filtered if target-line train type selected)
   if (stopsLeft > 0) {
     const connTargetEi = (tt?._connTargetLineIdx != null) ? ei : null;
+    const bound = chainBoundIdx(currentConn, next);
     if (connTargetEi) {
       const toLine = state.lines[currentConn.toLineIdx];
-      const pos = connTargetEi.indexOf(currentConn.toJunctionIdx);
-      if (pos !== -1) {
-        const step = dirStep(currentConn.toDir);
-        for (let i = 1; i <= stopsLeft; i++) {
-          const ep = pos + step * i;
-          if (ep < 0 || ep >= connTargetEi.length) break;
-          if (currentConn.toUntilIdx >= 0) {
-            if (step === 1 && connTargetEi[ep] > currentConn.toUntilIdx) break;
-            if (step === -1 && connTargetEi[ep] < currentConn.toUntilIdx) break;
-          }
-          result.push(toLine.stations[connTargetEi[ep]]);
+      const step = dirStep(currentConn.toDir);
+      // The express may run through the junction without stopping (passThrough)
+      const start = firstExpressPos(connTargetEi, currentConn.toJunctionIdx, step, true);
+      for (let ep = start, n = 0; start !== -1 && n < stopsLeft; ep += step, n++) {
+        if (ep < 0 || ep >= connTargetEi.length) break;
+        if (bound != null && (connTargetEi[ep] - bound) * step > 0) break;
+        if (currentConn.toUntilIdx >= 0) {
+          if (step === 1 && connTargetEi[ep] > currentConn.toUntilIdx) break;
+          if (step === -1 && connTargetEi[ep] < currentConn.toUntilIdx) break;
         }
+        result.push(toLine.stations[connTargetEi[ep]]);
       }
     } else {
-      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
+      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops, bound)) result.push(cs);
     }
   }
 
   // Follow chained connections (e.g. Seibu → Fukutoshin → Toyoko)
-  visitedLines.add(currentConn.to);
   stopsLeft = stops - result.length;
-  while (stopsLeft > 0) {
-    const next = nextChainConn(currentConn, visitedLines);
-    if (!next) break;
+  while (stopsLeft > 0 && next) {
     currentConn = next;
     visitedLines.add(currentConn.to);
+    next = nextChainConn(currentConn, visitedLines, tt);
     for (const vs of currentConn.viaStations) {
       if (stopsLeft <= 0) break;
       if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
@@ -4009,7 +4260,7 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
       stopsLeft--;
     }
     if (stopsLeft > 0) {
-      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops)) result.push(cs);
+      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops, chainBoundIdx(currentConn, next))) result.push(cs);
       stopsLeft = stops - result.length;
     }
   }
@@ -4017,21 +4268,23 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
   return result;
 }
 
-function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainType) {
+function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainType, branchIndicesOverride) {
   const tt = trainType || state.selectedTrainType;
   const line = state.lines[platform.lineIdx];
   const ei = expressIndicesOverride !== undefined ? expressIndicesOverride : tt?.expressIndices;
   const trace = window._routeDebug ? [] : null;
 
   // Express routing on source line (skip if express targets a connected line)
-  if (ei && !tt?._connTargetLineIdx) {
+  if (ei && tt?._connTargetLineIdx == null) {
     trace?.push('strategy: source-line express (' + (ei.length) + ' indices)');
-    const r = walkIndices(line, ei, platform.fromIdx, platform.direction, stops);
+    const conn = platform._connections ? routeConnectionFor(platform, findRouteConnection(platform, tt), null) : null;
+    // A taken mid-line connection ends the express run at the junction
+    const midLine = conn && conn.fromJunctionIdx !== dirEnd(line.stations.length, platform.direction);
+    const r = walkIndices(line, ei, platform.fromIdx, platform.direction, stops,
+      midLine ? { boundIdx: conn.fromJunctionIdx } : undefined);
     trace?.push('walkIndices(express): ' + r.stations.length + ' stops, exhausted=' + r.exhausted);
-    const needsExtension = r.exhausted && !!platform._connections;
-    if (!needsExtension) { if (trace) r.stations._trace = trace; return r.stations; }
-    const conn = findRouteConnection(platform, tt);
-    trace?.push('findRouteConnection: ' + (conn ? conn.from + ' → ' + conn.to : 'none'));
+    if (!r.exhausted || !conn) { if (trace) r.stations._trace = trace; return r.stations; }
+    trace?.push('findRouteConnection: ' + conn.from + ' → ' + conn.to);
     const result = routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
     trace?.push('routeConnectionExtension: total ' + result.length + ' stops');
     if (trace) result._trace = trace;
@@ -4039,7 +4292,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   }
 
   // Branch routing
-  const bi = state.selectedBranch?.branchIndices;
+  const bi = branchIndicesOverride || state.selectedBranch?.branchIndices;
   if (bi) {
     trace?.push('strategy: branch routing (' + bi.length + ' indices)');
     const r = walkIndices(line, bi, platform.fromIdx, platform.direction, stops);
@@ -4048,7 +4301,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   }
 
   // Normal routing with optional connection extension
-  const conn = findRouteConnection(platform, tt);
+  const conn = routeConnectionFor(platform, findRouteConnection(platform, tt), tt?._connTargetLineIdx);
   trace?.push('strategy: local' + (conn ? ' + connection (' + conn.from + ' → ' + conn.to + ')' : ''));
   let result = [];
 
@@ -4058,9 +4311,13 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
     trace?.push('walkIndices(srcExpress→junction): srcEi has ' + srcEi.length + ' indices');
     result = walkIndices(line, srcEi, platform.fromIdx, platform.direction, stops, { boundIdx: conn.fromJunctionIdx }).stations;
   }
-  if (result.length === 0) {
+  // A service calling here with no further source-line stop runs non-stop to
+  // the junction (e.g. Airport Rapid from Haneda T3 past Keikyu Kamata)
+  const nonStopToJunction = result.length === 0 && srcEi && tt?._connTargetLineIdx != null && conn
+    && srcEi.includes(platform.fromIdx) && platform.fromIdx !== conn.fromJunctionIdx;
+  if (result.length === 0 && !nonStopToJunction) {
     trace?.push('routeOnLineLocal' + (tt?._connTargetLineIdx != null ? ' (connTarget)' : ''));
-    result = routeOnLineLocal(platform, line, stops, conn, tt?._connTargetLineIdx);
+    result = routeOnLineLocal(platform, line, stops, conn);
   }
   trace?.push('on-line: ' + result.length + ' stops');
 
@@ -4106,7 +4363,9 @@ function resetDiceUI() {
   resetStopsBtn();
 }
 
-function showDestCard(station, subHtml) {
+// renderSub: () => html for the line under the name; kept so a language
+// switch can re-render it (refreshDestSub).
+function showDestCard(station, renderSub) {
   dom.destName.textContent = station.name;
   dom.destName.href = `https://www.google.com/maps/search/?api=1&query=${station.lat},${station.lng}`;
   dom.destNameJa.textContent = station.ja || '';
@@ -4122,7 +4381,8 @@ function showDestCard(station, subHtml) {
     dom.destWard.textContent = '';
     dom.destWard.style.display = 'none';
   }
-  dom.destSub.innerHTML = subHtml;
+  state._destSubRender = renderSub;
+  dom.destSub.innerHTML = renderSub();
   dom.destCard.classList.add('active');
   dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -4139,12 +4399,14 @@ function clearSelectionState() {
   state.selectedConnection = null;
   state.selectedDestination = null;
   state._pickerType = null;
+  state._pickerArgs = null;
 }
 
 function rebuildPickers(p, opts) {
   if (showBranchButtons(p)) return true;
   if (showTrainTypeButtons(p)) return true;
-  const effectiveMax = getEffectiveStops(p, { ei: null }).validCount;
+  // Same count rollStops will use (includes an auto-selected express type)
+  const effectiveMax = getEffectiveStops(p).validCount;
   dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
   showRollStopsUI();
   dom.rollStopsBtn.disabled = false;
@@ -4199,7 +4461,7 @@ function getValidRouteInfo(platform, expressIndices, maxPhysical, branchIndicesO
         : platform.maxStops;
   }
   if (maxPhysical === 0) return { validCount: 0, physicalStopsMap: [] };
-  const fullRoute = getStationsAlongRoute(platform, maxPhysical, expressIndices || null, trainType);
+  const fullRoute = getStationsAlongRoute(platform, maxPhysical, expressIndices || null, trainType, bi);
   const physicalStopsMap = [];
   for (let i = 0; i < fullRoute.length; i++) {
     if (!state.drankAt.has(normalize(fullRoute[i].name))) {
@@ -4247,7 +4509,7 @@ function getEffectiveStops(platform, opts = {}) {
       const startName = state.lines[platform.lineIdx].stations[platform.fromIdx]?.name;
       const via = effectiveViaCount(conn, startName);
       const targetStops = ei
-        ? getExpressMaxStops({ fromIdx: conn.toJunctionIdx, direction: conn.toDir, lineIdx: connTargetLineIdx }, ei)
+        ? getExpressMaxStops({ fromIdx: conn.toJunctionIdx, direction: conn.toDir, lineIdx: connTargetLineIdx, passThrough: true }, ei)
         : getConnectionMaxStops(conn);
       // For mid-line express, onLine is raw (local) distance — the actual express
       // source-line count is handled by getStationsAlongRoute which stops at the junction.
@@ -4294,14 +4556,14 @@ function getEffectiveStops(platform, opts = {}) {
   const destUntilIdx = state.selectedDestination?.untilIdx;
   if (destLimit != null) {
     trace?.push('destLimit=' + destLimit + ', destUntilIdx=' + destUntilIdx);
-    if (destUntilIdx != null && ei && !connTargetLineIdx) {
+    if (destUntilIdx != null && ei && connTargetLineIdx == null) {
       const expToLimit = ei.filter(i =>
         platform.direction === 'end' ? (i > platform.fromIdx && i <= destUntilIdx)
                                      : (i < platform.fromIdx && i >= destUntilIdx)
       ).length;
       rawMax = Math.min(rawMax, expToLimit);
       trace?.push('destLimit (express to untilIdx): rawMax=' + rawMax);
-    } else if (ei && !connTargetLineIdx && platform._onLineStops != null && destLimit > platform._onLineStops) {
+    } else if (ei && connTargetLineIdx == null && platform._onLineStops != null && destLimit > platform._onLineStops) {
       const line = state.lines[platform.lineIdx];
       const terminusIdx = dirEnd(line.stations.length, platform.direction);
       const expOnLine = ei.filter(i =>
@@ -4332,16 +4594,47 @@ function getEffectiveStops(platform, opts = {}) {
       }
     }
   }
+  // Pass train type context through to route computation instead of mutating state.
+  // Keep the type's routing fields (_srcExpIndices, _chainExpressStops) so validity
+  // is checked on the same route the ride takes.
+  // { ei: null } asks for the plain local count: don't carry the selected type's routing
+  const tt = opts._tt !== undefined ? opts._tt : (opts.ei === null ? null : state.selectedTrainType);
+  const ttOverride = (connTargetLineIdx != null || terminates)
+    ? { ...(tt || {}), expressIndices: ei, _connTargetLineIdx: connTargetLineIdx, _terminatesAtJunction: terminates }
+    : undefined;
+
+  // A picked destination station (stopAt): end the ride there, or at the last stop
+  // before the type passes it. Counting along the actual route keeps express types
+  // right, which the local-stop totalMax above can't.
+  const stopAt = state.selectedDestination?.stopAt;
+  let reachesDest = true;
+  if (stopAt) {
+    const full = getStationsAlongRoute(platform, 999, ei || null, ttOverride, bi);
+    const sl = state.lines[stopAt.lineIdx].stations, step = dirStep(stopAt.dir);
+    let pos = -1;
+    for (let k = 0; k < full.length; k++) {
+      const i = sl.indexOf(full[k]);
+      if (i === -1) continue;
+      if (i === stopAt.idx) { pos = k + 1; break; }
+      if ((i - stopAt.idx) * step > 0) { pos = k; break; } // passed it without stopping
+    }
+    if (pos > 0) {
+      if (state.wards23Only) {
+        const out = full.findIndex(s => !isIn23Wards(s.lat, s.lng));
+        if (out !== -1) pos = Math.min(pos, out);
+      }
+      rawMax = pos;
+    } else {
+      reachesDest = false; // this type never gets to the destination
+    }
+    trace?.push('stopAt: route pos=' + pos + ', rawMax=' + rawMax);
+  }
+
   const cappedMax = capStops(rawMax);
   trace?.push('cappedMax=' + cappedMax);
-
-  // Pass train type context through to route computation instead of mutating state
-  const ttOverride = (connTargetLineIdx != null || terminates)
-    ? { expressIndices: ei, _connTargetLineIdx: connTargetLineIdx, _terminatesAtJunction: terminates }
-    : undefined;
   const info = getValidRouteInfo(platform, ei || null, cappedMax, bi, ttOverride);
 
-  const result = { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax };
+  const result = { validCount: info.validCount, physicalStopsMap: info.physicalStopsMap, rawMax, cappedMax, reachesDest };
   if (trace) { trace.push('validCount=' + info.validCount); result._trace = trace; }
   return result;
 }
@@ -4417,12 +4710,13 @@ async function resetAndReroll(el, die, res, inlineBtn, elClass) {
   inlineBtn.style.display = 'none';
 }
 
+// Rows can be gone when a reset re-rendered the card while this round was finishing
 function dimStations(start, end) {
-  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`).classList.add('passed');
+  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`)?.classList.add('passed');
 }
 
 function undimStations(start, end) {
-  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`).classList.remove('passed');
+  for (let j = start; j < end; j++) document.getElementById(`jstn-${j}`)?.classList.remove('passed');
 }
 
 // ── Transfer check: thirst tracking ──────────────────────────────────────
@@ -4503,6 +4797,10 @@ function renderJourneyCard(route, transferIndices) {
 // ── Transfer check: resolve one transfer station ─────────────────────────
 // Returns { outcome: 'stay' } | { outcome: 'transfer'|'drink', station, stopsUsed }
 async function resolveTransfer(route, i, ti, transferIndices) {
+  // A reset during a wait re-renders the card with the same row ids: stop touching it
+  // (callers see the _roundGen change and abort the round)
+  const gen = state._roundGen;
+  const gone = () => state._roundGen !== gen;
   const el = document.getElementById(`jstn-${i}`);
   el.classList.add('checking');
 
@@ -4513,6 +4811,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
     await new Promise(resolve => {
       inlineBtn.onclick = () => { inlineBtn.onclick = null; resolve(); };
     });
+    if (gone()) return { outcome: 'stay' };
     inlineBtn.style.display = 'none';
   }
 
@@ -4538,6 +4837,7 @@ async function resolveTransfer(route, i, ti, transferIndices) {
     }
 
     await animateTransferDie(die, alreadyDrank, roll);
+    if (gone()) return { outcome: 'stay' };
 
     if (roll <= 3) {
       applyOutcome(el, die, res, 'stay', 'stayResult', 'stay-label', 'passed');
@@ -4667,8 +4967,8 @@ async function handleRoundResult(result, p, roll) {
   if (result.type === 'drink') {
     state.destination = result.station;
     state.selectedPlatform = { ...p, drinkHere: true };
-    showDestCard(result.station,
-      t(eggStayingKey(result.station.ja)) + destSubHints(result.station, 'inline'));
+    const stn = result.station;
+    showDestCard(stn, () => t(eggStayingKey(stn.ja)) + destSubHints(stn, 'inline'));
     markDrankAt(result.station.name);
     const drinkTransferThirst = state.stationsSinceDrink;
     state.stationsSinceDrink = 0;
@@ -4679,8 +4979,9 @@ async function handleRoundResult(result, p, roll) {
   const dest = result.station;
   state.destination = dest;
   const trainTypeLabel = state.selectedTrainType ? ` (${state.selectedTrainType.ja})` : '';
-  showDestCard(dest,
-    `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(state.currentStation.name) })}`
+  const fromName = state.currentStation.name;
+  showDestCard(dest, () =>
+    `${lineDisplayName(p.lineName)}${trainTypeLabel} &nbsp;·&nbsp; ${t('stopsFrom', { n: roll, s: pl(roll), station: stationDisplayName(fromName) })}`
     + destSubHints(dest, 'wrap'));
   markDrankAt(dest.name);
   const arrivalThirst = state.stationsSinceDrink;
@@ -4718,6 +5019,12 @@ function rollStops() {
     }
   }
 
+  // Rerolls stay hidden until the round resolves — rerolling while the die
+  // spins or mid-transfer would start a second round that races this one
+  dom.rerollStopsBtn.style.display = 'none';
+  const showRerollPlatform = dom.rerollPlatformBtn.style.display;
+  dom.rerollPlatformBtn.style.display = 'none';
+
   animateRoll(1, max, roll, dom.dieStops, async () => {
     const physicalStops = routeInfo.physicalStopsMap[roll - 1];
     state.rolledStops = roll;
@@ -4729,11 +5036,6 @@ function rollStops() {
       dom.rollStopsBtn.style.width = 'auto';
     }
     dom.rollStopsRow.style.display = 'flex';
-    // Rerolls stay hidden until the round resolves — rerolling mid-transfer
-    // would start a second round that races this one
-    dom.rerollStopsBtn.style.display = 'none';
-    const showRerollPlatform = dom.rerollPlatformBtn.style.display;
-    dom.rerollPlatformBtn.style.display = 'none';
 
     // Capture platform before async transfer checks (state may change during await)
     const p = state.selectedPlatform;
@@ -4762,6 +5064,7 @@ function cartoTileLayer() {
 }
 
 function showMap() {
+  if (typeof L === 'undefined') { showError(t('mapUnavailable')); return; } // Leaflet CDN unreachable
   dom.mapCard.style.display = 'block';
   dom.mapCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
@@ -4959,7 +5262,7 @@ function addHistory(transferInfo) {
   // Compute effective arrival line/direction for backtracking prevention on resume.
   // For connections, the destination may be on the target line, not the source.
   const p = state.selectedPlatform;
-  let _arrivalLine = null, _arrivalDir = null;
+  let _arrivalLine = null, _arrivalDir = null, _arrivalPrev = null;
   if (!drinkHere && !flight && p?.lineName) {
     if (transferInfo?.transferred) {
       // Transfer: the line the player was on (computed by handleRoundResult)
@@ -4968,6 +5271,9 @@ function addHistory(transferInfo) {
       const eff = getEffectiveArrival(p);
       _arrivalLine = eff.lineName;
       _arrivalDir = eff.direction;
+      // Station just before the destination (tells Tochomae's two Oedo entries apart)
+      const used = transferInfo?.stopsUsed || state.route?.length || 0;
+      _arrivalPrev = used >= 2 ? state.route[used - 2].name : state.currentStation.name;
     }
   }
   const entry = {
@@ -4993,6 +5299,7 @@ function addHistory(transferInfo) {
     thirst:         transferInfo?.thirst != null ? transferInfo.thirst : state.stationsSinceDrink,
     _arrivalLine,    // internal line name at destination (for backtracking filter on resume)
     _arrivalDir,     // direction on that line (null for transfers — whole line filtered)
+    _arrivalPrev,    // station ridden through just before arriving
   };
   // Save intermediate station coordinates for route map (prepend departure station)
   if (!drinkHere && !flight && state.route && state.route.length > 0) {
@@ -5087,6 +5394,8 @@ function saveSession() {
   // Until the saved session is resumed or declined, saving would delete or
   // overwrite it (e.g. app backgrounded while the Resume prompt is up)
   if (!state._sessionSettled) return;
+  // After New Game (no station) there's nothing to resume until a station is picked
+  if (!state.currentStation && !state._pendingRound) { store.remove(SESSION_KEY); return; }
   const mrP = state.selectedPlatform;
   const hasMidRound = mrP && mrP.lineName && !mrP.drinkHere && !mrP.takeFlight && state.rolledPlatformNum
     && state.currentStation; // a reset can leave a stale platform with no station
@@ -5097,7 +5406,7 @@ function saveSession() {
   const last = state.history.length > 0 ? state.history[state.history.length - 1] : null;
   const currentStation = state._pendingRound
     ? state._pendingRound.currentStation
-    : hasMidRound && !last
+    : hasMidRound // a platform rolled here (possibly after a manual station pick)
       ? { name: state.currentStation.name, ja: state.currentStation.ja,
           lat: state.currentStation.lat, lng: state.currentStation.lng }
       : last.drinkHere
@@ -5107,6 +5416,7 @@ function saveSession() {
   const midRound = hasMidRound
     ? {
       lineName: mrP.lineName, direction: mrP.direction,
+      fromIdx: mrP.fromIdx, // Tochomae has two Oedo platforms with the same direction
       rolledNum: state.rolledPlatformNum,
       branch: state.selectedBranch?.name || null,
       connectionTo: state.selectedConnection?.to || null,
@@ -5140,6 +5450,8 @@ function savePendingRound(route, transferIndices, resolvedCount, thirstBetween, 
     thirstCum: thirstBetween._cumPhysical,
     thirstMult: thirstBetween._mult,
     rolledStops,
+    rolledPlatformNum: state.rolledPlatformNum,
+    preRollThirst: state._preRollThirst, // so a reroll after resuming restores thirst
     platform: {
       lineName: platform.lineName, lineColor: platform.lineColor,
       lineIdx: platform.lineIdx, direction: platform.direction,
@@ -5168,7 +5480,11 @@ async function resumePendingRound(pr) {
 
   // Restore game state
   state.currentStation = pr.currentStation;
-  state.selectedPlatform = pr.platform;
+  // The saved platform is a minimal copy; use the rebuilt one when it still exists
+  state.selectedPlatform = flatPlatforms(state.platforms).find(q => q.lineName === pr.platform.lineName
+    && q.direction === pr.platform.direction && q.fromIdx === pr.platform.fromIdx) || pr.platform;
+  state.rolledPlatformNum = pr.rolledPlatformNum ?? null;
+  state._preRollThirst = pr.preRollThirst ?? null;
   state.selectedTrainType = pr.trainType;
   // Re-find the real connection object: arrival-line and backtracking logic
   // walk its toLineIdx/toDir and onward chain
@@ -5182,6 +5498,17 @@ async function resumePendingRound(pr) {
   state.route = route;
   state.stationsSinceDrink = pr.stationsSinceDrink;
   state._pendingRound = pr;
+
+  // Mirror the rolled state: step 1 stays locked while this round is live
+  dom.rollPlatformBtn.disabled = true;
+  dom.rerollPlatformBtn.style.display = 'none';
+  dom.rollStopsBtn.disabled = true;
+  dom.rerollStopsBtn.style.display = 'none';
+  // (saved platform is a minimal copy, so a simple banner instead of renderPlatformBanner)
+  dom.selectedPlatformDot.style.background = p0.lineColor;
+  dom.selectedPlatformText.innerHTML =
+    `<strong>${pr.rolledPlatformNum ? '#' + pr.rolledPlatformNum + ' — ' : ''}${lineDisplayName(p0.lineName)}</strong>`;
+  showStep('step-stops');
 
   // Reconstruct thirst tracker from saved data
   const _cumPhysical = pr.thirstCum;
@@ -5222,6 +5549,7 @@ async function resumePendingRound(pr) {
     if (result.outcome === 'drink') {
       clearPendingRound();
       await handleRoundResult({ type: 'drink', station: result.station, stopsUsed: result.stopsUsed }, pr.platform, pr.rolledStops);
+      showRerollButtons();
       return;
     }
     // Stay — update checkpoint
@@ -5235,6 +5563,13 @@ async function resumePendingRound(pr) {
   if (!window._skipAnimation) await new Promise(r => setTimeout(r, TRANSFER_ARRIVE_DELAY));
   if (state._roundGen !== roundGen) return;
   await handleRoundResult({ type: 'arrive', station: route[route.length - 1] }, pr.platform, pr.rolledStops);
+  showRerollButtons();
+}
+
+// The round resolved without a transfer: it can be rerolled (as in rollStops)
+function showRerollButtons() {
+  dom.rerollStopsBtn.style.display = 'inline-flex';
+  if (state.selectedPlatform?.lineName) dom.rerollPlatformBtn.style.display = 'block';
 }
 
 function loadSession() {
@@ -5242,7 +5577,10 @@ function loadSession() {
     const raw = store.get(SESSION_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    if (Date.now() - data.timestamp > SESSION_TTL) {
+    // Expired, or a shape resumeSession can't use (older format, partial write)
+    const usable = data && Array.isArray(data.history)
+      && typeof data.currentStation?.name === 'string';
+    if (!usable || Date.now() - data.timestamp > SESSION_TTL) {
       store.remove(SESSION_KEY);
       return null;
     }
@@ -5252,8 +5590,8 @@ function loadSession() {
 
 function resumeSession(data) {
   state.history = data.history;
-  state.drankAt = new Set(data.drankAt);
-  state.stationsSinceDrink = data.stationsSinceDrink;
+  state.drankAt = new Set(data.drankAt || []);
+  state.stationsSinceDrink = data.stationsSinceDrink || 0;
   if (data.wards23Only !== undefined) {
     state.wards23Only = data.wards23Only;
     dom.wards23Check.checked = data.wards23Only;
@@ -5274,7 +5612,7 @@ function resumeSession(data) {
   if (last && last._arrivalLine) {
     arrivedVia = last.transferred
       ? { lineName: last._arrivalLine, isTransfer: true }
-      : { lineName: last._arrivalLine, direction: last._arrivalDir };
+      : { lineName: last._arrivalLine, direction: last._arrivalDir, prevName: last._arrivalPrev || null };
   }
 
   // Set up current station so the player can roll again
@@ -5283,8 +5621,10 @@ function resumeSession(data) {
   if (!name) return; // station gone from the data: keep history, let the player pick again
   setStationInput(name);
 
-  // A renamed station invalidates the saved mid-round state (it stores names)
-  const renamed = name !== stn.name;
+  // A renamed station invalidates the saved mid-round state (it stores names),
+  // and a pending round's line index must still point at the same line
+  const pp = data.pendingRound?.platform;
+  const renamed = name !== stn.name || (pp && state.lines[pp.lineIdx]?.name !== pp.lineName);
   if (data.pendingRound && !renamed) {
     // Resume interrupted transfer check
     onStationSelected(name, arrivedVia);
@@ -5299,7 +5639,10 @@ function resumeSession(data) {
 // names change between visits (data update, OSM rename) — fall back to the
 // JA name, nearest to the saved coordinates. Returns null if not found.
 function resolveSavedStationName(stn) {
-  if (state.stationIndex[normalize(stn.name)]?.length) return stn.name;
+  // Same EN name still pointing at the same station (a data update can move a
+  // shared name to a different station, so check the JA name too)
+  const hits = state.stationIndex[normalize(stn.name)] || [];
+  if (hits.some(e => !stn.ja || state.lines[e.lineIdx].stations[e.stationIdx].ja === stn.ja)) return stn.name;
   let best = null, bestDist = Infinity;
   for (const l of state.lines) for (const s of l.stations) {
     if (s.ja !== stn.ja) continue;
@@ -5313,23 +5656,33 @@ function resolveSavedStationName(stn) {
 // Finds the matching platform in the rebuilt list, pre-sets any saved picker
 // selections, and shows the roll-stops UI.
 function restoreMidRound(mr) {
-  const matchP = flatPlatforms(state.platforms).find(p => p.lineName === mr.lineName && p.direction === mr.direction);
+  const matchP = flatPlatforms(state.platforms).find(p => p.lineName === mr.lineName && p.direction === mr.direction
+    && (mr.fromIdx == null || p.fromIdx === mr.fromIdx));
   if (!matchP) return;
 
+  // Grid number on the board as rebuilt now (a wards toggle can reorder it)
+  const gridIdx = state.platforms.findIndex(g => g === matchP || flatPlatforms([g]).includes(matchP));
+  const rolledNum = gridIdx >= 0 ? gridIdx + 1 : mr.rolledNum;
   state.selectedPlatform = matchP;
-  state.rolledPlatformNum = mr.rolledNum;
+  state.rolledPlatformNum = rolledNum;
+  state._preRollThirst = state.stationsSinceDrink; // a reroll after restoring keeps thirst
+  // Platform die + banner (same UI as the rollPlatform callback, before any selection)
+  dom.diePlatform.textContent = rolledNum;
+  renderPlatformBanner(matchP, rolledNum);
 
   // Restore picker selections so re-entry guards skip them
   if (mr.branch) {
     const line = state.lines[matchP.lineIdx];
-    const branches = getBranches(matchP.lineName, state.currentStation.ja, line, matchP.direction);
+    const branches = getBranches(matchP.lineName, platformStation(matchP).ja, line, matchP.direction);
     state.selectedBranch = branches.find(b => b.name === mr.branch) || null;
   }
   if (mr.connectionTo && matchP._connections) {
     // Match direction too: a line can connect to the same line both ways
     // (Keikyu Airport → Main toward Shinagawa vs toward Yokohama)
-    state.selectedConnection = matchP._connections.find(c => c.to === mr.connectionTo
+    const conn = matchP._connections.find(c => c.to === mr.connectionTo
       && (!mr.connectionToDir || c.toDir === mr.connectionToDir)) || null;
+    // A connection whose destination wasn't picked yet: let its picker ask again
+    state.selectedConnection = conn && conn.destinations && !mr.destination ? null : conn;
   }
   if (mr.destination) {
     state.selectedDestination = mr.destination;
@@ -5342,13 +5695,7 @@ function restoreMidRound(mr) {
     state.selectedTrainType = g ? pickTrainType(g, mr.trainType) : null;
   }
 
-  // Show platform banner (same UI as rollPlatform callback)
-  const pLabel = platformLabel(matchP);
-  const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-  const ln = platformLineName(matchP);
-  dom.selectedPlatformDot.style.background = matchP.lineColor;
-  dom.selectedPlatformText.innerHTML =
-    `<strong>#${mr.rolledNum} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+  dom.rollPlatformBtn.disabled = true;
   dom.rerollPlatformBtn.style.display = 'block';
 
   // Rebuild pickers — guards skip already-selected ones, falls through to roll stops
@@ -5430,8 +5777,10 @@ function collectRouteMarkers(history) {
     track(history[0].fromLat, history[0].fromLng, history[0].from, history[0].fromJa, 'start');
   }
   for (const e of history) {
-    if (e.drinkHere || e.flight) {
+    if (e.drinkHere) {
       track(e.fromLat, e.fromLng, e.from, e.fromJa, 'drink');
+    } else if (e.flight) {
+      track(e.fromLat, e.fromLng, e.from, e.fromJa, 'transfer'); // left from the airport, no drink
     } else if (e.transferred || e.drinkAtTransfer) {
       track(e.toLat, e.toLng, e.to, e.toJa, e.drinkAtTransfer ? 'drink' : 'transfer');
     } else if (e.toLat != null) {
@@ -5517,7 +5866,7 @@ function buildRouteMap(elId) {
     map.setView([35.681, 139.767], 12);
   }
 
-  setTimeout(() => { map.invalidateSize(); }, 100);
+  setTimeout(() => { if (map._mapPane) map.invalidateSize(); }, 100); // map may be removed by then
   return map;
 }
 
@@ -5652,31 +6001,61 @@ function detectLocation() {
 // If the player rode through a connection, the destination may be on the target line (or a
 // chained onward line), not the source line they started on.
 function getEffectiveArrival(p) {
-  const conn = state.selectedConnection;
-  if (!conn) return { lineName: p.lineName, direction: p.direction };
-
+  const fallback = { lineName: p.lineName, direction: p.direction };
   const dest = state.destination;
-  const srcLine = state.lines[p.lineIdx];
+  if (!dest) return fallback;
+  // The connection the ride actually takes (picked, auto-taken terminus, or a connection type's)
+  const tt = state.selectedTrainType;
+  const conn = routeConnectionFor(p, state.selectedConnection || findRouteConnection(p, tt), tt?._connTargetLineIdx);
+  if (!conn) return fallback;
 
   // If destination is on the source line, use source line/direction
-  if (srcLine.stations.some(s => s.name === dest.name)) {
-    return { lineName: p.lineName, direction: p.direction };
-  }
+  if (state.lines[p.lineIdx].stations.some(s => s.name === dest.name)) return fallback;
 
-  // Walk connection chain to find which target line the destination is on
+  // A via station sits on its own line (e.g. Shin-Tsunashima on the Tokyu
+  // Shin-Yokohama Line): find the line through it and the station ridden just before
+  const route = state.route || [];
+  const di = route.findIndex(s => s.name === dest.name);
+  const prev = di > 0 ? route[di - 1] : platformStation(p);
+  const lineThrough = () => {
+    for (const l of state.lines) {
+      const ib = l.stations.findIndex(s => s.name === dest.name);
+      if (ib === -1) continue;
+      const ia = l.stations.findIndex((s, k) => s.name === prev.name && Math.abs(k - ib) === 1);
+      if (ia !== -1) return { lineName: l.name, direction: ib > ia ? 'end' : 'start' };
+    }
+    return null;
+  };
+  // Fallback when the previous stop is on another line (e.g. Toei 新宿 → 初台):
+  // the line through the destination and its neighbour in the via list
+  const viaLine = vias => {
+    const k = vias.findIndex(v => v.name === dest.name);
+    const forward = k + 1 < vias.length;
+    const nb = forward ? vias[k + 1] : vias[k - 1];
+    if (!nb) return null;
+    for (const l of state.lines) {
+      const ib = l.stations.findIndex(s => s.name === dest.name);
+      const inb = l.stations.findIndex((s, j) => s.name === nb.name && Math.abs(j - ib) === 1);
+      if (ib !== -1 && inb !== -1) return { lineName: l.name, direction: (forward ? inb > ib : ib > inb) ? 'end' : 'start' };
+    }
+    return null;
+  };
+
+  // Walk connection chain to find which line the destination is on
   let effConn = conn;
   const visited = new Set([p.lineName]);
   while (effConn) {
     visited.add(effConn.to);
+    if (effConn.viaStations.some(v => v.name === dest.name)) {
+      return lineThrough() || viaLine(effConn.viaStations) || { lineName: effConn.to, direction: effConn.toDir };
+    }
     const toLine = state.lines[effConn.toLineIdx];
     if (toLine && toLine.stations.some(s => s.name === dest.name)) {
       return { lineName: effConn.to, direction: effConn.toDir };
     }
     effConn = nextChainConn(effConn, visited);
   }
-
-  // Fallback to source line
-  return { lineName: p.lineName, direction: p.direction };
+  return fallback;
 }
 
 function rollAgainFromHere() {
@@ -5690,7 +6069,8 @@ function rollAgainFromHere() {
   setStationInput(dest.name);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   const via = state.selectedPlatform?.lineName
-    ? getEffectiveArrival(state.selectedPlatform)
+    ? { ...getEffectiveArrival(state.selectedPlatform),
+        prevName: state.history[state.history.length - 1]?._arrivalPrev || null }
     : null;
   onStationSelected(dest.name, via);
 }
@@ -5766,7 +6146,7 @@ function computeRouteBounds(history) {
 function computeMapProjection(bounds, mapW, mapH, DPR) {
   const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
   const mMin = mercY(bounds.minLat), mMax = mercY(bounds.maxLat);
-  let zoom = 16;
+  let zoom = 8; // widest, if even that doesn't fit
   for (let z = 16; z >= 8; z--) {
     const n = Math.pow(2, z);
     const pxW = ((bounds.maxLng - bounds.minLng) / 360) * n * 256;
@@ -6035,62 +6415,17 @@ function onWards23Change(checked) {
     return;
   }
 
-  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight) {
-    // Platform already selected — recalculate maxStops in place
-    const p = state.selectedPlatform;
-    const line = state.lines[p.lineIdx];
-    const N = line.stations.length;
-    const step = dirStep(p.direction);
+  // Stops already rolled (riding or arrived): the setting applies from the next round
+  if (state.rolledStops != null || state.destination) return;
 
-    let newMax;
-    if (line.name.includes('Oedo') || line.name.includes('\u014Cedo')) {
-      const loopEnd = OEDO_LOOP_END;
-      const loopMid = Math.floor((loopEnd - 1) / 2);
-      const stemLen = N - 1 - (loopEnd - 1);
-      if (p.dirKey === 'loopCCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, 0, +1)) : loopMid;
-      else if (p.dirKey === 'loopCW') newMax = state.wards23Only ? Math.min(loopMid, wardMaxStops(line, loopEnd, -1)) : loopMid;
-      else newMax = state.wards23Only ? Math.min(stemLen, wardMaxStops(line, loopEnd - 1, +1)) : stemLen;
-    } else if (line.circular) {
-      newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step) : N - 1;
-    } else {
-      newMax = state.wards23Only ? wardMaxStops(line, p.fromIdx, step)
-        : Math.abs(p.fromIdx - dirEnd(N, p.direction));
-    }
-
-    // Add connection extension (same logic as getLinearPlatforms)
-    if (p._connections && p._connections.length > 0) {
-      const connExtra = computeConnectionExtra(p._connections, state.currentStation.name);
-      newMax += connExtra;
-      p._onLineStops = newMax - connExtra;
-    }
-
-    if (newMax <= 0) {
-      onStationSelected(state.currentStation.name);
-      return;
-    }
-
-    p.maxStops = newMax;
-    clearSelectionState();
-    rebuildPickers(p);
-    // Rebuild platform grid to reflect updated stop counts
-    let _allP = getPlatforms(state.currentStation.name)
-      .filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
-    const _rawShin = _allP.filter(p => SHINKANSEN_LINES.has(p.lineName));
-    _allP = mergeSharedTrackPlatforms(_allP.filter(p => !SHINKANSEN_LINES.has(p.lineName)), state.currentStation.ja);
-    const _mergedShin = mergeShinkansenPlatforms(_rawShin);
-    const canDrinkHere = !state.drankAt.has(normalize(state.currentStation.name));
-    const isAirport = /airport/i.test(state.currentStation.name);
-    state.platforms = [
-      ..._allP,
-      ..._mergedShin,
-      ...(isAirport ? [{ takeFlight: true }] : []),
-      ...(canDrinkHere ? [{ drinkHere: true }] : []),
-    ];
-    refreshPlatformGrid();
-  } else {
-    // No platform selected yet, or drink/flight — rebuild from scratch
-    onStationSelected(state.currentStation.name, state._arrivedVia);
-  }
+  // Rebuild the board the normal way (same filters as arriving here), then put
+  // a rolled platform back if it still exists; its pickers are rebuilt fresh.
+  const p = state.selectedPlatform;
+  const keep = p && p.lineName && !p.drinkHere && !p.takeFlight && state.rolledPlatformNum
+    ? { lineName: p.lineName, direction: p.direction, fromIdx: p.fromIdx, rolledNum: state.rolledPlatformNum }
+    : null;
+  onStationSelected(state.currentStation.name, state._arrivedVia);
+  if (keep) restoreMidRound(keep);
 }
 
 function setupStationPicker() {
@@ -6105,18 +6440,48 @@ function setupStationPicker() {
 }
 
 function setupGameControls() {
-  dom.rollPlatformBtn.addEventListener('click', rollPlatform);
-  dom.rerollPlatformBtn.addEventListener('click', rerollPlatform);
-  dom.rollStopsBtn.addEventListener('click', rollStops);
-  dom.rerollStopsBtn.addEventListener('click', rerollStops);
+  // Arrow wrappers look the function up at click time, so debug.js patches apply
+  dom.rollPlatformBtn.addEventListener('click', () => rollPlatform());
+  dom.rerollPlatformBtn.addEventListener('click', () => rerollPlatform());
+  dom.rollStopsBtn.addEventListener('click', () => rollStops());
+  dom.rerollStopsBtn.addEventListener('click', () => rerollStops());
   dom.showMapBtn.addEventListener('click', showMap);
   dom.showBarsBtn.addEventListener('click', () => togglePlaces('bars'));
   dom.showCafesBtn.addEventListener('click', () => togglePlaces('cafes'));
-  dom.rollAgainBtn.addEventListener('click', rollAgainFromHere);
+  dom.rollAgainBtn.addEventListener('click', () => rollAgainFromHere());
   dom.clearHistoryBtn.addEventListener('click', clearHistory);
-  dom.copyRouteBtn.addEventListener('click', copyRoute);
+  dom.copyRouteBtn.addEventListener('click', () => copyRoute()); // not the MouseEvent as feedbackBtn
   dom.statsBtn.addEventListener('click', showStats);
   document.getElementById('inline-map-btn').addEventListener('click', toggleInlineRouteMap);
+  // Overlays, language toggle, RNG, undo/save buttons: one delegated handler,
+  // so markup parsed after this script works too (no inline onclick globals)
+  const closeOverlay = ov => { if (ov.id === 'stats-overlay') hideStats(); else ov.classList.add('hidden'); };
+  document.addEventListener('click', e => {
+    const tgt = e.target;
+    if (tgt.matches?.('.htp-overlay[data-backdrop-close]')) return closeOverlay(tgt);
+    const el = tgt.closest?.('[data-action], [data-open], .htp-close, .lang-toggle [data-lang]');
+    if (!el) return;
+    if (el.matches('.htp-close')) return closeOverlay(el.closest('.htp-overlay'));
+    if (el.dataset.open) return document.getElementById(el.dataset.open).classList.remove('hidden');
+    if (el.dataset.lang) return switchLang(el.dataset.lang);
+    switch (el.dataset.action) {
+      case 'undo-clear': return undoClearHistory();
+      case 'save-image': return saveSessionImage();
+      case 'rng': return generateRNG();
+      case 'toggle-advanced': {
+        const adv = el.nextElementSibling;
+        adv.classList.toggle('hidden');
+        el.textContent = el.getAttribute(adv.classList.contains('hidden') ? 'data-show' : 'data-hide');
+      }
+    }
+  });
+  // Escape closes the open popup (the morning recap needs an explicit choice)
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    for (const el of document.querySelectorAll('.htp-overlay:not(.hidden)')) {
+      if (el.id !== 'recap-overlay') closeOverlay(el);
+    }
+  });
 }
 
 function setupSettings() {
@@ -6141,7 +6506,8 @@ function setupSettings() {
     state.stopsCap = e.target.checked;
     onCapChange();
   });
-  dom.stopsCapValue.addEventListener('input', e => {
+  // 'change', not 'input': typing "15" must not rebuild pickers for a cap of 1 first
+  dom.stopsCapValue.addEventListener('change', e => {
     const v = parseInt(e.target.value, 10);
     if (!isNaN(v) && v >= 1) {
       state.stopsCapValue = v;
@@ -6164,7 +6530,7 @@ function sameGameDay(timestamp) {
 
 function setupSessionResume() {
   const saved = loadSession();
-  const settle = () => { state._sessionSettled = true; };
+  const settle = () => { state._sessionSettled = true; state._settleResume = null; };
   if (!saved) return settle();
   // Session with only mid-round state (no completed rounds yet): restore silently
   if ((!saved.history || saved.history.length === 0) && (saved.midRound || saved.pendingRound)) {
@@ -6178,11 +6544,10 @@ function setupSessionResume() {
   if (sameGameDay(saved.timestamp)) {
     const inlineEl = document.getElementById('resume-inline');
     inlineEl.style.display = '';
+    state._settleResume = () => { inlineEl.style.display = 'none'; settle(); };
     document.getElementById('resume-inline-btn').addEventListener('click', () => {
       inlineEl.style.display = 'none';
       settle();
-      // Temporarily populate history for resumeSession
-      state.history = saved.history;
       resumeSession(saved);
     }, { once: true });
     document.getElementById('new-game-inline-btn').addEventListener('click', () => {
@@ -6255,6 +6620,7 @@ function setupSessionResume() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') saveSession();
 });
+window.addEventListener('pagehide', saveSession); // desktop tab close
 
 (async function init() {
   if (currentLang !== 'en') applyLang();
@@ -6275,9 +6641,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('stats-map-btn').addEventListener('click', showRouteMap);
 });
 </script>
-<div id="stats-overlay" class="htp-overlay hidden" onclick="if(event.target===this)hideStats()">
+<div id="stats-overlay" class="htp-overlay hidden" data-backdrop-close>
   <div class="htp-card">
-    <button class="htp-close" onclick="hideStats()">&times;</button>
+    <button class="htp-close">&times;</button>
     <h3 data-i18n="statsTitle">Session Stats</h3>
     <div class="stats-grid" id="stats-grid"></div>
     <div style="text-align:center; margin-top:12px;">
@@ -6290,18 +6656,18 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="route-map"></div>
     </div>
     <div id="stats-save-wrap" style="display:none; text-align:center; margin-top:8px;">
-      <button class="btn btn-ghost btn-sm" id="stats-save-btn" onclick="saveSessionImage()" data-i18n="saveSession">Save Image</button>
+      <button class="btn btn-ghost btn-sm" id="stats-save-btn" data-action="save-image" data-i18n="saveSession">Save Image</button>
     </div>
   </div>
 </div>
 
 <div class="how-to-play-wrap">
-  <button class="how-to-play-btn" onclick="document.getElementById('htp-overlay').classList.remove('hidden')" data-i18n="howToPlay">How to Play</button>
+  <button class="how-to-play-btn" data-open="htp-overlay" data-i18n="howToPlay">How to Play</button>
 </div>
 
-<div id="htp-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+<div id="htp-overlay" class="htp-overlay hidden" data-backdrop-close>
   <div class="htp-card">
-    <button class="htp-close" onclick="document.getElementById('htp-overlay').classList.add('hidden')">&times;</button>
+    <button class="htp-close">&times;</button>
     <h2 data-i18n="howToPlay">How to Play</h2>
     <ol>
       <li data-i18n="htpStep1">Pick your starting station — GPS, search, or random.</li>
@@ -6313,7 +6679,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <li data-i18n="htpStep7">Head back to the station and go again!</li>
     </ol>
     <p class="htp-goal" data-i18n="htpGoal">Explore Tokyo and discover new places to drink!</p>
-    <button class="htp-advanced-btn" data-i18n="htpAdvancedBtn" data-i18n-attr="data-show:htpAdvancedBtn;data-hide:htpHideBtn" data-show="Advanced" data-hide="Hide" onclick="this.nextElementSibling.classList.toggle('hidden');this.textContent=this.nextElementSibling.classList.contains('hidden')?this.getAttribute('data-show'):this.getAttribute('data-hide')">Advanced</button>
+    <button class="htp-advanced-btn" data-i18n="htpAdvancedBtn" data-i18n-attr="data-show:htpAdvancedBtn;data-hide:htpHideBtn" data-show="Advanced" data-hide="Hide" data-action="toggle-advanced">Advanced</button>
     <div class="htp-advanced hidden">
       <ul>
         <li data-i18n="htpAdv0">When you arrive at a station, follow a crowd of people until you find a place that you want to try drinking at.</li>
@@ -6327,20 +6693,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <div class="lang-toggle-wrap">
   <span class="lang-toggle">
-    <button data-lang="en" class="active" onclick="switchLang('en')">ENG</button>
-    <button data-lang="ja" onclick="switchLang('ja')">日本語</button>
+    <button data-lang="en" class="active">ENG</button>
+    <button data-lang="ja">日本語</button>
   </span>
 </div>
 
 <p id="localization-credit" style="display:none; text-align:center; color:#555; font-size:0.7rem; margin:0.5rem 0 0;">ローカライズ：優子</p>
 
 <div class="rng-wrap">
-  <button class="rng-btn" onclick="document.getElementById('rng-overlay').classList.remove('hidden')" data-i18n="rngButton">Random Number Generator</button>
+  <button class="rng-btn" data-open="rng-overlay" data-i18n="rngButton">Random Number Generator</button>
 </div>
 
-<div id="rng-overlay" class="htp-overlay hidden" onclick="if(event.target===this)this.classList.add('hidden')">
+<div id="rng-overlay" class="htp-overlay hidden" data-backdrop-close>
   <div class="htp-card rng-card">
-    <button class="htp-close" onclick="document.getElementById('rng-overlay').classList.add('hidden')">&times;</button>
+    <button class="htp-close">&times;</button>
     <h3 data-i18n="rngTitle">Random Number</h3>
     <div class="rng-inputs">
       <label data-i18n="rngMin">Min</label>
@@ -6348,7 +6714,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <label data-i18n="rngMax">Max</label>
       <input id="rng-max" type="number" value="6">
     </div>
-    <button class="rng-generate" onclick="generateRNG()" data-i18n="rngGenerate">Generate</button>
+    <button class="rng-generate" data-action="rng" data-i18n="rngGenerate">Generate</button>
     <div id="rng-result" class="rng-result"></div>
   </div>
 </div>
