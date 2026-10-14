@@ -21,6 +21,9 @@
 //                         connection (e.g. Hokuso only from the Asakusa Line); [] = never
 //     boardFrom         — JA source station: offered only from there toward the junction
 //                         (Chuo-Sobu → Tozai trains start at 津田沼)
+//     destinations[].boardSchedule — { JA source station: schedule }: at a listed station the
+//                         destination is offered only while that schedule runs (Musashino
+//                         trains leave 海浜幕張 only mornings/evenings); other stations: always
 //
 //   DISPLAY:
 //     name, ja, color   — button label for branch picker (when multiple conns from same platform)
@@ -270,8 +273,17 @@ const LINE_CONNECTIONS = [
     displayName: 'Ueno Tokyo Line',
     toUntil: '宇都宮',
     destinations: [
-      { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e' },
+      { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e', services: ['Local'] },
       { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848' },
+    ],
+    // ラビット through trains: 2 a morning from 小田原/熱海/国府津, every Tokaido station
+    // (the evening ラビット start at 上野, so the Utsunomiya Line's own type is hidden here)
+    express: [
+      { stops: null, name: 'Local', ja: '普通' },
+      { name: 'Rapid Rabbit', ja: '快速ラビット', color: '#e85050',
+        stops: ['上野','赤羽','浦和','大宮','東大宮','蓮田','久喜','古河',
+                '小山','小金井','自治医大','石橋','雀宮','宇都宮'],
+        schedule: { weekday: { timeRange: [5, 8] }, weekend: { timeRange: [5, 8] } } },
     ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Takasaki Line',     toEnd:   '上野',
@@ -287,15 +299,19 @@ const LINE_CONNECTIONS = [
     via:  ['上野'],
     name: 'Joban', ja: '常磐線', color: '#009BBF',
     displayName: 'Ueno Tokyo Line',
+    // On the rapid tracks every train calls at every station: 快速 to 取手, 普通 (中距離) beyond
+    destinations: [
+      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF', services: ['Local'] },
+      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0', services: ['Local', 'Special Rapid'] },
+      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080', services: ['Local'] },
+      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860', services: ['Local'] },
+    ],
     express: [
-      { name: 'Rapid', ja: '快速', color: '#009BBF',
-        stops: ['上野','日暮里','三河島','南千住','北千住',
-                '松戸','柏','我孫子','天王台','取手'] },
-      // Only 2 down trains a day since 2022 (15–16h, Shinagawa → Tsuchiura); with it
-      // hidden the Rapid applies alone (no Local on this list)
+      { stops: null, name: 'Local', ja: '普通' },
+      // Only 2 down trains a day since 2022 (15–16h, Shinagawa → Tsuchiura)
       { name: 'Special Rapid', ja: '特別快速', color: '#e85050',
-        stops: ['上野','日暮里','北千住',
-                '松戸','柏','取手'],
+        stops: ['上野','日暮里','北千住','松戸','柏','取手',
+                '藤代','龍ケ崎市','牛久','ひたち野うしく','荒川沖','土浦'],
         schedule: { weekday: { timeRange: [15, 17] }, weekend: { timeRange: [15, 17] } } },
     ] },
   // Some trains terminate at Ueno
@@ -304,7 +320,8 @@ const LINE_CONNECTIONS = [
     via:  ['上野'],
     toUntil: '上野',
     name: 'Ueno', ja: '上野方面', color: '#E78B54',
-    displayName: 'Ueno Tokyo Line' },
+    displayName: 'Ueno Tokyo Line',
+    express: [{ stops: null, name: 'Local', ja: '普通' }] }, // no ラビット terminates at 上野
 
   // ── Tokaido UTL southbound ──────────────────────────────────────────────
   // From northern lines heading south onto Tokaido
@@ -334,12 +351,12 @@ const LINE_CONNECTIONS = [
       { until: '熱海',   name: 'Atami',     ja: '熱海方面', color: '#e85050' },
       { until: '沼津',   name: 'Numazu',    ja: '沼津方面', color: '#9060c0' },
     ] },
+  // No Joban train terminates at Tokyo: all through trains run to Shinagawa
   { from: 'JR Joban Line',        fromEnd: '上野',
     to:   'JR Tokaido Main Line',  toEnd:   '東京',
     via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
     destinations: [
-      { until: '東京',   name: 'Tokyo',     ja: '東京方面', color: '#F7A600' },
       { until: '品川',   name: 'Shinagawa', ja: '品川方面', color: '#009BBF' },
     ] },
 
@@ -453,10 +470,13 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
-  // Hanzomon through-runs to Tobu Skytree Line. Express services apply.
-  // Trains terminate at Kuki (Isesaki) or Minami-Kurihashi (Nikko).
+  // Through trains leave Hanzomon's Oshiage over Tobu's own Oshiage platforms and join
+  // the Skytree Line at Hikifune (曳舟 is on neither line's array → via).
+  // All through trains are 急行 or 準急, to Kuki (Isesaki) or Minami-Kurihashi (Nikko);
+  // Hanzomon trains also terminate at Oshiage.
   { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
-    to:   'Tobu Isesaki Line',         toStation: '押上(スカイツリー前)', toDir: 'end',
+    to:   'Tobu Isesaki Line',         toStation: '曳舟', toDir: 'end',
+    via:  ['曳舟'],
     toUntil: '久喜',
     lineDests: [
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
@@ -464,27 +484,98 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
       { until: '久喜', name: 'Kuki', ja: '久喜方面', color: '#005AAA' },
+    ],
+    express: [
+      // Early morning and night, as the Isesaki Line's own 準急
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['渋谷','表参道','青山一丁目','永田町','半蔵門','九段下','神保町','大手町',
+                '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
+                '曳舟','北千住','西新井','草加','新越谷','越谷','北越谷','大袋','せんげん台',
+                '武里','一ノ割','春日部','北春日部','姫宮','東武動物公園','和戸','久喜'],
+        schedule: { weekday: { timeRange: [20, 10] }, weekend: { timeRange: [20, 10] } } },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['渋谷','表参道','青山一丁目','永田町','半蔵門','九段下','神保町','大手町',
+                '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
+                '曳舟','北千住','西新井','草加','新越谷','越谷','せんげん台','春日部',
+                '東武動物公園','和戸','久喜'] },
     ] },
-  { from: 'Tokyo Metro Hanzomon Line', fromEnd: '押上(スカイツリー前)',
-    to:   'Tobu Nikko Line',           toEnd: '東武動物公園',
-    via: ['曳舟', '東向島', '鐘ヶ淵', '堀切', '牛田', '北千住',
-          '小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加',
-          '獨協大学前〈草加松原〉', '新田', '蒲生', '新越谷', '越谷', '北越谷',
-          '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮',
-          '東武動物公園'],
-    impliedLines: ['Tobu Isesaki Line'],
-    toUntil: '南栗橋',
-    destinations: [
-      { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
-    ] },
-  { from: 'Tobu Isesaki Line',         fromStation: '押上(スカイツリー前)', fromDir: 'start',
+  // Minami-Kurihashi: the chained Isesaki → Nikko destination below (same 急行/準急)
+  { from: 'Tobu Isesaki Line',         fromStation: '曳舟', fromDir: 'start',
     to:   'Tokyo Metro Hanzomon Line', toEnd: '押上(スカイツリー前)',
+    via:  ['押上(スカイツリー前)'],
+    boardAtJunction: true, // 曳舟 boarders ride straight to 押上
     name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6',
     lineDests: [
       { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#003087' },
     ],
     destinations: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6' },
+      // Through trains are 急行/準急 only: hidden at stations they skip (小菅, 牛田, …)
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6',
+        services: ['Semi-Exp', 'Express'] },
+      // Nikko Line riders' weekday 23:06 準急 ends at 押上 (chained from Nikko → Isesaki)
+      { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6',
+        services: ['Semi-Exp (Oshiage)'] },
+    ] },
+
+  // ── Tobu Isesaki → Nikko at Tobu-Dobutsu-Koen ──────────────────────────
+  // Hanzomon through 急行/準急 alternate between Kuki and Minami-Kurihashi all day (they
+  // board from 曳舟 on, and Hanzomon riders reach this as a chained destination); some
+  // 区間急行/区間準急 from Asakusa run on in the mornings/evenings (their own schedules).
+  // Every train calls at every Nikko Line station to Minami-Kurihashi.
+  { from: 'Tobu Isesaki Line', fromStation: '東武動物公園', fromDir: 'end',
+    to:   'Tobu Nikko Line',   toEnd: '東武動物公園',
+    toUntil: '南栗橋',
+    name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500',
+    destinations: [
+      { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500',
+        services: ['Express', 'Semi-Exp', 'Sub-Exp', 'Sec. Semi-Exp'] },
+    ] },
+  // Southbound, every train from Minami-Kurihashi runs through (none terminate at
+  // 東武動物公園): Hanzomon 急行/準急 (chained Shibuya), Hibiya 普通 at rush hours
+  // (chained Naka-meguro) and a few 区間急行/区間準急 to Asakusa. The last trains end
+  // short: 普通/区間準急 to 北千住, 準急 to 押上 (weekdays), 普通 to 南千住 (weekends);
+  // named "(Kita-Senju)" etc. so the through destinations don't count them. Hours:
+  // 杉戸高野台 departures (Yahoo! timetable 2026; Saturday = Sunday).
+  { from: 'Tobu Nikko Line',   fromEnd: '東武動物公園',
+    to:   'Tobu Isesaki Line', toStation: '東武動物公園', toDir: 'start',
+    destinations: [
+      { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#9B7A00',
+        services: ['Local (Kita-Senju)', 'Sec. Semi-Exp (Kita-Senju)'] },
+      { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#003087',
+        services: ['Sub-Exp', 'Sec. Semi-Exp'] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '普通', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [[6, 10], [16, 17], [19, 20]] }, weekend: { timeRange: [[7, 9], [16, 17], [20, 23]] } } },
+      { stops: null, name: 'Local (Kita-Senju)', ja: '普通（北千住行き）', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [22, 23] }, weekend: { stops: [] } } },
+      { stops: null, name: 'Local (Minami-Senju)', ja: '普通（南千住行き）', color: '#00a0e8',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
+      { name: 'Sec. Semi-Exp (Kita-Senju)', ja: '区間準急（北千住行き）', color: '#7fbf3f',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
+                'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住'],
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
+      { name: 'Semi-Exp (Oshiage)', ja: '準急（押上行き）', color: '#00b900',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
+                'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住','曳舟'],
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
+      { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','春日部','せんげん台','越谷','新越谷',
+                '草加','西新井','北千住','牛田','堀切','鐘ヶ淵','東向島','曳舟','とうきょうスカイツリー','浅草'],
+        schedule: { weekday: { timeRange: [8, 9] }, weekend: { timeRange: [[6, 7], [8, 9]] } } },
+      { name: 'Sec. Semi-Exp', ja: '区間準急', color: '#7fbf3f',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
+                'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住',
+                '牛田','堀切','鐘ヶ淵','東向島','曳舟','とうきょうスカイツリー','浅草'],
+        schedule: { weekday: { timeRange: [17, 18] }, weekend: { timeRange: [21, 22] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
+                'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住','曳舟'],
+        schedule: { weekday: { timeRange: [[5, 7], [8, 10], [20, 23]] }, weekend: { timeRange: [[5, 8], [9, 11], [20, 23]] } } },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','春日部','せんげん台','越谷','新越谷',
+                '草加','西新井','北千住','曳舟'],
+        schedule: { weekday: { timeRange: [[5, 8], [10, 22]] }, weekend: { timeRange: [5, 22] } } },
     ] },
 
   // ── Hibiya → Tobu Skytree / Nikko at Kita-Senju ────────────────────────
@@ -522,7 +613,12 @@ const LINE_CONNECTIONS = [
       { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#003087' },
     ],
     destinations: [
-      { until: '中目黒', name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00' },
+      // Hibiya through trains are all 普通 (THライナー is paid-seat)
+      { until: '中目黒', name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
+        services: ['Local'] },
+      // Nikko Line riders' weekend 23:06 普通 ends at 南千住 (chained from Nikko → Isesaki)
+      { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00',
+        services: ['Local (Minami-Senju)'] },
     ] },
 
   // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
@@ -1149,8 +1245,8 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Tobu Tojo ↔ Fukutoshin/Yurakucho at Wakoshi ──────────────────────
-  // Wakoshi is mid-line on Tobu Tojo (idx 10), start of Fukutoshin and Yurakucho
-  // Both travel directions: heading toward Ikebukuro or away
+  // Wakoshi is mid-line on Tobu Tojo (idx 10), start of Fukutoshin and Yurakucho.
+  // Only riders heading toward Ikebukuro switch here (trains from Ikebukuro never reverse onto the Metro).
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
     name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
@@ -1158,7 +1254,10 @@ const LINE_CONNECTIONS = [
       { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#003087' },
     ],
     destinations: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31' },
+      // Through trains are 普通 and 快速急行 (F-Liner); 準急, 急行 and 川越特急 run only to
+      // 池袋 (ja.wikipedia.org/wiki/東武東上本線)
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
+        services: ['Local', 'F-Liner', 'Fukutoshin Express'] },
     ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
@@ -1167,35 +1266,20 @@ const LINE_CONNECTIONS = [
       { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#003087' },
     ],
     destinations: [
-      { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
-    ] },
-  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
-    to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
-    name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
-    lineDests: [
-      { until: '寄居', name: 'Yorii', ja: '寄居方面', color: '#003087' },
-    ],
-    destinations: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31' },
-    ] },
-  { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'end',
-    to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
-    name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800',
-    lineDests: [
-      { until: '寄居', name: 'Yorii', ja: '寄居方面', color: '#003087' },
-    ],
-    destinations: [
-      { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
+      // Yurakucho through trains are all 普通
+      { until: '新木場', name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800',
+        services: ['Local'] },
     ] },
   // Return: Fukutoshin/Yurakucho terminus → Tobu Tojo
-  // Through-trains terminate at Kawagoe-shi, Shinrin-Koen, or Ogawamachi
+  // Through-trains terminate at Kawagoe-shi, Shinrin-Koen, or Ogawamachi, as 普通 or
+  // 快速急行 (F-Liner): never the Tojo's own 準急/急行/快速急行
   { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '和光市',
     to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end',
     toUntil: '小川町',
     destinations: [
-      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8' },
-      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
-      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878' },
+      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Express', 'F-Liner'] },
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'F-Liner'] },
+      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Local', 'Express', 'F-Liner'] },
     ] },
   // Yurakucho through-trains are local only (no express on Tojo)
   { from: 'Tokyo Metro Yurakucho Line',  fromEnd: '和光市',
@@ -1269,17 +1353,52 @@ const LINE_CONNECTIONS = [
                 '月江寺','富士山','富士急ハイランド','河口湖'] },
     ] },
 
-  // ── Chiyoda ↔ JR Joban at Ayase ───────────────────────────────────────
-  // Ayase is idx 1 on Chiyoda (near start, Kita-ayase is a 1-station stub)
-  // Ayase is idx 5 on Joban (mid-line)
+  // ── Chiyoda ↔ JR Joban Local at Ayase ─────────────────────────────────
+  // Ayase is idx 1 on Chiyoda (Kita-ayase is a 1-station stub) and the start of the
+  // Joban local tracks; rapid trains never call here.
   { from: 'Tokyo Metro Chiyoda Line', fromStation: '綾瀬', fromDir: 'start',
-    to:   'JR Joban Line',            toStation: '綾瀬', toDir: 'end',
+    to:   'JR Joban Line (Local)',    toEnd: '綾瀬',
     destinations: [
       { until: '我孫子', name: 'Abiko',  ja: '我孫子方面', color: '#1aa260' },
       { until: '取手',   name: 'Toride', ja: '取手方面',   color: '#009BBF' },
     ] },
-  { from: 'JR Joban Line',            fromStation: '綾瀬', fromDir: 'end',
-    to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end' },
+  // Joban locals run on to Yoyogi-Uehara (Odakyu through trains not modelled: toUntil stops the chain)
+  { from: 'JR Joban Line (Local)',    fromEnd: '綾瀬',
+    to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end',
+    toUntil: '代々木上原' },
+
+  // ── JR Mito Line ↔ Joban at Tomobe ────────────────────────────────────
+  // About a third of Mito Line trains run on from Tomobe to Mito, most to Katsuta.
+  { from: 'JR Mito Line',  fromEnd: '友部',
+    to:   'JR Joban Line', toStation: '友部', toDir: 'end',
+    toUntil: '勝田',
+    name: 'Mito', ja: '水戸方面', color: '#00b261',
+    lineDests: [
+      { until: '友部', name: 'Tomobe', ja: '友部方面', color: '#5a8f5a' },
+    ],
+    destinations: [
+      { until: '水戸', name: 'Mito',    ja: '水戸方面', color: '#086080' },
+      { until: '勝田', name: 'Katsuta', ja: '勝田方面', color: '#064860' },
+    ] },
+  { from: 'JR Joban Line', fromStation: '友部', fromDir: 'start',
+    to:   'JR Mito Line',  toEnd: '友部',
+    name: 'Oyama', ja: '小山方面', color: '#00b261',
+    lineDests: [
+      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0' },
+      { until: '上野', name: 'Ueno',      ja: '上野方面', color: '#009BBF' },
+    ],
+    destinations: [
+      { until: '小山', name: 'Oyama', ja: '小山方面', color: '#00b261' },
+    ] },
+
+  // ── Joban → Narita Line at Abiko ──────────────────────────────────────
+  // Some 快速 from Ueno run on to Narita
+  { from: 'JR Joban Line',          fromStation: '我孫子', fromDir: 'end',
+    to:   'JR Narita Line (Abiko)', toEnd: '我孫子',
+    name: 'Narita', ja: '成田方面', color: '#00b261',
+    destinations: [
+      { until: '成田', name: 'Narita', ja: '成田方面', color: '#00b261' },
+    ] },
 
   // ── Rinkai ↔ Saikyo at Osaki ──────────────────────────────────────────
   // Saikyo southbound: some trains terminate at Shinjuku, others continue to Osaki or Shin-Kiba
@@ -1417,9 +1536,6 @@ const LINE_CONNECTIONS = [
   { from: 'JR Sobu Line',   fromStation: '佐倉', fromDir: 'end',
     to:   'JR Narita Line', toEnd: '佐倉',
     name: 'Narita', ja: '成田方面', color: '#00b261',
-    lineDests: [
-      { until: '銚子', name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#F7C948' },
-    ],
     destinations: [
       { until: '成田', name: 'Narita', ja: '成田方面', color: '#00b261' },
       // ~15 locals a day each way run Chiba ↔ Sawara/Choshi via Narita
@@ -1552,7 +1668,7 @@ const LINE_CONNECTIONS = [
         '新宿','笹塚','明大前','千歳烏山','調布','京王稲田堤','京王永山','京王多摩センター','南大沢','橋本'] },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '新宿','笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布','京王稲田堤','京王永山','京王多摩センター','南大沢','橋本'],
-        schedule: { weekday: { timeRange: [16, 10] }, weekend: { stops: [] } } },
+        schedule: { weekday: { timeRange: [8, 9] }, weekend: { timeRange: [8, 9] } } }, // 京王線新宿 8h only (wd 3, we 1)
       // 区間急行 pass 笹塚 all day (from Toei); from 京王線新宿 only mornings and late night
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
         '笹塚','明大前','桜上水','千歳烏山','仙川','つつじヶ丘','調布','京王多摩川','京王稲田堤','京王よみうりランド','稲城','若葉台','京王永山','京王多摩センター','京王堀之内','南大沢','多摩境','橋本'] },
@@ -1575,7 +1691,7 @@ const LINE_CONNECTIONS = [
         '橋本','南大沢','京王多摩センター','京王永山','京王稲田堤','調布','千歳烏山','明大前','笹塚','新宿'] },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '橋本','南大沢','京王多摩センター','京王永山','京王稲田堤','調布','つつじヶ丘','千歳烏山','桜上水','明大前','笹塚','新宿'],
-        schedule: { weekday: { timeRange: [16, 10] }, weekend: { stops: [] } } },
+        schedule: { weekday: { timeRange: [16, 17] }, weekend: { timeRange: [6, 7] } } }, // 1 a day to 京王線新宿 (橋本 wd 16:18, we 6:25)
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
         '橋本','多摩境','南大沢','京王堀之内','京王多摩センター','京王永山','若葉台','稲城','京王よみうりランド','京王稲田堤','京王多摩川','調布','つつじヶ丘','仙川','千歳烏山','桜上水','明大前','笹塚','新宿'] },
       { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
@@ -1714,14 +1830,22 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321' },
     ],
+    // Daytime trains end at 南船橋; 新習志野 / 海浜幕張 only at rush hours and late
+    // (hours at 船橋法典, JR East timetable 2026-10)
     destinations: [
-      { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C' },
+      { until: '南船橋', name: 'Minami-Funabashi', ja: '南船橋方面', color: '#E8606A',
+        schedule: { weekday: { timeRange: [[5, 7], [9, 16], [19, 20], [22, 24]] }, weekend: { timeRange: [[5, 7], [8, 24]] } } },
+      { until: '新習志野', name: 'Shin-Narashino', ja: '新習志野方面', color: '#B01030',
+        schedule: { weekday: { timeRange: [[9, 11], [21, 1]] }, weekend: { timeRange: [[18, 19], [21, 22], [23, 1]] } } },
+      { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C',
+        schedule: { weekday: { timeRange: [[6, 11], [15, 22]] }, weekend: { timeRange: [[6, 11], [16, 19], [20, 21]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '各停' }] },
   // Reverse: Keiyo riders branch onto the Musashino Line at both junctions
   { from: 'JR Keiyo Line',     fromStation: '市川塩浜', fromDir: 'end',
     to:   'JR Musashino Line', toEnd: '西船橋',
     via:  ['西船橋'],
+    boardAtJunction: true, // Tokyo → Musashino trains call at 市川塩浜
     name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
     lineDests: [
       { until: '蘇我', name: 'Soga', ja: '蘇我方面', color: '#DC143C' },
@@ -1733,13 +1857,22 @@ const LINE_CONNECTIONS = [
   { from: 'JR Keiyo Line',     fromStation: '南船橋', fromDir: 'start',
     to:   'JR Musashino Line', toEnd: '西船橋',
     via:  ['西船橋'],
+    boardAtJunction: true, // 南船橋/海浜幕張 → Musashino trains start or call here
+    boardFrom: '海浜幕張', // southernmost Musashino start
     name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
     lineDests: [
       { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#DC143C' },
     ],
     destinations: [
       { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
-        services: ['Local'] }, // Keiyo 快速 never run onto the Musashino Line
+        services: ['Local'], // Keiyo 快速 never run onto the Musashino Line
+        // Daytime trains start at 南船橋 (all day); from 新習志野 / 海浜幕張 only
+        // mornings and evenings (府中本町 departures, JR East timetable 2026-10)
+        boardSchedule: {
+          '新習志野': { weekday: { timeRange: [[5, 10], [15, 23]] }, weekend: { timeRange: [[5, 10], [16, 21]] } },
+          '幕張豊砂': { weekday: { timeRange: [[6, 10], [16, 22]] }, weekend: { timeRange: [[6, 10], [16, 21]] } },
+          '海浜幕張': { weekday: { timeRange: [[6, 10], [16, 22]] }, weekend: { timeRange: [[6, 10], [16, 21]] } },
+        } },
     ] },
 
   // ── Yokohama Line ↔ Negishi Line at Higashi-Kanagawa/Yokohama ────────

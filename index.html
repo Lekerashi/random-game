@@ -941,6 +941,7 @@ const TRANSFER_ARRIVE_DELAY = 200;   // ms pause before showing arrival after tr
 const TRANSFER_REDIRECT_DELAY = 400; // ms pause before redirecting after a transfer
 const UNDO_TRANSFER_TIMEOUT = 3000;  // ms to show undo button before auto-dismissing
 const FEEDBACK_RESET_DELAY  = 2000;  // ms before resetting copy/feedback button text
+const NORMALIZE_CACHE_MAX = 20000;   // normalize() memo entries before it starts over
 const LANG_KEY           = 'random_game_lang';
 const SESSION_KEY        = 'random_game_session';
 const SESSION_TTL        = 24 * 60 * 60 * 1000; // 24 hours
@@ -996,42 +997,36 @@ function eggDrinkAtArrival(stationJa) { return getEgg(stationJa)?.emoji || t('dr
 
 
 
-// 23 Special Wards of Tokyo — polygon approximation
-// Simple bounding box incorrectly includes Kawasaki/Saitama stations.
-// We use piecewise-linear borders: south follows the Tama River,
-// north follows the Arakawa River / Saitama prefectural border.
-const WARDS_23_BOUNDS = { maxLat: 35.83, minLat: 35.52, minLng: 139.58, maxLng: 139.94 };
-const SOUTH_BORDER = [  // Tama River (Kanagawa border)
-  [139.58, 35.61], [139.65, 35.61], [139.67, 35.58],
-  [139.695, 35.565], [139.71, 35.535], [139.76, 35.545],
+// 23 Special Wards of Tokyo — outer edge of the data-wards.js ward polygons
+// (raster union, ~150 m simplification), inlined because data-wards.js loads
+// deferred. Edges: Tama River (Kanagawa), Arakawa/Saitama border, Edogawa
+// (Chiba). game.validateWards() checks every station against those polygons.
+const WARDS_23_RING = [  // [lng, lat]
+  [139.855,35.483], [139.858,35.483], [139.858,35.603], [139.869,35.621], [139.872,35.638], [139.884,35.645], [139.886,35.65], [139.887,35.679],
+  [139.892,35.682], [139.907,35.684], [139.919,35.698], [139.916,35.709], [139.911,35.711], [139.898,35.725], [139.897,35.73], [139.901,35.737],
+  [139.9,35.744], [139.889,35.751], [139.88,35.766], [139.881,35.773], [139.892,35.777], [139.894,35.783], [139.872,35.783], [139.871,35.787],
+  [139.877,35.793], [139.875,35.797], [139.859,35.795], [139.853,35.792], [139.844,35.8], [139.837,35.801], [139.834,35.796], [139.826,35.794],
+  [139.82,35.799], [139.82,35.804], [139.825,35.811], [139.822,35.815], [139.816,35.809], [139.803,35.809], [139.795,35.805], [139.78,35.808],
+  [139.772,35.817], [139.766,35.817], [139.76,35.812], [139.755,35.813], [139.751,35.811], [139.751,35.806], [139.759,35.799], [139.76,35.795],
+  [139.754,35.787], [139.746,35.786], [139.743,35.782], [139.74,35.783], [139.737,35.789], [139.725,35.788], [139.72,35.792], [139.706,35.793],
+  [139.693,35.801], [139.684,35.799], [139.653,35.8], [139.649,35.798], [139.64,35.798], [139.639,35.792], [139.627,35.784], [139.624,35.78],
+  [139.625,35.77], [139.622,35.767], [139.617,35.768], [139.615,35.771], [139.607,35.77], [139.603,35.772], [139.603,35.776], [139.589,35.779],
+  [139.588,35.776], [139.57,35.766], [139.569,35.763], [139.563,35.763], [139.5694,35.7512], [139.5679,35.7502], [139.5691,35.7478], [139.5684,35.7416],
+  [139.565,35.721], [139.579,35.717], [139.595,35.705], [139.591,35.696], [139.587,35.695], [139.591,35.691], [139.592,35.685], [139.586,35.682],
+  [139.588,35.678], [139.582,35.674], [139.589,35.67], [139.59,35.667], [139.587,35.663], [139.589,35.663], [139.59,35.656], [139.593,35.654],
+  [139.591,35.647], [139.587,35.646], [139.585,35.642], [139.587,35.635], [139.591,35.633], [139.593,35.627], [139.589,35.623], [139.59,35.618],
+  [139.612,35.616], [139.615,35.613], [139.619,35.614], [139.631,35.608], [139.632,35.605], [139.653,35.591], [139.663,35.59], [139.668,35.587],
+  [139.678,35.563], [139.689,35.557], [139.702,35.554], [139.703,35.55], [139.698,35.545], [139.7,35.538], [139.71,35.536], [139.719,35.538],
+  [139.725,35.543], [139.735,35.541], [139.739,35.545], [139.757,35.545], [139.808,35.517], [139.818,35.507],
 ];
-const NORTH_BORDER = [  // Arakawa / Saitama border
-  [139.58, 35.78], [139.65, 35.795], [139.73, 35.795],
-  [139.77, 35.82], [139.80, 35.80], [139.94, 35.80],
-];
-function _borderCheck(border, lng) {
-  for (let i = 0; i < border.length - 1; i++) {
-    if (lng >= border[i][0] && lng < border[i + 1][0]) {
-      const t = (lng - border[i][0]) / (border[i + 1][0] - border[i][0]);
-      return border[i][1] + t * (border[i + 1][1] - border[i][1]);
-    }
-  }
-  return null;
-}
+const WARDS_23_BOUNDS = WARDS_23_RING.reduce((b, [lng, lat]) => ({
+  minLng: Math.min(b.minLng, lng), maxLng: Math.max(b.maxLng, lng),
+  minLat: Math.min(b.minLat, lat), maxLat: Math.max(b.maxLat, lat),
+}), { minLng: Infinity, maxLng: -Infinity, minLat: Infinity, maxLat: -Infinity });
 function isIn23Wards(lat, lng) {
   if (lat > WARDS_23_BOUNDS.maxLat || lat < WARDS_23_BOUNDS.minLat ||
       lng > WARDS_23_BOUNDS.maxLng || lng < WARDS_23_BOUNDS.minLng) return false;
-  // Southern boundary (Tama River → Tokyo Bay)
-  if (lng < 139.76 && lat < 35.62) {
-    const minLat = _borderCheck(SOUTH_BORDER, lng);
-    if (minLat !== null) return lat >= minLat;
-  }
-  // Northern boundary (Saitama border)
-  if (lat > 35.77) {
-    const maxLat = _borderCheck(NORTH_BORDER, lng);
-    if (maxLat !== null) return lat <= maxLat;
-  }
-  return true;
+  return pointInPolygon(lat, lng, WARDS_23_RING);
 }
 
 // ── Point-in-polygon (ray casting) ───────────────────────────────────────
@@ -1449,12 +1444,21 @@ const dom = {
 };
 
 // ── Utilities ─────────────────────────────────────────────────────────────
+// Pure, and run on every name match of every route walk: memoized (most of a
+// validate sweep's time was these regexes). Bounded, as search input passes too.
 function normalize(s) {
-  return (s || '').toLowerCase()
-    .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
-    .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i')
-    .replace(/[\s\-'・]+/g, '')
-    .replace(/station$/, '');
+  const cache = normalize._cache || (normalize._cache = new Map());
+  let v = cache.get(s);
+  if (v === undefined) {
+    v = (s || '').toLowerCase()
+      .replace(/[ōô]/g, 'o').replace(/[ūû]/g, 'u')
+      .replace(/[āâ]/g, 'a').replace(/[ēê]/g, 'e').replace(/[īî]/g, 'i')
+      .replace(/[\s\-'・]+/g, '')
+      .replace(/station$/, '');
+    if (cache.size >= NORMALIZE_CACHE_MAX) cache.clear();
+    cache.set(s, v);
+  }
+  return v;
 }
 
 function haversineM(lat1, lng1, lat2, lng2) {
@@ -2025,6 +2029,8 @@ function resolveConnections() {
     if (conn.via) {
       for (const ja of conn.via) {
         let found = false;
+        // The target junction as a via is the target line's own station (Tokyo on Tokaido)
+        if (toLine.stations[toJunctionIdx].ja === ja) { viaStations.push(toLine.stations[toJunctionIdx]); continue; }
         for (const l of state.lines) {
           const s = l.stations.find(st => st.ja === ja);
           if (s) { viaStations.push(s); found = true; break; }
@@ -2080,6 +2086,7 @@ function resolveConnections() {
       lineDests: conn.lineDests || null,
       impliedLines: conn.impliedLines || null,
       chainFrom: conn.chainFrom || null,
+      boardAtJunction: !!conn.boardAtJunction,
     });
     } // end toMatch loop
     } // end fromMatch loop
@@ -2087,6 +2094,12 @@ function resolveConnections() {
   if (state._connectionWarnings.length > 0) {
     console.warn(`[CONNECTION] ${state._connectionWarnings.length} warning(s) during resolution`);
   }
+}
+
+// First station a ride over conn reaches after its source-line junction
+function connFirstStop(c) {
+  if (c.viaStations.length) return c.viaStations[0];
+  return state.lines[c.toLineIdx].stations[c.toJunctionIdx + dirStep(c.toDir)] || null;
 }
 
 // Get connections from a line at a given terminus direction.
@@ -2105,7 +2118,9 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     if (c.boardFromIdx >= 0 && (fromIdx - c.boardFromIdx) * dirStep(direction) < 0) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
-    // Mid-line junction: must be ahead of us in the travel direction
+    // Mid-line junction: must be ahead of us in the travel direction, or here when
+    // the ride runs straight onto the via stations (boardAtJunction: 曳舟 → 押上)
+    if (c.boardAtJunction && c.fromJunctionIdx === fromIdx) return true;
     if (direction === 'start' && c.fromJunctionIdx < fromIdx) return true;
     if (direction === 'end' && c.fromJunctionIdx > fromIdx) return true;
     return false;
@@ -2653,7 +2668,9 @@ function getCircularPlatforms(line, entry, si, N) {
   return platforms;
 }
 
-function getLinearPlatforms(line, entry, si, N) {
+// backPrev: leave out connections boarding here whose first stop is this
+// station (the way back after arriving over that connection leg)
+function getLinearPlatforms(line, entry, si, N, backPrev) {
   const platforms = [];
   const branchConfig = LINE_BRANCHES[line.name];
   const stnJa = line.stations[si].ja;
@@ -2688,6 +2705,7 @@ function getLinearPlatforms(line, entry, si, N) {
     // At a terminus, skip connections without via at shared stations (handled by other line).
     let conns = getConnections(line.name, entry.lineIdx, dir, si);
     if (atTerminus) conns = conns.filter(c => c.viaStations.length > 0);
+    if (backPrev) conns = conns.filter(c => c.fromJunctionIdx !== si || connFirstStop(c)?.name !== backPrev);
     // Separate terminus connections (extend route) from mid-line (express branch only)
     const tidx = dirEnd(N, dir);
     const terminusConns = conns.filter(c => c.fromJunctionIdx === tidx);
@@ -2756,7 +2774,7 @@ function getLinearPlatforms(line, entry, si, N) {
 
 // ── getPlatforms ─────────────────────────────────────────────────────────
 
-function getPlatforms(stationName, includeAliases = true) {
+function getPlatforms(stationName, includeAliases = true, backPrev = null) {
   const key = normalize(stationName);
   const entries = [...(state.stationIndex[key] || [])];
   if (includeAliases) {
@@ -2782,7 +2800,7 @@ function getPlatforms(stationName, includeAliases = true) {
     } else if (line.circular && !isOedo) {
       platforms.push(...getCircularPlatforms(line, entry, si, N));
     } else {
-      platforms.push(...getLinearPlatforms(line, entry, si, N));
+      platforms.push(...getLinearPlatforms(line, entry, si, N, backPrev));
     }
   }
 
@@ -3001,6 +3019,52 @@ function setupAutocomplete() {
 }
 
 // ── Handlers ──────────────────────────────────────────────────────────────
+// Platforms at name after arriving by arrivedVia, without the way back.
+// Transfer: not the line just left. Normal arrival: not the arrival line's
+// reverse direction (on a line listing the station twice, the platform whose
+// next stop is prevName). Arrival over a connection leg (prevName is not on the
+// arrival line, e.g. 西船橋 → 南船橋 on a Musashino train): only what leads
+// straight back to prevName goes (connections boarding here, platforms whose
+// next stop it is) and the line's other tracks stay; when nothing leads there
+// the reverse-direction rule applies. The way back stays when it is the only
+// way out ("dead end" = no other rideable platform, not just one platform of
+// the arriving line: Chuo-Rinkan → Odakyu Enoshima must route onto the other line).
+// Returns { platforms, removed, deadEnd? } (removed: platforms dropped or left with fewer connections).
+function arrivalPlatforms(name, arrivedVia) {
+  const all = getPlatforms(name, !!arrivedVia);
+  if (!arrivedVia) return { platforms: all, removed: [] };
+  if (arrivedVia.isTransfer) return { platforms: all.filter(p => p.lineName !== arrivedVia.lineName), removed: [] };
+  const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
+  if (!reverseDir) return { platforms: all, removed: [] };
+  const prev = arrivedVia.prevName;
+  const nextStop = p => state.lines[p.lineIdx]?.stations[p.fromIdx + dirStep(p.direction)];
+  const onLine = (stnName, lineName) => (state.stationIndex[normalize(stnName)] || [])
+    .some(e => state.lines[e.lineIdx].name === lineName);
+  const pk = p => p.lineIdx + '|' + p.direction + '|' + p.fromIdx + '|' + (p.displayName || '');
+  const lostConns = (p, byKey) => !byKey.has(pk(p)) || (byKey.get(pk(p))._connections?.length || 0) < (p._connections?.length || 0);
+  let kept = null;
+  if (prev && !onLine(prev, arrivedVia.lineName)) {
+    // A Shinkansen next to prev is another track (Tokyo → Ueno), never the way back
+    const kind = SHINKANSEN_LINES.has(arrivedVia.lineName);
+    const back = getPlatforms(name, true, prev)
+      .filter(p => nextStop(p)?.name !== prev || SHINKANSEN_LINES.has(p.lineName) !== kind);
+    const byKey = new Map(back.map(p => [pk(p), p]));
+    if (all.some(p => lostConns(p, byKey))) kept = back;
+  }
+  if (!kept) {
+    const twice = (state.stationIndex[normalize(name)] || [])
+      .filter(e => state.lines[e.lineIdx].name === arrivedVia.lineName).length > 1;
+    const onArrivalLine = p => p.lineName === arrivedVia.lineName || !!p._mergedLines?.includes(arrivedVia.lineName);
+    const isBacktrack = p => onArrivalLine(p) && (twice && prev
+      ? nextStop(p)?.name === prev
+      : p.direction === reverseDir);
+    kept = all.filter(p => !isBacktrack(p));
+  }
+  if (!kept.some(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0)) return { platforms: all, removed: [], deadEnd: true };
+  const keptByKey = new Map(kept.map(p => [pk(p), p]));
+  return { platforms: kept, removed: all.filter(p => lostConns(p, keptByKey)) };
+}
+
 function onStationSelected(name, arrivedVia) {
   // Playing on without answering the Resume prompt = new game: hide the prompt
   // so its Resume button can't later replace this game with the old one
@@ -3044,31 +3108,7 @@ function onStationSelected(name, arrivedVia) {
   // (not if last roll was already a drink, already drank here, or arrived via transfer
   //  — the transfer die already covered the drink chance)
   const canDrinkHere = !lastWasDrink && !state.drankAt.has(normalize(name)) && !arrivedVia?.isTransfer;
-  let allPlatforms = getPlatforms(name, !!arrivedVia);
-  if (arrivedVia) {
-    const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
-    if (arrivedVia.isTransfer) {
-      // Transfer: can't ride the line you just got off
-      allPlatforms = allPlatforms.filter(p => p.lineName !== arrivedVia.lineName);
-    } else if (reverseDir) {
-      // Normal arrival: can't go back the way you came — unless it's the only way out.
-      // "Dead end" means no other rideable platform exists (a lone-line terminus), NOT
-      // just that the arriving line has one platform here: a terminus with a transfer
-      // (e.g. Chuo-Rinkan → Odakyu Enoshima) must route onto the other line, not backtrack.
-      const twice = (state.stationIndex[normalize(name)] || [])
-        .filter(e => state.lines[e.lineIdx].name === arrivedVia.lineName).length > 1;
-      const nextStop = p => state.lines[p.lineIdx]?.stations[p.fromIdx + dirStep(p.direction)];
-      const onArrivalLine = p => p.lineName === arrivedVia.lineName || !!p._mergedLines?.includes(arrivedVia.lineName);
-      const isBacktrack = p => onArrivalLine(p) && (twice && arrivedVia.prevName
-        ? nextStop(p)?.name === arrivedVia.prevName
-        : p.direction === reverseDir);
-      const withoutBacktrack = allPlatforms.filter(p => !isBacktrack(p));
-      const hasOtherOption = withoutBacktrack.some(p =>
-        getEffectiveStops(p, { ei: null, bi: null }).validCount > 0
-      );
-      if (hasOtherOption) allPlatforms = withoutBacktrack;
-    }
-  }
+  let allPlatforms = arrivalPlatforms(name, arrivedVia).platforms;
   // Filter out platforms with 0 reachable stops (e.g. wards boundary, all-drunk destinations)
   const reachable = allPlatforms.filter(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0);
   if (reachable.length > 0) {
@@ -3348,15 +3388,17 @@ function handleLineDestinations(p) {
     })
     .filter(d => d && d.effectiveMax > 0);
 
-  // Merge mid-line connection destinations (e.g. Chuo → Ome at Tachikawa)
+  // Merge mid-line connection destinations, chained ones included
+  // (e.g. Chuo → Ome at Tachikawa, Sobu → Narita → Narita Airport)
   for (const conn of p._connections || []) {
     if (!conn.destinations) continue;
     const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
     if (stopsToJunction <= 0) continue;
     for (const d of servedDests(conn, p)) dests.push(connDestChoice(p, conn, d, stopsToJunction));
+    dests.push(...chainDestChoices(p, conn, stopsToJunction).filter(d => d.effectiveMax > 0));
   }
 
-  const wardDests = collapseOutOfWardChoices(p, dests);
+  const wardDests = collapseOutOfWardChoices(p, applyServiceRanges(p, dests));
 
   if (wardDests.length === 0) return { pickerShown: false };
 
@@ -3542,10 +3584,15 @@ function collapseOutOfWardChoices(p, choices) {
   const line = state.lines[p.lineIdx];
   const step = dirStep(p.direction);
   const byMax = new Map();
+  // Same range on the same connection: keep the choice allowing the most
+  // train types (no `services` allowlist = all), e.g. 宇都宮 over 小金井
+  const breadth = c => c._services ? c._services.length : Infinity;
   for (const c of out) {
     const covered = kept.some(k => k._connRef === c._connRef &&
       !!k._isLineDest === !!c._isLineDest && k.effectiveMax >= c.effectiveMax);
-    if (!covered && !byMax.has(c.effectiveMax)) byMax.set(c.effectiveMax, c);
+    if (covered) continue;
+    const prev = byMax.get(c.effectiveMax);
+    if (!prev || (prev._connRef === c._connRef && breadth(c) > breadth(prev))) byMax.set(c.effectiveMax, c);
   }
   for (const c of byMax.values()) {
     // Ride stays on the source line when it can't reach the junction —
@@ -3556,9 +3603,12 @@ function collapseOutOfWardChoices(p, choices) {
       ? (leaveConn.fromJunctionIdx - p.fromIdx) * step : Infinity;
     const boundaryStn = c.effectiveMax <= toJunction
       ? line.stations[p.fromIdx + c.effectiveMax * step] : null;
+    // Label from the all-stations range; the button shows what its `services` ride
+    const shown = serviceRange(p, c);
+    if (!(shown.effectiveMax > 0)) continue;
     kept.push(boundaryStn
-      ? { ...c, name: `${c.name} (until ${boundaryStn.name})`, ja: `${c.ja}（${boundaryStn.ja}まで）` }
-      : { ...c, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
+      ? { ...shown, name: `${c.name} (until ${boundaryStn.name})`, ja: `${c.ja}（${boundaryStn.ja}まで）` }
+      : { ...shown, name: c.name + ' & beyond', ja: c.ja.replace(/方面$/, '') + '〜' });
   }
   return kept;
 }
@@ -3643,9 +3693,38 @@ function connDestChoice(p, conn, d, onLine) {
   };
 }
 
-// Destinations of conn that resolved and whose trains serve this station
+// A destination limited to some train types (`services`) shows the range those
+// types actually ride, not the all-stations count its builder estimates
+// (Kita-Senju → Shibuya on 急行/準急: 1–15, not the local 1–19). Each such choice
+// is answered on a scratch selection, then the selection is put back.
+// Out-of-ward choices keep the estimate here, so collapseOutOfWardChoices still
+// folds them into one ward-capped option per range; it then applies the range to
+// the option it keeps. A Local among the services already rides the estimated
+// all-stations count.
+function serviceRange(p, c) {
+  if (!c._services || !(c.effectiveMax > 0) || c._services.some(s => normalize(s) === 'local')) return c;
+  const saved = [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType];
+  try {
+    state.selectedTrainType = null;
+    c.onSelect();
+    const r = resolveTrainTypes(p);
+    const effs = r?.types ? r.types.map(g => ({ validCount: g._count, rawMax: g._rawMax }))
+      : [getEffectiveStops(p, r?.autoSelect ? trainTypeOpts(r.autoSelect) : undefined)];
+    return { ...c, effectiveMax: Math.max(...effs.map(e => e.validCount)),
+      _fullMax: Math.max(...effs.map(e => e.rawMax)) };
+  } finally {
+    [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType] = saved;
+  }
+}
+function applyServiceRanges(p, choices) {
+  return choices.map(c => c._outOfWards ? c : serviceRange(p, c));
+}
+
+// Destinations of conn that resolved and whose trains serve this station now
+// (boardSchedule: per-boarding-station hours)
 function servedDests(conn, p) {
-  return conn.destinations.filter(d => d.untilIdx !== -1 && scheduleActive(d.schedule) && destServesStation(conn, d, p));
+  return conn.destinations.filter(d => d.untilIdx !== -1 && scheduleActive(d.schedule)
+    && scheduleActive(d.boardSchedule?.[platformStation(p).ja]) && destServesStation(conn, d, p));
 }
 
 // Source-line stops ridden before conn's junction (mid-line junctions use
@@ -3655,27 +3734,22 @@ function stopsBeforeJunction(p, conn, onLineStops) {
   return Math.min(onLineStops, Math.max(0, stopsToJunction));
 }
 
-function showDestinationPicker(p, conn, onLineStops) {
+// Chained destinations of conn, reached after `effectiveOnLine` source-line stops:
+// follow onward connections recursively for through-running beyond the target
+// line (e.g. Keikyu Airport → Keikyu Main → Asakusa → Keisei Oshiage)
+function chainDestChoices(p, conn, effectiveOnLine) {
   const choices = [];
-  for (const d of conn.lineDests || []) {
-    const c = lineDestChoice(p, conn, d);
-    if (c) choices.push(c);
-  }
-  const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
-  for (const d of servedDests(conn, p)) choices.push(connDestChoice(p, conn, d, effectiveOnLine));
   const viaCount = effectiveViaCount(conn, platformStation(p).name);
-
-  // Chained destinations: follow onward connections recursively for through-running
-  // beyond the target line (e.g. Keikyu Airport → Keikyu Main → Asakusa → Keisei Oshiage)
   let chainConn = conn;
   let chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
   const chainVisited = new Set([conn.from, conn.to]);
   const chainPath = []; // hops after conn that lead to chainConn
   // chainFrom: a connection chained rides only continue onto when boarded on one of these lines
   const chainAllowed = c => !c.chainFrom || c.chainFrom.includes(p.lineName);
-  // Chained rides board one of conn's through trains: none when no conn
-  // destination is served here, and a chained destination without its own
-  // `services` keeps the ones the first hop allows (e.g. Odakyu 準急/急行 to Joban)
+  // Chained rides board one of conn's through trains: a chained destination
+  // without its own `services` keeps the ones the first hop allows (e.g. Odakyu
+  // 準急/急行 to Joban), so none when no conn destination is served here.
+  // One with its own `services` only needs them to run (firstHopRunsNow).
   const served = servedDests(conn, p);
   const chainBlocked = served.length === 0 && conn.destinations.some(d => d.services);
   const inheritedServices = served.length && served.every(d => d.services)
@@ -3691,8 +3765,8 @@ function showDestinationPicker(p, conn, onLineStops) {
   // Destination choices of a chained hop reached after `base` stops (through its via).
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
   const pushChainDests = (nextConn, base, path, midLine) => {
-    if (chainBlocked) return;
     for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
+      if (chainBlocked && !d0.services) continue;
       const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices };
       if (!firstHopRunsNow(d.services)) continue;
       const stopsOnNext = nextConn.toDir === 'start'
@@ -3744,8 +3818,20 @@ function showDestinationPicker(p, conn, onLineStops) {
     addMidLineHops(nextChain, junctionBase, chainPath.slice(), chainVisited);
     chainConn = nextChain;
   }
+  return choices;
+}
 
-  const filtered = collapseOutOfWardChoices(p, choices.filter(c => c.effectiveMax > 0));
+function showDestinationPicker(p, conn, onLineStops) {
+  const choices = [];
+  for (const d of conn.lineDests || []) {
+    const c = lineDestChoice(p, conn, d);
+    if (c) choices.push(c);
+  }
+  const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
+  for (const d of servedDests(conn, p)) choices.push(connDestChoice(p, conn, d, effectiveOnLine));
+  choices.push(...chainDestChoices(p, conn, effectiveOnLine));
+
+  const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
 
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
   // Keep the last (connection destination) when a lineDests and connection dest collide,
@@ -3756,7 +3842,7 @@ function showDestinationPicker(p, conn, onLineStops) {
     if (!grouped.has(c.effectiveMax)) grouped.set(c.effectiveMax, []);
     grouped.get(c.effectiveMax).push(c);
   }
-  const unique = [...grouped.values()].flatMap(group => {
+  const mergeGroup = group => {
     if (group.length <= 1) return group;
     // Only a cap makes rides equivalent: two that really end at that count are different trips
     if (group.filter(c => c._fullMax === c.effectiveMax).length > 1) return group;
@@ -3767,6 +3853,12 @@ function showDestinationPicker(p, conn, onLineStops) {
     const nearest = group[0];
     return [{ ...kept,
       name: nearest.name + ' & beyond', ja: nearest.ja.replace(/方面$/, '') + '〜' }];
+  };
+  // Keep board order: unmerged choices stay in place, a merged one takes its group's first slot
+  const mergedOf = new Map([...grouped.values()].map(g => [g, mergeGroup(g)]));
+  const unique = filtered.flatMap(c => {
+    const group = grouped.get(c.effectiveMax), out = mergedOf.get(group);
+    return out === group ? [c] : c === group[0] ? out : [];
   });
 
   if (unique.length <= 1) {
@@ -3809,7 +3901,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     }
   }
 
-  const filtered = collapseOutOfWardChoices(p, choices.filter(c => c.effectiveMax > 0));
+  const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
 
   if (filtered.length <= 1) {
     if (filtered.length === 1) {
@@ -3863,7 +3955,8 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
         dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         resetStopsBtn();
-        rollStops();
+        // Players roll right away; debug.js game.journey pauses here to force the roll
+        if (!window._pauseAfterPick) rollStops();
       }
     };
   });
@@ -3931,16 +4024,20 @@ function resolveTrainTypes(p) {
     const junctionStn = connTargetLine.stations[conn.toJunctionIdx];
     const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine, conn.toDir) || [];
     declared.push(...EXPRESS_SERVICES[conn.to]);
+    // A mid-line connection with no destination picked (auto-selected) is only
+    // ridden by the target's own types: the source local stays on its line
+    // (Chuo-Sobu Local vs Tozai Local at 西船橋 / 中野)
+    const staysOnLine = !state.selectedDestination &&
+      conn.fromJunctionIdx !== dirEnd(line.stations.length, p.direction);
     // Add a "terminates at junction" option if the source line has no express of its own
     if (!hasLineExpress && trainTypes.length === 0) {
-      trainTypes.push({
-        name: 'To ' + junctionStn.name, ja: junctionStn.ja + '行き',
-        color: p.lineColor, stops: null, expressIndices: null,
-        _terminatesAtJunction: true,
-      });
+      trainTypes.push(staysOnLine
+        ? { name: 'Local', ja: '各停', color: p.lineColor, stops: null, expressIndices: null }
+        : { name: 'To ' + junctionStn.name, ja: junctionStn.ja + '行き',
+            color: p.lineColor, stops: null, expressIndices: null, _terminatesAtJunction: true });
     }
     // Skip target Local if source already has one (through-run local covers both lines)
-    const srcHasLocal = trainTypes.some(t => t.stops === null && !t._connTargetLineIdx);
+    const srcHasLocal = !staysOnLine && trainTypes.some(t => t.stops === null && !t._connTargetLineIdx);
     const srcNames = new Set(trainTypes.map(t => normalize(t.name)));
     const shortTargetEn = conn.to.replace(/ Line$/, '').replace(/^Tokyo Metro /, '');
     const shortTargetJa = (LINE_NAMES_JA[conn.to] || shortTargetEn).replace(/線$/, '');
@@ -3955,10 +4052,11 @@ function resolveTrainTypes(p) {
     }
   }
   // A lone express-class type still applies when the lists declare no Local and
-  // hours/direction/stops hid the others (Joban Rapid while the Special Rapid is
-  // off-hours). A single declared type without a Local still runs local.
+  // hours/direction/stops hid the others (a Rapid while its Special Rapid is
+  // off-hours, or the Nikko → Isesaki 急行 while the through 普通 is). A single
+  // declared type without a Local still runs local.
   const loneApplies = trainTypes.length === 1 && trainTypes[0].expressIndices
-    && declared.length >= 2 && !declared.some(t => t.stops === null);
+    && declared.length >= 2 && !declared.some(t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0);
   if (trainTypes.length === 0 || (trainTypes.length === 1 && !loneApplies)) return null;
 
   // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi).
@@ -4035,7 +4133,8 @@ function resolveTrainTypes(p) {
     }
   }
 
-  if (merged.length <= 1) return null;
+  // Express types that merged into one button (準急 + 急行 to Shibuya at night) still apply
+  if (merged.length <= 1) return merged[0]?.expressIndices ? { autoSelect: merged[0] } : null;
   return { types: merged };
 }
 
@@ -4618,16 +4717,17 @@ function getEffectiveStops(platform, opts = {}) {
       if (i === stopAt.idx) { pos = k + 1; break; }
       if ((i - stopAt.idx) * step > 0) { pos = k; break; } // passed it without stopping
     }
-    if (pos > 0) {
-      if (state.wards23Only) {
-        const out = full.findIndex(s => !isIn23Wards(s.lat, s.lng));
-        if (out !== -1) pos = Math.min(pos, out);
-      }
-      rawMax = pos;
-    } else {
-      reachesDest = false; // this type never gets to the destination
-    }
+    if (pos > 0) rawMax = pos;
+    else reachesDest = false; // this type never gets to the destination
     trace?.push('stopAt: route pos=' + pos + ', rawMax=' + rawMax);
+  }
+  // 23-wards mode: end at the last in-ward stop of the route actually ridden.
+  // The per-path maxima above are ward-capped only on some paths (a connection
+  // express total like Seibu → Fukutoshin → Toyoko F-Liner is not).
+  if (state.wards23Only && rawMax > 0) {
+    const route = getStationsAlongRoute(platform, rawMax, ei || null, ttOverride, bi);
+    const out = route.findIndex(s => !isIn23Wards(s.lat, s.lng));
+    if (out !== -1) { rawMax = out; trace?.push('wards: route leaves the 23 wards after ' + out + ' stop(s)'); }
   }
 
   const cappedMax = capStops(rawMax);
@@ -4873,6 +4973,23 @@ async function resolveTransfer(route, i, ti, transferIndices) {
 
 // ── Transfer check main ─────────────────────────────────────────────────
 
+// Lines the ride itself runs on: the platform's line plus the whole connection
+// chain (onward hops included). impliedLines: lines whose tracks the via stations
+// ride over (e.g. Sotetsu-JR Direct for Saikyo↔Sotetsu) — not "transfers" from
+// the very train running on them. A station served only by these offers no transfer.
+function rideLineNames(platform) {
+  const names = new Set([platform.lineName]);
+  let chainConn = state.selectedConnection;
+  const chainVisited = new Set();
+  while (chainConn && !chainVisited.has(chainConn.to)) {
+    names.add(chainConn.to);
+    for (const l of (chainConn.impliedLines || [])) names.add(l);
+    chainVisited.add(chainConn.to);
+    chainConn = nextChainConn(chainConn, chainVisited);
+  }
+  return names;
+}
+
 async function checkTransfers(platform, rolledStops) {
   const roundGen = state._roundGen; // a reset mid-journey aborts this round
   const route = getStationsAlongRoute(platform, rolledStops);
@@ -4880,22 +4997,7 @@ async function checkTransfers(platform, rolledStops) {
 
   const thirstBetween = buildThirstTracker(platform, rolledStops);
 
-  // Build set of all line names in the current route (for connection-aware transfer checks)
-  const routeLineNames = new Set([platform.lineName]);
-  if (state.selectedConnection) {
-    // Add all lines in the connection chain (including onward connections).
-    // impliedLines: lines whose tracks the connection's via stations ride over
-    // (e.g. Sotetsu-JR Direct for Saikyo↔Sotetsu) — don't offer them as
-    // "transfers" from the very train that's running on them.
-    let chainConn = state.selectedConnection;
-    const chainVisited = new Set();
-    while (chainConn && !chainVisited.has(chainConn.to)) {
-      routeLineNames.add(chainConn.to);
-      for (const l of (chainConn.impliedLines || [])) routeLineNames.add(l);
-      chainVisited.add(chainConn.to);
-      chainConn = nextChainConn(chainConn, chainVisited);
-    }
-  }
+  const routeLineNames = rideLineNames(platform);
 
   // Find intermediate stations with transfer lines
   const transferIndices = [];
@@ -5273,7 +5375,8 @@ function addHistory(transferInfo) {
       _arrivalDir = eff.direction;
       // Station just before the destination (tells Tochomae's two Oedo entries apart)
       const used = transferInfo?.stopsUsed || state.route?.length || 0;
-      _arrivalPrev = used >= 2 ? state.route[used - 2].name : state.currentStation.name;
+      // (the platform's own station on a 1-stop ride: Daimon, not the alias Hamamatsucho)
+      _arrivalPrev = used >= 2 ? state.route[used - 2].name : platformStation(p).name;
     }
   }
   const entry = {
@@ -6009,16 +6112,26 @@ function getEffectiveArrival(p) {
   const conn = routeConnectionFor(p, state.selectedConnection || findRouteConnection(p, tt), tt?._connTargetLineIdx);
   if (!conn) return fallback;
 
-  // If destination is on the source line, use source line/direction
-  if (state.lines[p.lineIdx].stations.some(s => s.name === dest.name)) return fallback;
+  // If destination is on the source line, use source line/direction, unless it is
+  // one of the connection's via stations (Keio → via 新宿 is not Keio's Shinjuku),
+  // or it lies past the junction where the ride left the source line (Chuo-Sobu
+  // → Tozai at 中野 arrives at the Tozai 飯田橋, not the Chuo-Sobu one)
+  const step = dirStep(p.direction);
+  const beforeJunction = i => p.circular || ((i - p.fromIdx) * step > 0 && (conn.fromJunctionIdx - i) * step >= 0);
+  const onSource = state.lines[p.lineIdx].stations.some((s, i) => s.name === dest.name && beforeJunction(i));
+  if (onSource && !conn.viaStations.some(v => v.name === dest.name)) return fallback;
+
+  const route = state.route || [];
+  const di = route.findIndex(s => s.name === dest.name);
 
   // A via station sits on its own line (e.g. Shin-Tsunashima on the Tokyu
   // Shin-Yokohama Line): find the line through it and the station ridden just before
-  const route = state.route || [];
-  const di = route.findIndex(s => s.name === dest.name);
   const prev = di > 0 ? route[di - 1] : platformStation(p);
+  // Never a Shinkansen for a normal ride (Tohoku Shinkansen has 東京 next to 上野) or vice versa
+  const sameKind = l => SHINKANSEN_LINES.has(l.name) === SHINKANSEN_LINES.has(p.lineName);
   const lineThrough = () => {
     for (const l of state.lines) {
+      if (!sameKind(l)) continue;
       const ib = l.stations.findIndex(s => s.name === dest.name);
       if (ib === -1) continue;
       const ia = l.stations.findIndex((s, k) => s.name === prev.name && Math.abs(k - ib) === 1);
@@ -6034,6 +6147,7 @@ function getEffectiveArrival(p) {
     const nb = forward ? vias[k + 1] : vias[k - 1];
     if (!nb) return null;
     for (const l of state.lines) {
+      if (!sameKind(l)) continue;
       const ib = l.stations.findIndex(s => s.name === dest.name);
       const inb = l.stations.findIndex((s, j) => s.name === nb.name && Math.abs(j - ib) === 1);
       if (ib !== -1 && inb !== -1) return { lineName: l.name, direction: (forward ? inb > ib : ib > inb) ? 'end' : 'start' };

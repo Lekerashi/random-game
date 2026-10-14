@@ -86,13 +86,20 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     // 区間急行 run Toei ↔ Sagamihara Line since 2025-03 (connection express); only
     // 4 weekday-morning up trains stay on the main line west of 調布, so none here
-    // Weekday mornings/evenings only since 2013 (a lone weekend pair is ignored)
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    // No daytime 急行 since 2013: weekday mornings and evenings, a few weekend
+    // trains (down 5:47; up 8–9h and late evening, some from 高幡不動)
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山",
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [16, 10] }, weekend: { stops: [] } } },
+    ], schedule: { weekday: { timeRange: [[5, 10], [20, 22]] }, weekend: { timeRange: [5, 6] } } },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
+      "新宿","笹塚","明大前","桜上水","千歳烏山",
+      "つつじヶ丘","調布","東府中","府中",
+      "分倍河原","聖蹟桜ヶ丘","高幡不動",
+      "北野","京王八王子",
+    ], schedule: { weekday: { timeRange: [[6, 9], [17, 24]] }, weekend: { timeRange: [[8, 10], [21, 24]] } } },
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "新宿","笹塚","明大前","千歳烏山",
       "調布","府中","分倍河原",
@@ -237,13 +244,13 @@ const EXPRESS_SERVICES = {
     ],
       schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
-      "押上(スカイツリー前)","曳舟","北千住","西新井","草加",
+      "曳舟","北千住","西新井","草加",
       "新越谷","越谷","北越谷","大袋","せんげん台",
       "武里","一ノ割","春日部","北春日部","姫宮",
       "東武動物公園","和戸","久喜",
     ], schedule: { weekday: { timeRange: [20, 10] }, weekend: { timeRange: [20, 10] } } }, // early morning and night
     { name: "Express", ja: "急行", color: "#e83030", stops: [
-      "押上(スカイツリー前)","曳舟","北千住","西新井","草加",
+      "曳舟","北千住","西新井","草加",
       "新越谷","越谷","せんげん台","春日部",
       "東武動物公園","和戸","久喜",
     ]},
@@ -304,6 +311,14 @@ const EXPRESS_SERVICES = {
     ]},
   ],
   // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
+  // ラビット: toward 宇都宮 only, 2 morning (through from the Tokaido Line) + 2 evening from 上野
+  "Utsunomiya Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Rapid Rabbit", ja: "快速ラビット", color: "#e85050", direction: "end", stops: [
+      "上野","赤羽","浦和","大宮","東大宮","蓮田","久喜","古河",
+      "小山","小金井","自治医大","石橋","雀宮","宇都宮",
+    ], schedule: { weekday: { timeRange: [[6, 8], [18, 20]] }, weekend: { timeRange: [[6, 9], [18, 20]] } } },
+  ],
   "JR Shonan Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
@@ -506,6 +521,57 @@ const LINE_DESTINATIONS = {
       { until: '下館',   name: 'Shimodate',  ja: '下館方面',   color: '#1a5a88' },
     ],
   },
+  // 快速 run to 取手; 中距離 普通 mostly to 土浦, some to 水戸/勝田
+  'JR Joban Line': {
+    direction: 'end',  // away from Ueno
+    destinations: [
+      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF' },
+      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0' },
+      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080' },
+      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860' },
+    ],
+  },
+  // 快速 from Tokyo mostly end at 津田沼/千葉, some 佐倉/成東; 普通 east of 千葉 run to 佐倉/成東/銚子
+  'JR Sobu Line': {
+    direction: 'end',  // away from Tokyo
+    destinations: [
+      { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
+      { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
+      { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20' },
+      { until: '成東',   name: 'Naruto',    ja: '成東方面',   color: '#a05a20' },
+      { until: '銚子',   name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#804818' },
+    ],
+  },
+  // Down termini: 成増, 志木, 川越市, 森林公園 (急行), 小川町 (快速急行/川越特急)
+  'Tobu Tojo Line': {
+    direction: 'end',  // away from Ikebukuro
+    destinations: [
+      { until: '成増',     name: 'Narimasu',     ja: '成増方面',     color: '#5aa0d8' },
+      { until: '志木',     name: 'Shiki',        ja: '志木方面',     color: '#4890c8' },
+      { until: '川越市',   name: 'Kawagoeshi',   ja: '川越市方面',   color: '#2a78b8' },
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
+      { until: '小川町',   name: 'Ogawamachi',   ja: '小川町方面',   color: '#003878' },
+    ],
+  },
+  // Daytime 普通 from 浅草 end at 北千住; 区間急行/区間準急 run to 東武動物公園/久喜/館林
+  'Tobu Isesaki Line': {
+    direction: 'end',  // away from Asakusa
+    destinations: [
+      { until: '北千住',       name: 'Kita-Senju',        ja: '北千住方面',       color: '#5a8ad0' },
+      { until: '北越谷',       name: 'Kita-Koshigaya',    ja: '北越谷方面',       color: '#3a72c0' },
+      { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
+      { until: '久喜',         name: 'Kuki',              ja: '久喜方面',         color: '#005AAA' },
+      { until: '館林',         name: 'Tatebayashi',       ja: '館林方面',         color: '#002a60' },
+    ],
+  },
+  // 各駅停車 mostly end at 我孫子, some at 取手
+  'JR Joban Line (Local)': {
+    direction: 'end',  // toward Toride
+    destinations: [
+      { until: '我孫子', name: 'Abiko',  ja: '我孫子方面', color: '#1aa260' },
+      { until: '取手',   name: 'Toride', ja: '取手方面',   color: '#009BBF' },
+    ],
+  },
   'JR Ome Line': {
     direction: 'end',  // heading toward end (toward Oku-Tama)
     destinations: [
@@ -558,6 +624,9 @@ const STATION_ALIASES = {
   "Haneda Airport Terminal 1 & 2": ["Haneda Airport Terminal 1", "Haneda Airport Terminal 2"],
   "Haneda Airport Terminal 1":     ["Haneda Airport Terminal 1 & 2"],
   "Haneda Airport Terminal 2":     ["Haneda Airport Terminal 1 & 2"],
+  // JR renamed its half 龍ケ崎市 (2020); Kanto Railway's Ryugasaki Line kept 佐貫
+  "Ryugasakishi":               ["Sanuki"],
+  "Sanuki":                     ["Ryugasakishi"],
 };
 
 // Lines that share one physical platform per direction at these stations (JA).

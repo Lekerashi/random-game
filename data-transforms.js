@@ -36,11 +36,43 @@ const STATION_RENAMES = {
 // Lines upstream stores as several segments joined into one list. Each part
 // lists its stations in travel order (JA); entries are copied from the original.
 const LINE_SPLITS = {
+  // Rapid tracks (上野–取手 + 中距離 beyond) vs local tracks (Chiyoda-through 各停, 綾瀬–取手)
+  'JR Joban Line': [
+    { name: 'JR Joban Line', stations: ['上野', '日暮里', '三河島', '南千住', '北千住', '松戸', '柏', '我孫子', '天王台', '取手',
+      '藤代', '龍ケ崎市', '牛久', 'ひたち野うしく', '荒川沖', '土浦', '神立', '高浜', '石岡', '羽鳥', '岩間', '友部', '内原',
+      '赤塚', '水戸', '勝田'] },
+    { name: 'JR Joban Line (Local)', stations: ['綾瀬', '亀有', '金町', '松戸', '北松戸', '馬橋', '新松戸', '北小金', '南柏',
+      '柏', '北柏', '我孫子', '天王台', '取手'] },
+  ],
   'JR Narita Line': [
     { name: 'JR Narita Line', stations: ['佐倉', '酒々井', '成田', '久住', '滑河', '下総神崎', '大戸', '佐原',
       '香取', '水郷', '小見川', '笹川', '下総橘', '下総豊里', '椎柴', '松岸', '銚子'] },
     { name: 'JR Narita Line (Airport)', stations: ['成田', '空港第２ビル（第２旅客ターミナル）', '成田空港（第１旅客ターミナル）'] },
     { name: 'JR Narita Line (Abiko)', stations: ['我孫子', '東我孫子', '湖北', '新木', '布佐', '木下', '小林', '安食', '下総松崎', '成田'] },
+  ],
+  // 小川町–寄居 runs as a separate one-man shuttle (no through trains since 2005)
+  'Tobu Tojo Line': [
+    { name: 'Tobu Tojo Line', stations: ['池袋', '北池袋', '下板橋', '大山', '中板橋', 'ときわ台', '上板橋', '東武練馬',
+      '下赤塚', '成増', '和光市', '朝霞', '朝霞台', '志木', '柳瀬川', 'みずほ台', '鶴瀬', 'ふじみ野', '上福岡', '新河岸',
+      '川越', '川越市', '霞ヶ関', '鶴ヶ島', '若葉', '坂戸', '北坂戸', '高坂', '東松山', '森林公園', 'つきのわ', '武蔵嵐山',
+      '小川町'] },
+    { name: 'Tobu Tojo Line (Yorii)', stations: ['小川町', '東武竹沢', 'みなみ寄居', '男衾', '鉢形', '玉淀', '寄居'] },
+  ],
+  // Every non-limited-express train splits at 南栗橋 (no through 普通 north of it since 2017)
+  'Tobu Nikko Line': [
+    { name: 'Tobu Nikko Line', stations: ['東武動物公園', '杉戸高野台', '幸手', '南栗橋'] },
+    { name: 'Tobu Nikko Line (Nikko)', stations: ['南栗橋', '栗橋', '新古河', '柳生', '板倉東洋大前', '藤岡', '静和',
+      '新大平下', '栃木', '新栃木', '合戦場', '家中', '東武金崎', '楡木', '樅山', '新鹿沼', '北鹿沼', '板荷', '下小代',
+      '明神', '下今市', '上今市', '東武日光'] },
+  ],
+  // 館林–伊勢崎 runs as a separate one-man section (no through 普通/区間急行 since 2020)
+  'Tobu Isesaki Line': [
+    { name: 'Tobu Isesaki Line', stations: ['浅草', 'とうきょうスカイツリー', '曳舟', '東向島', '鐘ヶ淵', '堀切', '牛田',
+      '北千住', '小菅', '五反野', '梅島', '西新井', '竹ノ塚', '谷塚', '草加', '獨協大学前〈草加松原〉', '新田', '蒲生',
+      '新越谷', '越谷', '北越谷', '大袋', 'せんげん台', '武里', '一ノ割', '春日部', '北春日部', '姫宮', '東武動物公園',
+      '和戸', '久喜', '鷲宮', '花崎', '加須', '南羽生', '羽生', '川俣', '茂林寺前', '館林'] },
+    { name: 'Tobu Isesaki Line (Isesaki)', stations: ['館林', '多々良', '県', '福居', '東武和泉', '足利市', '野州山辺',
+      '韮川', '太田', '細谷', '木崎', '世良田', '境町', '剛志', '新伊勢崎', '伊勢崎'] },
   ],
   'Tobu Koizumi Line': [
     { name: 'Tobu Koizumi Line', stations: ['館林', '成島', '本中野', '篠塚', '東小泉', '小泉町', '西小泉'] },
@@ -69,6 +101,9 @@ const LINE_REMOVE_STATIONS = {
   // Match-day-only temporary station
   'JR Kashima Line': ['鹿島サッカースタジアム（臨）'],
   'Kashima Rinkai Railway Oarai-Kashima Line': ['鹿島サッカースタジアム（臨）'],
+  // Tobu's 押上 platforms serve only Hanzomon through trains (Hanzomon ↔ Tobu connections at 曳舟).
+  // Raw upstream spelling: removal runs before the Oshiage bracket normalization.
+  'Tobu Isesaki Line': ['押上〈スカイツリー前〉'],
 };
 
 // Stations opened after the upstream data snapshot, inserted mid-line
@@ -210,6 +245,26 @@ const LINE_EXTRA_STATIONS = {
     { name: 'Kusanagi',          ja: '草薙',      lat: 34.9904, lng: 138.4341 },
     { name: 'Higashi-Shizuoka',  ja: '東静岡',    lat: 34.9805, lng: 138.4144 },
     { name: 'Shizuoka',          ja: '静岡',      lat: 34.9717, lng: 138.3890 },
+  ],
+  // Joban Line beyond Toride (upstream's 取手～いわき segment falls outside the build bounds).
+  // 偕楽園 (seasonal, down trains only) left out. 友部/水戸/勝田 coords match the existing lines.
+  'JR Joban Line': [
+    { name: 'Fujishiro',        ja: '藤代',           lat: 35.920565, lng: 140.118251 },
+    { name: 'Ryugasakishi',     ja: '龍ケ崎市',       lat: 35.930066, lng: 140.138217 },
+    { name: 'Ushiku',           ja: '牛久',           lat: 35.975314, lng: 140.141039 },
+    { name: 'Hitachino-Ushiku', ja: 'ひたち野うしく', lat: 36.007996, lng: 140.158408 },
+    { name: 'Arakawaoki',       ja: '荒川沖',         lat: 36.030552, lng: 140.165920 },
+    { name: 'Tsuchiura',        ja: '土浦',           lat: 36.078644, lng: 140.206238 },
+    { name: 'Kandatsu',         ja: '神立',           lat: 36.120424, lng: 140.248615 },
+    { name: 'Takahama',         ja: '高浜',           lat: 36.163882, lng: 140.294745 },
+    { name: 'Ishioka',          ja: '石岡',           lat: 36.191554, lng: 140.279709 },
+    { name: 'Hatori',           ja: '羽鳥',           lat: 36.247661, lng: 140.286790 },
+    { name: 'Iwama',            ja: '岩間',           lat: 36.295508, lng: 140.276493 },
+    { name: 'Tomobe',           ja: '友部',           lat: 36.350597, lng: 140.306306 },
+    { name: 'Uchihara',         ja: '内原',           lat: 36.370111, lng: 140.352820 },
+    { name: 'Akatsuka',         ja: '赤塚',           lat: 36.381755, lng: 140.415248 },
+    { name: 'Mito',             ja: '水戸',           lat: 36.370911, lng: 140.476760 },
+    { name: 'Katsuta',          ja: '勝田',           lat: 36.394033, lng: 140.524482 },
   ],
 };
 
