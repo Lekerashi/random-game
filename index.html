@@ -3033,7 +3033,8 @@ function setupAutocomplete() {
 function arrivalPlatforms(name, arrivedVia) {
   const all = getPlatforms(name, !!arrivedVia);
   if (!arrivedVia) return { platforms: all, removed: [] };
-  if (arrivedVia.isTransfer) return { platforms: all.filter(p => p.lineName !== arrivedVia.lineName), removed: [] };
+  // A merged connection-only platform (Ueno Tokyo Line) carries every member line
+  if (arrivedVia.isTransfer) return { platforms: all.filter(p => p.lineName !== arrivedVia.lineName && !p._mergedLines?.includes(arrivedVia.lineName)), removed: [] };
   const reverseDir = { start: 'end', end: 'start', A: 'B', B: 'A' }[arrivedVia.direction];
   if (!reverseDir) return { platforms: all, removed: [] };
   const prev = arrivedVia.prevName;
@@ -3693,16 +3694,15 @@ function connDestChoice(p, conn, d, onLine) {
   };
 }
 
-// A destination limited to some train types (`services`) shows the range those
-// types actually ride, not the all-stations count its builder estimates
-// (Kita-Senju → Shibuya on 急行/準急: 1–15, not the local 1–19). Each such choice
+// A destination shows the range the train types serving it actually ride, not
+// the all-stations count its builder estimates (Kita-Senju → Shibuya on 急行/準急:
+// 1–15, not the local 1–19; Hanzomon → Kuki has no through 各停). Each choice
 // is answered on a scratch selection, then the selection is put back.
 // Out-of-ward choices keep the estimate here, so collapseOutOfWardChoices still
 // folds them into one ward-capped option per range; it then applies the range to
-// the option it keeps. A Local among the services already rides the estimated
-// all-stations count.
+// the option it keeps.
 function serviceRange(p, c) {
-  if (!c._services || !(c.effectiveMax > 0) || c._services.some(s => normalize(s) === 'local')) return c;
+  if (!(c.effectiveMax > 0)) return c;
   const saved = [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType];
   try {
     state.selectedTrainType = null;
@@ -3755,12 +3755,16 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const inheritedServices = served.length && served.every(d => d.services)
     ? [...new Set(served.flatMap(d => d.services))] : null;
   // A chained destination's services that the first hop declares must run now
-  // (Haneda → Sky Access needs an エアポート快特: none in the morning)
+  // (Haneda → Sky Access needs an エアポート快特: none in the morning). A Local the
+  // first hop doesn't declare still runs through (Toyoko → Tojo locals run after
+  // the F-Liner, the hop's only declared type, stops at 17h)
   const firstHopRunsNow = services => {
     if (!services || !conn.express) return true;
-    const want = new Set(services.map(normalize));
-    const declared = conn.express.filter(e => want.has(normalize(e.name)) || (e.chainName && want.has(normalize(e.chainName))));
-    return !declared.length || declared.some(e => resolveServiceStops(e, state.lines[conn.toLineIdx], p.direction)?.length !== 0);
+    const declares = s => conn.express.some(e => normalize(e.name) === s || (e.chainName && normalize(e.chainName) === s));
+    const want = services.map(normalize);
+    if (want.some(s => s === normalize('Local') && !declares(s))) return true;
+    const declared = conn.express.filter(e => want.includes(normalize(e.name)) || (e.chainName && want.includes(normalize(e.chainName))));
+    return declared.some(e => resolveServiceStops(e, state.lines[conn.toLineIdx], p.direction)?.length !== 0);
   };
   // Destination choices of a chained hop reached after `base` stops (through its via).
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
@@ -4001,6 +4005,13 @@ function resolveTrainTypes(p) {
 
   const line = state.lines[p.lineIdx];
   let trainTypes = getTrainTypes(p.lineName, platformStation(p).name, line, p.direction) || [];
+  // On a picked branch only express types calling somewhere ahead on it run
+  // (no Nambu Rapid toward Hama-Kawasaki)
+  const bi = state.selectedBranch?.branchIndices, biPos = bi ? bi.indexOf(p.fromIdx) : -1;
+  if (biPos !== -1) {
+    const ahead = new Set(dirStep(p.direction) > 0 ? bi.slice(biPos + 1) : bi.slice(0, biPos));
+    trainTypes = trainTypes.filter(t => !t.expressIndices || t.expressIndices.some(i => ahead.has(i)));
+  }
   // Every type the consulted lists declare, before hours/direction/stop filtering
   const declared = [...(EXPRESS_SERVICES[p.lineName] || []), ...allConnExpress.flatMap(a => a.express)];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
@@ -4036,8 +4047,9 @@ function resolveTrainTypes(p) {
         : { name: 'To ' + junctionStn.name, ja: junctionStn.ja + '行き',
             color: p.lineColor, stops: null, expressIndices: null, _terminatesAtJunction: true });
     }
-    // Skip target Local if source already has one (through-run local covers both lines)
-    const srcHasLocal = !staysOnLine && trainTypes.some(t => t.stops === null && !t._connTargetLineIdx);
+    // Skip target Local if source already has one (through-run local covers both lines);
+    // a "To <junction>" type ends at the junction, so the target Local still runs through
+    const srcHasLocal = !staysOnLine && trainTypes.some(t => t.stops === null && !t._connTargetLineIdx && !t._terminatesAtJunction);
     const srcNames = new Set(trainTypes.map(t => normalize(t.name)));
     const shortTargetEn = conn.to.replace(/ Line$/, '').replace(/^Tokyo Metro /, '');
     const shortTargetJa = (LINE_NAMES_JA[conn.to] || shortTargetEn).replace(/線$/, '');

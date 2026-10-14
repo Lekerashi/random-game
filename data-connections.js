@@ -816,6 +816,7 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Fukutoshin Line', toStation: '小竹向原', toDir: 'end',
     name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
@@ -867,6 +868,9 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
     name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31',
+    lineDests: [
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
+    ],
     destinations: [
       { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31' },
     ],
@@ -1017,7 +1021,8 @@ const LINE_CONNECTIONS = [
   // ── Tokyu Toyoko ↔ Tokyu Shin-Yokohama / Sotetsu at Hiyoshi (mid-line) ──
   // Hiyoshi is mid-line on Toyoko (idx 12). Toward-Yokohama direction has
   // destinations (Shin-Yokohama, Futamatagawa) merged with terminus Minato Mirai.
-  // Toward-Shibuya direction: Shin-Yokohama Line appears as its own platform.
+  // Toward-Shibuya direction: Shin-Yokohama Line appears as its own platform at
+  // Hiyoshi; the junction faces Shibuya, so no Yokohama-side train runs onto it.
   { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'end',
     to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉',
     name: 'Shin-Yokohama', ja: '新横浜方面', color: '#7b4e9e',
@@ -1049,32 +1054,15 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030', stops: ['渋谷','中目黒','学芸大学','自由が丘','田園調布','多摩川','武蔵小杉','日吉',
         '西谷','鶴ヶ峰','二俣川'] },
     ] },
-  { from: 'Tokyu Toyoko Line',          fromStation: '日吉', fromDir: 'start',
-    to:   'Tokyu Shin-Yokohama Line',   toEnd: '日吉',
-    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
-    lineDests: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
-    ],
-    destinations: [
-      { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84' },
-    ] },
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
     to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'start',
     name: 'Shibuya', ja: '渋谷方面', color: '#0066B3',
     lineDests: [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
     ],
+    // Toyoko through trains are all 急行
     destinations: [
-      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
-    ] },
-  { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
-    to:   'Tokyu Toyoko Line',          toStation: '日吉', toDir: 'end',
-    name: 'Yokohama', ja: '横浜方面', color: '#da0442',
-    lineDests: [
-      { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
-    ],
-    destinations: [
-      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#da0442' },
+      { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3', services: ['Express'] },
     ] },
 
   // ── Tokyu Shin-Yokohama ↔ Sotetsu Shin-Yokohama at Shin-Yokohama ────
