@@ -20,3 +20,4 @@ b71044e35f69226bd918bd087b7e0f45b112df69 # Split: move session stats and route m
 29b2685ebddd539b23bcf4827191aba6e1244f4f # Split: move random station, geolocation, roll again and copy route into js/15-station-actions.js
 0eb7c380862e18e70adaf8423da557a9bfad74b7 # Split: move Save Session Image into js/16-save-image.js
 9fef3bf94212bf82d1da908ae78ff016f7fccedb # Split: move init into js/17-init.js; index.html has no inline app script
+095fe9a82192b25e697b5e8b4b003d64e69f2900 # Phase 2: move each language refresher next to the code it re-renders
