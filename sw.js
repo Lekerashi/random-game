@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v46';
+const CACHE_NAME = 'rg-v47';
 const CDN_ASSETS = [
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -26,7 +26,7 @@ const APP_SHELL = [
   '/style.css',
   '/js/01-core.js', '/js/02-i18n.js', '/js/03-schedule-services.js', '/js/04-data.js',
   '/js/05-connections.js', '/js/06-platforms.js', '/js/07-round.js', '/js/08-pickers.js',
-  '/js/09-train-types.js', '/js/10-routing.js',
+  '/js/09-train-types.js', '/js/10-routing.js', '/js/11-transfers.js',
 ];
 
 // Same-origin requests go to the network first, but a stalled connection
