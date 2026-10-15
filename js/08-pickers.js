@@ -674,3 +674,13 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
   dom.stopsRangeText.textContent = t('selectBranch');
   return true;
 }
+
+_langRefreshers.push(function refreshPickerButtons() {
+  if (!state.selectedPlatform || state.selectedTrainType || dom.trainTypeRow.style.display === 'none') return;
+  // Re-render the open picker exactly as it was (same choices and handlers)
+  if (state._pickerArgs && state._pickerType && state._pickerType !== 'trainType') {
+    showBranchPickerUI(...state._pickerArgs);
+  } else {
+    showTrainTypeButtons(state.selectedPlatform);
+  }
+});

@@ -143,6 +143,20 @@ function renderJourneyCard(route, transferIndices) {
   dimStations(0, transferIndices[0]);
 }
 
+_langRefreshers.push(function refreshJourneyNames() {
+  document.querySelectorAll('.journey-name').forEach(el => {
+    const stn = el.closest('.journey-station');
+    if (!stn) return;
+    const idx = parseInt(stn.id.replace('jstn-', ''), 10);
+    const route = state.route;
+    if (!route || !route[idx]) return;
+    const s = route[idx];
+    el.innerHTML = currentLang === 'ja'
+      ? `${s.ja || s.name} <small class="text-muted">${s.ja ? s.name : ''}</small>`
+      : `${s.name}${s.ja ? ` <small class="text-muted">${s.ja}</small>` : ''}`;
+  });
+});
+
 // ── Transfer check: resolve one transfer station ─────────────────────────
 // Returns { outcome: 'stay' } | { outcome: 'transfer'|'drink', station, stopsUsed }
 async function resolveTransfer(route, i, ti, transferIndices) {
@@ -401,3 +415,9 @@ function rollStops() {
     }
   });
 }
+
+_langRefreshers.push(function refreshStopsDie() {
+  if (state.rolledStops != null) {
+    dom.dieStopsLabel.innerHTML = `<strong>${t('stopsResult', { n: state.rolledStops, s: pl(state.rolledStops) })}</strong>`;
+  }
+});

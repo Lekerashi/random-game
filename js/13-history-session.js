@@ -121,6 +121,11 @@ function renderHistory() {
   updateHistoryDistance();
 }
 
+_langRefreshers.push(function refreshHistory() {
+  renderHistory();
+  updateHistoryDistance();
+});
+
 let _undoTimer = null;
 function clearHistory() {
   if (state.history.length > 0) {

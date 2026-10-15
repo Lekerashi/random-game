@@ -125,6 +125,12 @@ function setStationInput(englishName) {
   dom.stationInput.classList.add('selected');
 }
 
+_langRefreshers.push(function refreshStationInput() {
+  if (state.currentStation && dom.stationInput.classList.contains('selected')) {
+    setStationInput(state.currentStation.name);
+  }
+});
+
 // Compute display label and hint for a platform using i18n
 function platformLabel(p) {
   const ln = platformLineName(p);

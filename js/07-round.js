@@ -289,6 +289,16 @@ function onStationSelected(name, arrivedVia) {
   showStep('step-platforms');
 }
 
+_langRefreshers.push(function refreshRandomBtn() {
+  if (state.currentStation) {
+    dom.randomStationBtn.innerHTML = t('newGame');
+    dom.randomStationBtn.title = t('newGameTitle');
+  } else {
+    dom.randomStationBtn.innerHTML = `<span data-i18n="randomBtn">${t('randomBtn')}</span>`;
+    dom.randomStationBtn.title = t('pickRandom');
+  }
+});
+
 function rollPlatform() {
   state._preRollThirst = state.stationsSinceDrink;
   gc('roll-platform');
@@ -420,6 +430,30 @@ function renderPlatformBanner(p, roll) {
   dom.selectedPlatformText.innerHTML =
     `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
 }
+
+_langRefreshers.push(function refreshPlatforms() {
+  if (state.currentStation && state.platforms.length > 0) {
+    const lineCount = state.platforms.filter(p => !p.drinkHere && !p.takeFlight && !p.isShinkansen).length;
+    const total = state.platforms.length + (state.extraDrinkNums || 0);
+    dom.platformCountText.innerHTML = t('platformCount', { n: lineCount, s: pl(lineCount), name: stationDisplayName(state.currentStation.name), total });
+    refreshPlatformGrid();
+  }
+});
+
+_langRefreshers.push(function refreshSelectedPlatform() {
+  if (!state.selectedPlatform || !state.rolledPlatformNum) return;
+  const p = state.selectedPlatform;
+  const roll = state.rolledPlatformNum;
+  if (p.drinkHere) {
+    const rk = eggRollKey(state.currentStation.ja);
+    dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+    dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+  } else if (p.takeFlight) {
+    dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
+  } else {
+    renderPlatformBanner(p, roll);
+  }
+});
 
 function rerollPlatform() {
   state._roundGen = (state._roundGen || 0) + 1; // drop a stops roll still animating

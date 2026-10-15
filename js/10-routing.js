@@ -280,6 +280,19 @@ function showDestCard(station, renderSub) {
   dom.destCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+_langRefreshers.push(function refreshDestSub() {
+  if (state._destSubRender && dom.destCard.classList.contains('active')) {
+    dom.destSub.innerHTML = state._destSubRender();
+  }
+});
+
+_langRefreshers.push(function refreshDestWard() {
+  if (state._destWard) {
+    const ws = state._destWard.isWard ? ' Ward' : state._destWard.ja.endsWith('市') ? ' City' : '';
+    dom.destWard.textContent = currentLang === 'ja' ? state._destWard.ja : state._destWard.name + ws;
+  }
+});
+
 function resetStopsBtn() {
   dom.rollStopsBtn.style.display = '';
   dom.rollStopsBtn.style.flex = '';

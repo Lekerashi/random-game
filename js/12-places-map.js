@@ -171,3 +171,10 @@ async function togglePlaces(mode) {
     content.innerHTML = `<div class="bars-empty">${isBars ? t('fetchBarFail', { msg: err.message }) : t('fetchCafeFail', { msg: err.message })}</div>`;
   }
 }
+
+_langRefreshers.push(function refreshPlacesBtns() {
+  const barsOpen  = dom.barsCard.style.display === 'block';
+  const cafesOpen = dom.cafesCard.style.display === 'block';
+  dom.showBarsBtn.textContent  = t(barsOpen  ? 'hideBarsBtn'  : 'barsBtn');
+  dom.showCafesBtn.textContent = t(cafesOpen ? 'hideCafesBtn' : 'cafesBtn');
+});

@@ -183,6 +183,15 @@ function toggleRouteMap(stateKey, wrapId, mapElId, btnId, saveWrapId) {
 function showRouteMap()        { toggleRouteMap('routeMap',       'route-map-wrap',        'route-map',        'stats-map-btn', 'stats-save-wrap'); }
 function toggleInlineRouteMap() { toggleRouteMap('inlineRouteMap', 'inline-route-map-wrap', 'inline-route-map', 'inline-map-btn', 'inline-save-wrap'); }
 
+_langRefreshers.push(function refreshRouteMapBtn() {
+  const btn = document.getElementById('stats-map-btn');
+  const wrap = document.getElementById('route-map-wrap');
+  if (btn) btn.textContent = t(wrap && wrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
+  const inBtn = document.getElementById('inline-map-btn');
+  const inWrap = document.getElementById('inline-route-map-wrap');
+  if (inBtn) inBtn.textContent = t(inWrap && inWrap.style.display !== 'none' ? 'hideRouteMap' : 'showRouteMap');
+});
+
 function refreshInlineRouteMap() {
   if (!state.inlineRouteMap) return;
   destroyMap('inlineRouteMap');

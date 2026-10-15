@@ -253,3 +253,11 @@ function refreshStopsLabel() {
   const max = getEffectiveStops(state.selectedPlatform).validCount;
   dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max, s: pl(max) });
 }
+
+_langRefreshers.push(function refreshStopsRange() {
+  // Skip when branch/train-type picker is visible — refreshTrainTypeButtons handles that.
+  if (state.selectedPlatform && !state.selectedPlatform.drinkHere && !state.selectedPlatform.takeFlight
+      && state.selectedTrainType) {
+    refreshStopsLabel();
+  }
+});

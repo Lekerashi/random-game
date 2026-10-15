@@ -67,6 +67,12 @@ function setLocationHint(msg, isError = false) {
   dom.locationHint.style.color = isError ? 'var(--muted)' : 'var(--accent2)';
 }
 
+_langRefreshers.push(function refreshGeoHint() {
+  if (state.geoNearest) {
+    setLocationHint(t('geoNearest', { name: stationDisplayName(state.geoNearest.name), dist: state.geoNearest.dist }));
+  }
+});
+
 function detectLocation() {
   const btn = dom.locateBtn;
   if (!navigator.geolocation) {
