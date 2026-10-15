@@ -227,6 +227,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', saveSession); // desktop tab close
 
 (async function init() {
+  document.getElementById('app-version').textContent = APP_VERSION.replace(/^rg-v/, '0.'); // rg-v59 → 0.59
   if (currentLang !== 'en') {
     applyLang();
     document.getElementById('localization-credit').style.display = 'block';

@@ -3,6 +3,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v13';
+const APP_VERSION = 'rg-v60'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // HERE Maps API key (developer.here.com) for the Bars & Cafes panels
