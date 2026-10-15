@@ -250,15 +250,34 @@ function saveSessionImage() {
     // Export
     canvas.toBlob(function(blob) {
       if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
       const d = new Date();
-      a.download = 'tokyo-random-game-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.png';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const filename = 'tokyo-random-game-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '-' + String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0') + '.png';
+      exportSessionImage(blob, filename);
     }, 'image/png');
   });
+}
+
+// Phones get the share sheet (save to photos, send to friends); desktops and
+// browsers that can't share files download it. A share the browser refuses
+// (the tap's activation can expire while tiles load) falls back to the download.
+function exportSessionImage(blob, filename) {
+  const file = new File([blob], filename, { type: 'image/png' });
+  const isPhone = window.matchMedia?.('(pointer: coarse)').matches;
+  if (isPhone && navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file], title: document.title, text: 'randomgame.tokyo' })
+      .catch(err => { if (err.name !== 'AbortError') downloadBlob(blob, filename); }); // AbortError: player closed the sheet
+    return;
+  }
+  downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function copyToClipboard(text, feedbackBtn) {
