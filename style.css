@@ -594,6 +594,7 @@ footer                     { text-align: center; padding: 2rem 1rem 3rem; color:
 /* ── Route map (shared styles) ────────────── */
 #route-map, #inline-route-map { height: 280px; border-radius: 8px; overflow: hidden; background: var(--bg); }
 #recap-map { height: 220px; border-radius: 8px; overflow: hidden; background: var(--bg); }
+.map-unavailable { margin: 0; padding: 24px 12px; text-align: center; color: var(--muted); font-size: 0.85rem; }
 #route-map .leaflet-control-zoom a, #inline-route-map .leaflet-control-zoom a, #recap-map .leaflet-control-zoom a { background: var(--surface2); color: var(--text); border-color: var(--border); }
 #map .leaflet-control-attribution, #route-map .leaflet-control-attribution, #inline-route-map .leaflet-control-attribution, #recap-map .leaflet-control-attribution { background: rgba(13,17,23,0.7); color: var(--muted); font-size: 0.65rem; }
 #map .leaflet-control-attribution a, #route-map .leaflet-control-attribution a, #inline-route-map .leaflet-control-attribution a, #recap-map .leaflet-control-attribution a { color: var(--accent2); }

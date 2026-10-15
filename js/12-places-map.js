@@ -1,6 +1,37 @@
 'use strict';
 
 // ── Map ───────────────────────────────────────────────────────────────────
+// Leaflet loads on first map use, not on every visit; sw.js precaches the
+// same URLs (CDN_ASSETS) so maps work offline
+const LEAFLET_JS  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const _leafletLoads = {}; // 'js' / 'css' → load promise
+
+function loadLeafletFile(key, tag, attrs) {
+  return (_leafletLoads[key] ||= new Promise((resolve, reject) => {
+    const el = Object.assign(document.createElement(tag), attrs);
+    el.crossOrigin = ''; // CORS mode, matching the SW's precached copies
+    el.onload = resolve;
+    el.onerror = () => {
+      el.remove();
+      delete _leafletLoads[key]; // the next map tap retries
+      reject(new Error('Leaflet ' + key + ' failed to load'));
+    };
+    // The stylesheet goes before style.css, which overrides some of its rules
+    if (key === 'css') document.head.insertBefore(el, document.querySelector('link[href="style.css"]'));
+    else document.head.appendChild(el);
+  }));
+}
+
+// Resolves once Leaflet (JS + CSS) is ready; rejects when the CDN can't be reached
+function ensureLeaflet() {
+  return Promise.all([
+    loadLeafletFile('css', 'link', { rel: 'stylesheet', href: LEAFLET_CSS }),
+    loadLeafletFile('js', 'script', { src: LEAFLET_JS })
+      .then(() => { if (typeof L === 'undefined') throw new Error('Leaflet loaded without L'); }),
+  ]);
+}
+
 // CARTO dark basemap used by every Leaflet map in the game
 function cartoTileLayer() {
   return L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=' + CARTO_KEY, {
@@ -13,7 +44,14 @@ function cartoTileLayer() {
 }
 
 function showMap() {
-  if (typeof L === 'undefined') { showError(t('mapUnavailable')); return; } // Leaflet CDN unreachable
+  const dest = state.destination;
+  ensureLeaflet().then(() => {
+    // The round may have moved on while Leaflet loaded
+    if (state.destination === dest && dom.destCard.classList.contains('active')) renderDestMap();
+  }, () => showError(t('mapUnavailable'))); // Leaflet CDN unreachable
+}
+
+function renderDestMap() {
   dom.mapCard.style.display = 'block';
   dom.mapCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 

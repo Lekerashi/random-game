@@ -215,13 +215,9 @@ function setupSessionResume() {
   document.activeElement?.blur(); // prevent typing behind overlay
   overlay.offsetHeight; // force reflow so Leaflet gets correct container size
 
-  // Route map — Leaflet loads with defer so it may not be ready yet
-  function tryBuildRecapMap() {
-    try { state.recapMap = buildRouteMap('recap-map'); }
-    catch (e) { console.warn('Recap map failed:', e); }
-  }
-  if (typeof L !== 'undefined') tryBuildRecapMap();
-  else document.querySelector('script[src*="leaflet"]').addEventListener('load', tryBuildRecapMap);
+  // Route map once Leaflet has loaded, unless the recap was dismissed meanwhile
+  buildRouteMapWhenReady('recapMap', 'recap-map', () => !overlay.classList.contains('hidden'))
+    .catch(e => console.warn('Recap map failed:', e));
 }
 
 // Save session when page is backgrounded (iOS Safari may evict otherwise)

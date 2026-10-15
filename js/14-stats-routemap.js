@@ -89,6 +89,7 @@ function collectRouteMarkers(history) {
   return markers;
 }
 
+// Needs Leaflet loaded: open maps through buildRouteMapWhenReady()
 function buildRouteMap(elId) {
   const map = L.map(elId, {
     zoomControl: true,
@@ -179,7 +180,23 @@ function toggleRouteMap(stateKey, wrapId, mapElId, btnId, saveWrapId) {
   btn.textContent = t(showing ? 'showRouteMap' : 'hideRouteMap');
   if (saveWrapId) document.getElementById(saveWrapId).style.display = showing ? 'none' : '';
   destroyMap(stateKey);
-  if (!showing) state[stateKey] = buildRouteMap(mapElId);
+  if (!showing) buildRouteMapWhenReady(stateKey, mapElId, () => wrap.style.display !== 'none');
+}
+
+// Loads Leaflet, then builds the route map into state[stateKey] unless it was
+// closed meanwhile (stillWanted() false) or already built. Offline without a
+// cached Leaflet the container says so; Save Image still works (vector map).
+function buildRouteMapWhenReady(stateKey, elId, stillWanted) {
+  const el = document.getElementById(elId);
+  return ensureLeaflet().then(() => {
+    if (!stillWanted() || state[stateKey]) return;
+    el.querySelector('.map-unavailable')?.remove();
+    state[stateKey] = buildRouteMap(elId);
+  }, () => {
+    if (stillWanted() && !el.querySelector('.map-unavailable')) {
+      el.insertAdjacentHTML('beforeend', `<p class="map-unavailable" data-i18n="mapUnavailable">${t('mapUnavailable')}</p>`);
+    }
+  });
 }
 
 function showRouteMap()        { toggleRouteMap('routeMap',       'route-map-wrap',        'route-map',        'stats-map-btn', 'stats-save-wrap'); }
@@ -195,7 +212,7 @@ _langRefreshers.push(function refreshRouteMapBtn() {
 });
 
 function refreshInlineRouteMap() {
-  if (!state.inlineRouteMap) return;
+  if (!state.inlineRouteMap) return; // an open map means Leaflet is loaded
   destroyMap('inlineRouteMap');
   state.inlineRouteMap = buildRouteMap('inline-route-map');
 }
