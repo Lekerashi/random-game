@@ -28,7 +28,7 @@ A random Tokyo train station drinking game. Roll dice to pick train lines and st
 
 ## Tech
 
-Plain static web app (`index.html` + `data-*.js`) — no frameworks, no build step, no npm. Opens directly in a browser.
+Plain static web app (`index.html` + `style.css` + `js/*.js` + `data-*.js`) — no frameworks, no build step, no npm. Opens directly in a browser.
 
 - Station data from [japan-train-data](https://github.com/adieuadieu/japan-train-data), pre-filtered to Greater Tokyo in `data-tokyo.json`
 - Maps via Leaflet.js + CARTO / OpenStreetMap
@@ -72,7 +72,7 @@ Localized by Yuko
 
 ## 技術
 
-シンプルな静的Webアプリ（`index.html` + `data-*.js`）— フレームワークなし、ビルドなし、npmなし。ブラウザで直接開けます。
+シンプルな静的Webアプリ（`index.html` + `style.css` + `js/*.js` + `data-*.js`）— フレームワークなし、ビルドなし、npmなし。ブラウザで直接開けます。
 
 - 駅データ：[japan-train-data](https://github.com/adieuadieu/japan-train-data)（首都圏分を `data-tokyo.json` に事前抽出）
 - 地図：Leaflet.js + CARTO / OpenStreetMap
