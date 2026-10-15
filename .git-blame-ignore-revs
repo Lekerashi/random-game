@@ -1,0 +1,20 @@
+# Pure code moves (git blame skips these): the index.html split, phase 1 (2026-10-15).
+# Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+c17cbbf15b074ad2f227e72f2beedf849149195c # Split: move inline CSS into style.css
+3f2d496fb0c50347b62fc6cce3f8a49a5394755e # Split: move core constants, utilities, state and dom into js/01-core.js
+2be5c184b32aa592d731b360225b56d71bed7eea # Split: move i18n and the language refreshers into js/02-i18n.js
+c3c2238856ac08bd50b9eeb728c4b1b1707ffa95 # Split: move schedule and express-service helpers into js/03-schedule-services.js
+ca2b7a69619009d054214c7987243009d41e0b41 # Split: move data loading and buildIndex into js/04-data.js
+37fb2cfbc6ebb58f9d310864bcd630bff8f9f8b5 # Split: move connection resolution into js/05-connections.js
+3bb0be30832e7a5b3ee390cdaf97ada1f1ed124f # Split: move platform logic and builders into js/06-platforms.js
+923258a37cf522c2a973eb112fb6bc0a801dd9a5 # Split: move roll animation, UI helpers and round handlers into js/07-round.js
+4a6fd06f4fa10027066c846b5ad489977e4e8280 # Split: move the branch/destination pickers into js/08-pickers.js
+424be824b5117cedd2a4ee3dc3192b4d2ac7ab74 # Split: move train-type resolution into js/09-train-types.js
+6c48b7cdf83a4e715025613ee869fc26d3485c2c # Split: move routing and step-UI helpers into js/10-routing.js
+b659c97da98b35a3c2b82aaac6c4cf5325d808d7 # Split: move transfer checks and rollStops into js/11-transfers.js
+719a93be877e9619416d36c2ecb2967fb355733f # Split: move the dest map and Bars & Cafes panels into js/12-places-map.js
+59f848af854b37b157a62813042f041e6e3ee477 # Split: move history and session save/resume into js/13-history-session.js
+b71044e35f69226bd918bd087b7e0f45b112df69 # Split: move session stats and route maps into js/14-stats-routemap.js
+29b2685ebddd539b23bcf4827191aba6e1244f4f # Split: move random station, geolocation, roll again and copy route into js/15-station-actions.js
+0eb7c380862e18e70adaf8423da557a9bfad74b7 # Split: move Save Session Image into js/16-save-image.js
+9fef3bf94212bf82d1da908ae78ff016f7fccedb # Split: move init into js/17-init.js; index.html has no inline app script
