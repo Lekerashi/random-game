@@ -289,8 +289,10 @@ async function resumePendingRound(pr) {
   dom.rerollStopsBtn.style.display = 'none';
   // (saved platform is a minimal copy, so a simple banner instead of renderPlatformBanner)
   dom.selectedPlatformDot.style.background = p0.lineColor;
-  dom.selectedPlatformText.innerHTML =
-    `<strong>${pr.rolledPlatformNum ? '#' + pr.rolledPlatformNum + ' — ' : ''}${lineDisplayName(p0.lineName)}</strong>`;
+  showPlatformBanner(() => {
+    dom.selectedPlatformText.innerHTML =
+      `<strong>${pr.rolledPlatformNum ? '#' + pr.rolledPlatformNum + ' — ' : ''}${lineDisplayName(p0.lineName)}</strong>`;
+  });
   showStep('step-stops');
 
   // Reconstruct thirst tracker from saved data

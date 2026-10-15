@@ -326,6 +326,7 @@ function resetRoundState() {
   clearSelectionState();
   state.rolledStops = null;
   state.rolledPlatformNum = null;
+  state._bannerRender = null;
   state._rerollExcludePlatform = null;
   state._rerollExcludeStops = null;
   state._preRollThirst = null;

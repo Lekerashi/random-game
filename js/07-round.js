@@ -35,6 +35,8 @@ function animateRoll(min, max, finalValue, el, onCompleteRaw) {
 
 // ── UI Helpers ────────────────────────────────────────────────────────────
 function setLoadingStatus(msg) {
+  // Now script-driven: applyLang must not put the static loading text back
+  dom.loadingStatus.removeAttribute('data-i18n');
   dom.loadingStatus.textContent = msg;
 }
 
@@ -361,7 +363,7 @@ function rollPlatform() {
 
     // ── Take a flight! ────────────────────────────────────────────────────
     if (p.takeFlight) {
-      dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
+      showPlatformBanner(() => { dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`; });
       // No reroll — game over!
 
       state.destination = state.currentStation;
@@ -380,14 +382,16 @@ function rollPlatform() {
     // ── Drink here! ──────────────────────────────────────────────────────
     if (p.drinkHere) {
       const rk = eggRollKey(state.currentStation.ja);
-      dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+      showPlatformBanner(() => {
+        dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+        dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
+      });
       dom.rerollPlatformBtn.style.display = 'block';
       // Hide stops UI but keep step-stops visible (reroll button lives there)
       dom.rollStopsRow.style.display = 'none';
       dom.stopsRangeText.textContent = '';
       dom.trainTypeRow.style.display = 'none';
       dom.dieStops.parentElement.style.display = 'none';
-      dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
       dom.selectedPlatformDot.style.background = 'transparent';
       showStep('step-stops');
 
@@ -416,19 +420,29 @@ function rollPlatform() {
   });
 }
 
+// Renders the rolled platform's die label / banner and keeps the renderer, so
+// a language switch redraws what was shown (refreshSelectedPlatform)
+function showPlatformBanner(render) {
+  state._bannerRender = render;
+  render();
+}
+
 // Die label + "selected platform" banner for a rolled train platform.
-// Shared by rollPlatform, restoreMidRound, and the language refresher.
+// Shared by rollPlatform and restoreMidRound.
 function renderPlatformBanner(p, roll) {
-  const pLabel = platformLabel(p);
-  const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
-  const ln = platformLineName(p);
+  // Counted once: drinks and caps change later counts, not the shown hint
   const effectiveHintMax = getEffectiveStops(p, { ei: null, bi: null }).validCount;
-  const head = p.isShinkansen ? `<strong>${t('shinkansenRoll', { n: roll })}</strong> ` : `<strong>#${roll} → ${ln}</strong>`;
-  dom.diePlatformLabel.innerHTML = `${head}${dirPart ? ` ${dirPart}` : ''}
+  showPlatformBanner(() => {
+    const pLabel = platformLabel(p);
+    const dirPart = pLabel.includes('—') ? pLabel.split('—').slice(1).join('—').trim() : '';
+    const ln = platformLineName(p);
+    const head = p.isShinkansen ? `<strong>${t('shinkansenRoll', { n: roll })}</strong> ` : `<strong>#${roll} → ${ln}</strong>`;
+    dom.diePlatformLabel.innerHTML = `${head}${dirPart ? ` ${dirPart}` : ''}
     <br><small class="text-muted">${t('maxStopsHint', { n: effectiveHintMax })}</small>`;
-  dom.selectedPlatformDot.style.background = p.lineColor;
-  dom.selectedPlatformText.innerHTML =
-    `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+    dom.selectedPlatformDot.style.background = p.lineColor;
+    dom.selectedPlatformText.innerHTML =
+      `<strong>#${roll} — ${ln}</strong><br><span class="text-muted">${dirPart}</span>`;
+  });
 }
 
 _langRefreshers.push(function refreshPlatforms() {
@@ -441,18 +455,7 @@ _langRefreshers.push(function refreshPlatforms() {
 });
 
 _langRefreshers.push(function refreshSelectedPlatform() {
-  if (!state.selectedPlatform || !state.rolledPlatformNum) return;
-  const p = state.selectedPlatform;
-  const roll = state.rolledPlatformNum;
-  if (p.drinkHere) {
-    const rk = eggRollKey(state.currentStation.ja);
-    dom.diePlatformLabel.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
-    dom.selectedPlatformText.innerHTML = `<strong>${t(rk, { n: roll })}</strong>`;
-  } else if (p.takeFlight) {
-    dom.diePlatformLabel.innerHTML = `<strong>${t('flightRoll', { n: roll })}</strong>`;
-  } else {
-    renderPlatformBanner(p, roll);
-  }
+  if (state.selectedPlatform && state.rolledPlatformNum) state._bannerRender?.();
 });
 
 function rerollPlatform() {
