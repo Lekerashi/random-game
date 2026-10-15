@@ -58,8 +58,11 @@ function setupGameControls() {
   dom.copyRouteBtn.addEventListener('click', () => copyRoute()); // not the MouseEvent as feedbackBtn
   dom.statsBtn.addEventListener('click', showStats);
   document.getElementById('inline-map-btn').addEventListener('click', toggleInlineRouteMap);
-  // Overlays, language toggle, RNG, undo/save buttons: one delegated handler,
-  // so markup parsed after this script works too (no inline onclick globals)
+  const statsCopyBtn = document.getElementById('stats-copy-btn');
+  statsCopyBtn.addEventListener('click', () => copyRoute(statsCopyBtn));
+  document.getElementById('stats-map-btn').addEventListener('click', showRouteMap);
+  // Overlays, language toggle, RNG, undo/save buttons: one delegated handler
+  // (no inline onclick globals)
   const closeOverlay = ov => { if (ov.id === 'stats-overlay') hideStats(); else ov.classList.add('hidden'); };
   document.addEventListener('click', e => {
     const tgt = e.target;
@@ -228,20 +231,13 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', saveSession); // desktop tab close
 
 (async function init() {
-  if (currentLang !== 'en') applyLang();
+  if (currentLang !== 'en') {
+    applyLang();
+    document.getElementById('localization-credit').style.display = 'block';
+  }
   setupStationPicker();
   setupGameControls();
   setupSettings();
   await loadData();
   setupSessionResume();
 })();
-// Re-apply language to elements parsed after the script tag
-document.addEventListener('DOMContentLoaded', () => {
-  if (currentLang !== 'en') {
-    applyLang();
-    document.getElementById('localization-credit').style.display = 'block';
-  }
-  const statsCopyBtn = document.getElementById('stats-copy-btn');
-  statsCopyBtn.addEventListener('click', () => copyRoute(statsCopyBtn));
-  document.getElementById('stats-map-btn').addEventListener('click', showRouteMap);
-});

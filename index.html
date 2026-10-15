@@ -257,30 +257,32 @@
   </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
-<script src="data-lines.js"></script>
-<script src="data-i18n.js"></script>
-<script src="data-transforms.js"></script>
-<script src="data-connections.js"></script>
-<!-- Ward/city outlines (311 KB) feed only the ward label and the offline map layer; both handle it missing -->
-<script src="data-wards.js" defer></script>
-<script src="js/01-core.js"></script>
-<script src="js/02-i18n.js"></script>
-<script src="js/03-schedule-services.js"></script>
-<script src="js/04-data.js"></script>
-<script src="js/05-connections.js"></script>
-<script src="js/06-platforms.js"></script>
-<script src="js/07-round.js"></script>
-<script src="js/08-pickers.js"></script>
-<script src="js/09-train-types.js"></script>
-<script src="js/10-routing.js"></script>
-<script src="js/11-transfers.js"></script>
-<script src="js/12-places-map.js"></script>
-<script src="js/13-history-session.js"></script>
-<script src="js/14-stats-routemap.js"></script>
-<script src="js/15-station-actions.js"></script>
-<script src="js/16-save-image.js"></script>
-<script src="js/17-init.js"></script>
+<!-- Leaflet: async, so a slow CDN never holds up the deferred app scripts below -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" async></script>
+<!-- App scripts: defer runs them in this order after the whole page is parsed; js/17-init.js stays last -->
+<script defer src="data-lines.js"></script>
+<script defer src="data-i18n.js"></script>
+<script defer src="data-transforms.js"></script>
+<script defer src="data-connections.js"></script>
+<script defer src="js/01-core.js"></script>
+<script defer src="js/02-i18n.js"></script>
+<script defer src="js/03-schedule-services.js"></script>
+<script defer src="js/04-data.js"></script>
+<script defer src="js/05-connections.js"></script>
+<script defer src="js/06-platforms.js"></script>
+<script defer src="js/07-round.js"></script>
+<script defer src="js/08-pickers.js"></script>
+<script defer src="js/09-train-types.js"></script>
+<script defer src="js/10-routing.js"></script>
+<script defer src="js/11-transfers.js"></script>
+<script defer src="js/12-places-map.js"></script>
+<script defer src="js/13-history-session.js"></script>
+<script defer src="js/14-stats-routemap.js"></script>
+<script defer src="js/15-station-actions.js"></script>
+<script defer src="js/16-save-image.js"></script>
+<script defer src="js/17-init.js"></script>
+<!-- Ward/city outlines (311 KB), after the app so the game never waits for them; they feed only the ward label and the offline map layer, which both handle them missing -->
+<script defer src="data-wards.js"></script>
 <div id="stats-overlay" class="htp-overlay hidden" data-backdrop-close>
   <div class="htp-card">
     <button class="htp-close">&times;</button>
