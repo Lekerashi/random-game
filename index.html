@@ -1654,6 +1654,13 @@ function getBranches(lineName, stationJa, line, direction, anyHour) {
     .map(b => ({ ...b, branchIndices: getBranchIndices(line, b.stations) }));
 }
 
+// LINE_SCHEDULES: boarding a line at a listed station toward `direction` runs
+// only while the entry's schedule does (Sky Access trains from 京成上野)
+function lineScheduleActive(lineName, stnJa, dir) {
+  return (LINE_SCHEDULES[lineName] || []).every(g =>
+    (g.direction && g.direction !== dir) || !g.stations.includes(stnJa) || scheduleActive(g.schedule));
+}
+
 // Compute maxStops along a branch from a platform (same pattern as getExpressMaxStops)
 function getBranchMaxStops(platform, branchIndices) {
   const line = state.lines[platform.lineIdx];
@@ -2116,6 +2123,8 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     if (c.fromDir && c.fromDir !== direction) return false;
     // boardFrom: only stations from there toward the junction
     if (c.boardFromIdx >= 0 && (fromIdx - c.boardFromIdx) * dirStep(direction) < 0) return false;
+    // No train runs it now: every destination is off-hours and there is no short-turn choice
+    if (!c.lineDests && c.destinations?.length && c.destinations.every(d => d.schedule && !scheduleActive(d.schedule))) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
     // Mid-line junction: must be ahead of us in the travel direction, or here when
@@ -2677,6 +2686,7 @@ function getLinearPlatforms(line, entry, si, N, backPrev) {
 
   for (const dir of ['start', 'end']) {
     const atTerminus = si === dirEnd(N, dir);
+    if (!lineScheduleActive(line.name, stnJa, dir)) continue;
 
     const step = dirStep(dir);
     let maxStops = atTerminus ? 0 : (state.wards23Only
@@ -3426,7 +3436,12 @@ function handleLineDestinations(p) {
 function handleConnectionRouting(p) {
   if (!p._connections || p._connections.length === 0 || state.selectedConnection || state.selectedDestination) return { pickerShown: false };
 
-  const conns = p._connections;
+  // A mid-line connection none of whose destinations is served from here right now
+  // (off-hours, or its services don't call here) isn't a choice (Oimachi 急行 from 江田)
+  const N = state.lines[p.lineIdx].stations.length;
+  const conns = p._connections.filter(c => c.fromJunctionIdx === dirEnd(N, p.direction) || c.lineDests
+    || !c.destinations?.length || c.destinations.some(d => scheduleActive(d.schedule) && destServesStation(c, d, p)));
+  if (conns.length === 0) return { pickerShown: false };
   const onLineStops = p._onLineStops || 0;
   const rollableMax = capStops(p.maxStops);
 
@@ -3504,7 +3519,17 @@ function handleConnectionRouting(p) {
       }));
       targetMax = Math.min(targetMax, maxExpStops);
     }
-    const connMax = viaCount + targetMax + chainExtra + onLineStops;
+    // A mid-line junction is reached before the line's end
+    const srcLine = state.lines[p.lineIdx];
+    const isMidLine = conn.fromJunctionIdx !== dirEnd(srcLine.stations.length, p.direction);
+    const srcStops = isMidLine ? Math.abs(conn.fromJunctionIdx - p.fromIdx) : onLineStops;
+    let connMax = viaCount + targetMax + chainExtra + srcStops;
+    // Express-only connection: no longer than its longest service (source-line part included)
+    if (isMidLine && conn.express && !conn.express.some(e => e.stops === null)) {
+      const svc = resolveConnectionExpress({ express: conn.express, targetLineIdx: conn.toLineIdx,
+        targetLine: state.lines[conn.toLineIdx], connObj: conn }, p, srcLine);
+      if (svc.length) connMax = Math.min(connMax, Math.max(...svc.map(t => t._connTotalMax)));
+    }
     const effectiveMax = Math.min(capStops(connMax), p.maxStops);
     return {
       name: conn.name || conn.to, ja: conn.ja || LINE_NAMES_JA[conn.to] || conn.to, color: conn.color || p.lineColor,
@@ -3628,10 +3653,14 @@ function destServesStation(conn, d, p) {
   const line = state.lines[p.lineIdx];
   const curKeys = new Set([normalize(platformStation(p).name),
                            normalize(platformStation(p).ja || '')]);
-  const defs = [...(conn.express || []), ...(EXPRESS_SERVICES[p.lineName] || [])];
+  const lineDefs = EXPRESS_SERVICES[p.lineName] || [];
   for (const svc of d.services) {
     const n = normalize(svc);
-    const matches = defs.filter(t => normalize(t.name) === n);
+    // The connection's own entry wins over a same-name source-line type (Odakyu 急行
+    // runs at 18h, but not through to the Chiyoda Line)
+    const named = defs => defs.filter(t => normalize(t.name) === n);
+    const connMatches = named(conn.express || []);
+    const matches = connMatches.length ? connMatches : named(lineDefs);
     // Express-class: allowed service stops at the current station (today's schedule)
     const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction) : t.stops;
     if (matches.some(t => stopsOf(t)?.some(s => curKeys.has(normalize(s))))) return true;
@@ -4021,8 +4050,11 @@ function resolveTrainTypes(p) {
   // Remove source-line services duplicated by connection express (connection version spans both lines)
   const connExpNames = new Set(trainTypes.filter(t => t._connTargetLineIdx != null).map(t => normalize(t.name)));
   // A connection service hidden by today's schedule still replaces its source-line
-  // namesake (daytime Odakyu 急行 don't run on to Fujisawa as locals)
+  // namesake (daytime Odakyu 急行 don't run on to Fujisawa as locals) — on the
+  // connection being ridden only (weekday 中央特快 still run to 大月 when the
+  // weekend-only Kawaguchiko one is off)
   for (const a of allConnExpress) for (const e of a.express) {
+    if (a.connObj !== conn) continue;
     if (e.stops && resolveServiceStops(e, a.targetLine, p.direction).length === 0) connExpNames.add(normalize(e.name));
   }
   trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null || !connExpNames.has(normalize(t.name)));
