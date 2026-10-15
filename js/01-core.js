@@ -3,7 +3,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v14';
-const APP_VERSION = 'rg-v61'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
+const APP_VERSION = 'rg-v62'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // HERE Maps API key (developer.here.com) for the Bars & Cafes panels
@@ -32,6 +32,7 @@ const TRANSFER_REDIRECT_DELAY = 400; // ms pause before redirecting after a tran
 const UNDO_TRANSFER_TIMEOUT = 3000;  // ms to show undo button before auto-dismissing
 const FEEDBACK_RESET_DELAY  = 2000;  // ms before resetting copy/feedback button text
 const NORMALIZE_CACHE_MAX = 20000;   // normalize() memo entries before it starts over
+const LEG_SAME_STATION_M = 400;      // two names this close are one station (新線新宿 / Toei 新宿)
 const LANG_KEY           = 'random_game_lang';
 const SESSION_KEY        = 'random_game_session';
 const SESSION_TTL        = 24 * 60 * 60 * 1000; // 24 hours

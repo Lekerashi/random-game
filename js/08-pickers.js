@@ -207,9 +207,15 @@ function handleConnectionRouting(p) {
         targetLine: state.lines[conn.toLineIdx], connObj: conn }, p, srcLine);
       if (svc.length) connMax = Math.min(connMax, Math.max(...svc.map(t => t._connTotalMax)));
     }
-    const effectiveMax = Math.min(capStops(connMax), p.maxStops);
+    let effectiveMax = Math.min(capStops(connMax), p.maxStops);
+    // No longer than its destinations ride on the trains running now (芝山千代田 →
+    // 京成上野 at 7h: only the 通勤特急); a lone one names the button (宗吾参道 at 20h)
+    const dests = conn.destinations ? destinationChoices(p, conn, onLineStops) : [];
+    if (dests.length) effectiveMax = Math.min(effectiveMax, Math.max(...dests.map(d => d.effectiveMax)));
+    const label = dests.length === 1 && !dests[0]._outOfWards ? dests[0] : null;
     return {
-      name: conn.name || conn.to, ja: conn.ja || LINE_NAMES_JA[conn.to] || conn.to, color: conn.color || p.lineColor,
+      name: label?.name || conn.name || conn.to, ja: label?.ja || conn.ja || LINE_NAMES_JA[conn.to] || conn.to,
+      color: label?.color || conn.color || p.lineColor,
       effectiveMax,
       onSelect: () => {
         if (conn.destinations) {
@@ -372,9 +378,17 @@ function lineDestChoice(p, conn, d) {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)), _fullMax: stopsToEnd,
     _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
+    _plain: untilIdx === dirEnd(line.stations.length, p.direction), // the line's own end
     onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja,
       stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
   };
+}
+
+// A picker with one real choice picks it; a lineDest to the line's own end is then the
+// plain ride, so the stops text gets no "towards" label (Keisei Main off-hours)
+function autoPick(c) {
+  c.onSelect();
+  if (c._plain && state.selectedDestination) Object.assign(state.selectedDestination, { name: null, ja: null });
 }
 
 // Through-running destination d on conn, reached after `onLine` source-line
@@ -531,7 +545,8 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   return choices;
 }
 
-function showDestinationPicker(p, conn, onLineStops) {
+// Destination picker choices for conn, each with the range its train types ride
+function destinationChoices(p, conn, onLineStops) {
   const choices = [];
   for (const d of conn.lineDests || []) {
     const c = lineDestChoice(p, conn, d);
@@ -541,7 +556,11 @@ function showDestinationPicker(p, conn, onLineStops) {
   for (const d of servedDests(conn, p)) choices.push(connDestChoice(p, conn, d, effectiveOnLine));
   choices.push(...chainDestChoices(p, conn, effectiveOnLine));
 
-  const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
+  return collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
+}
+
+function showDestinationPicker(p, conn, onLineStops) {
+  const filtered = destinationChoices(p, conn, onLineStops);
 
   // Deduplicate choices with the same effectiveMax (cap makes them equivalent).
   // Keep the last (connection destination) when a lineDests and connection dest collide,
@@ -573,7 +592,7 @@ function showDestinationPicker(p, conn, onLineStops) {
 
   if (unique.length <= 1) {
     if (unique.length === 1) {
-      unique[0].onSelect();
+      autoPick(unique[0]);
     } else {
       // No valid choices — set connection for full range
       state.selectedConnection = conn;
@@ -615,7 +634,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
 
   if (filtered.length <= 1) {
     if (filtered.length === 1) {
-      filtered[0].onSelect();
+      autoPick(filtered[0]);
     } else {
       state.selectedConnection = conns[0];
     }
@@ -628,7 +647,7 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
   const allLineDests = filtered.every(c => !c._isConnDest);
   const withinSourceLine = filtered[0].effectiveMax <= capStops(onLineStops);
   if (allSameMax && (allLineDests || withinSourceLine)) {
-    filtered[filtered.length - 1].onSelect();
+    autoPick(filtered[filtered.length - 1]);
     return false;
   }
   return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)), 'destination');

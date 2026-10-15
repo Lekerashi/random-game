@@ -19,8 +19,8 @@
 //                         "transfer" to the train you're already on)
 //     chainFrom         — boarding lines whose chained rides may continue onto this
 //                         connection (e.g. Hokuso only from the Asakusa Line); [] = never
-//     boardFrom         — JA source station: offered only from there toward the junction
-//                         (Chuo-Sobu → Tozai trains start at 津田沼)
+//     boardFrom         — JA source station: offered only from there toward the junction,
+//                         not at the junction itself (Chuo-Sobu → Tozai trains start at 津田沼)
 //     destinations[].boardSchedule — { JA source station: schedule }: at a listed station the
 //                         destination is offered only while that schedule runs (Musashino
 //                         trains leave 海浜幕張 only mornings/evenings); other stations: always
@@ -1665,7 +1665,8 @@ const LINE_CONNECTIONS = [
       { until: '本川越', name: 'Hon-Kawagoe', ja: '本川越方面', color: '#00a0e8' },
     ],
     destinations: [
-      { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#36a9e1' },
+      { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#36a9e1',
+        services: ['Local', 'Express', 'Semi-Exp'] }, // no 快速急行 to 拝島
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
@@ -2065,6 +2066,219 @@ const LINE_CONNECTIONS = [
         } },
     ] },
 
+  // ── むさしの号 / しもうさ号 (named 普通 over the Musashino freight curves) ──
+  // むさしの号: 八王子/府中本町 ↔ 大宮 over the 国立支線 (国立–新小平, no stations) and the
+  // 大宮支線 (passes 西浦和 on the outer tracks; no stop at 西浦和, 与野, さいたま新都心).
+  // しもうさ号: 大宮 ↔ 西船橋 / 新習志野 / 海浜幕張 over the 西浦和支線 (武蔵浦和 side).
+  // 大宮 departures leave from 3番線 (the Utsunomiya Line's up side; Takasaki shares the
+  // dice slot, so both carry them); arrivals end at 11番線, so rides to 大宮 land on the
+  // Shonan-Shinjuku Line's 大宮 (its terminus: arriving closes no other platform).
+  // Stop lists name source/target-line stations only (via stations are always stops).
+  // chainFrom: [] keeps them out of other lines' chained pickers (Keiyo → Musashino → 武蔵浦和,
+  // Ome → Chuo → 国立). Hours: JR East timetable 2026-10 (timetables.jreast.co.jp/2610).
+
+  // 八王子 → 大宮 (八王子 wd 16:55, 18:48; we 7:21, 9:50, 16:56, 17:47)
+  { from: 'JR Chuo Line', fromStation: '国立', fromDir: 'start',
+    to:   'JR Shonan Shinjuku Line', toEnd: '大宮',
+    via:  ['新小平', '新秋津', '東所沢', '新座', '北朝霞', '大宮'],
+    toUntil: '大宮',
+    boardAtJunction: true, // the train calls at 国立, then takes the 国立支線
+    boardFrom: '八王子',
+    impliedLines: ['JR Musashino Line'],
+    chainFrom: [],
+    name: 'Omiya', ja: '大宮方面', color: '#F77321',
+    lineDests: [
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#F15A22' },
+    ],
+    destinations: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#F77321', services: ['Musashino'],
+        schedule: { weekday: { timeRange: [16, 20] }, weekend: { timeRange: [[7, 8], [9, 11], [16, 19]] } },
+        boardSchedule: {
+          '八王子': { weekday: { timeRange: [[16, 17], [18, 19]] }, weekend: { timeRange: [[7, 8], [9, 10], [16, 18]] } },
+          '豊田':   { weekday: { timeRange: [17, 19] },             weekend: { timeRange: [[7, 8], [9, 10], [17, 18]] } },
+          '日野':   { weekday: { timeRange: [17, 19] },             weekend: { timeRange: [[7, 8], [9, 10], [17, 18]] } },
+          '立川':   { weekday: { timeRange: [[17, 18], [19, 20]] }, weekend: { timeRange: [[7, 8], [10, 11], [17, 18]] } },
+          '国立':   { weekday: { timeRange: [[17, 18], [19, 20]] }, weekend: { timeRange: [[7, 8], [10, 11], [17, 19]] } },
+        } },
+    ],
+    express: [
+      { name: 'Musashino', ja: 'むさしの号', color: '#F77321',
+        stops: ['八王子', '豊田', '日野', '立川', '国立', '大宮'],
+        schedule: { weekday: { timeRange: [16, 20] }, weekend: { timeRange: [[7, 8], [9, 11], [16, 19]] } } },
+    ] },
+
+  // 府中本町 / 新小平… → 大宮 (府中本町 wd 7:35, 8:08, we 8:26; the 八王子 trains join at 新小平)
+  { from: 'JR Musashino Line', fromStation: '北朝霞', fromDir: 'end',
+    to:   'JR Shonan Shinjuku Line', toEnd: '大宮',
+    via:  ['大宮'],
+    toUntil: '大宮',
+    boardAtJunction: true, // calls at 北朝霞, then the 大宮支線 (passing 西浦和)
+    chainFrom: [],
+    name: 'Omiya', ja: '大宮方面', color: '#F77321',
+    destinations: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#F77321', services: ['Musashino'],
+        schedule: { weekday: { timeRange: [[7, 9], [17, 18], [19, 20]] }, weekend: { timeRange: [[7, 9], [10, 11], [17, 19]] } },
+        boardSchedule: {
+          '府中本町': { weekday: { timeRange: [7, 9] }, weekend: { timeRange: [8, 9] } },
+          '北府中':   { weekday: { timeRange: [7, 9] }, weekend: { timeRange: [8, 9] } },
+          '西国分寺': { weekday: { timeRange: [7, 9] }, weekend: { timeRange: [8, 9] } },
+          '北朝霞':   { weekday: { timeRange: [[8, 9], [17, 18], [19, 20]] }, weekend: { timeRange: [[8, 9], [10, 11], [17, 19]] } },
+        } },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' }, // the Musashino Line has no types: two-typed so services pick the named one
+      { name: 'Musashino', ja: 'むさしの号', color: '#F77321',
+        stops: ['府中本町', '北府中', '西国分寺', '新小平', '新秋津', '東所沢', '新座', '北朝霞', '大宮'],
+        schedule: { weekday: { timeRange: [[7, 9], [17, 18], [19, 20]] }, weekend: { timeRange: [[7, 9], [10, 11], [17, 19]] } } },
+    ] },
+
+  // 北朝霞… → 八王子 (北朝霞 wd 9:04, 19:08, 20:44; we 9:08, 18:34, 20:04; 新小平 +16–18 min)
+  { from: 'JR Musashino Line', fromStation: '新小平', fromDir: 'start',
+    to:   'JR Chuo Line', toStation: '国立', toDir: 'end',
+    via:  ['国立'],
+    toUntil: '八王子',
+    boardAtJunction: true, // calls at 新小平, then the 国立支線
+    boardFrom: '北朝霞',
+    chainFrom: [],
+    name: 'Hachioji', ja: '八王子方面', color: '#F15A22',
+    lineDests: [
+      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321' },
+    ],
+    destinations: [
+      { until: '八王子', name: 'Hachioji', ja: '八王子方面', color: '#F15A22', services: ['Musashino'],
+        schedule: { weekday: { timeRange: [[9, 10], [19, 22]] }, weekend: { timeRange: [[9, 10], [18, 19], [20, 21]] } },
+        boardSchedule: {
+          '北朝霞': { weekday: { timeRange: [[9, 10], [19, 21]] } },
+          '新座':   { weekday: { timeRange: [[9, 10], [19, 21]] } },
+          '東所沢': { weekday: { timeRange: [[9, 10], [19, 21]] } },
+          '新秋津': { weekday: { timeRange: [[9, 10], [19, 21]] } },
+          '新小平': { weekday: { timeRange: [[9, 10], [19, 20], [21, 22]] } },
+        } },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' }, // the Musashino Line has no types: two-typed so services pick the named one
+      { name: 'Musashino', ja: 'むさしの号', color: '#F77321',
+        stops: ['北朝霞', '新座', '東所沢', '新秋津', '新小平', '国立', '立川', '日野', '豊田', '八王子'],
+        schedule: { weekday: { timeRange: [[9, 10], [19, 22]] }, weekend: { timeRange: [[9, 10], [18, 19], [20, 21]] } } },
+    ] },
+
+  // 西船橋… → 大宮 (西船橋 wd 7:22, 16:03, 19:36; we 6:28, 16:12, 19:20; 武蔵浦和 +47–50 min)
+  { from: 'JR Musashino Line', fromStation: '武蔵浦和', fromDir: 'start',
+    to:   'JR Shonan Shinjuku Line', toEnd: '大宮',
+    via:  ['大宮'],
+    toUntil: '大宮',
+    boardAtJunction: true, // calls at 武蔵浦和, then the 西浦和支線 / 大宮支線
+    chainFrom: [],
+    name: 'Omiya', ja: '大宮方面', color: '#F77321',
+    lineDests: [
+      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321' },
+    ],
+    destinations: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#E9003F', services: ['Shimousa'],
+        schedule: { weekday: { timeRange: [[7, 9], [16, 17], [19, 21]] }, weekend: { timeRange: [[6, 8], [16, 17], [19, 21]] } },
+        // The hour each stretch sees the train (wd, we)
+        boardSchedule: Object.fromEntries([
+          [['西船橋', '船橋法典', '市川大野', '東松戸', '新八柱', '新松戸', '南流山', '三郷', '新三郷'],
+            [[7, 8], [16, 17], [19, 20]], [[6, 7], [16, 17], [19, 20]]],
+          [['吉川美南', '吉川', '越谷レイクタウン'], [[7, 8], [16, 17], [20, 21]], [[6, 7], [16, 17], [19, 20]]],
+          [['南越谷'],                         [[7, 8], [16, 17], [20, 21]], [[7, 8], [16, 17], [19, 20]]],
+          [['東川口'],                         [[8, 9], [16, 17], [20, 21]], [[7, 8], [16, 17], [19, 20]]],
+          [['東浦和', '南浦和', '武蔵浦和'],   [[8, 9], [16, 17], [20, 21]], [[7, 8], [16, 17], [20, 21]]],
+        ].flatMap(([stns, wd, we]) => stns.map(s => [s, { weekday: { timeRange: wd }, weekend: { timeRange: we } }]))) },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' }, // the Musashino Line has no types: two-typed so services pick the named one
+      { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
+        stops: ['西船橋', '船橋法典', '市川大野', '東松戸', '新八柱', '新松戸', '南流山', '三郷', '新三郷', '吉川美南',
+                '吉川', '越谷レイクタウン', '南越谷', '東川口', '東浦和', '南浦和', '武蔵浦和', '大宮'],
+        schedule: { weekday: { timeRange: [[7, 9], [16, 17], [19, 21]] }, weekend: { timeRange: [[6, 8], [16, 17], [19, 21]] } } },
+    ] },
+
+  // 新習志野 / 南船橋 → 大宮 (新習志野 wd 7:12, 15:54; we 6:19, 16:01; 南船橋 +3 min)
+  { from: 'JR Keiyo Line', fromStation: '南船橋', fromDir: 'start',
+    to:   'JR Shonan Shinjuku Line', toEnd: '大宮',
+    via:  ['西船橋', '船橋法典', '市川大野', '東松戸', '新八柱', '新松戸', '南流山', '三郷', '新三郷', '吉川美南',
+           '吉川', '越谷レイクタウン', '南越谷', '東川口', '東浦和', '南浦和', '武蔵浦和', '大宮'],
+    toUntil: '大宮',
+    boardAtJunction: true, // calls at 南船橋, then the freight leg to 西船橋
+    boardFrom: '新習志野',
+    impliedLines: ['JR Musashino Line'],
+    chainFrom: [],
+    name: 'Omiya', ja: '大宮方面', color: '#F77321',
+    destinations: [
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#E9003F', services: ['Shimousa'],
+        schedule: { weekday: { timeRange: [[7, 8], [15, 16]] }, weekend: { timeRange: [[6, 7], [16, 17]] } } },
+    ],
+    express: [
+      { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
+        stops: ['新習志野', '南船橋', '大宮'],
+        schedule: { weekday: { timeRange: [[7, 8], [15, 16]] }, weekend: { timeRange: [[6, 7], [16, 17]] } } },
+    ] },
+
+  // 大宮 departures (3番線): one copy per line of the shared 宇都宮線 / 高崎線 up slot
+  ...['Utsunomiya Line', 'JR Takasaki Line'].flatMap(from => [
+    // むさしの号 → 八王子 (wd 8:49, 18:47, 20:31; we 8:53, 18:22, 19:52)
+    { from, fromStation: '大宮', fromDir: 'start',
+      to:   'JR Chuo Line', toStation: '国立', toDir: 'end',
+      via:  ['北朝霞', '新座', '東所沢', '新秋津', '新小平', '国立'],
+      toUntil: '八王子',
+      boardAtJunction: true, boardFrom: '大宮', // starts here only
+      displayName: 'Ueno Tokyo Line', // 3番線 keeps its Ueno Tokyo Line pill
+      impliedLines: ['JR Musashino Line'],
+      chainFrom: [],
+      name: 'Hachioji', ja: '八王子方面', color: '#F15A22',
+      destinations: [
+        { until: '八王子', name: 'Hachioji', ja: '八王子方面', color: '#F15A22', services: ['Musashino'],
+          schedule: { weekday: { timeRange: [[8, 9], [18, 19], [20, 21]] }, weekend: { timeRange: [[8, 9], [18, 20]] } } },
+      ],
+      express: [
+        { name: 'Musashino', ja: 'むさしの号', color: '#F77321',
+          stops: ['大宮', '国立', '立川', '日野', '豊田', '八王子'],
+          schedule: { weekday: { timeRange: [[8, 9], [18, 19], [20, 21]] }, weekend: { timeRange: [[8, 9], [18, 20]] } } },
+      ] },
+    // しもうさ号 → 西船橋 (wd 18:26, we 18:01)
+    { from, fromStation: '大宮', fromDir: 'start',
+      to:   'JR Musashino Line', toStation: '武蔵浦和', toDir: 'end',
+      via:  ['武蔵浦和'],
+      toUntil: '西船橋',
+      boardAtJunction: true, boardFrom: '大宮',
+      displayName: 'Ueno Tokyo Line',
+      chainFrom: [],
+      name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321',
+      destinations: [
+        { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321', services: ['Shimousa'],
+          schedule: { weekday: { timeRange: [18, 19] }, weekend: { timeRange: [18, 19] } } },
+      ],
+      express: [
+        { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
+          stops: ['大宮', '武蔵浦和', '南浦和', '東浦和', '東川口', '南越谷', '越谷レイクタウン', '吉川', '吉川美南',
+                  '新三郷', '三郷', '南流山', '新松戸', '新八柱', '東松戸', '市川大野', '船橋法典', '西船橋'],
+          schedule: { weekday: { timeRange: [18, 19] }, weekend: { timeRange: [18, 19] } } },
+      ] },
+    // しもうさ号 → 海浜幕張 (wd 9:30, we 9:13) / 新習志野 (20:56 both)
+    { from, fromStation: '大宮', fromDir: 'start',
+      to:   'JR Keiyo Line', toStation: '南船橋', toDir: 'end',
+      via:  ['武蔵浦和', '南浦和', '東浦和', '東川口', '南越谷', '越谷レイクタウン', '吉川', '吉川美南', '新三郷',
+             '三郷', '南流山', '新松戸', '新八柱', '東松戸', '市川大野', '船橋法典', '西船橋', '南船橋'],
+      toUntil: '海浜幕張',
+      boardAtJunction: true, boardFrom: '大宮',
+      displayName: 'Ueno Tokyo Line',
+      impliedLines: ['JR Musashino Line'],
+      chainFrom: [],
+      name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C',
+      destinations: [
+        { until: '新習志野', name: 'Shin-Narashino', ja: '新習志野方面', color: '#B01030', services: ['Shimousa'],
+          schedule: { weekday: { timeRange: [20, 21] }, weekend: { timeRange: [20, 21] } } },
+        { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C', services: ['Shimousa'],
+          schedule: { weekday: { timeRange: [9, 10] }, weekend: { timeRange: [9, 10] } } },
+      ],
+      express: [
+        { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
+          stops: ['大宮', '南船橋', '新習志野', '幕張豊砂', '海浜幕張'],
+          schedule: { weekday: { timeRange: [[9, 10], [20, 21]] }, weekend: { timeRange: [[9, 10], [20, 21]] } } },
+      ] },
+  ]),
+
   // ── Yokohama Line ↔ Negishi Line at Higashi-Kanagawa/Yokohama ────────
   // Through-running: Yokohama Line trains continue from Higashi-Kanagawa
   // via Yokohama onto the Negishi Line toward Sakuragicho/Isogo/Ofuna.
@@ -2129,12 +2343,128 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Shibayama Railway ↔ Keisei Higashi-Narita Line at Higashi-Narita ──
-  // All-day through service Shibayama-Chiyoda ↔ Keisei-Narita (trains on to
-  // the Keisei Main Line run mornings/evenings only, so they aren't modeled).
+  // All-day through service Shibayama-Chiyoda ↔ Keisei-Narita. toUntil keeps the
+  // shuttle from chaining onto the Main Line (its through trains are below).
   { from: 'Shibayama Railway Line',     fromEnd: '東成田',
-    to:   'Keisei Higashi-Narita Line', toEnd:   '東成田' },
+    to:   'Keisei Higashi-Narita Line', toEnd:   '東成田',
+    toUntil: '京成成田',
+    name: 'Keisei Narita', ja: '京成成田方面', color: '#8B6DAF' },
   { from: 'Keisei Higashi-Narita Line', fromEnd: '東成田',
     to:   'Shibayama Railway Line',     toEnd:   '東成田' },
+
+  // ── Keisei Main ↔ Shibayama-Chiyoda through trains (mornings and evenings) ──
+  // Main Line trains of every type run on over the Higashi-Narita Line (all stations)
+  // to 芝山千代田; by day it is a 京成成田 shuttle. Hours span origin to 京成成田. Yahoo
+  // 22413/6791 (東成田 down) and 29437/6790 (芝山千代田 up), train pages, Oct 2026.
+  // Down: 京成上野 locals 6–7h and 17–18h (+ 宗吾参道 6–7h), 快速 6:28 and after 21h,
+  // weekday 快特 16:54 / 特急 17:12, weekend 快速 18–20h, 快特 17:25 / 19:46, 特急 21:34.
+  // Each type has two entries: hours leaving 京成上野–青砥, and hours past 京成高砂, which
+  // add the trains from 西馬込 / 羽田 via 押上 (wd 特急 ×2, 快特 ×2; we 快速 ×1).
+  { from: 'Keisei Main Line',       fromStation: '京成成田', fromDir: 'end',
+    to:   'Shibayama Railway Line', toEnd: '東成田',
+    via:  ['東成田'],
+    impliedLines: ['Keisei Higashi-Narita Line'],
+    chainFrom: [],
+    name: 'Shibayama-Chiyoda', ja: '芝山千代田方面', color: '#8B6DAF',
+    lineDests: [
+      { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport', ja: '成田空港方面', color: '#003878' },
+    ],
+    destinations: [
+      { until: '芝山千代田', name: 'Shibayama-Chiyoda', ja: '芝山千代田方面', color: '#8B6DAF',
+        services: ['Local', 'Rapid', 'Ltd. Express', 'Rapid Ltd'],
+        schedule: { weekday: { timeRange: [[5, 9], [16, 24]] }, weekend: { timeRange: [[5, 9], [17, 23]] } },
+        // Hours the through trains pass each stretch (wd, we); 酒々井–公津の杜: the schedule above
+        boardSchedule: Object.fromEntries([
+          [['京成上野', '日暮里', '新三河島', '町屋', '千住大橋', '京成関屋', '堀切菖蒲園'],
+            [[6, 7], [16, 19], [21, 22]], [[6, 8], [17, 22]]],
+          [['お花茶屋', '青砥', '京成高砂', '京成小岩', '江戸川', '国府台', '市川真間', '菅野', '京成八幡', '鬼越'],
+            [[6, 8], [17, 23]], [[6, 8], [17, 23]]],
+          [['京成中山', '東中山', '京成西船', '海神', '京成船橋', '大神宮下', '船橋競馬場', '谷津', '京成津田沼',
+            '京成大久保', '実籾', '八千代台', '京成大和田', '勝田台', '志津', 'ユーカリが丘', '京成臼井', '京成佐倉', '大佐倉'],
+            [[5, 6], [7, 9], [17, 23]], [[5, 6], [7, 9], [17, 23]]],
+        ].flatMap(([stns, wd, we]) => stns.map(s => [s, { weekday: { timeRange: wd }, weekend: { timeRange: we } }]))) },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [[5, 9], [17, 21]] }, weekend: { timeRange: [[5, 9], [20, 23]] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: ['京成上野','日暮里','千住大橋','青砥','京成高砂','京成小岩','京成八幡','東中山',
+                '京成船橋','船橋競馬場','京成津田沼','京成大久保','実籾','八千代台','京成大和田',
+                '勝田台','志津','ユーカリが丘','京成臼井','京成佐倉','大佐倉','京成酒々井',
+                '宗吾参道','公津の杜','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [[6, 7], [21, 22]] }, weekend: { timeRange: [[18, 19], [20, 21]] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: ['京成高砂','京成小岩','京成八幡','東中山',
+                '京成船橋','船橋競馬場','京成津田沼','京成大久保','実籾','八千代台','京成大和田',
+                '勝田台','志津','ユーカリが丘','京成臼井','京成佐倉','大佐倉','京成酒々井',
+                '宗吾参道','公津の杜','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [[6, 8], [21, 24]] }, weekend: { timeRange: [17, 22] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030',
+        stops: ['京成上野','日暮里','青砥','京成高砂','京成八幡','京成船橋','京成津田沼','八千代台',
+                '勝田台','京成佐倉','大佐倉','京成酒々井','宗吾参道','公津の杜','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [17, 18] }, weekend: { timeRange: [21, 22] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030',
+        stops: ['京成高砂','京成八幡','京成船橋','京成津田沼','八千代台',
+                '勝田台','京成佐倉','大佐倉','京成酒々井','宗吾参道','公津の杜','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [17, 22] }, weekend: { timeRange: [21, 23] } } },
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000',
+        stops: ['京成上野','日暮里','青砥','京成高砂','京成八幡','京成船橋','京成津田沼','八千代台',
+                '勝田台','京成佐倉','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [16, 17] }, weekend: { timeRange: [[17, 18], [19, 20]] } } },
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000',
+        stops: ['京成高砂','京成八幡','京成船橋','京成津田沼','八千代台',
+                '勝田台','京成佐倉','京成成田','芝山千代田'],
+        schedule: { weekday: { timeRange: [17, 21] }, weekend: { timeRange: [17, 21] } } },
+    ] },
+  // Up, from 芝山千代田 (東成田 +3 min): to 京成上野 wd 普通 6:08, 17:55, 19:18, 通勤特急
+  // 6:37, 7:23, 7:45, 特急 18:41; we 普通 6:06, 8:31, 18:08, 快特 6:35, 6:53, 7:16. Short
+  // runs: 宗吾参道 普通 wd 20:20, we 20:50, 21:21; 京成高砂 快速 we 20:07. (The wd 快特 7:07 /
+  // 快速 18:18 to 西馬込 and the we 快速 7:57 to 羽田 run via 押上: not offered.)
+  // One copy per boarding line: from 芝山千代田 over 東成田, and from 東成田 itself.
+  ...[['Shibayama Railway Line', ['芝山千代田', '東成田']], ['Keisei Higashi-Narita Line', ['東成田', '京成成田']]].map(([from, src]) => {
+    const fromShibayama = from === 'Shibayama Railway Line';
+    // 京成成田 is a via station from 芝山千代田 (via stations aren't listed as stops)
+    const stops = main => [...src, ...main];
+    return {
+      from, fromEnd: fromShibayama ? '東成田' : '京成成田',
+      to:   'Keisei Main Line', toStation: '京成成田', toDir: 'start',
+      ...(fromShibayama ? { via: ['京成成田'], boardFrom: '芝山千代田' } : {}),
+      impliedLines: ['Keisei Higashi-Narita Line'],
+      chainFrom: [],
+      name: 'Keisei Ueno', ja: '京成上野方面', color: '#0073CF',
+      ...(fromShibayama ? {} : { lineDests: [
+        { until: '京成成田', name: 'Keisei Narita', ja: '京成成田方面', color: '#8B6DAF' },
+      ] }),
+      destinations: [
+        { until: '京成上野', name: 'Keisei Ueno', ja: '京成上野方面', color: '#0073CF',
+          services: ['Local', 'Commuter Ltd. Exp', 'Ltd. Express', 'Rapid Ltd'],
+          schedule: { weekday: { timeRange: [[6, 8], [17, 20]] }, weekend: { timeRange: [[6, 9], [18, 19]] } } },
+        { until: '京成高砂', name: 'Keisei Takasago', ja: '京成高砂方面', color: '#00b900', services: ['Rapid'],
+          schedule: { weekday: { stops: [] }, weekend: { timeRange: [20, 21] } } },
+        { until: '宗吾参道', name: 'Sogo-sando', ja: '宗吾参道方面', color: '#005aa0', services: ['Local'],
+          schedule: { weekday: { timeRange: [20, 21] }, weekend: { timeRange: [20, 22] } } },
+      ],
+      express: [
+        { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+          schedule: { weekday: { timeRange: [[6, 7], [17, 18], [19, 21]] }, weekend: { timeRange: [[6, 7], [8, 9], [18, 19], [20, 22]] } } },
+        { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8',
+          stops: stops(['公津の杜','宗吾参道','京成酒々井','大佐倉','京成佐倉','京成臼井','ユーカリが丘','志津',
+                        '勝田台','八千代台','京成津田沼','京成船橋','京成八幡','京成高砂','青砥','日暮里','京成上野']),
+          schedule: { weekday: { timeRange: [6, 8] }, weekend: { stops: [] } } },
+        { name: 'Ltd. Express', ja: '特急', color: '#e83030',
+          stops: stops(['公津の杜','宗吾参道','京成酒々井','大佐倉','京成佐倉','勝田台','八千代台',
+                        '京成津田沼','京成船橋','京成八幡','京成高砂','青砥','日暮里','京成上野']),
+          schedule: { weekday: { timeRange: [18, 19] }, weekend: { stops: [] } } },
+        { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000',
+          stops: stops(['京成佐倉','勝田台','八千代台','京成津田沼','京成船橋','京成八幡','京成高砂','青砥','日暮里','京成上野']),
+          schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 8] } } },
+        { name: 'Rapid', ja: '快速', color: '#00b900',
+          stops: stops(['公津の杜','宗吾参道','京成酒々井','大佐倉','京成佐倉','京成臼井','ユーカリが丘','志津',
+                        '勝田台','京成大和田','八千代台','実籾','京成大久保','京成津田沼','船橋競馬場','京成船橋',
+                        '東中山','京成八幡','京成小岩','京成高砂']),
+          schedule: { weekday: { stops: [] }, weekend: { timeRange: [20, 21] } } },
+      ] };
+  }),
 
   // ── Hachiko Line ↔ Kawagoe Line at Komagawa ──────────────────────────
   // Through-running: Hachiko Line trains from Hachioji continue onto

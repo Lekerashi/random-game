@@ -23,6 +23,16 @@ const EXPRESS_SERVICES = {
       "東村山","所沢","航空公園","新所沢",
       "入曽","狭山市","新狭山","南大塚","本川越",
     ]},
+    // One train a day each: weekend 快速急行 西武新宿 9:00 → 本川越 9:49; weekday 通勤急行
+    // 本川越 7:04 → 西武新宿 7:59 (Yahoo 22768/2881, 22131/2880)
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
+      "西武新宿","高田馬場","田無","東村山","所沢",
+      "新所沢","入曽","狭山市","新狭山","南大塚","本川越",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 10] } } },
+    { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
+      "西武新宿","高田馬場","鷺ノ宮","上石神井","田無",
+      "東村山","所沢","新所沢","狭山市","本川越",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 8] } } },
   ],
   "JR Chuo Line": [
     { name: "Rapid", ja: "快速", color: "#00b900", stops: null,

@@ -187,7 +187,7 @@ function arrivalPlatforms(name, arrivedVia) {
     .some(e => state.lines[e.lineIdx].name === lineName);
   const pk = p => p.lineIdx + '|' + p.direction + '|' + p.fromIdx + '|' + (p.displayName || '');
   const lostConns = (p, byKey) => !byKey.has(pk(p)) || (byKey.get(pk(p))._connections?.length || 0) < (p._connections?.length || 0);
-  let kept = null;
+  let kept = null, overLeg = false;
   if (prev && !onLine(prev, arrivedVia.lineName)) {
     // A Shinkansen next to prev is another track (Tokyo → Ueno), never the way back
     const kind = SHINKANSEN_LINES.has(arrivedVia.lineName);
@@ -195,14 +195,21 @@ function arrivalPlatforms(name, arrivedVia) {
       .filter(p => nextStop(p)?.name !== prev || SHINKANSEN_LINES.has(p.lineName) !== kind);
     const byKey = new Map(back.map(p => [pk(p), p]));
     if (all.some(p => lostConns(p, byKey))) kept = back;
+    else overLeg = true;
   }
   if (!kept) {
     const twice = (state.stationIndex[normalize(name)] || [])
       .filter(e => state.lines[e.lineIdx].name === arrivedVia.lineName).length > 1;
     const onArrivalLine = p => p.lineName === arrivedVia.lineName || !!p._mergedLines?.includes(arrivedVia.lineName);
+    // Arrived over a connection leg with nothing leading back now (the return train is
+    // off-hours: 国立 from 新小平 by day): the reverse platform is the way back only when
+    // it heads straight to prev's platforms (初台 → 新線新宿, at Toei's 新宿)
+    const prevStns = overLeg ? (state.stationIndex[normalize(prev)] || []).map(e => state.lines[e.lineIdx].stations[e.stationIdx]) : [];
+    const towardPrev = p => { const n = nextStop(p);
+      return !!n && prevStns.some(s => haversineM(s.lat, s.lng, n.lat, n.lng) < LEG_SAME_STATION_M); };
     const isBacktrack = p => onArrivalLine(p) && (twice && prev
       ? nextStop(p)?.name === prev
-      : p.direction === reverseDir);
+      : p.direction === reverseDir && (!overLeg || towardPrev(p)));
     kept = all.filter(p => !isBacktrack(p));
   }
   if (!kept.some(p => getEffectiveStops(p, { ei: null, bi: null }).validCount > 0)) return { platforms: all, removed: [], deadEnd: true };

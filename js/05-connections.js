@@ -146,6 +146,9 @@ function connFirstStop(c) {
   return state.lines[c.toLineIdx].stations[c.toJunctionIdx + dirStep(c.toDir)] || null;
 }
 
+// Destination d runs now for riders boarding at station ja (schedule + boardSchedule)
+const destRunsAt = (d, ja) => scheduleActive(d.schedule) && scheduleActive(d.boardSchedule?.[ja]);
+
 // Get connections from a line at a given terminus direction.
 // Returns connections where the source line terminus matches.
 // direction: the platform direction ('start' or 'end')
@@ -160,8 +163,13 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     if (c.fromDir && c.fromDir !== direction) return false;
     // boardFrom: only stations from there toward the junction
     if (c.boardFromIdx >= 0 && (fromIdx - c.boardFromIdx) * dirStep(direction) < 0) return false;
-    // No train runs it now: every destination is off-hours and there is no short-turn choice
-    if (!c.lineDests && c.destinations?.length && c.destinations.every(d => d.schedule && !scheduleActive(d.schedule))) return false;
+    // ...and not at a terminus junction unless it is the boardFrom station (芝山千代田 →
+    // 京成上野 trains: at 東成田 the Higashi-Narita Line platform carries them)
+    if (c.boardFromIdx >= 0 && c.boardFromIdx !== fromIdx && c.fromJunctionIdx === fromIdx && fromIdx === terminusIdx) return false;
+    // No train runs it now: every destination is off-hours (or not boarded here) and no
+    // real short-turn choice is left (a lineDest to the line's own end is the plain ride)
+    if (c.destinations?.length && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja))
+        && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule))) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
     // Mid-line junction: must be ahead of us in the travel direction, or here when
