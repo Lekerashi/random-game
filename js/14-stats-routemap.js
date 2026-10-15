@@ -159,10 +159,12 @@ function buildRouteMap(elId) {
     }
   }
 
+  // No animation: a zoom animation still running when the map is closed
+  // (destroyMap) throws inside Leaflet (_leaflet_pos of a removed pane)
   if (bounds.isValid()) {
-    map.fitBounds(bounds.pad(0.15));
+    map.fitBounds(bounds.pad(0.15), { animate: false });
   } else {
-    map.setView([35.681, 139.767], 12);
+    map.setView([35.681, 139.767], 12, { animate: false });
   }
 
   setTimeout(() => { if (map._mapPane) map.invalidateSize(); }, 100); // map may be removed by then
