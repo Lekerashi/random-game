@@ -40,7 +40,7 @@ function setupStationPicker() {
   dom.randomStationBtn.addEventListener('click', () => {
     if (state.currentStation) resetGame(); else pickRandomStation();
   });
-  dom.locateBtn.addEventListener('click', detectLocation);
+  dom.locateBtn.addEventListener('click', () => detectLocation());
   dom.wards23Check.addEventListener('change', e => onWards23Change(e.target.checked));
 }
 
@@ -50,17 +50,17 @@ function setupGameControls() {
   dom.rerollPlatformBtn.addEventListener('click', () => rerollPlatform());
   dom.rollStopsBtn.addEventListener('click', () => rollStops());
   dom.rerollStopsBtn.addEventListener('click', () => rerollStops());
-  dom.showMapBtn.addEventListener('click', showMap);
+  dom.showMapBtn.addEventListener('click', () => showMap());
   dom.showBarsBtn.addEventListener('click', () => togglePlaces('bars'));
   dom.showCafesBtn.addEventListener('click', () => togglePlaces('cafes'));
   dom.rollAgainBtn.addEventListener('click', () => rollAgainFromHere());
-  dom.clearHistoryBtn.addEventListener('click', clearHistory);
+  dom.clearHistoryBtn.addEventListener('click', () => clearHistory());
   dom.copyRouteBtn.addEventListener('click', () => copyRoute()); // not the MouseEvent as feedbackBtn
-  dom.statsBtn.addEventListener('click', showStats);
-  document.getElementById('inline-map-btn').addEventListener('click', toggleInlineRouteMap);
+  dom.statsBtn.addEventListener('click', () => showStats());
+  document.getElementById('inline-map-btn').addEventListener('click', () => toggleInlineRouteMap());
   const statsCopyBtn = document.getElementById('stats-copy-btn');
   statsCopyBtn.addEventListener('click', () => copyRoute(statsCopyBtn));
-  document.getElementById('stats-map-btn').addEventListener('click', showRouteMap);
+  document.getElementById('stats-map-btn').addEventListener('click', () => showRouteMap());
   // Overlays, language toggle, RNG, undo/save buttons: one delegated handler
   // (no inline onclick globals)
   const closeOverlay = ov => { if (ov.id === 'stats-overlay') hideStats(); else ov.classList.add('hidden'); };
