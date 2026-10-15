@@ -1,5 +1,7 @@
 # Pure code moves (git blame skips these): the index.html split, phase 1 (2026-10-15).
 # Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# The code moved across files, so blame needs copy detection to see past them:
+#   git blame -C -C js/05-connections.js   (add -w for style.css, which was dedented)
 c17cbbf15b074ad2f227e72f2beedf849149195c # Split: move inline CSS into style.css
 3f2d496fb0c50347b62fc6cce3f8a49a5394755e # Split: move core constants, utilities, state and dom into js/01-core.js
 2be5c184b32aa592d731b360225b56d71bed7eea # Split: move i18n and the language refreshers into js/02-i18n.js
