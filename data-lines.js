@@ -562,11 +562,22 @@ const EXPRESS_SERVICES = {
   ],
   "Tsukuba Express": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
-    { name: "Sec. Rapid", ja: "区間快速", color: "#f0c000", stops: [
+    { name: "Sec. Rapid", ja: "区間快速", color: "#f0c000", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮","三郷中央",
       "南流山","流山おおたかの森","柏の葉キャンパス","守谷",
       "みらい平","みどりの","万博記念公園","研究学園","つくば",
     ]},
+    // Toward 秋葉原 the weekday morning ones (leaving つくば 6:25–8:17) also call at 六町 (ODPT timetable)
+    { name: "Sec. Rapid", ja: "区間快速", color: "#f0c000", direction: "start", stops: [
+      "秋葉原","新御徒町","浅草","南千住","北千住","八潮","三郷中央",
+      "南流山","流山おおたかの森","柏の葉キャンパス","守谷",
+      "みらい平","みどりの","万博記念公園","研究学園","つくば",
+    ], schedule: { weekday: { timeRange: [9, 6] } } },
+    { name: "Sec. Rapid", ja: "区間快速", color: "#f0c000", direction: "start", stops: [
+      "秋葉原","新御徒町","浅草","南千住","北千住","六町","八潮","三郷中央",
+      "南流山","流山おおたかの森","柏の葉キャンパス","守谷",
+      "みらい平","みどりの","万博記念公園","研究学園","つくば",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
     // Weekday gaps: none from 秋葉原 7–8h and 18–20h (通勤快速), none from つくば 6–8h
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
