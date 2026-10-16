@@ -228,6 +228,7 @@ window.addEventListener('pagehide', saveSession); // desktop tab close
 
 (async function init() {
   document.getElementById('app-version').textContent = APP_VERSION.replace(/^rg-v/, '0.'); // rg-v59 → 0.59
+  document.getElementById('odpt-data-date').textContent = ODPT_DATA_DATE;
   if (currentLang !== 'en') {
     applyLang();
     document.getElementById('localization-credit').style.display = 'block';

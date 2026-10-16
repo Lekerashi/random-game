@@ -50,6 +50,10 @@ function applyLang() {
       const [attr, key] = pair.split(':');
       if (attr && key) el.setAttribute(attr, t(key));
     }
+    // An open Advanced/License toggle keeps saying "Hide" after the switch
+    if (el.dataset.action === 'toggle-advanced' && !el.nextElementSibling?.classList.contains('hidden')) {
+      el.textContent = el.getAttribute('data-hide');
+    }
   });
   // Page title
   document.title = t('pageTitle');
