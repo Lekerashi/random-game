@@ -552,9 +552,17 @@ function hasTransferLines(stationName, currentLineNames) {
   for (const aliasKey of getAliasKeys(stationName)) {
     for (const e of (state.stationIndex[aliasKey] || [])) entries.push(e);
   }
+  // A line LINE_SCHEDULES closes here in every direction now (Sky Access at 青砥 by day) is no transfer
+  const boardable = e => {
+    const line = state.lines[e.lineIdx];
+    if (!LINE_SCHEDULES[line.name]) return true;
+    const ja = line.stations[e.stationIdx].ja, N = line.stations.length;
+    return (line.circular || e.stationIdx > 0) && lineScheduleActive(line.name, ja, 'start')
+      || (line.circular || e.stationIdx < N - 1) && lineScheduleActive(line.name, ja, 'end');
+  };
   // currentLineNames can be a string or a Set of line names
-  if (typeof currentLineNames === 'string') {
-    return entries.some(e => state.lines[e.lineIdx].name !== currentLineNames);
-  }
-  return entries.some(e => !currentLineNames.has(state.lines[e.lineIdx].name));
+  const other = typeof currentLineNames === 'string'
+    ? e => state.lines[e.lineIdx].name !== currentLineNames
+    : e => !currentLineNames.has(state.lines[e.lineIdx].name);
+  return entries.some(e => other(e) && boardable(e));
 }

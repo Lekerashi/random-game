@@ -2,11 +2,15 @@
 
 // ── Schedule-aware service stops ──────────────────────────────────────────
 const SCHEDULE_DAY_BOUNDARY = 2; // schedule rolls over at 2am, not midnight
+// The clock the schedule and game day read. Override with window._forceNow (timestamp or date string) for testing.
+function scheduleNow() {
+  return window._forceNow != null ? new Date(window._forceNow) : new Date();
+}
 // Returns 'weekday' or 'weekend'. Override with window._forceSchedule for testing.
 function getScheduleType() {
   if (window._forceSchedule) return window._forceSchedule;
   // Shift back past the 2am boundary: 1am Saturday is still Friday night
-  const d = new Date(Date.now() - SCHEDULE_DAY_BOUNDARY * 3600000);
+  const d = new Date(scheduleNow().getTime() - SCHEDULE_DAY_BOUNDARY * 3600000);
   const day = d.getDay();
   return (day === 0 || day === 6 || runsHolidayTimetable(d)) ? 'weekend' : 'weekday';
 }
@@ -47,7 +51,7 @@ function runsHolidayTimetable(d) {
 // Returns current hour (0-23). Override with window._forceHour for testing.
 function getCurrentHour() {
   if (window._forceHour != null) return window._forceHour;
-  return new Date().getHours();
+  return scheduleNow().getHours();
 }
 
 // Resolve a service's effective stops for the current schedule.

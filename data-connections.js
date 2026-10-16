@@ -1580,7 +1580,7 @@ const LINE_CONNECTIONS = [
   { from: 'JR Saikyo Line',    fromEnd: '大崎',
     to:   'Sotetsu Main Line', toStation: '西谷', toDir: 'end',
     via:  ['西大井', '武蔵小杉', '羽沢横浜国大', '西谷'],
-    impliedLines: ['Sotetsu-JR Direct Line'],
+    impliedLines: ['Sotetsu-JR Direct Line', 'Sotetsu Shin-Yokohama Line'], // 羽沢横浜国大–西谷 is Sotetsu Shin-Yokohama Line track
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087',
@@ -1596,7 +1596,7 @@ const LINE_CONNECTIONS = [
   { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
     to:   'JR Saikyo Line',    toEnd: '大崎',
     via:  ['羽沢横浜国大', '武蔵小杉', '西大井', '大崎'],
-    impliedLines: ['Sotetsu-JR Direct Line'],
+    impliedLines: ['Sotetsu-JR Direct Line', 'Sotetsu Shin-Yokohama Line'],
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
@@ -1624,6 +1624,7 @@ const LINE_CONNECTIONS = [
   { from: 'Sotetsu-JR Direct Line', fromEnd: '羽沢横浜国大',
     to:   'Sotetsu Main Line',      toStation: '西谷', toDir: 'end',
     via:  ['西谷'],
+    impliedLines: ['Sotetsu Shin-Yokohama Line'],
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ],
@@ -2287,6 +2288,7 @@ const LINE_CONNECTIONS = [
   { from: 'JR Yokohama Line', fromEnd: '東神奈川',
     to:   'JR Negishi Line',  toEnd:   '横浜',
     via:  ['横浜'],
+    impliedLines: ['JR Keihin Tohoku Line'], // 東神奈川–横浜 on Keihin-Tohoku track
     lineDests: [
       { until: '橋本',     name: 'Hashimoto',        ja: '橋本方面',     color: '#6aba6a' },
       { until: '町田',     name: 'Machida',          ja: '町田方面',     color: '#3da03d' },
@@ -2312,6 +2314,7 @@ const LINE_CONNECTIONS = [
   { from: 'JR Negishi Line',  fromEnd: '横浜',
     to:   'JR Yokohama Line', toEnd:   '東神奈川',
     via:  ['東神奈川'],
+    impliedLines: ['JR Keihin Tohoku Line'],
     name: 'Hachioji', ja: '八王子方面', color: '#00AD53',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },

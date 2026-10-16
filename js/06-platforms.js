@@ -158,7 +158,9 @@ function mergeShinkansenPlatforms(rawShinkansen) {
     (byTrack[key] ||= []).push(p);
   }
   return Object.values(byTrack).map(group => {
-    if (group.length === 1) { group[0].isShinkansen = true; return group[0]; }
+    // Every member: the roll rides one of a merged slot's lines (thirst ×SHINKANSEN_THIRST)
+    for (const p of group) p.isShinkansen = true;
+    if (group.length === 1) return group[0];
     const best = group.reduce((a, b) => b.maxStops > a.maxStops ? b : a, group[0]);
     return {
       isShinkansen: true, _shinkansenOptions: group,

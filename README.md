@@ -16,12 +16,16 @@ A random Tokyo train station drinking game. Roll dice to pick train lines and st
 - Covers all Greater Tokyo rail lines — JR, Metro, Toei, private railways
 - Express service support — Local, Semi-Express, Express, Ltd. Express
 - Branch line routing with smart branch detection
+- Through-running onto other lines with real signboard destinations (e.g. Chiyoda → Odakyu, Haneda → Narita)
+- Time-of-day accurate services — rush-hour and part-day trains, weekday vs weekend/holiday timetables
 - Transfer opportunities at connecting stations
 - Thirst mechanic that increases drink chances after 5+ stations
+- 23-wards mode and a max-stops cap to keep the night close to home
 - Bilingual UI (English / Japanese)
 - GPS-based nearest station detection
 - Late night last-train warning
 - Session history with route sharing
+- Route map and a session image you can save or share from your phone
 - Session save & resume on page refresh
 - Installable as a PWA — add to home screen on Android/iOS
 - Works offline after first visit
@@ -60,12 +64,16 @@ Localized by Yuko
 - 首都圏の全路線に対応 — JR、メトロ、都営、私鉄各線
 - 急行・特急に対応 — 各停、準急、急行、特急など
 - 分岐路線のスマートなルーティング
+- 直通運転に対応、実際の行先表示どおりの行き先（例：千代田線→小田急線、羽田→成田）
+- 時間帯どおりの運行 — 通勤時間帯や一部時間帯のみの種別、平日・土休日ダイヤ
 - 乗換駅での乗り換えチャンス
 - 5駅以上飲まずに進むと「飲め！」の確率が上がるのどの渇きシステム
+- 23区モードと最大駅数の上限設定で、遠くに行きすぎない
 - 日英バイリンガルUI
 - GPSによる最寄り駅検出
 - 深夜の終電警告
 - セッション履歴とルート共有
+- ルートマップと、スマホから保存・共有できるセッション画像
 - ページ更新時のセッション保存・再開
 - PWAとしてインストール可能 — Android/iOSのホーム画面に追加
 - 初回アクセス後はオフラインでも動作

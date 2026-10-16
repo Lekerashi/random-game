@@ -73,7 +73,12 @@ function undimStations(start, end) {
 // two route indices, accounting for express/branch skips.
 // Uses cumulative physical station counts so express→connection transitions
 // count correctly (express portion = local stations skipped, connection = 1 each).
-function buildThirstTracker(platform, rolledStops) {
+// route (the ride's stops) ends the express/branch count where the ride leaves
+// the platform's line (a mid-line connection, e.g. Sotetsu → Shin-Yokohama at 西谷).
+function buildThirstTracker(platform, rolledStops, route) {
+  const ownStations = state.lines[platform.lineIdx]?.stations || [];
+  const leftAt = route ? route.findIndex(stn => !ownStations.includes(stn)) : -1;
+  const onLine = leftAt === -1 ? Infinity : leftAt; // stops ridden on the platform's line
   // Connection express: expressIndices are TARGET-line indices — use the
   // source-line ones (past the junction, each stop counts 1)
   const tt = state.selectedTrainType;
@@ -86,6 +91,7 @@ function buildThirstTracker(platform, rolledStops) {
     let exhausted = false;
     for (let i = 1; i <= rolledStops; i++) {
       const prev = _cumPhysical[_cumPhysical.length - 1];
+      if (i > onLine) exhausted = true;
       if (!exhausted) {
         const p = _eiPos + dirStep(platform.direction) * i;
         if (p < 0 || p >= _ei.length) {
@@ -108,6 +114,7 @@ function buildThirstTracker(platform, rolledStops) {
       _cumPhysical = [0];
       let lastBP = _biPos;
       for (let i = 1; i <= rolledStops; i++) {
+        if (i > onLine) { _cumPhysical.push(_cumPhysical[_cumPhysical.length - 1] + 1); continue; }
         let p = _biPos + dirStep(platform.direction) * i;
         p = Math.max(0, Math.min(_bi.length - 1, p));
         _cumPhysical.push(_cumPhysical[_cumPhysical.length - 1] + Math.abs(p - lastBP));
@@ -242,7 +249,10 @@ async function resolveTransfer(route, i, ti, transferIndices) {
 // the very train running on them. A station served only by these offers no transfer.
 function rideLineNames(platform) {
   const names = new Set([platform.lineName]);
-  let chainConn = state.selectedConnection;
+  // The connection the ride takes (routeConnectionFor): an auto-taken terminus one
+  // too, never one handleConnectionRouting only set to skip a picker
+  const tt = state.selectedTrainType;
+  let chainConn = routeConnectionFor(platform, findRouteConnection(platform, tt), tt?._connTargetLineIdx);
   const chainVisited = new Set();
   while (chainConn && !chainVisited.has(chainConn.to)) {
     names.add(chainConn.to);
@@ -258,7 +268,7 @@ async function checkTransfers(platform, rolledStops) {
   const route = getStationsAlongRoute(platform, rolledStops);
   state.route = route;
 
-  const thirstBetween = buildThirstTracker(platform, rolledStops);
+  const thirstBetween = buildThirstTracker(platform, rolledStops, route);
 
   const routeLineNames = rideLineNames(platform);
 

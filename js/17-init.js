@@ -127,7 +127,7 @@ function setupSettings() {
 }
 
 // "Game day" of a timestamp: the day boundary is 2am, so 1am still counts as last night
-function gameDay(timestamp = Date.now()) {
+function gameDay(timestamp = scheduleNow().getTime()) {
   return new Date(timestamp - SCHEDULE_DAY_BOUNDARY * 3600000).toDateString();
 }
 

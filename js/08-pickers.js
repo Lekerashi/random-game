@@ -175,7 +175,7 @@ function handleConnectionRouting(p) {
   }
 
   // Show connection picker (different target lines)
-  showBranchPickerUI(p, conns.map(conn => {
+  const choices = conns.map(conn => {
     const viaCount = effectiveViaCount(conn, platformStation(p).name);
     let targetMax = getConnectionMaxStops(conn);
     // Include chain extensions from onward connections (e.g. Keikyu→Asakusa→Keisei)
@@ -228,7 +228,9 @@ function handleConnectionRouting(p) {
         }
       },
     };
-  }), false, 'connectionBranch');
+  });
+  if (choicesRideAlike(p, choices)) return { pickerShown: furthestChoice(choices).onSelect() === 'subpicker' };
+  showBranchPickerUI(p, choices, false, 'connectionBranch');
   return { pickerShown: true };
 }
 
@@ -599,6 +601,10 @@ function showDestinationPicker(p, conn, onLineStops) {
     }
     return false;
   }
+  if (choicesRideAlike(p, unique)) {
+    autoPick(furthestChoice(unique));
+    return false;
+  }
   return showBranchPickerUI(p, unique, conn.express && conn.express.some(e => e.stops !== null), 'destination');
 }
 
@@ -650,11 +656,58 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     autoPick(filtered[filtered.length - 1]);
     return false;
   }
+  if (choicesRideAlike(p, filtered)) {
+    autoPick(furthestChoice(filtered));
+    return false;
+  }
   return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)), 'destination');
+}
+
+// Whether every enabled choice rides the same stops with the same train types (a
+// stops cap or the ward edge ends the ride before the choices part): then there is
+// no choice, and the picker auto-selects instead. Each choice's onSelect runs with
+// the selection put back after; a picker it would open is never rendered.
+function choicesRideAlike(p, choices) {
+  const on = choices.filter(c => c.effectiveMax > 0);
+  if (on.length < 2 || on.some(c => c.effectiveMax !== on[0].effectiveMax)) return false;
+  let first = null;
+  for (const c of on) {
+    const key = probeChoiceRide(p, c);
+    if (key == null || (first != null && key !== first)) return false;
+    first = key;
+  }
+  return true;
+}
+function probeChoiceRide(p, c) {
+  const SEL = ['selectedBranch', 'selectedConnection', 'selectedDestination', 'selectedTrainType'];
+  const saved = SEL.map(k => state[k]);
+  state._choiceProbe = (state._choiceProbe || 0) + 1;
+  try {
+    // A picker still to answer (sub-picker, or the next one in the chain) is a real choice
+    if (c.onSelect() === 'subpicker' || handlePhysicalBranches(p).pickerShown
+      || handleLineDestinations(p).pickerShown || handleConnectionRouting(p).pickerShown) return null;
+    const tt = resolveTrainTypes(p);
+    return (tt?.types || (tt?.autoSelect ? [tt.autoSelect] : [null])).map(g => {
+      state.selectedTrainType = g;
+      const t = g || { name: 'Local', expressIndices: null };
+      const eff = getEffectiveStops(p, trainTypeOpts(t));
+      return t.name + '=' + getStationsAlongRoute(p, eff.cappedMax, t.expressIndices || null, t).map(s => s.ja).join(',');
+    }).join('|');
+  } finally {
+    SEL.forEach((k, i) => { state[k] = saved[i]; });
+    state._choiceProbe--;
+  }
+}
+// The choice an alike picker takes: the furthest, a within-line one first (as handleLineDestinations)
+function furthestChoice(choices) {
+  const on = choices.filter(c => c.effectiveMax > 0);
+  const lineOnly = on.filter(c => c._isLineDest);
+  return (lineOnly.length ? lineOnly : on).at(-1);
 }
 
 // Shared UI for branch/connection picker buttons
 function showBranchPickerUI(p, choices, hasExpress, pickerType) {
+  if (state._choiceProbe) return true; // choicesRideAlike probing: only report that a picker would open
   state._pickerType = pickerType || 'branch';
   state._pickerArgs = [p, choices, hasExpress, pickerType]; // for the language refresher
   showTrainTypeUI();
