@@ -223,7 +223,7 @@ function showTrainTypeButtons(p) {
       const effectiveMax = getEffectiveStops(p).validCount;
       dom.stopsRangeText.textContent = t('trainTypeStops', { name: pick.name, ja: pick.ja, dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
       dom.trainTypeRow.querySelectorAll('.train-type-btn').forEach(b => b.disabled = true);
-      // Players roll stops right away; debug.js pauses here so scripted tests
+      // Players roll stops right away; the debug tools pause here so scripted tests
       // can force the stop roll first (window._pauseBeforeStops)
       if (window._pauseBeforeStops) {
         showRollStopsUI();

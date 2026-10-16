@@ -684,7 +684,7 @@ function showBranchPickerUI(p, choices, hasExpress, pickerType) {
         dom.stopsRangeText.textContent = t('rollingStops', { dest: destLabel(), max: effectiveMax, s: pl(effectiveMax) });
         dom.rollStopsBtn.disabled = false;
         resetStopsBtn();
-        // Players roll right away; debug.js game.journey pauses here to force the roll
+        // Players roll right away; the debug tools' game.journey pauses here to force the roll
         if (!window._pauseAfterPick) rollStops();
       }
     };

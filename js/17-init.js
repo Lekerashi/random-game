@@ -45,7 +45,7 @@ function setupStationPicker() {
 }
 
 function setupGameControls() {
-  // Arrow wrappers look the function up at click time, so debug.js patches apply
+  // Arrow wrappers look the function up at click time, so the debug tools' patches apply
   dom.rollPlatformBtn.addEventListener('click', () => rollPlatform());
   dom.rerollPlatformBtn.addEventListener('click', () => rerollPlatform());
   dom.rollStopsBtn.addEventListener('click', () => rollStops());

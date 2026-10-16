@@ -3,7 +3,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v14';
-const APP_VERSION = 'rg-v62'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
+const APP_VERSION = 'rg-v63'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // HERE Maps API key (developer.here.com) for the Bars & Cafes panels
@@ -255,7 +255,7 @@ const state = {
   spatialCell: 0.04,
   geoNearest: null,     // {name, dist} from last geolocation
 };
-window._state = state; // expose for debug.js
+window._state = state; // expose for the debug tools (debug/)
 
 // localStorage that never throws: it can raise SecurityError (site data
 // blocked) or QuotaExceededError (full) — the game must keep running

@@ -35,7 +35,7 @@ function applyOutcome(el, die, res, dieClass, i18nKey, labelClass, elClass) {
 }
 
 function waitForUndo(afterEl) {
-  // Undo only available in debug mode (dev server injects debug.js which sets window.game)
+  // Undo only available in debug mode (the dev server injects debug/, which sets window.game)
   if (window._skipAnimation || !window.game) { return Promise.resolve(false); }
   if (afterEl) afterEl.after(dom.undoTransferBtn);
   dom.undoTransferBtn.style.display = 'block';
