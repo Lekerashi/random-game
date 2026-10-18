@@ -149,6 +149,25 @@ function connFirstStop(c) {
 // Destination d runs now for riders boarding at station ja (schedule + boardSchedule)
 const destRunsAt = (d, ja) => scheduleActive(d.schedule) && scheduleActive(d.boardSchedule?.[ja]);
 
+// Whether a through-running chain past conn (none of whose own destinations runs now)
+// still has a train: an onward connection (far-terminus hops, and the mid-line hops
+// chained pickers offer) whose destination runs, or one with no destinations at all (a
+// plain hop such as Toyoko → Minato Mirai), recursively with a cycle guard. Mirrors
+// chainDestChoices: chainFrom limits the boarding line, and when conn's destinations
+// declare `services`, only chained destinations with their own `services` are offered.
+function chainRunsNow(conn, lineIdx, direction, fromIdx) {
+  // The chained choices the destination picker would offer from this platform
+  const p = { lineName: state.lines[lineIdx].name, lineIdx, direction, fromIdx, maxStops: Infinity, lineColor: null };
+  if (chainDestChoices(p, conn, 0).length > 0) return true;
+  // No chained destination, but a plain onward hop (no destinations) carries the full ride,
+  // unless conn's own destinations declare `services` (then nothing undeclared is offered)
+  if (conn.destinations.some(d => d.services)) return false;
+  const plainHop = (c, visited) => getOnwardConnections(c).some(n => !visited.has(n.to)
+    && (!n.chainFrom || n.chainFrom.includes(p.lineName))
+    && (!n.destinations?.length || plainHop(n, new Set([...visited, n.to]))));
+  return plainHop(conn, new Set([conn.from, conn.to]));
+}
+
 // Get connections from a line at a given terminus direction.
 // Returns connections where the source line terminus matches.
 // direction: the platform direction ('start' or 'end')
@@ -166,10 +185,13 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     // ...and not at a terminus junction unless it is the boardFrom station (芝山千代田 →
     // 京成上野 trains: at 東成田 the Higashi-Narita Line platform carries them)
     if (c.boardFromIdx >= 0 && c.boardFromIdx !== fromIdx && c.fromJunctionIdx === fromIdx && fromIdx === terminusIdx) return false;
-    // No train runs it now: every destination is off-hours (or not boarded here) and no
+    // No train runs it now: every destination is off-hours (or not boarded here), no
     // real short-turn choice is left (a lineDest to the line's own end is the plain ride)
+    // and nothing on its onward chain runs either (Fukutoshin → Toyoko trains end on the
+    // Minato Mirai / Sotetsu chain, not on the Toyoko itself)
     if (c.destinations?.length && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja))
-        && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule))) return false;
+        && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule))
+        && !chainRunsNow(c, lineIdx, direction, fromIdx)) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
     // Mid-line junction: must be ahead of us in the travel direction, or here when
