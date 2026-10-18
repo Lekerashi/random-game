@@ -956,6 +956,13 @@ const LINE_CONNECTIONS = [
   // Through-running to Toyoko (chains with Seibu Yurakucho above)
   { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '渋谷',
     to:   'Tokyu Toyoko Line',           toEnd:   '渋谷',
+    // Nearly every train runs through (1 a day ends at 渋谷) to the chained termini
+    // (元町・中華街, Sotetsu); 13 weekday 各停 end at 武蔵小杉 in the rushes (ODPT 2026-03).
+    // No `services` on 武蔵小杉: declaring them would narrow the chained termini to those types
+    destinations: [
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
+        schedule: { weekday: { timeRange: [[7, 12], [17, 24]] }, weekend: { timeRange: [20, 24] } } },
+    ],
     // 急行 run on as Toyoko 急行; 通勤急行 mostly as 通勤特急
     express: [
       { name: 'Express', ja: '急行', color: '#e83030',
