@@ -54,8 +54,8 @@ function handlePhysicalBranches(p) {
 // ── Line destinations (trains terminating at different stations) ──
 // Returns { pickerShown: true } if picker displayed, { pickerShown: false } otherwise.
 function handleLineDestinations(p) {
-  const lineDest = LINE_DESTINATIONS[p.lineName];
-  if (!lineDest || p.direction !== lineDest.direction || state.selectedDestination) return { pickerShown: false };
+  const lineDest = lineDestFor(p.lineName, p.direction);
+  if (!lineDest || state.selectedDestination) return { pickerShown: false };
 
   const line = state.lines[p.lineIdx];
   const dests = lineDest.destinations

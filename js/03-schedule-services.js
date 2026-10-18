@@ -185,6 +185,16 @@ function getBranches(lineName, stationJa, line, direction, anyHour) {
     .map(b => ({ ...b, branchIndices: getBranchIndices(line, b.stations) }));
 }
 
+// LINE_DESTINATIONS[line] is one { direction, destinations } config or an array of them
+// (one per direction); lineDestFor() picks the one for a platform's direction
+function lineDestConfigs(lineName) {
+  const cfg = LINE_DESTINATIONS[lineName];
+  return !cfg ? [] : Array.isArray(cfg) ? cfg : [cfg];
+}
+function lineDestFor(lineName, direction) {
+  return lineDestConfigs(lineName).find(c => c.direction === direction) || null;
+}
+
 // LINE_SCHEDULES: boarding a line at a listed station toward `direction` runs
 // only while the entry's schedule does (Sky Access trains from 京成上野)
 function lineScheduleActive(lineName, stnJa, dir) {
