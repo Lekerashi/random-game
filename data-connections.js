@@ -967,12 +967,12 @@ const LINE_CONNECTIONS = [
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
                 '中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [16, 23]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [16, 23]] } } },
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['和光市','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
                 '中目黒','自由が丘','武蔵小杉','菊名','横浜'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
+        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
     ] },
   { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
@@ -1383,21 +1383,40 @@ const LINE_CONNECTIONS = [
         services: ['Local'] },
     ] },
   // Return: Fukutoshin/Yurakucho terminus → Tobu Tojo
-  // Through-trains terminate at Kawagoe-shi, Shinrin-Koen, or Ogawamachi, as 普通 or
-  // 快速急行 (F-Liner): never the Tojo's own 準急/急行/快速急行
+  // Half the trains end at 和光市; short turns at 池袋 (daytime) and 新宿三丁目 (weekday
+  // rushes). Through trains end at 志木 (各停), 川越市 (各停, 通勤急行), 森林公園 (all types)
+  // and, 3 weekend-morning trains, 小川町: never the Tojo's own 準急/急行 (ODPT 2026-03)
   { from: 'Tokyo Metro Fukutoshin Line', fromEnd: '和光市',
     to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end',
     toUntil: '小川町',
+    lineDests: [
+      { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31' },
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#9C5E31',
+        schedule: { weekday: { timeRange: [[8, 18], [0, 1]] }, weekend: { timeRange: [[7, 19], [0, 1]] } } },
+      { until: '新宿三丁目', name: 'Shinjuku-sanchome', ja: '新宿三丁目方面', color: '#9C5E31',
+        schedule: { weekday: { timeRange: [[7, 10], [17, 22], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+    ],
     destinations: [
-      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Express', 'F-Liner'] },
-      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'F-Liner'] },
-      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Local', 'Express', 'F-Liner'] },
+      { until: '志木', name: 'Shiki', ja: '志木方面', color: '#5aa0d8', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 8], [9, 10], [14, 23]] }, weekend: { timeRange: [[7, 9], [15, 17], [19, 21]] } } },
+      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Commuter Exp'] },
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'F-Liner', 'Commuter Exp'] },
+      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Express', 'F-Liner'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 9] } } },
     ] },
-  // Yurakucho through-trains are local only (no express on Tojo)
+  // Yurakucho through-trains are local only (no express on Tojo); 5 weekday trains end
+  // at 志木, 5 at 池袋 (mornings and the last ones) (ODPT 2026-03)
   { from: 'Tokyo Metro Yurakucho Line',  fromEnd: '和光市',
     to:   'Tobu Tojo Line',             toStation: '和光市', toDir: 'end',
     toUntil: '森林公園',
+    lineDests: [
+      { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#C9A800' },
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#C9A800',
+        schedule: { weekday: { timeRange: [[7, 10], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+    ],
     destinations: [
+      { until: '志木', name: 'Shiki', ja: '志木方面', color: '#5aa0d8',
+        schedule: { weekday: { timeRange: [[5, 7], [8, 10], [18, 22]] }, weekend: { timeRange: [[6, 7], [14, 16]] } } },
       { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8' },
       { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
     ],

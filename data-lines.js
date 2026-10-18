@@ -77,19 +77,29 @@ const EXPRESS_SERVICES = {
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    // Toward 和光市 the weekday 急行 run only in the rushes (the F-Liner carries the day)
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
     ]},
-    { name: "F-Liner", ja: "Fライナー", color: "#e83030", stops: [
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } }, // daytime only
+    ], schedule: { weekday: { timeRange: [[8, 11], [16, 21]] } } },
+    // Daytime; weekend F-Liners start at 8h and run to 18h toward 渋谷 (ODPT 2026-03)
+    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
+      "和光市","小竹向原","池袋","新宿三丁目",
+      "明治神宮前〈原宿〉","渋谷",
+    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
+    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "start", stops: [
+      "和光市","小竹向原","池袋","新宿三丁目",
+      "明治神宮前〈原宿〉","渋谷",
+    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 17] } } },
     // Weekday mornings and evenings: 急行 plus every station 和光市–小竹向原
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "end", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
       "新宿三丁目","明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [16, 23]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [16, 23]] } } },
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
       "新宿三丁目","明治神宮前〈原宿〉","渋谷",
