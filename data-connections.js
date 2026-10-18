@@ -797,21 +797,30 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Chiyoda Line', fromEnd: '代々木上原',
     to:   'Odakyu Line',              toStation: '代々木上原', toDir: 'end',
     lineDests: [
+      // 北綾瀬 shuttles turn back at 綾瀬 all day; 7 weekday-morning trains end at 明治神宮前
+      { until: '綾瀬', name: 'Ayase', ja: '綾瀬方面', color: '#00BB85' },
+      { until: '明治神宮前〈原宿〉', name: 'Meiji-jingumae', ja: '明治神宮前方面', color: '#00BB85',
+        schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
     ],
-    // Signboard termini; daytime 急行 also run on to 唐木田 (chained Odakyu → Tama hop)
+    // Signboard termini; daytime 急行 also run on to 唐木田 (chained Odakyu → Tama hop).
+    // Through 各停 end at 成城学園前 (16 wd) and 向ヶ丘遊園 (5 wd) (ODPT 2026-03)
     destinations: [
       { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0',
-        services: ['Semi-Exp'] },
+        services: ['Local', 'Semi-Exp'] },
       { until: '向ヶ丘遊園', name: 'Mukogaoka-Yuen', ja: '向ヶ丘遊園方面', color: '#1a8fe8',
-        services: ['Semi-Exp', 'Express'] },
-      // Weekday 急行 from the Chiyoda Line run to 唐木田 by day, to 本厚木/伊勢原 18–22h
+        services: ['Local', 'Semi-Exp', 'Express'] },
+      // 急行 from the Chiyoda Line run to 唐木田 by day and to 伊勢原 in the evening; one
+      // train a day ends at 本厚木 (a weekday 準急 20:17, a weekend 急行 around 20h)
       { until: '本厚木', name: 'Hon-Atsugi', ja: '本厚木方面', color: '#0070c0',
-        services: ['Express'], schedule: { weekday: { timeRange: [18, 23] } } },
+        services: ['Semi-Exp', 'Express'], schedule: { weekday: { timeRange: [20, 21] }, weekend: { timeRange: [20, 21] } } },
       { until: '伊勢原', name: 'Isehara', ja: '伊勢原方面', color: '#005090',
-        services: ['Express'], schedule: { weekday: { timeRange: [18, 23] } } },
+        services: ['Express'], schedule: { weekday: { timeRange: [17, 23] }, weekend: { timeRange: [18, 23] } } },
     ],
     express: [
+      // Through 各停 to 成城学園前 / 向ヶ丘遊園: weekday mornings and 15h, one weekend train at 19h (ODPT 2026-03)
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [[6, 11], [15, 17]] }, weekend: { timeRange: [19, 20] } } },
       // 準急 end at 向ヶ丘遊園 / 成城学園前 (one late train to 本厚木 ignored);
       // mornings and evenings only since daytime 準急 became 急行 in 2022
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
@@ -822,7 +831,7 @@ const LINE_CONNECTIONS = [
                 '下北沢','経堂','千歳船橋','祖師ヶ谷大蔵',
                 '成城学園前','喜多見','狛江','和泉多摩川','登戸',
                 '向ヶ丘遊園'],
-        schedule: { weekday: { timeRange: [[6, 8], [9, 11], [16, 22], [23, 24]] }, weekend: { timeRange: [[8, 12], [16, 19]] } } },
+        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[8, 12], [15, 19]] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['北綾瀬','綾瀬','北千住','町屋','西日暮里','千駄木',
                 '根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
@@ -831,8 +840,8 @@ const LINE_CONNECTIONS = [
                 '下北沢','経堂','成城学園前','登戸','向ヶ丘遊園',
                 '新百合ヶ丘','町田','相模大野','海老名','本厚木',
                 '愛甲石田','伊勢原'],
-        // None weekday 6–9h (各停/準急) or 16–17h (準急)
-        schedule: { weekday: { timeRange: [[10, 16], [18, 23]] }, weekend: { timeRange: [[7, 10], [11, 16], [19, 23]] } } },
+        // None weekday 5–8h (各停/準急) or 16h (準急); windows include the trailing hour (ODPT 2026-03)
+        schedule: { weekday: { timeRange: [[9, 16], [17, 23]] }, weekend: { timeRange: [[6, 16], [18, 23]] } } },
     ] },
   { from: 'Odakyu Line',              fromStation: '代々木上原', fromDir: 'start',
     to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
@@ -1513,11 +1522,23 @@ const LINE_CONNECTIONS = [
   // ── Chiyoda ↔ JR Joban Local at Ayase ─────────────────────────────────
   // Ayase is idx 1 on Chiyoda (Kita-ayase is a 1-station stub) and the start of the
   // Joban local tracks; rapid trains never call here.
+  // 北綾瀬 trains (half of them) and 綾瀬 short turns stay on the line; through trains
+  // end at 我孫子 all day, 松戸/柏 mornings and evenings, 取手 weekdays only (ODPT 2026-03)
   { from: 'Tokyo Metro Chiyoda Line', fromStation: '綾瀬', fromDir: 'start',
     to:   'JR Joban Line (Local)',    toEnd: '綾瀬',
+    lineDests: [
+      { until: '北綾瀬', name: 'Kita-ayase', ja: '北綾瀬方面', color: '#00BB85' },
+      { until: '綾瀬',   name: 'Ayase',      ja: '綾瀬方面',   color: '#00BB85',
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [[7, 21], [22, 24]] } } },
+    ],
     destinations: [
-      { until: '我孫子', name: 'Abiko',  ja: '我孫子方面', color: '#1aa260' },
-      { until: '取手',   name: 'Toride', ja: '取手方面',   color: '#009BBF' },
+      { until: '松戸',   name: 'Matsudo', ja: '松戸方面',   color: '#3ab070',
+        schedule: { weekday: { timeRange: [[6, 10], [0, 1]] }, weekend: { timeRange: [[9, 10], [23, 1]] } } },
+      { until: '柏',     name: 'Kashiwa', ja: '柏方面',     color: '#2a9a68',
+        schedule: { weekday: { timeRange: [[5, 8], [17, 21]] }, weekend: { stops: [] } } },
+      { until: '我孫子', name: 'Abiko',   ja: '我孫子方面', color: '#1aa260' },
+      { until: '取手',   name: 'Toride',  ja: '取手方面',   color: '#009BBF',
+        schedule: { weekday: { timeRange: [[5, 8], [16, 20]] }, weekend: { stops: [] } } },
     ] },
   // Joban locals run on to Yoyogi-Uehara (Odakyu through trains not modelled: toUntil stops the chain)
   { from: 'JR Joban Line (Local)',    fromEnd: '綾瀬',
