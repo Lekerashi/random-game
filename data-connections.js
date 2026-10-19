@@ -1068,12 +1068,17 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Namboku ↔ Tokyu Meguro at Meguro ──────────────────────────────────
+  // Half the trains turn back at 白金高輪; 16 weekday 各停 end at 武蔵小杉 (ODPT 2026-03)
   { from: 'Tokyo Metro Namboku Line', fromEnd: '目黒',
     to:   'Tokyu Meguro Line',        toEnd:   '目黒',
     lineDests: [
+      { until: '白金高輪', name: 'Shirokane-takanawa', ja: '白金高輪方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [[5, 6], [7, 1]] }, weekend: { timeRange: [5, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     destinations: [
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 11], [17, 20], [23, 1]] }, weekend: { timeRange: [[7, 9], [20, 21], [22, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ] },
   { from: 'Tokyu Meguro Line',        fromEnd: '目黒',
@@ -1088,18 +1093,35 @@ const LINE_CONNECTIONS = [
 
   // ── Namboku ↔ Saitama Railway at Akabane-iwabuchi ─────────────────────
   // Chains with Meguro → Namboku above for through-running to Urawa-misono.
+  // Most trains run through to 浦和美園; 赤羽岩淵 turn-backs by day and at night (all
+  // day on weekends), 王子神谷 in the rushes, 鳩ヶ谷 13 weekday trains (ODPT 2026-03)
   { from: 'Tokyo Metro Namboku Line',     fromEnd: '赤羽岩淵',
-    to:   'Saitama high-speed rail line', toEnd: '赤羽岩淵' },
+    to:   'Saitama high-speed rail line', toEnd: '赤羽岩淵',
+    lineDests: [
+      { until: '王子神谷', name: 'Oji-kamiya', ja: '王子神谷方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [[8, 10], [19, 22]] }, weekend: { timeRange: [8, 10] } } },
+      { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [[10, 17], [21, 24]] }, weekend: { timeRange: [8, 1] } } },
+    ],
+    destinations: [
+      { until: '鳩ヶ谷', name: 'Hatogaya', ja: '鳩ヶ谷方面', color: '#2a7fb8', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 10], [23, 1]] }, weekend: { timeRange: [7, 9] } } },
+      { until: '浦和美園', name: 'Urawa-Misono', ja: '浦和美園方面', color: '#0a5a98' },
+    ] },
   { from: 'Saitama high-speed rail line', fromEnd: '赤羽岩淵',
     to:   'Tokyo Metro Namboku Line',     toEnd: '赤羽岩淵' },
 
   // ── Mita ↔ Tokyu Meguro at Meguro ─────────────────────────────────────
+  // Half the trains turn back at 白金高輪; 13 weekday 各停 end at 武蔵小杉 (ODPT 2026-03)
   { from: 'Toei Mita Line',    fromEnd: '目黒',
     to:   'Tokyu Meguro Line', toEnd:   '目黒',
     lineDests: [
+      { until: '白金高輪', name: 'Shirokane-takanawa', ja: '白金高輪方面', color: '#2B50A1' },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     destinations: [
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 11], [16, 21], [22, 24]] }, weekend: { timeRange: [19, 23] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ] },
   { from: 'Tokyu Meguro Line', fromEnd: '目黒',

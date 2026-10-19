@@ -712,11 +712,22 @@ const LINE_BRANCHES = {
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'],
       schedule: { weekday: { timeRange: [17, 9] }, weekend: { timeRange: [[6, 9], [17, 19]] } } },
   ],
+  // Toward 池袋 the 方南町 branch is a separate entry so its label reads 池袋方面, and the
+  // branch shuttles (93 a day, turning back at 中野坂上) get their own; 13 weekday trains from
+  // 池袋 end at 中野富士見町 (8–9h and the last ones) (ODPT 2026-09)
   'Tokyo Metro Marunouchi Line': [
     { name: 'Ogikubo', ja: '荻窪方面', color: '#e60012',
       stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','新中野','東高円寺','新高円寺','南阿佐ケ谷','荻窪'] },
-    { name: 'Honancho', ja: '方南町方面', color: '#f07800',
+    { name: 'Honancho', ja: '方南町方面', color: '#f07800', direction: 'end',
       stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町','方南町'] },
+    { name: 'Nakano-Fujimicho', ja: '中野富士見町方面', color: '#f07800', direction: 'end',
+      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町'],
+      schedule: { weekday: { timeRange: [[8, 11], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+    { name: 'Ikebukuro', ja: '池袋方面', color: '#e60012', direction: 'start',
+      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町','方南町'] },
+    { name: 'Nakano-Sakaue', ja: '中野坂上方面', color: '#f07800', direction: 'start',
+      stations: ['中野坂上','中野新橋','中野富士見町','方南町'],
+      schedule: { weekday: { timeRange: [[5, 8], [9, 1]] }, weekend: { timeRange: [5, 1] } } },
   ],
   'JR Nambu Line': [
     { name: 'Tachikawa', ja: '立川方面', color: '#ffd400',
@@ -750,6 +761,24 @@ const LINE_DESTINATIONS = {
       { until: '上野', name: 'Ueno',    ja: '上野方面', color: '#f39700',
         schedule: { weekday: { timeRange: [[8, 10], [18, 20], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
       { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#f39700' },
+    ],
+  },
+  // 7 weekday-morning trains (from 荻窪 and 方南町) end at 茗荷谷 (ODPT 2026-09)
+  'Tokyo Metro Marunouchi Line': {
+    direction: 'start',  // toward Ikebukuro
+    destinations: [
+      { until: '茗荷谷', name: 'Myogadani', ja: '茗荷谷方面', color: '#e60012',
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
+      { until: '池袋',   name: 'Ikebukuro', ja: '池袋方面',   color: '#e60012' },
+    ],
+  },
+  // 22 weekday / 6 weekend trains end at 高島平 (mornings, evenings, the last ones) (ODPT 2026-03)
+  'Toei Mita Line': {
+    direction: 'end',  // toward Nishi-Takashimadaira
+    destinations: [
+      { until: '高島平',   name: 'Takashimadaira',       ja: '高島平方面',   color: '#2B50A1',
+        schedule: { weekday: { timeRange: [[8, 11], [15, 17], [18, 21], [23, 1]] }, weekend: { timeRange: [[8, 10], [18, 19], [23, 1]] } } },
+      { until: '西高島平', name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1' },
     ],
   },
   'JR Chuo Line': {
