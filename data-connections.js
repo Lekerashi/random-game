@@ -388,11 +388,17 @@ const LINE_CONNECTIONS = [
       { until: '熱海',   name: 'Atami',     ja: '熱海方面', color: '#e85050' },
       { until: '沼津',   name: 'Numazu',    ja: '沼津方面', color: '#9060c0' },
     ] },
-  // No Joban train terminates at Tokyo: all through trains run to Shinagawa
+  // No Joban train terminates at Tokyo: all through trains run to Shinagawa. Half the
+  // trains from 勝田 end at 水戸, the next stop (ODPT 2026-03)
   { from: 'JR Joban Line',        fromEnd: '上野',
     to:   'JR Tokaido Main Line',  toEnd:   '東京',
     via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
+    lineDests: [
+      { until: '水戸', name: 'Mito', ja: '水戸方面', color: '#086080', services: ['Local'],
+        schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } },
+      { until: '上野', name: 'Ueno', ja: '上野方面', color: '#009BBF' },
+    ],
     destinations: [
       { until: '品川',   name: 'Shinagawa', ja: '品川方面', color: '#009BBF' },
     ] },
@@ -1675,10 +1681,29 @@ const LINE_CONNECTIONS = [
       { until: '取手',   name: 'Toride',  ja: '取手方面',   color: '#009BBF',
         schedule: { weekday: { timeRange: [[5, 8], [16, 20]] }, weekend: { stops: [] } } },
     ] },
-  // Joban locals run on to Yoyogi-Uehara (Odakyu through trains not modelled: toUntil stops the chain)
+  // Joban locals run on to 代々木上原 all day; a third continue onto the Odakyu (唐木田 by day,
+  // 向ヶ丘遊園 / 成城学園前 in the rushes, 伊勢原 evenings), reached as the Chiyoda → Odakyu
+  // connection's chained destinations. On the JR and Metro stretch every one is a 普通; the
+  // 準急 / 急行 entries carry the Odakyu names so the chain merges their stops (ODPT 2026-03)
   { from: 'JR Joban Line (Local)',    fromEnd: '綾瀬',
     to:   'Tokyo Metro Chiyoda Line', toStation: '綾瀬', toDir: 'end',
-    toUntil: '代々木上原' },
+    lineDests: [
+      { until: '綾瀬', name: 'Ayase', ja: '綾瀬方面', color: '#00BB85' },
+    ],
+    destinations: [
+      { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['綾瀬','北千住','町屋','西日暮里','千駄木','根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
+                '霞ケ関','国会議事堂前','赤坂','乃木坂','表参道','明治神宮前〈原宿〉','代々木公園','代々木上原'],
+        schedule: { weekday: { timeRange: [[6, 10], [15, 22]] }, weekend: { timeRange: [[8, 11], [15, 19]] } } },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['綾瀬','北千住','町屋','西日暮里','千駄木','根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
+                '霞ケ関','国会議事堂前','赤坂','乃木坂','表参道','明治神宮前〈原宿〉','代々木公園','代々木上原'],
+        schedule: { weekday: { timeRange: [[10, 16], [17, 23]] }, weekend: { timeRange: [[6, 16], [19, 23]] } } },
+    ] },
 
   // ── JR Mito Line ↔ Joban at Tomobe ────────────────────────────────────
   // About a third of Mito Line trains run on from Tomobe to Mito, most to Katsuta.
@@ -1712,6 +1737,18 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '成田', name: 'Narita', ja: '成田方面', color: '#00b261' },
     ] },
+  // ...and back: 16 a day from 成田 run on to 上野 (a few to 品川 over the Ueno Tokyo Line, a
+  // chained destination); the rest end at 我孫子 (ODPT 2026-03)
+  { from: 'JR Narita Line (Abiko)', fromEnd: '我孫子',
+    to:   'JR Joban Line',          toStation: '我孫子', toDir: 'start',
+    lineDests: [
+      { until: '我孫子', name: 'Abiko', ja: '我孫子方面', color: '#00b261' },
+    ],
+    destinations: [
+      { until: '上野', name: 'Ueno', ja: '上野方面', color: '#009BBF', services: ['Local'],
+        schedule: { weekday: { timeRange: [[4, 16], [17, 19], [21, 23]] }, weekend: { timeRange: [[4, 19], [21, 23]] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通' }] },
 
   // ── Rinkai ↔ Saikyo at Osaki ──────────────────────────────────────────
   // Saikyo southbound: some trains terminate at Shinjuku, others continue to Osaki or Shin-Kiba

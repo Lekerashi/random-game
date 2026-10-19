@@ -999,12 +999,16 @@ const LINE_DESTINATIONS = {
       { until: '館林',         name: 'Tatebayashi',       ja: '館林方面',         color: '#002a60' },
     ],
   },
-  // 各駅停車 mostly end at 我孫子, some at 取手
+  // 各駅停車 mostly end at 我孫子, some at 取手; 松戸 / 柏 in the rushes and late (ODPT 2026-03)
   'JR Joban Line (Local)': {
     direction: 'end',  // toward Toride
     destinations: [
-      { until: '我孫子', name: 'Abiko',  ja: '我孫子方面', color: '#1aa260' },
-      { until: '取手',   name: 'Toride', ja: '取手方面',   color: '#009BBF' },
+      { until: '松戸',   name: 'Matsudo', ja: '松戸方面',   color: '#3ab070',
+        schedule: { weekday: { timeRange: [[6, 10], [0, 1]] }, weekend: { timeRange: [[9, 10], [0, 1]] } } },
+      { until: '柏',     name: 'Kashiwa', ja: '柏方面',     color: '#2a9a68',
+        schedule: { weekday: { timeRange: [[6, 8], [17, 22]] }, weekend: { stops: [] } } },
+      { until: '我孫子', name: 'Abiko',   ja: '我孫子方面', color: '#1aa260' },
+      { until: '取手',   name: 'Toride',  ja: '取手方面',   color: '#009BBF' },
     ],
   },
   'JR Ome Line': {
