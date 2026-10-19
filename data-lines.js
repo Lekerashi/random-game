@@ -789,22 +789,33 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
-    ], schedule: { weekday: { timeRange: [[5, 6], [8, 24]] } } },
+    ], schedule: { weekday: { timeRange: [[5, 7], [8, 24]] } } },
     // Weekday mornings toward 横浜 only: 快速 minus 星川
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "横浜","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [5, 9] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
     ]},
-    // All day both ways (海老名 5:14–22:56 incl. through trains, 横浜 7:10–23:47)
+    // All day both ways (toward 海老名 5h–0:10 incl. through trains, 横浜 7:10–23:47; ODPT 2026-03)
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "横浜","西谷","二俣川","大和","海老名",
-    ], schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } },
+    ] },
     // 急行 abolished 2023; 通勤特急 run only from the Izumino Line to Tokyu.
-    // Izumino Line: 快速 is all-stations there, so it stays Local-only.
+  ],
+  // 快速 is all-stations here; the 特急 toward 湘南台 are the Tokyu through trains
+  // (二俣川 5–8h and 18–20h weekdays, one Sat/hol at 8h; ODPT 2026-03)
+  "Sotetsu Izumino Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", direction: "end", stops: null },
+    // Toward 二俣川 the line's own 各停 are the late/first trains ending at 二俣川; by day
+    // every 各停 runs through (the connections' Local)
+    { name: "Local", ja: "各停", color: "#00a0e8", direction: "start", stops: null,
+      schedule: { weekday: { timeRange: [22, 5] }, weekend: { timeRange: [21, 5] } } },
+    { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
+      "二俣川","いずみ野","湘南台",
+    ], schedule: { weekday: { timeRange: [[5, 9], [18, 21]] }, weekend: { timeRange: [8, 9] } } },
   ],
 };
 
@@ -1105,6 +1116,19 @@ const LINE_DESTINATIONS = {
       { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#00b2e5', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[5, 7], [8, 23]] } } },
       { until: '千葉',   name: 'Chiba',    ja: '千葉方面',   color: '#00b2e5' },
+    ],
+  },
+  // Toward 海老名: 各停 turn back at 西谷 all day (48 wd / 52 Sat/hol, since the 2023 Shin-Yokohama
+  // Line timetable) and 6 weekday-morning trains at 大和 (ODPT 2026-03); 湘南台 merges in from the
+  // Izumino connection
+  'Sotetsu Main Line': {
+    direction: 'end',  // toward Ebina
+    destinations: [
+      { until: '西谷',   name: 'Nishiya', ja: '西谷方面',   color: '#4a90d8', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [6, 1] } } },
+      { until: '大和',   name: 'Yamato',  ja: '大和方面',   color: '#2a70c0', services: ['Local', 'Rapid'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
+      { until: '海老名', name: 'Ebina',   ja: '海老名方面', color: '#003087' },
     ],
   },
   // Down termini: 成増, 志木, 川越市, 森林公園 (急行), 小川町 (快速急行/川越特急)

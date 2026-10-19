@@ -1274,6 +1274,15 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#003087' },
+    ],
+    // Meguro 急行 run on as Sotetsu 各停 or, in the rushes, as the Izumino 特急 (the Sotetsu
+    // segment's name is the type-name engine's job); listed so the Izumino's own 特急 isn't
+    // offered as a Meguro-local ride
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [
+        '目黒','武蔵小山','大岡山','田園調布','多摩川','武蔵小杉','日吉',
+        '二俣川','南万騎が原','緑園都市','弥生台','いずみ野','いずみ中央','ゆめが丘','湘南台'] },
     ] },
   // Reverse: Shin-Yokohama Line → Meguro / Toyoko at Hiyoshi
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '日吉',
@@ -1362,40 +1371,47 @@ const LINE_CONNECTIONS = [
     to:   'Sotetsu Izumino Line',  toEnd: '二俣川',
     chainFrom: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line', 'Tokyu Toyoko Line', 'Tokyu Meguro Line'],
     name: 'Shonandai', ja: '湘南台方面', color: '#003087',
-    lineDests: [
-      { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
-    ],
+    // 西谷 / 大和 / 海老名 come from LINE_DESTINATIONS["Sotetsu Main Line"], which merges this one
     destinations: [
       { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a',
-        services: ['Local', 'Rapid'] }, // Main-line 特急 don't run onto the Izumino Line
+        services: ['Local', 'Rapid', 'Ltd. Express'] },
     ],
     express: [
-      // Izumino 特急 all run through from Tokyu, none from 横浜
+      // 快速 by day and in the evening on weekdays, all day Sat/hol (ODPT 2026-03)
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         '横浜','星川','西谷','鶴ヶ峰','二俣川',
-        '南万騎が原','緑園都市','弥生台','いずみ野','いずみ中央','ゆめが丘','湘南台'] },
+        '南万騎が原','緑園都市','弥生台','いずみ野','いずみ中央','ゆめが丘','湘南台'],
+        schedule: { weekday: { timeRange: [[6, 11], [14, 20]] } } },
+      // Izumino 特急 all run through from Tokyu via 西谷, none from 横浜 (10 wd, 1 Sat/hol)
+      { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
+        '西谷','二俣川','いずみ野','湘南台'],
+        schedule: { weekday: { timeRange: [[5, 9], [18, 21]] }, weekend: { timeRange: [7, 8] } } },
     ] },
   // (No 海老名-side → Izumino connection, nor Izumino → 海老名: the junction faces
   // 横浜, so those trains would have to reverse; at 二俣川 each line is its own platform)
   { from: 'Sotetsu Izumino Line',  fromEnd: '二俣川',
     to:   'Sotetsu Main Line',     toStation: '二俣川', toDir: 'start',
     name: 'Yokohama', ja: '横浜方面', color: '#003087',
+    // The first and the late 各停 end at the junction itself (5 wd / 7 Sat/hol; ODPT 2026-03)
     lineDests: [
-      { until: '湘南台', name: 'Shonandai', ja: '湘南台方面', color: '#4a9b4a' },
+      { until: '二俣川', name: 'Futamatagawa', ja: '二俣川方面', color: '#4a9b4a',
+        schedule: { weekday: { timeRange: [22, 5] }, weekend: { timeRange: [21, 5] } } },
     ],
     destinations: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
+      // 快速: weekday mornings, afternoons and the last one; Sat/hol in waves (ODPT 2026-03)
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         '湘南台','ゆめが丘','いずみ中央','いずみ野','弥生台','緑園都市','南万騎が原',
-        '二俣川','鶴ヶ峰','西谷','星川','横浜'] },
+        '二俣川','鶴ヶ峰','西谷','星川','横浜'],
+        schedule: { weekday: { timeRange: [[8, 11], [15, 20], [23, 24]] }, weekend: { timeRange: [[6, 11], [13, 15], [17, 19], [22, 24]] } } },
       // Weekday mornings (湘南台 6:26–7:47); Izumino 特急/通勤特急 run to Tokyu, not 横浜
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', stops: [
         '湘南台','ゆめが丘','いずみ中央','いずみ野','弥生台','緑園都市','南万騎が原',
         '二俣川','鶴ヶ峰','西谷','横浜'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 8] } } },
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
     ] },
   // Izumino trains through-running to Tokyu via 羽沢横浜国大 (各停, evening 特急,
   // weekday-morning 通勤特急), mirroring Tokyu → Izumino
@@ -1871,8 +1887,8 @@ const LINE_CONNECTIONS = [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '海老名','大和','二俣川','西谷','大崎','恵比寿','渋谷','新宿','池袋','板橋','十条','赤羽','北赤羽','浮間舟渡','戸田公園','戸田','北戸田','武蔵浦和','中浦和','南与野','与野本町','北与野','大宮'],
-        // Up hours differ from the down ones (海老名: wd 5–7h and 15–22h, we 5–10h, 18h, 21–22h)
-        schedule: { weekday: { timeRange: [[5, 8], [15, 23]] }, weekend: { timeRange: [[5, 11], [18, 19], [21, 23]] } } },
+        // Up hours differ from the down ones (wd 5–8h, 10h, 15–23h; Sat/hol 5–10h, 16–22h; ODPT 2026-03)
+        schedule: { weekday: { timeRange: [[5, 9], [10, 11], [15, 24]] }, weekend: { timeRange: [[5, 11], [16, 19], [20, 23]] } } },
     ] },
   // Boardable segment (injected in buildIndex): Osaki–Hazawa Yokohama-Kokudai
   { from: 'Sotetsu-JR Direct Line', fromEnd: '大崎',
