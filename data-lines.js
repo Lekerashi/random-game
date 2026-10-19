@@ -489,13 +489,14 @@ const EXPRESS_SERVICES = {
     ]},
   ],
   // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
-  // ラビット: toward 宇都宮 only, 2 morning (through from the Tokaido Line) + 2 evening from 上野
+  // ラビット: toward 宇都宮 only, 2 morning (through from the Tokaido Line, 6–9h on this line; ODPT files
+  // them under the Tokaido railway, so the checker sees only the evening pair) + 2 evening from 上野
   "Utsunomiya Line": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
     { name: "Rapid Rabbit", ja: "快速ラビット", color: "#e85050", direction: "end", stops: [
       "上野","赤羽","浦和","大宮","東大宮","蓮田","久喜","古河",
       "小山","小金井","自治医大","石橋","雀宮","宇都宮",
-    ], schedule: { weekday: { timeRange: [[6, 8], [18, 20]] }, weekend: { timeRange: [[6, 9], [18, 20]] } } },
+    ], schedule: { weekday: { timeRange: [[6, 10], [18, 21]] }, weekend: { timeRange: [[6, 10], [18, 21]] } } },
   ],
   // Rapid tracks: every train calls at every station (快速 to 取手, 普通 beyond).
   // 特別快速 toward 上野: 2 morning trains from 土浦, running on to 品川 (the 2
@@ -507,13 +508,14 @@ const EXPRESS_SERVICES = {
       "藤代","龍ケ崎市","牛久","ひたち野うしく","荒川沖","土浦",
     ], schedule: { weekday: { timeRange: [9, 11] }, weekend: { timeRange: [9, 11] } } },
   ],
-  // アーバン: toward 高崎 only, 2 morning (through from the Tokaido Line) + 2 evening from 上野
+  // アーバン: toward 高崎 only, 2 morning (through from the Tokaido Line, 8–11h on this line; ODPT files
+  // them under the Tokaido railway) + 2 evening from 上野
   "JR Takasaki Line": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
     { name: "Rapid Urban", ja: "快速アーバン", color: "#f07000", direction: "end", stops: [
       "上野","赤羽","浦和","大宮","上尾","桶川","鴻巣","熊谷","籠原",
       "深谷","岡部","本庄","神保原","新町","倉賀野","高崎",
-    ], schedule: { weekday: { timeRange: [[8, 10], [18, 20]] }, weekend: { timeRange: [[8, 10], [18, 20]] } } },
+    ], schedule: { weekday: { timeRange: [[8, 11], [18, 22]] }, weekend: { timeRange: [[8, 12], [18, 21]] } } },
   ],
   "JR Shonan Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -521,11 +523,23 @@ const EXPRESS_SERVICES = {
       "大宮","浦和","赤羽","池袋","新宿","渋谷",
       "恵比寿","大崎","武蔵小杉","横浜","戸塚","大船",
     ]},
-    // Hourly by day only (新宿 10–17h both ways)
-    { name: "Special Rapid", ja: "特別快速", color: "#e83080", stops: [
+    // Hourly by day only (ODPT 2026-03: toward 大船 10–17h weekdays, 8–17h weekends; toward 大宮 9–17h)
+    { name: "Special Rapid", ja: "特別快速", color: "#e83080", direction: "end", stops: [
       "大宮","浦和","赤羽","池袋","新宿","渋谷",
       "大崎","武蔵小杉","横浜","戸塚","大船",
-    ], schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [8, 18] } } },
+    ], schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [8, 18] } } },
+    { name: "Special Rapid", ja: "特別快速", color: "#e83080", direction: "start", stops: [
+      "大宮","浦和","赤羽","池袋","新宿","渋谷",
+      "大崎","武蔵小杉","横浜","戸塚","大船",
+    ], schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [9, 18] } } },
+  ],
+  // Tokaido 特別快速 (Shonan-Shinjuku trains 小田原 → 新宿, daytime) pass 鴨宮, 二宮, 大磯 and 辻堂; at 大船
+  // they leave for the Shonan-Shinjuku Line, which is its own platform there (ODPT 2026-03)
+  "JR Tokaido Main Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Special Rapid", ja: "特別快速", color: "#e83080", direction: "start", stops: [
+      "大船","藤沢","茅ケ崎","平塚","国府津","小田原",
+    ], schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
   ],
   "Keisei Oshiage Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -1015,6 +1029,46 @@ const LINE_DESTINATIONS = {
       { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20' },
       { until: '成東',   name: 'Naruto',    ja: '成東方面',   color: '#a05a20' },
       { until: '銚子',   name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#804818' },
+    ],
+  },
+  // Toward 静岡 the signboard termini of the JR East trains (品川 in the morning, 平塚, 国府津, 小田原,
+  // 熱海, a few 沼津); beyond 沼津 the JR Central locals run on to 静岡 (ODPT 2026-03)
+  'JR Tokaido Main Line': {
+    direction: 'end',  // toward Shizuoka
+    destinations: [
+      { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#009BBF',
+        schedule: { weekday: { timeRange: [7, 11] }, weekend: { timeRange: [8, 11] } } },
+      { until: '平塚',   name: 'Hiratsuka', ja: '平塚方面',   color: '#48a842',
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [[6, 19], [20, 1]] } } },
+      { until: '国府津', name: 'Kozu',      ja: '国府津方面', color: '#1a8fe8',
+        schedule: { weekday: { timeRange: [[7, 11], [15, 16], [18, 1]] }, weekend: { timeRange: [[7, 12], [15, 17], [18, 20], [21, 1]] } } },
+      { until: '小田原', name: 'Odawara',   ja: '小田原方面', color: '#e87830' },
+      { until: '熱海',   name: 'Atami',     ja: '熱海方面',   color: '#e85050' },
+      { until: '沼津',   name: 'Numazu',    ja: '沼津方面',   color: '#9060c0',
+        schedule: { weekday: { timeRange: [[5, 8], [16, 18], [19, 1]] }, weekend: { timeRange: [[5, 8], [16, 18], [19, 1]] } } },
+    ],
+  },
+  // Toward 黒磯 half the trains end at 宇都宮 and a third at 小金井; 古河 by day and in the evening
+  // (ODPT 2026-03). Toward 上野 the 宇都宮 short turn is a lineDest on the Ueno Tokyo Line connection
+  'Utsunomiya Line': {
+    direction: 'end',  // toward Kuroiso
+    destinations: [
+      { until: '古河',   name: 'Koga',       ja: '古河方面',   color: '#6ebc5e', services: ['Local'],
+        schedule: { weekday: { timeRange: [9, 22] }, weekend: { timeRange: [11, 22] } } },
+      { until: '小金井', name: 'Koganei',    ja: '小金井方面', color: '#5ebc6e', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [5, 1] } } },
+      { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848',
+        schedule: { weekday: { timeRange: [5, 1] }, weekend: { timeRange: [5, 1] } } },
+      { until: '黒磯',   name: 'Kuroiso',    ja: '黒磯方面',   color: '#1a6838' },
+    ],
+  },
+  // Toward 高崎 half the trains end at 籠原 (普通 and the Shonan-Shinjuku 快速) (ODPT 2026-03)
+  'JR Takasaki Line': {
+    direction: 'end',  // toward Takasaki
+    destinations: [
+      { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d', services: ['Local', 'Rapid'],
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [6, 1] } } },
+      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
     ],
   },
   // Toward 久里浜 half the trains end at 逗子; 大船 and 品川 in the rushes and late, 横須賀 a few
