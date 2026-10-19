@@ -592,16 +592,16 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
       "南流山","流山おおたかの森","守谷","つくば",
-    ], schedule: { weekday: { timeRange: [[5, 7], [8, 18], [21, 23]] }, weekend: { timeRange: [5, 23] } } },
+    ], schedule: { weekday: { timeRange: [[5, 18], [21, 23]] }, weekend: { timeRange: [5, 23] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
       "南流山","流山おおたかの森","守谷","つくば",
-    ], schedule: { weekday: { timeRange: [[5, 6], [9, 22]] }, weekend: { timeRange: [5, 23] } } },
+    ], schedule: { weekday: { timeRange: [[5, 7], [9, 22]] }, weekend: { timeRange: [5, 23] } } },
     // Weekday evenings toward つくば only
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","六町","八潮",
       "南流山","流山おおたかの森","柏の葉キャンパス","守谷","研究学園","つくば",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 21] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
   ],
   // 空港快速 (non-stop 浜松町 ↔ 羽田空港第3ターミナル) alternate with 普通 by day; none in
   // the weekday morning rush. 区間快速: a few, mostly weekday evenings
@@ -668,12 +668,19 @@ const EXPRESS_SERVICES = {
   // Yokohama Municipal Subway 快速 (every 30 min, both ways)
   "Blue Line": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+    // Daytime; the last weekend 快速 toward 湘南台 run past midnight (ODPT 2025-11)
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "あざみ野","中川","センター北","センター南","仲町台","新羽","新横浜",
       "横浜","桜木町","関内","上大岡","上永谷","戸塚",
       "踊場","中田","立場","下飯田","湘南台",
     ],
-      schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 21] } } },
+      schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [[9, 22], [23, 1]] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "あざみ野","中川","センター北","センター南","仲町台","新羽","新横浜",
+      "横浜","桜木町","関内","上大岡","上永谷","戸塚",
+      "踊場","中田","立場","下飯田","湘南台",
+    ],
+      schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [9, 22] } } },
   ],
   "Sotetsu Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -772,6 +779,79 @@ const LINE_DESTINATIONS = {
       { until: '池袋',   name: 'Ikebukuro', ja: '池袋方面',   color: '#e60012' },
     ],
   },
+  // 22 weekday / 12 weekend trains turn back at 舎人公園 (around 9h and the last ones) (ODPT 2025-02)
+  'Nippori-Toneri Liner': {
+    direction: 'start',  // toward Nippori
+    destinations: [
+      { until: '舎人公園', name: 'Toneri-koen', ja: '舎人公園方面', color: '#ff7e2e',
+        schedule: { weekday: { timeRange: [[9, 11], [22, 23], [0, 1]] }, weekend: { timeRange: [[9, 11], [22, 1]] } } },
+      { until: '日暮里',   name: 'Nippori',     ja: '日暮里方面',   color: '#ff7e2e' },
+    ],
+  },
+  // Toward つくば half the trains end at 守谷; 7 weekday-morning ones at 八潮 (ODPT 2025-03)
+  'Tsukuba Express': {
+    direction: 'end',  // toward Tsukuba
+    destinations: [
+      { until: '八潮',   name: 'Yashio',  ja: '八潮方面',   color: '#0067c0',
+        schedule: { weekday: { timeRange: [6, 10] }, weekend: { stops: [] } } },
+      { until: '守谷',   name: 'Moriya',  ja: '守谷方面',   color: '#0067c0' },
+      { until: 'つくば', name: 'Tsukuba', ja: 'つくば方面', color: '#0067c0' },
+    ],
+  },
+  // Short turns both ways: 上永谷 (rushes and the last ones), 踊場 by day toward 湘南台,
+  // 新羽 by day toward あざみ野 (ODPT 2025-11)
+  'Blue Line': [
+    { direction: 'end',  // toward Shonandai
+      destinations: [
+        { until: '上永谷', name: 'Kaminagaya', ja: '上永谷方面', color: '#1976d2',
+          schedule: { weekday: { timeRange: [[8, 10], [20, 1]] }, weekend: { timeRange: [[8, 11], [18, 20], [23, 1]] } } },
+        { until: '踊場',   name: 'Odoriba',    ja: '踊場方面',   color: '#1976d2',
+          schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [8, 21] } } },
+        { until: '湘南台', name: 'Shonandai',  ja: '湘南台方面', color: '#1976d2' },
+      ] },
+    { direction: 'start',  // toward Azamino
+      destinations: [
+        { until: '上永谷',   name: 'Kaminagaya', ja: '上永谷方面',   color: '#1976d2',
+          schedule: { weekday: { timeRange: [[8, 10], [20, 21], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        { until: '新羽',     name: 'Nippa',      ja: '新羽方面',     color: '#1976d2',
+          schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [[8, 21], [23, 1]] } } },
+        { until: 'あざみ野', name: 'Azamino',    ja: 'あざみ野方面', color: '#1976d2' },
+      ] },
+  ],
+  // 8 weekday / 9 weekend trains from 都庁前 (toward 光が丘, via 飯田橋) turn back at
+  // 清澄白河, rushes and the last ones (ODPT 2025-03). The 28 a day the other way round
+  // (光が丘 → 清澄白河 via 六本木) aren't offered: their 都庁前 alternative is the loop's
+  // second 都庁前, which rides from the 光が丘 side stop short of (OEDO_LOOP_END)
+  'Toei Oedo Line': {
+    direction: 'end',  // toward Hikarigaoka (via Iidabashi)
+    destinations: [
+      { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
+        schedule: { weekday: { timeRange: [[9, 10], [19, 22], [23, 1]] }, weekend: { timeRange: [[8, 10], [19, 20], [22, 1]] } } },
+      { until: '光が丘',   name: 'Hikarigaoka',        ja: '光が丘方面',   color: '#b6007a' },
+    ],
+  },
+  // Short turns at the depot (荒川車庫前) both ways, 王子駅前 / 大塚駅前 toward 早稲田 and
+  // 町屋駅前 toward 三ノ輪橋, mornings and evenings (ODPT 2021)
+  'Tokyo Sakura Tram': [
+    { direction: 'end',  // toward Waseda
+      destinations: [
+        { until: '荒川車庫前', name: 'Arakawa-shakomae', ja: '荒川車庫前方面', color: '#d4007a',
+          schedule: { weekday: { timeRange: [[9, 11], [19, 1]] }, weekend: { timeRange: [[9, 11], [18, 1]] } } },
+        { until: '王子駅前',   name: 'Oji-ekimae',       ja: '王子駅前方面',   color: '#d4007a',
+          schedule: { weekday: { timeRange: [[5, 8], [21, 1]] }, weekend: { timeRange: [[5, 8], [17, 1]] } } },
+        { until: '大塚駅前',   name: 'Otsuka-ekimae',    ja: '大塚駅前方面',   color: '#d4007a',
+          schedule: { weekday: { timeRange: [[5, 6], [7, 9], [18, 21], [22, 1]] }, weekend: { timeRange: [[5, 6], [22, 1]] } } },
+        { until: '早稲田',     name: 'Waseda',           ja: '早稲田方面',     color: '#d4007a' },
+      ] },
+    { direction: 'start',  // toward Minowabashi
+      destinations: [
+        { until: '荒川車庫前', name: 'Arakawa-shakomae', ja: '荒川車庫前方面', color: '#d4007a',
+          schedule: { weekday: { timeRange: [[8, 11], [18, 1]] }, weekend: { timeRange: [18, 1] } } },
+        { until: '町屋駅前',   name: 'Machiya-ekimae',   ja: '町屋駅前方面',   color: '#d4007a',
+          schedule: { weekday: { timeRange: [[5, 8], [15, 16], [18, 22]] }, weekend: { timeRange: [[6, 7], [9, 10], [20, 22]] } } },
+        { until: '三ノ輪橋',   name: 'Minowabashi',      ja: '三ノ輪橋方面',   color: '#d4007a' },
+      ] },
+  ],
   // 22 weekday / 6 weekend trains end at 高島平 (mornings, evenings, the last ones) (ODPT 2026-03)
   'Toei Mita Line': {
     direction: 'end',  // toward Nishi-Takashimadaira

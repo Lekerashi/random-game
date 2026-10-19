@@ -916,17 +916,41 @@ const LINE_CONNECTIONS = [
   { from: 'JR Chuo-Sobu Line',      fromStation: '中野', fromDir: 'end',
     to:   'Tokyo Metro Tozai Line', toEnd: '中野' },
   // Nishi-Funabashi: Tozai end terminus ↔ Chuo-Sobu mid-line. Through trains run
-  // as far as 津田沼 only.
+  // as far as 津田沼 only, 17 a day on weekdays (rushes) (ODPT 2026-03)
   { from: 'Tokyo Metro Tozai Line', fromEnd: '西船橋',
     to:   'JR Chuo-Sobu Line',      toStation: '西船橋', toDir: 'end',
-    toUntil: '津田沼' },
+    toUntil: '津田沼',
+    // the same lineDests as the Toyo Rapid connection below, so the merged picker lists them first
+    lineDests: [
+      { until: '東陽町', name: 'Toyocho', ja: '東陽町方面', color: '#009BBF',
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [8, 9] } } },
+      { until: '妙典',   name: 'Myoden',  ja: '妙典方面',   color: '#009BBF',
+        schedule: { weekday: { timeRange: [[7, 12], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+      { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#009BBF' },
+    ],
+    destinations: [
+      { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
+        schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
+    ] },
   { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'start',
     to:   'Tokyo Metro Tozai Line', toEnd: '西船橋',
     boardFrom: '津田沼' },
 
   // ── Tozai ↔ Toyo Rapid Railway at Nishi-Funabashi ─────────────────────
+  // Half the Tozai trains end at 西船橋; weekday-rush short turns at 東陽町 and 妙典. The
+  // lineDests sit on this always-running connection (the Chuo-Sobu one is weekday-only)
   { from: 'Tokyo Metro Tozai Line',   fromEnd: '西船橋',
-    to:   'Toyo Rapid Railway Line',  toEnd: '西船橋' },
+    to:   'Toyo Rapid Railway Line',  toEnd: '西船橋',
+    lineDests: [
+      { until: '東陽町', name: 'Toyocho', ja: '東陽町方面', color: '#009BBF',
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [8, 9] } } },
+      { until: '妙典',   name: 'Myoden',  ja: '妙典方面',   color: '#009BBF',
+        schedule: { weekday: { timeRange: [[7, 12], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+      { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#009BBF' },
+    ],
+    destinations: [
+      { until: '東葉勝田台', name: 'Toyo-Katsutadai', ja: '東葉勝田台方面', color: '#00a48c' },
+    ] },
   { from: 'Toyo Rapid Railway Line',  fromEnd: '西船橋',
     to:   'Tokyo Metro Tozai Line',   toEnd: '西船橋' },
 
@@ -1651,8 +1675,22 @@ const LINE_CONNECTIONS = [
 
   // ── Rinkai ↔ Saikyo at Osaki ──────────────────────────────────────────
   // Saikyo southbound: some trains terminate at Shinjuku, others continue to Osaki or Shin-Kiba
+  // Rinkai trains end at 大崎 (half), 川越 (chained, all day), 大宮 and 赤羽 (各停, rushes),
+  // 東京テレポート (a few) (ODPT 2026-03). No `services`: they would narrow the chained 川越 types
   { from: 'Rinkai Line',    fromEnd: '大崎',
-    to:   'JR Saikyo Line', toEnd:   '大崎' },
+    to:   'JR Saikyo Line', toEnd:   '大崎',
+    lineDests: [
+      { until: '東京テレポート', name: 'Tokyo Teleport', ja: '東京テレポート方面', color: '#767c78',
+        schedule: { weekday: { timeRange: [[9, 10], [21, 23]] }, weekend: { timeRange: [[10, 11], [22, 24]] } } },
+      { until: '大崎', name: 'Osaki', ja: '大崎方面', color: '#767c78',
+        schedule: { weekday: { timeRange: [[5, 22], [23, 1]] }, weekend: { timeRange: [5, 1] } } },
+    ],
+    destinations: [
+      { until: '赤羽', name: 'Akabane', ja: '赤羽方面', color: '#2a9a60',
+        schedule: { weekday: { timeRange: [[8, 9], [19, 23]] }, weekend: { timeRange: [22, 23] } } },
+      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#007540',
+        schedule: { weekday: { timeRange: [[7, 11], [16, 20], [22, 23]] }, weekend: { timeRange: [[6, 10], [16, 21], [22, 23]] } } },
+    ] },
   { from: 'JR Saikyo Line', fromEnd: '大崎',
     to:   'Rinkai Line',    toEnd:   '大崎',
     lineDests: [
