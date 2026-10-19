@@ -147,32 +147,41 @@ const EXPRESS_SERVICES = {
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     // 区間急行 run Toei ↔ Sagamihara Line since 2025-03 (connection express); only
-    // 4 weekday-morning up trains stay on the main line west of 調布, so none here
-    // No daytime 急行 since 2013: weekday mornings and evenings, a few weekend
-    // trains (down 5:47; up 8–9h and late evening, some from 高幡不動)
+    // 3 weekday-morning up trains stay on the main line west of 調布 (ODPT 2026-08)
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
+      "新宿","笹塚","明大前","桜上水","千歳烏山","仙川","つつじヶ丘","調布",
+      "東府中","府中","分倍河原","中河原","聖蹟桜ヶ丘","百草園","高幡不動",
+      "南平","平山城址公園","長沼","北野","京王八王子",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 8] } } },
+    // ...the Sagamihara 区間急行 that end at つつじヶ丘 run one stop on this line (evenings, 23h)...
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
+      "つつじヶ丘","調布",
+    ], schedule: { weekday: { timeRange: [[18, 21], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+    // ...and the ones to Keio 新宿 run 調布–新宿 (weekday 5h and 8h, Sat/hol mornings and 21–22h)
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
+      "新宿","笹塚","明大前","桜上水","千歳烏山","仙川","つつじヶ丘","調布",
+    ], schedule: { weekday: { timeRange: [[5, 6], [8, 9]] }, weekend: { timeRange: [[5, 10], [21, 23]] } } },
+    // No daytime 急行 since 2013: weekday mornings and evenings, weekend mornings and late
+    // evening (the daytime / Sat-hol afternoon 急行 are Toei ↔ Sagamihara through trains, on
+    // those connections; ODPT 2026-08)
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山",
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [[5, 10], [20, 22]] }, weekend: { timeRange: [5, 6] } } },
+    ], schedule: { weekday: { timeRange: [[5, 11], [20, 23]] }, weekend: { timeRange: [5, 7] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山",
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [[6, 8], [17, 22]] }, weekend: { timeRange: [[8, 10], [21, 22]] } } },
-    { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
+    ], schedule: { weekday: { timeRange: [[6, 10], [16, 24]] }, weekend: { timeRange: [[6, 10], [21, 24]] } } },
+    // 特急 all day both ways (ODPT 2026-08)
+    { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "新宿","笹塚","明大前","千歳烏山",
       "調布","府中","分倍河原",
       "聖蹟桜ヶ丘","高幡不動","北野","京王八王子",
     ]},
-    // None toward 新宿 in the weekday morning peak (京王八王子 6:31–7:46: 急行 only)
-    { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "start", stops: [
-      "新宿","笹塚","明大前","千歳烏山",
-      "調布","府中","分倍河原",
-      "聖蹟桜ヶ丘","高幡不動","北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [[4, 7], [8, 24]] } } },
   ],
   // Local-only so through-running to the Keio Line / Toei keeps a Local type
   // beside the target line's expresses (all New Line trains stop everywhere)
@@ -181,15 +190,15 @@ const EXPRESS_SERVICES = {
   ],
   "Keio Inokashira line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    // No weekday 急行 in the morning peak (吉祥寺 7:07–8:37, 渋谷 7:08–9:19)
+    // Weekday 急行 toward 渋谷 6–23h, toward 吉祥寺 7h and 9h–0h (ODPT 2025-03)
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "渋谷","下北沢","明大前","永福町","久我山",
       "吉祥寺",
-    ], schedule: { weekday: { timeRange: [[5, 7], [9, 24]] } } },
+    ], schedule: { weekday: { timeRange: [6, 24] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "渋谷","下北沢","明大前","永福町","久我山",
       "吉祥寺",
-    ], schedule: { weekday: { timeRange: [[7, 8], [9, 24]] } } },
+    ], schedule: { weekday: { timeRange: [[7, 8], [9, 1]] } } },
   ],
   "Odakyu Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -1116,6 +1125,63 @@ const LINE_DESTINATIONS = {
       { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#00b2e5', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[5, 7], [8, 23]] } } },
       { until: '千葉',   name: 'Chiba',    ja: '千葉方面',   color: '#00b2e5' },
+    ],
+  },
+  // Keio Line short turns (ODPT 2026-08): 桜上水 (各停, both ways), 高幡不動 (特急/急行/各停 down,
+  // 各停 up); 京王多摩センター / 橋本 / 高尾山口 merge in from the connections. つつじヶ丘 (up 区間急行)
+  // and 大島 (Toei) sit on the Sagamihara → Keio and Keio → Toei connections.
+  'Keio Line': [
+    { direction: 'end',  // toward Keio-Hachioji
+      destinations: [
+        { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0', services: ['Local'],
+          schedule: { weekday: { timeRange: [[6, 11], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        { until: '高幡不動',   name: 'Takahatafudo',  ja: '高幡不動方面',   color: '#a060c0', services: ['Local', 'Express', 'Ltd. Express'],
+          schedule: { weekday: { timeRange: [[5, 7], [8, 12], [13, 17], [20, 1]] }, weekend: { timeRange: [[6, 7], [20, 1]] } } },
+        { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
+      ] },
+    { direction: 'start',  // toward Shinjuku
+      destinations: [
+        { until: '高幡不動',   name: 'Takahatafudo',  ja: '高幡不動方面',   color: '#a060c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [[4, 7], [9, 11], [16, 18], [21, 1]] }, weekend: { timeRange: [[4, 6], [19, 20], [21, 1]] } } },
+        // the Sagamihara 区間急行 ending here (boardable at 調布 only)
+        { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Sub-Exp'],
+          schedule: { weekday: { timeRange: [[18, 21], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+        { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0', services: ['Local'],
+          schedule: { weekday: { timeRange: [[18, 20], [23, 1]] }, weekend: { timeRange: [22, 1] } } },
+        { until: '新宿',       name: 'Shinjuku',      ja: '新宿方面',       color: '#800080' },
+      ] },
+  ],
+  // 富士見ヶ丘 (depot) short turns both ways: down in the rushes and late, up in the evening (ODPT 2025-03)
+  'Keio Inokashira line': [
+    { direction: 'end',  // toward Kichijoji
+      destinations: [
+        { until: '富士見ヶ丘', name: 'Fujimigaoka', ja: '富士見ヶ丘方面', color: '#3aa0c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [[7, 11], [22, 1]] }, weekend: { timeRange: [[17, 19], [23, 1]] } } },
+        { until: '吉祥寺',     name: 'Kichijoji',   ja: '吉祥寺方面',     color: '#0070A0' },
+      ] },
+    { direction: 'start',  // toward Shibuya
+      destinations: [
+        { until: '富士見ヶ丘', name: 'Fujimigaoka', ja: '富士見ヶ丘方面', color: '#3aa0c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [[19, 21], [22, 23], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        { until: '渋谷',       name: 'Shibuya',     ja: '渋谷方面',       color: '#0070A0' },
+      ] },
+  ],
+  // Toward 橋本 most 特急 / 区間急行 and some 急行 end at 京王多摩センター (73 wd / 57 Sat/hol, 7h–0h;
+  // ODPT 2026-08); the line's own platforms have no train types, so no services here
+  'Keio Sagamihara line': {
+    direction: 'end',  // toward Hashimoto
+    destinations: [
+      { until: '京王多摩センター', name: 'Keio-Tama-Center', ja: '京王多摩センター方面', color: '#e070b8' },
+      { until: '橋本',             name: 'Hashimoto',        ja: '橋本方面',             color: '#dd44aa' },
+    ],
+  },
+  // 高尾 short turns: the first train and the late ones (ODPT 2026-08)
+  'Keio Takao Line': {
+    direction: 'end',  // toward Takaosanguchi
+    destinations: [
+      { until: '高尾',     name: 'Takao',         ja: '高尾方面',     color: '#5aa85a', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 6], [21, 1]] }, weekend: { timeRange: [[20, 21], [22, 1]] } } },
+      { until: '高尾山口', name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a' },
     ],
   },
   // Toward 海老名: 各停 turn back at 西谷 all day (48 wd / 52 Sat/hol, since the 2023 Shin-Yokohama
