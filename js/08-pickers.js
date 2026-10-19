@@ -79,10 +79,10 @@ function handleLineDestinations(p) {
       const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(lineDest.direction);
       if (stopsToEnd <= 0) return null;
       const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
-      return { ...d, untilIdx, effectiveMax,
+      return { ...d, untilIdx, effectiveMax, _services: d.services || null,
         _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true,
         onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja,
-          stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
+          services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
 
@@ -379,6 +379,7 @@ function destServesStation(conn, d, p) {
 // Source-line short-turn destination (conn.lineDests): trains that terminate
 // before the junction (e.g. Hashimoto, Machida on the Yokohama Line). The ride
 // stays on the source line: sets selectedDestination but NOT selectedConnection.
+// `services` (as on connection destinations) names the types that end there.
 function lineDestChoice(p, conn, d) {
   if (!scheduleActive(d.schedule)) return null;
   const line = state.lines[p.lineIdx];
@@ -389,10 +390,11 @@ function lineDestChoice(p, conn, d) {
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)), _fullMax: stopsToEnd,
+    _services: d.services || null,
     _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
     _plain: untilIdx === dirEnd(line.stations.length, p.direction), // the line's own end
     onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja,
-      stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
+      services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
   };
 }
 

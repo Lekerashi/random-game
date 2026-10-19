@@ -763,6 +763,7 @@ const LINE_SCHEDULES = {
 };
 
 // ── Line destinations (trains terminating at different stations on the same line) ──
+// Entries: { until (JA), name, ja, color, services?, schedule? }; services = the types that end there
 const LINE_DESTINATIONS = {
   // 17 weekday trains from 渋谷 (mornings, evenings, the last ones) and 2 weekend
   // night trains end at 上野 (ODPT 2026-09)

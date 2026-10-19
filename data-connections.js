@@ -35,7 +35,7 @@
 //                         localFrom (JA, source line): with `services`, local-class services only
 //                         feed this destination from that station onward toward the junction —
 //                         the destination is hidden at earlier stations no allowed service calls at
-//     lineDests         — [{ until (JA), name, ja, color? }] within-line short-turn picker
+//     lineDests         — [{ until (JA), name, ja, color?, services?, schedule? }] within-line short-turn picker
 //     express           — [{ name, ja, color?, stops, schedule?, chainName? }] cross-line express services
 //                         schedule as in EXPRESS_SERVICES (connections are already one-way);
 //                         same-name entries with different stops give per-segment hours

@@ -134,21 +134,20 @@ function resolveTrainTypes(p) {
     return eff.validCount > 0 && eff.reachesDest !== false;
   });
   // Filter train types to match the selected destination's real signboard.
-  // When `services` is declared, only show types whose name matches the allowlist.
-  // Fallback heuristic for destinations without `services`: chain express types that
-  // pass through (don't terminate at) the destination are filtered.
-  if (state.selectedDestination && conn) {
-    if (state.selectedDestination.services) {
-      const allowed = new Set(state.selectedDestination.services.map(s => normalize(s)));
-      reachable = reachable.filter(g => {
-        const members = g._members || [g];
-        return members.some(m => allowed.has(normalize(m.name)));
-      });
-    } else {
-      // Heuristic fallback: chain express types pass through intermediate destinations
-      if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
-        reachable = reachable.filter(g => !g._chainExpressStops);
-      }
+  // When `services` is declared (connection destinations, lineDests and LINE_DESTINATIONS
+  // entries alike), only show types whose name matches the allowlist.
+  // Fallback heuristic for connection destinations without `services`: chain express
+  // types that pass through (don't terminate at) the destination are filtered.
+  if (state.selectedDestination?.services) {
+    const allowed = new Set(state.selectedDestination.services.map(s => normalize(s)));
+    reachable = reachable.filter(g => {
+      const members = g._members || [g];
+      return members.some(m => allowed.has(normalize(m.name)));
+    });
+  } else if (state.selectedDestination && conn) {
+    // Heuristic fallback: chain express types pass through intermediate destinations
+    if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
+      reachable = reachable.filter(g => !g._chainExpressStops);
     }
   }
 
