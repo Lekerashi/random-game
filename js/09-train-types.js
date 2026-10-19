@@ -69,9 +69,9 @@ function resolveTrainTypes(p) {
     if (anchoredOnSource && !stopSetHas(names, here)) connExpNames.add(normalize(e.name));
   }
   // A local-class entry of the connection being ridden replaces the source line's own
-  // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速)
-  const connLocal = allConnExpress.some(a => a.connObj === conn
-    && a.express.some(e => e.stops === null && resolveServiceStops(e, a.targetLine, p.direction)?.length !== 0));
+  // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速), also when
+  // today's schedule hides it (no Asakusa 普通 runs through to Keikyu by day)
+  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(e => e.stops === null));
   trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null
     || (!connExpNames.has(normalize(t.name)) && !(connLocal && t.stops === null)));
 
