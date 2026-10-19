@@ -690,12 +690,12 @@ const EXPRESS_SERVICES = {
       "東京","八丁堀","新木場","舞浜","新浦安","南船橋",
       "海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我",
     ],
-      schedule: { weekday: { timeRange: [[9, 17], [20, 22]] }, weekend: { timeRange: [[9, 17], [20, 22]] } } },
+      schedule: { weekday: { timeRange: [[9, 17], [20, 22]] }, weekend: { timeRange: [[9, 18], [20, 22]] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "東京","八丁堀","新木場","舞浜","新浦安","南船橋",
       "海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我",
     ],
-      schedule: { weekday: { timeRange: [[6, 8], [9, 16]] }, weekend: { timeRange: [[6, 8], [9, 17]] } } },
+      schedule: { weekday: { timeRange: [6, 17] }, weekend: { timeRange: [6, 18] } } },
   ],
   // Yokohama Municipal Subway 快速 (every 30 min, both ways)
   "Blue Line": [
@@ -994,6 +994,33 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '海老名', name: 'Ebina',     ja: '海老名方面', color: '#6a9a8a' },
       { until: '茅ケ崎', name: 'Chigasaki', ja: '茅ケ崎方面', color: '#4a786f' },
+    ],
+  },
+  // Half the 各停 toward 蘇我 end at 海浜幕張, rush-hour and late ones at 新習志野; toward 東京 a
+  // few start short at 新習志野 (ODPT 2026-03). The Sotobo / Uchibo through trains are connections.
+  'JR Keiyo Line': [
+    { direction: 'end',  // toward Soga
+      destinations: [
+        { until: '新習志野', name: 'Shin-Narashino',  ja: '新習志野方面', color: '#B01030', services: ['Local'],
+          schedule: { weekday: { timeRange: [[8, 11], [18, 19], [20, 1]] }, weekend: { timeRange: [[19, 20], [21, 1]] } } },
+        { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C', services: ['Local'],
+          schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 22] } } },
+        { until: '蘇我',     name: 'Soga',            ja: '蘇我方面',     color: '#C9252B' },
+      ] },
+    { direction: 'start',  // toward Tokyo
+      destinations: [
+        { until: '新習志野', name: 'Shin-Narashino',  ja: '新習志野方面', color: '#B01030', services: ['Local'],
+          schedule: { weekday: { timeRange: [[8, 10], [11, 12], [23, 1]] }, weekend: { timeRange: [[9, 11], [23, 1]] } } },
+        { until: '東京',     name: 'Tokyo',           ja: '東京方面',     color: '#C9252B' },
+      ] },
+  ],
+  // 東所沢 short turns both ways: mornings, evenings and the last trains (ODPT 2026-03)
+  'JR Musashino Line': {
+    direction: 'start',  // toward Fuchu-Hommachi
+    destinations: [
+      { until: '東所沢',   name: 'Higashi-Tokorozawa', ja: '東所沢方面',   color: '#F77321',
+        schedule: { weekday: { timeRange: [[7, 11], [20, 22], [23, 1]] }, weekend: { timeRange: [[8, 11], [22, 1]] } } },
+      { until: '府中本町', name: 'Fuchu-Hommachi',     ja: '府中本町方面', color: '#F77321' },
     ],
   },
   // Toward 大宮 half the trains turn back at 南浦和; 6 weekday-morning ones at 赤羽 (ODPT 2026-03)

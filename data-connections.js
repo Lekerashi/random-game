@@ -2184,11 +2184,14 @@ const LINE_CONNECTIONS = [
   // Musashino trains continue onto the Keiyo Line over the two freight legs:
   // toward Tokyo via Ichikawa-Shiohama, toward Kaihin-Makuhari via
   // Minami-Funabashi. Junction stations aren't on the source line → in via.
+  // Evening and late trains from 府中本町 end at 東所沢 (ODPT 2026-03)
   { from: 'JR Musashino Line', fromEnd: '西船橋',
     to:   'JR Keiyo Line',     toStation: '市川塩浜', toDir: 'start',
     via:  ['市川塩浜'],
     name: 'Tokyo', ja: '東京方面', color: '#DC143C',
     lineDests: [
+      { until: '東所沢', name: 'Higashi-Tokorozawa', ja: '東所沢方面', color: '#F77321',
+        schedule: { weekday: { timeRange: [19, 1] }, weekend: { timeRange: [18, 24] } } },
       { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321' },
     ],
     destinations: [
@@ -2203,18 +2206,20 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#F77321' },
     ],
-    // Daytime trains end at 南船橋; 新習志野 / 海浜幕張 only at rush hours and late
-    // (hours at 船橋法典, JR East timetable 2026-10)
+    // Daytime trains end at 南船橋; 新習志野 / 海浜幕張 mostly at rush hours and late
+    // (hours over the whole line, ODPT 2026-03)
     destinations: [
       { until: '南船橋', name: 'Minami-Funabashi', ja: '南船橋方面', color: '#E8606A',
-        schedule: { weekday: { timeRange: [[5, 7], [9, 16], [19, 20], [22, 24]] }, weekend: { timeRange: [[5, 7], [8, 24]] } } },
+        schedule: { weekday: { timeRange: [[4, 7], [8, 24]] } } },
       { until: '新習志野', name: 'Shin-Narashino', ja: '新習志野方面', color: '#B01030',
-        schedule: { weekday: { timeRange: [[9, 11], [21, 1]] }, weekend: { timeRange: [[18, 19], [21, 22], [23, 1]] } } },
+        schedule: { weekday: { timeRange: [[7, 11], [20, 1]] }, weekend: { timeRange: [[17, 19], [21, 1]] } } },
       { until: '海浜幕張', name: 'Kaihin-Makuhari', ja: '海浜幕張方面', color: '#DC143C',
-        schedule: { weekday: { timeRange: [[6, 11], [15, 22]] }, weekend: { timeRange: [[6, 11], [16, 19], [20, 21]] } } },
+        schedule: { weekday: { timeRange: [[5, 11], [14, 22]] }, weekend: { timeRange: [[5, 11], [15, 21]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '各停' }] },
-  // Reverse: Keiyo riders branch onto the Musashino Line at both junctions
+  // Reverse: Keiyo riders branch onto the Musashino Line at both junctions. A few trains a
+  // day end at 西船橋 or 東所沢 (mornings, evenings, late) (ODPT 2026-03). The explicit Local
+  // keeps the Keiyo 各停 from being read as the しもうさ号 (which ODPT also types 普通).
   { from: 'JR Keiyo Line',     fromStation: '市川塩浜', fromDir: 'end',
     to:   'JR Musashino Line', toEnd: '西船橋',
     via:  ['西船橋'],
@@ -2224,9 +2229,14 @@ const LINE_CONNECTIONS = [
       { until: '蘇我', name: 'Soga', ja: '蘇我方面', color: '#DC143C' },
     ],
     destinations: [
-      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
+      { until: '西船橋',   name: 'Nishi-Funabashi',    ja: '西船橋方面',   color: '#F77321', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 9], [18, 20], [21, 22]] }, weekend: { timeRange: [[6, 9], [18, 20], [21, 22]] } } },
+      { until: '東所沢',   name: 'Higashi-Tokorozawa', ja: '東所沢方面',   color: '#F77321', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 10], [22, 24]] }, weekend: { timeRange: [[7, 9], [22, 24]] } } },
+      { until: '府中本町', name: 'Fuchu-Hommachi',     ja: '府中本町方面', color: '#F77321',
         services: ['Local'] }, // Keiyo 快速 never run onto the Musashino Line
-    ] },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
   { from: 'JR Keiyo Line',     fromStation: '南船橋', fromDir: 'start',
     to:   'JR Musashino Line', toEnd: '西船橋',
     via:  ['西船橋'],
@@ -2237,16 +2247,22 @@ const LINE_CONNECTIONS = [
       { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#DC143C' },
     ],
     destinations: [
-      { until: '府中本町', name: 'Fuchu-Hommachi', ja: '府中本町方面', color: '#F77321',
+      { until: '西船橋',   name: 'Nishi-Funabashi',    ja: '西船橋方面',   color: '#F77321', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 8], [9, 10], [17, 19], [20, 23]] }, weekend: { timeRange: [[7, 8], [9, 10], [17, 19], [20, 23]] } } },
+      { until: '東所沢',   name: 'Higashi-Tokorozawa', ja: '東所沢方面',   color: '#F77321', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 10], [20, 21]] }, weekend: { timeRange: [8, 10] } } },
+      { until: '府中本町', name: 'Fuchu-Hommachi',     ja: '府中本町方面', color: '#F77321',
         services: ['Local'], // Keiyo 快速 never run onto the Musashino Line
-        // Daytime trains start at 南船橋 (all day); from 新習志野 / 海浜幕張 only
-        // mornings and evenings (府中本町 departures, JR East timetable 2026-10)
+        // Daytime trains start at 南船橋 (all day on weekdays, mornings and evenings on
+        // weekends); from 新習志野 / 海浜幕張 only mornings and evenings (ODPT 2026-03)
+        schedule: { weekend: { timeRange: [[5, 10], [16, 21]] } },
         boardSchedule: {
           '新習志野': { weekday: { timeRange: [[5, 10], [15, 23]] }, weekend: { timeRange: [[5, 10], [16, 21]] } },
-          '幕張豊砂': { weekday: { timeRange: [[6, 10], [16, 22]] }, weekend: { timeRange: [[6, 10], [16, 21]] } },
+          '幕張豊砂': { weekday: { timeRange: [[7, 10], [16, 23]] }, weekend: { timeRange: [[7, 10], [16, 21]] } },
           '海浜幕張': { weekday: { timeRange: [[6, 10], [16, 22]] }, weekend: { timeRange: [[6, 10], [16, 21]] } },
         } },
-    ] },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekend: { timeRange: [[5, 10], [16, 22]] } } }] },
 
   // ── むさしの号 / しもうさ号 (named 普通 over the Musashino freight curves) ──
   // むさしの号: 八王子/府中本町 ↔ 大宮 over the 国立支線 (国立–新小平, no stations) and the
@@ -2369,7 +2385,9 @@ const LINE_CONNECTIONS = [
         ].flatMap(([stns, wd, we]) => stns.map(s => [s, { weekday: { timeRange: wd }, weekend: { timeRange: we } }]))) },
     ],
     express: [
-      { stops: null, name: 'Local', ja: '各停' }, // the Musashino Line has no types: two-typed so services pick the named one
+      // the Musashino Line has no types: two-typed so services pick the named one (same hours)
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[7, 9], [16, 17], [19, 21]] }, weekend: { timeRange: [[6, 8], [16, 17], [19, 21]] } } },
       { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
         stops: ['西船橋', '船橋法典', '市川大野', '東松戸', '新八柱', '新松戸', '南流山', '三郷', '新三郷', '吉川美南',
                 '吉川', '越谷レイクタウン', '南越谷', '東川口', '東浦和', '南浦和', '武蔵浦和', '大宮'],
