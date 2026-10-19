@@ -72,7 +72,7 @@ function handleLineDestinations(p) {
           onSelect: () => { state.selectedDestination = { totalMax: max, name: d.name, ja: d.ja, plainEnd: true }; } };
       }
       const untilIdx = line.stations.findIndex(s => s.ja === d.until);
-      if (untilIdx === -1) return null;
+      if (untilIdx === -1 || !destServesStation({}, d, p)) return null;
       // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
       if (state.selectedBranch?.branchIndices && !state.selectedBranch.branchIndices.includes(untilIdx)) return null;
       // Count stops from current position to destination
@@ -338,8 +338,9 @@ function collapseOutOfWardChoices(p, choices) {
   return kept;
 }
 
-// A destination with a `services` allowlist only appears on the departure
-// board at stations one of its allowed services actually calls at.
+// A destination with a `services` allowlist (connection destinations, lineDests and
+// LINE_DESTINATIONS entries alike) only appears on the departure board at stations one
+// of its allowed services actually calls at.
 // Express-class services match when a stop list with their name (connection
 // express or source-line EXPRESS_SERVICES) includes the current station.
 // Local-class services (stops: null) count everywhere, unless the destination
@@ -385,7 +386,7 @@ function destServesStation(conn, d, p) {
 // stays on the source line: sets selectedDestination but NOT selectedConnection.
 // `services` (as on connection destinations) names the types that end there.
 function lineDestChoice(p, conn, d) {
-  if (!scheduleActive(d.schedule)) return null;
+  if (!scheduleActive(d.schedule) || !destServesStation(conn, d, p)) return null;
   const line = state.lines[p.lineIdx];
   const untilIdx = line.stations.findIndex(s => s.ja === d.until);
   if (untilIdx === -1) return null;
