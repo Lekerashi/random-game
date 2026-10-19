@@ -641,11 +641,11 @@ const EXPRESS_SERVICES = {
       "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
     ], schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [8, 22] } } },
   ],
-  // 快速 run ~10:30–15:30 daily, both ways (御徒町 weekends only). The Negishi
-  // through-running version is connection express (data-connections.js).
+  // 快速 run by day, both ways (御徒町 weekends only); 9–16h on weekdays, to 17–18h on
+  // weekends (ODPT 2026-03). The Negishi through-running version is connection express.
   "JR Keihin Tohoku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "大宮","さいたま新都心","与野","北浦和","浦和",
       "南浦和","蕨","西川口","川口","赤羽",
       "東十条","王子","上中里","田端","上野",
@@ -654,17 +654,33 @@ const EXPRESS_SERVICES = {
       "大井町","大森","蒲田","川崎","鶴見",
       "新子安","東神奈川","横浜",
     ],
-      schedule: { weekday: { skip: ["御徒町"], timeRange: [10, 16] }, weekend: { timeRange: [10, 16] } } },
+      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 19] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "大宮","さいたま新都心","与野","北浦和","浦和",
+      "南浦和","蕨","西川口","川口","赤羽",
+      "東十条","王子","上中里","田端","上野",
+      "御徒町","秋葉原","神田","東京",
+      "浜松町","田町","高輪ゲートウェイ","品川",
+      "大井町","大森","蒲田","川崎","鶴見",
+      "新子安","東神奈川","横浜",
+    ],
+      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 18] } } },
   ],
-  // 快速 (daytime, both ways) skip 大口/小机/十日市場/成瀬/古淵/淵野辺/矢部
+  // 快速 (daytime, both ways) skip 大口/小机/十日市場/成瀬/古淵/淵野辺/矢部 (hours ODPT 2026-03)
   "JR Yokohama Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "東神奈川","菊名","新横浜","鴨居","中山",
       "長津田","町田","相模原","橋本",
       "相原","八王子みなみ野","片倉","八王子",
     ],
-      schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [9, 18] } } },
+      schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [8, 19] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
+      "東神奈川","菊名","新横浜","鴨居","中山",
+      "長津田","町田","相模原","橋本",
+      "相原","八王子みなみ野","片倉","八王子",
+    ],
+      schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 19] } } },
   ],
   // 通勤快速 abolished March 2024
   "JR Keiyo Line": [
@@ -978,6 +994,35 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '海老名', name: 'Ebina',     ja: '海老名方面', color: '#6a9a8a' },
       { until: '茅ケ崎', name: 'Chigasaki', ja: '茅ケ崎方面', color: '#4a786f' },
+    ],
+  },
+  // Toward 大宮 half the trains turn back at 南浦和; 6 weekday-morning ones at 赤羽 (ODPT 2026-03)
+  'JR Keihin Tohoku Line': {
+    direction: 'start',  // toward Omiya
+    destinations: [
+      { until: '赤羽',   name: 'Akabane',       ja: '赤羽方面',   color: '#48b8d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
+      { until: '南浦和', name: 'Minami-Urawa',  ja: '南浦和方面', color: '#20a0c8' },
+      { until: '大宮',   name: 'Omiya',         ja: '大宮方面',   color: '#00B2E5' },
+    ],
+  },
+  // Toward 大船 most trains end at 桜木町 or 磯子 (ODPT 2026-03)
+  'JR Negishi Line': {
+    direction: 'end',  // toward Ofuna
+    destinations: [
+      { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1' },
+      { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0' },
+      { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090' },
+    ],
+  },
+  // Toward 八王子 half the trains end at 橋本, 各停 only; 4 weekday ones at 町田 (ODPT 2026-03)
+  'JR Yokohama Line': {
+    direction: 'end',  // toward Hachioji
+    destinations: [
+      { until: '町田',   name: 'Machida',   ja: '町田方面',   color: '#3da03d', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 9], [22, 24]] }, weekend: { timeRange: [22, 24] } } },
+      { until: '橋本',   name: 'Hashimoto', ja: '橋本方面',   color: '#6aba6a', services: ['Local'] },
+      { until: '八王子', name: 'Hachioji',  ja: '八王子方面', color: '#00AD53' },
     ],
   },
   'JR Nambu Line': {

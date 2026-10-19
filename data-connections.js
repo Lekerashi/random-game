@@ -2490,8 +2490,9 @@ const LINE_CONNECTIONS = [
                 '長津田','町田','相模原','橋本',
                 '相原','八王子みなみ野','片倉','八王子',
                 '横浜','桜木町'],
-        schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [9, 18] } } },
+        schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [8, 19] } } },
     ] },
+  // 10 a day end at 橋本 (mornings and evenings, 各停) (ODPT 2026-03)
   { from: 'JR Negishi Line',  fromEnd: '横浜',
     to:   'JR Yokohama Line', toEnd:   '東神奈川',
     via:  ['東神奈川'],
@@ -2501,7 +2502,9 @@ const LINE_CONNECTIONS = [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },
     ],
     destinations: [
-      { until: '八王子', name: 'Hachioji', ja: '八王子方面', color: '#00AD53' },
+      { until: '橋本',   name: 'Hashimoto', ja: '橋本方面',   color: '#6aba6a', services: ['Local'],
+        schedule: { weekday: { timeRange: [[8, 10], [18, 21]] }, weekend: { timeRange: [[6, 7], [17, 19]] } } },
+      { until: '八王子', name: 'Hachioji',  ja: '八王子方面', color: '#00AD53' },
     ],
     // Daytime 快速 start at 桜木町 (all stations on the Negishi Line)
     express: [
@@ -2705,8 +2708,9 @@ const LINE_CONNECTIONS = [
         '新子安','東神奈川','横浜',
         '桜木町','関内','石川町','山手','根岸',
         '磯子','新杉田','洋光台','港南台','本郷台','大船'],
-        schedule: { weekday: { skip: ['御徒町'], timeRange: [10, 16] }, weekend: { timeRange: [10, 16] } } },
+        schedule: { weekday: { skip: ['御徒町'], timeRange: [9, 17] }, weekend: { timeRange: [9, 19] } } },
     ] },
+  // Half the through trains end at 南浦和; 4 weekday-morning 各停 at 赤羽 (ODPT 2026-03)
   { from: 'JR Negishi Line',       fromEnd: '横浜',
     to:   'JR Keihin Tohoku Line', toEnd:   '横浜',
     name: 'Omiya', ja: '大宮方面', color: '#00B2E5',
@@ -2714,7 +2718,10 @@ const LINE_CONNECTIONS = [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#d477d1' },
     ],
     destinations: [
-      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#00B2E5' },
+      { until: '赤羽',   name: 'Akabane',      ja: '赤羽方面',   color: '#48b8d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 10] }, weekend: { stops: [] } } },
+      { until: '南浦和', name: 'Minami-Urawa', ja: '南浦和方面', color: '#20a0c8' },
+      { until: '大宮',   name: 'Omiya',        ja: '大宮方面',   color: '#00B2E5' },
     ],
     express: [
       { name: 'Local', ja: '各停', color: '#00a0e8', stops: null },
@@ -2727,6 +2734,6 @@ const LINE_CONNECTIONS = [
         '田端','上中里','王子','東十条','赤羽',
         '川口','西川口','蕨','南浦和','浦和',
         '北浦和','与野','さいたま新都心','大宮'],
-        schedule: { weekday: { skip: ['御徒町'], timeRange: [10, 16] }, weekend: { timeRange: [10, 16] } } },
+        schedule: { weekday: { skip: ['御徒町'], timeRange: [9, 16] }, weekend: { timeRange: [9, 18] } } },
     ] },
 ];
