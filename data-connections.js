@@ -62,6 +62,14 @@
 //   via                       → intermediate stations counted toward stops
 //   displayName               → overrides platform pill label
 
+// Stop lists shared by the 横須賀・総武快速線 connections below (express lists run in travel order)
+const SOBU_RAPID_WEST = ['東京', '新日本橋', '馬喰町', '錦糸町', '新小岩', '市川', '船橋', '津田沼', '稲毛', '千葉']; // 快速 stops 東京–千葉
+const SOBU_RAPID_WEST_UP = [...SOBU_RAPID_WEST].reverse();                                                      // 千葉–東京
+const YOKOSUKA_PAST_TOKYO = ['新橋', '品川', '西大井', '武蔵小杉', '新川崎', '横浜', '保土ケ谷', '東戸塚', '戸塚', '大船',
+  '北鎌倉', '鎌倉', '逗子', '東逗子', '田浦', '横須賀', '衣笠', '久里浜'];
+const UCHIBO_RAPID_PAST_CHIBA = ['本千葉', '蘇我', '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '木更津', '君津']; // passes 巌根
+const KEIYO_RAPID = ['東京', '八丁堀', '新木場', '舞浜', '新浦安', '南船橋', '海浜幕張', '検見川浜', '稲毛海岸', '千葉みなと', '蘇我'];
+
 const LINE_CONNECTIONS = [
 
   // ── Hanzomon ↔ Den-en-toshi at Shibuya ──────────────────────────────────
@@ -525,24 +533,35 @@ const LINE_CONNECTIONS = [
 
   // ── Yokosuka ↔ Sobu Rapid at Tokyo (横須賀・総武快速線) ──────────────
   // Nearly all Yokosuka trains continue onto Sobu Rapid at Tokyo and vice versa.
+  // Daytime trains from 久里浜 end at 逗子 (ODPT 2026-03)
   { from: 'JR Yokosuka Line', fromEnd: '東京',
     to:   'JR Sobu Line',     toEnd: '東京',
     lineDests: [
+      { until: '逗子', name: 'Zushi', ja: '逗子方面', color: '#0068B7',
+        schedule: { weekday: { timeRange: [8, 18] }, weekend: { timeRange: [8, 18] } } },
       { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7' },
     ],
     destinations: [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
     ] },
+  // The 普通 from the east end at 千葉; every through train is a 快速, all stations past 東京
+  // (the 快速 entry lets the Narita Line's through 快速 chain onto it). 5 weekday 快速 end at 品川
   { from: 'JR Sobu Line',     fromEnd: '東京',
     to:   'JR Yokosuka Line', toEnd: '東京',
     lineDests: [
-      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#F7C948' },
+      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830', services: ['Local'] },
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#F7C948', services: ['Rapid'] }, // only where a 快速 calls
     ],
     destinations: [
-      { until: '大船', name: 'Ofuna',    ja: '大船方面',   color: '#4a9ec0' },
-      { until: '逗子', name: 'Zushi',    ja: '逗子方面',   color: '#0068B7' },
-      { until: '久里浜', name: 'Kurihama', ja: '久里浜方面', color: '#003868' },
+      { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#4a9ec0', services: ['Rapid'],
+        schedule: { weekday: { timeRange: [[7, 10], [17, 18]] }, weekend: { stops: [] } } },
+      { until: '大船',   name: 'Ofuna',     ja: '大船方面',   color: '#4a9ec0', services: ['Rapid'] },
+      { until: '逗子',   name: 'Zushi',     ja: '逗子方面',   color: '#0068B7', services: ['Rapid'] },
+      { until: '久里浜', name: 'Kurihama',  ja: '久里浜方面', color: '#003868', services: ['Rapid'] },
+    ],
+    express: [
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [...SOBU_RAPID_WEST_UP, ...YOKOSUKA_PAST_TOKYO] },
     ] },
 
   // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
@@ -1920,14 +1939,16 @@ const LINE_CONNECTIONS = [
 
   // ── Sobu ↔ Uchibo at Chiba ──────────────────────────────────────────
   // Hourly Sobu rapids run 東京 ↔ 君津 (the regular timetable: 姉ケ崎–長浦 is suspended
-  // after the Sept 2026 typhoon). They pass only 巌根; a lone declared type rides
-  // local, so no express entry
+  // after the Sept 2026 typhoon), passing 巌根; the 普通 end at 千葉 (ODPT 2026-03)
   { from: 'JR Sobu Line',   fromStation: '千葉', fromDir: 'end',
     to:   'JR Uchibo Line', toEnd: '千葉',
     toUntil: '君津',
     name: 'Kimitsu', ja: '君津方面', color: '#00b2e5',
     destinations: [
-      { until: '君津', name: 'Kimitsu', ja: '君津方面', color: '#00b2e5' },
+      { until: '君津', name: 'Kimitsu', ja: '君津方面', color: '#00b2e5', services: ['Rapid'] },
+    ],
+    express: [
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [...SOBU_RAPID_WEST, ...UCHIBO_RAPID_PAST_CHIBA] },
     ] },
   { from: 'JR Uchibo Line', fromEnd: '千葉',
     to:   'JR Sobu Line',   toStation: '千葉', toDir: 'start',
@@ -1936,7 +1957,10 @@ const LINE_CONNECTIONS = [
       { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#00b2e5' },
     ],
     destinations: [
-      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7' },
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7', services: ['Rapid'] },
+    ],
+    express: [
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [...[...UCHIBO_RAPID_PAST_CHIBA].reverse(), ...SOBU_RAPID_WEST_UP] },
     ] },
 
   // ── Sobu → Narita Line at Sakura ────────────────────────────────────
@@ -1952,6 +1976,29 @@ const LINE_CONNECTIONS = [
         services: ['Local'], localFrom: '千葉', chainFrom: [] },
       { until: '銚子', name: 'Choshi (Narita Line)', ja: '銚子方面（成田線）', color: '#006a3a',
         services: ['Local'], localFrom: '千葉', chainFrom: [] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '普通' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [...SOBU_RAPID_WEST, '都賀', '四街道', '物井', '佐倉', '酒々井', '成田'] },
+    ] },
+  // ...and back: the 普通 from 銚子 / 佐原 run on to 千葉 (27 a day) or end at 成田 (7); the
+  // 快速 from 成田空港 run to 東京 and on over the Yokosuka Line (chained) (ODPT 2026-03)
+  { from: 'JR Narita Line', fromEnd: '佐倉',
+    to:   'JR Sobu Line',   toStation: '佐倉', toDir: 'start',
+    lineDests: [
+      { until: '成田', name: 'Narita', ja: '成田方面', color: '#00b261', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 10], [11, 15], [16, 19], [22, 24]] }, weekend: { timeRange: [[6, 10], [11, 15], [16, 19], [22, 24]] } } },
+      { until: '佐倉', name: 'Sakura', ja: '佐倉方面', color: '#00b261' },
+    ],
+    destinations: [
+      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830', services: ['Local'],
+        schedule: { weekday: { timeRange: [4, 1] }, weekend: { timeRange: [4, 1] } } },
+      { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7', services: ['Rapid'],
+        schedule: { weekday: { timeRange: [[7, 8], [19, 22], [23, 24]] }, weekend: { timeRange: [[7, 8], [10, 11], [16, 17], [18, 19], [23, 24]] } } },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '普通' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: ['成田', '酒々井', '佐倉', '物井', '四街道', '都賀', ...SOBU_RAPID_WEST_UP] },
     ] },
 
   // ── Keisei Oshiage → Keisei Main / Sky Access / Hokuso at Keisei Takasago ──
@@ -2599,6 +2646,19 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport', ja: '成田空港方面', color: '#1a6fc4' },
     ] },
+  // ...and back: a quarter of the airport trains run on past 成田 (快速 to 東京 and the Yokosuka
+  // Line, 普通 to 千葉): no destination of their own on the Narita Line, all chained (ODPT 2026-03)
+  { from: 'JR Narita Line (Airport)', fromEnd: '成田',
+    to:   'JR Narita Line',           toStation: '成田', toDir: 'start',
+    lineDests: [
+      { until: '成田', name: 'Narita', ja: '成田方面', color: '#1a6fc4' },
+    ],
+    destinations: [],
+    express: [
+      { stops: null, name: 'Local', ja: '普通',
+        schedule: { weekday: { timeRange: [[8, 9], [12, 13], [14, 15], [16, 18], [21, 22]] }, weekend: { timeRange: [[8, 9], [12, 13], [14, 15], [16, 18], [21, 22]] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: ['成田空港（第１旅客ターミナル）', '空港第２ビル（第２旅客ターミナル）', '成田', '酒々井', '佐倉'] },
+    ] },
 
   // ── Shibayama Railway ↔ Keisei Higashi-Narita Line at Higashi-Narita ──
   // All-day through service Shibayama-Chiyoda ↔ Keisei-Narita. toUntil keeps the
@@ -2723,6 +2783,99 @@ const LINE_CONNECTIONS = [
           schedule: { weekday: { stops: [] }, weekend: { timeRange: [20, 21] } } },
       ] };
   }),
+
+  // ── Keiyo → Sotobo / Uchibo at Soga ──────────────────────────────────
+  // A dozen Keiyo trains a day run on to 上総一ノ宮 (快速 and 各停, every Sotobo station) and a
+  // few evening ones to 君津 (passing 巌根 like the Sobu 快速). The reverse rides are the Keiyo
+  // Line's own platform at 蘇我 (Y-junction) (ODPT 2026-03)
+  { from: 'JR Keiyo Line',  fromEnd: '蘇我',
+    to:   'JR Sotobo Line', toStation: '蘇我', toDir: 'end',
+    toUntil: '上総一ノ宮',
+    name: 'Kazusa-Ichinomiya', ja: '上総一ノ宮方面', color: '#e8503a',
+    destinations: [
+      { until: '上総一ノ宮', name: 'Kazusa-Ichinomiya', ja: '上総一ノ宮方面', color: '#e8503a',
+        schedule: { weekday: { timeRange: [[9, 15], [17, 23]] }, weekend: { timeRange: [[9, 15], [18, 23]] } } },
+    ],
+    // 快速 by day and around 20h, 各停 in the evening
+    express: [
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [17, 24] }, weekend: { timeRange: [17, 24] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: [...KEIYO_RAPID, '鎌取', '誉田', '土気', '大網', '永田', '本納', '新茂原', '茂原', '八積', '上総一ノ宮'],
+        schedule: { weekday: { timeRange: [[9, 15], [20, 22]] }, weekend: { timeRange: [[9, 15], [20, 22]] } } },
+    ] },
+  { from: 'JR Keiyo Line',  fromEnd: '蘇我',
+    to:   'JR Uchibo Line', toStation: '蘇我', toDir: 'end',
+    toUntil: '君津',
+    name: 'Kimitsu', ja: '君津方面', color: '#00b2e5',
+    destinations: [
+      { until: '君津', name: 'Kimitsu', ja: '君津方面', color: '#00b2e5',
+        schedule: { weekday: { timeRange: [17, 24] }, weekend: { timeRange: [17, 24] } } },
+    ],
+    // (the 快速 window matches the Sotobo one: on the Keiyo stretch the two services are the same
+    // trains to the checker; the 君津 destination's own hours gate the picker)
+    express: [
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [17, 24] }, weekend: { timeRange: [17, 24] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: [...KEIYO_RAPID, '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '木更津', '君津'],
+        schedule: { weekday: { timeRange: [[9, 15], [20, 22]] }, weekend: { timeRange: [[9, 15], [20, 22]] } } },
+    ] },
+
+  // ── Sotobo ↔ Uchibo at Awa-Kamogawa ──────────────────────────────────
+  // Around the peninsula's tip 9–11 普通 a day run through each way (上総一ノ宮 ↔ 木更津); the
+  // short turns of each line toward 安房鴨川 ride as lineDests here (ODPT 2026-03)
+  { from: 'JR Sotobo Line', fromEnd: '安房鴨川',
+    to:   'JR Uchibo Line', toEnd:   '安房鴨川',
+    toUntil: '木更津',
+    lineDests: [
+      { until: '上総一ノ宮', name: 'Kazusa-Ichinomiya', ja: '上総一ノ宮方面', color: '#e8503a',
+        schedule: { weekday: { timeRange: [5, 23] }, weekend: { timeRange: [5, 23] } } },
+      { until: '茂原',       name: 'Mobara',            ja: '茂原方面',       color: '#d04030', services: ['Local'],
+        schedule: { weekday: { timeRange: [[11, 21], [23, 1]] }, weekend: { timeRange: [[11, 21], [23, 1]] } } },
+      { until: '大原',       name: 'Ohara',             ja: '大原方面',       color: '#c03828', services: ['Local'],
+        schedule: { weekday: { timeRange: [[15, 18], [23, 1]] }, weekend: { timeRange: [[15, 18], [23, 1]] } } },
+      { until: '勝浦',       name: 'Katsuura',          ja: '勝浦方面',       color: '#b03028', services: ['Local'],
+        schedule: { weekday: { timeRange: [19, 24] }, weekend: { timeRange: [19, 24] } } },
+      { until: '安房鴨川',   name: 'Awa-Kamogawa',      ja: '安房鴨川方面',   color: '#902020' },
+    ],
+    destinations: [
+      { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#00b2e5', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 8], [10, 18], [19, 21]] }, weekend: { timeRange: [[7, 8], [10, 18], [19, 21]] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通', schedule: { weekday: { timeRange: [[7, 8], [10, 18], [19, 21]] }, weekend: { timeRange: [[7, 8], [10, 18], [19, 21]] } } }] },
+  { from: 'JR Uchibo Line', fromEnd: '安房鴨川',
+    to:   'JR Sotobo Line', toEnd:   '安房鴨川',
+    toUntil: '上総一ノ宮',
+    lineDests: [
+      { until: '木更津',   name: 'Kisarazu',     ja: '木更津方面',   color: '#00b2e5',
+        schedule: { weekday: { timeRange: [[6, 11], [12, 16], [18, 20], [21, 23], [0, 1]] }, weekend: { timeRange: [[6, 11], [12, 16], [18, 20], [21, 23], [0, 1]] } } },
+      { until: '君津',     name: 'Kimitsu',      ja: '君津方面',     color: '#0090c0',
+        schedule: { weekday: { timeRange: [5, 1] }, weekend: { timeRange: [5, 1] } } },
+      { until: '上総湊',   name: 'Kazusa-Minato', ja: '上総湊方面',   color: '#0070a0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 9], [14, 20]] }, weekend: { timeRange: [[7, 9], [14, 20]] } } },
+      { until: '館山',     name: 'Tateyama',     ja: '館山方面',     color: '#005080', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 9], [19, 1]] }, weekend: { timeRange: [[7, 9], [19, 1]] } } },
+      { until: '安房鴨川', name: 'Awa-Kamogawa', ja: '安房鴨川方面', color: '#003060' },
+    ],
+    destinations: [
+      { until: '上総一ノ宮', name: 'Kazusa-Ichinomiya', ja: '上総一ノ宮方面', color: '#e8503a', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 8], [9, 21]] }, weekend: { timeRange: [[7, 8], [9, 21]] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通', schedule: { weekday: { timeRange: [[7, 8], [9, 21]] }, weekend: { timeRange: [[7, 8], [9, 21]] } } }] },
+
+  // ── Togane → Sotobo at Oami ──────────────────────────────────────────
+  // Half the Togane Line trains run on from 大網 to 千葉 (13 a day); the Sotobo → Togane
+  // direction is the Togane Line's own platform at 大網 (Y-junction) (ODPT 2026-03)
+  { from: 'JR Togane Line', fromEnd: '大網',
+    to:   'JR Sotobo Line', toStation: '大網', toDir: 'start',
+    toUntil: '千葉',
+    lineDests: [
+      { until: '大網', name: 'Oami', ja: '大網方面', color: '#e8503a' },
+    ],
+    destinations: [
+      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#e8503a', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 7], [8, 15], [17, 18], [19, 20], [22, 23]] }, weekend: { timeRange: [[6, 7], [8, 15], [17, 18], [19, 20], [22, 23]] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通', schedule: { weekday: { timeRange: [[6, 15], [17, 18], [19, 20], [22, 23]] }, weekend: { timeRange: [[6, 15], [17, 18], [19, 20], [22, 23]] } } }] },
 
   // ── Hachiko Line ↔ Kawagoe Line at Komagawa ──────────────────────────
   // Through-running: Hachiko Line trains from Hachioji continue onto

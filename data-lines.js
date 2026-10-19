@@ -712,6 +712,46 @@ const EXPRESS_SERVICES = {
     ],
       schedule: { weekday: { timeRange: [6, 17] }, weekend: { timeRange: [6, 18] } } },
   ],
+  // West of 千葉 every train is a 快速 (the rapid tracks); east of it 普通 call everywhere and the
+  // 快速 (to 佐倉 / 成東) pass 東千葉 only. The 普通 is a segment type: its list starts at 千葉, so
+  // it is offered there and beyond only (ODPT 2026-03)
+  "JR Sobu Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: [
+      "千葉","東千葉","都賀","四街道","物井","佐倉","南酒々井","榎戸","八街","日向","成東",
+      "松尾","横芝","飯倉","八日市場","干潟","旭","飯岡","倉橋","猿田","松岸","銚子",
+    ]},
+    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+      "東京","新日本橋","馬喰町","錦糸町","新小岩","市川","船橋","津田沼","稲毛","千葉",
+      "都賀","四街道","物井","佐倉","南酒々井","榎戸","八街","日向","成東",
+    ]},
+  ],
+  // Sotobo 快速 run 千葉 ↔ 上総一ノ宮: the ones through from the Sobu rapid tracks pass 永田, 本納,
+  // 新茂原 and 八積, the Keiyo ones (by day) call everywhere; hours per direction (ODPT 2026-03)
+  "JR Sotobo Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
+      "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","茂原","上総一ノ宮",
+    ], schedule: { weekday: { timeRange: [[5, 6], [9, 11], [15, 22]] }, weekend: { timeRange: [[5, 6], [9, 11], [15, 22]] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
+      "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","永田","本納","新茂原","茂原","八積","上総一ノ宮",
+    ], schedule: { weekday: { timeRange: [[11, 15], [22, 23]] }, weekend: { timeRange: [[11, 15], [22, 23]] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","茂原","上総一ノ宮",
+    ], schedule: { weekday: { timeRange: [[6, 8], [10, 12], [16, 20], [21, 22]] }, weekend: { timeRange: [[6, 8], [10, 12], [16, 20], [21, 22]] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","永田","本納","新茂原","茂原","八積","上総一ノ宮",
+    ], schedule: { weekday: { timeRange: [[12, 16], [20, 21]] }, weekend: { timeRange: [[12, 16], [20, 21]] } } },
+  ],
+  // Uchibo 快速 run 千葉 ↔ 君津 passing 巌根 only (ODPT 2026-03)
+  "JR Uchibo Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
+      "千葉","本千葉","蘇我","浜野","八幡宿","五井","姉ケ崎","長浦","袖ケ浦","木更津","君津",
+    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 23] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "千葉","本千葉","蘇我","浜野","八幡宿","五井","姉ケ崎","長浦","袖ケ浦","木更津","君津",
+    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 23] } } },
+  ],
   // Yokohama Municipal Subway 快速 (every 30 min, both ways)
   "Blue Line": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
@@ -975,6 +1015,42 @@ const LINE_DESTINATIONS = {
       { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20' },
       { until: '成東',   name: 'Naruto',    ja: '成東方面',   color: '#a05a20' },
       { until: '銚子',   name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#804818' },
+    ],
+  },
+  // Toward 久里浜 half the trains end at 逗子; 大船 and 品川 in the rushes and late, 横須賀 a few
+  // afternoon ones (ODPT 2026-03)
+  'JR Yokosuka Line': {
+    direction: 'end',  // toward Kurihama
+    destinations: [
+      { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#4a9ec0',
+        schedule: { weekday: { timeRange: [[8, 10], [17, 18]] }, weekend: { stops: [] } } },
+      { until: '大船',   name: 'Ofuna',     ja: '大船方面',   color: '#4a9ec0',
+        schedule: { weekday: { timeRange: [[7, 11], [18, 20], [21, 1]] }, weekend: { timeRange: [[7, 11], [18, 21], [23, 1]] } } },
+      { until: '逗子',   name: 'Zushi',     ja: '逗子方面',   color: '#0068B7',
+        schedule: { weekday: { timeRange: [5, 1] }, weekend: { timeRange: [5, 1] } } },
+      { until: '横須賀', name: 'Yokosuka',  ja: '横須賀方面', color: '#004a90',
+        schedule: { weekday: { timeRange: [14, 22] }, weekend: { timeRange: [14, 22] } } },
+      { until: '久里浜', name: 'Kurihama',  ja: '久里浜方面', color: '#003868' },
+    ],
+  },
+  // Toward 千葉 a third of the Sotobo 普通 turn back at 上総一ノ宮 (ODPT 2026-03); toward 安房鴨川 the
+  // short turns are lineDests on the Sotobo → Uchibo connection
+  'JR Sotobo Line': {
+    direction: 'start',  // toward Chiba
+    destinations: [
+      { until: '上総一ノ宮', name: 'Kazusa-Ichinomiya', ja: '上総一ノ宮方面', color: '#e8503a', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 22]] }, weekend: { timeRange: [[5, 6], [7, 22]] } } },
+      { until: '千葉',       name: 'Chiba',             ja: '千葉方面',       color: '#e8503a' },
+    ],
+  },
+  // Toward 千葉 half the Uchibo 普通 from the south turn back at 木更津 (ODPT 2026-03); toward 安房鴨川
+  // the short turns are lineDests on the Uchibo → Sotobo connection
+  'JR Uchibo Line': {
+    direction: 'start',  // toward Chiba
+    destinations: [
+      { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#00b2e5', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[5, 7], [8, 23]] } } },
+      { until: '千葉',   name: 'Chiba',    ja: '千葉方面',   color: '#00b2e5' },
     ],
   },
   // Down termini: 成増, 志木, 川越市, 森林公園 (急行), 小川町 (快速急行/川越特急)
