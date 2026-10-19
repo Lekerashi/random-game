@@ -58,9 +58,19 @@ function handleLineDestinations(p) {
   if (!lineDest || state.selectedDestination) return { pickerShown: false };
 
   const line = state.lines[p.lineIdx];
+  const endIdx = dirEnd(line.stations.length, p.direction);
   const dests = lineDest.destinations
     .map(d => {
       if (!scheduleActive(d.schedule)) return null;
+      // `plain: true`: the plain ride to the line's own end (for an end `until` can't name,
+      // the Oedo loop's second 都庁前). It picks no station, so the ride keeps its normal
+      // cap and only carries the "towards" label
+      if (d.plain) {
+        const max = capStops(Math.min((endIdx - p.fromIdx) * dirStep(p.direction), p._onLineStops ?? p.maxStops));
+        if (max <= 0) return null;
+        return { ...d, effectiveMax: max, _outOfWards: outOfWards(line, endIdx), _connRef: null, _isLineDest: true, _plainEnd: true,
+          onSelect: () => { state.selectedDestination = { totalMax: max, name: d.name, ja: d.ja, plainEnd: true }; } };
+      }
       const untilIdx = line.stations.findIndex(s => s.ja === d.until);
       if (untilIdx === -1) return null;
       // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
