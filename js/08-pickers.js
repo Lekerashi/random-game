@@ -86,12 +86,13 @@ function handleLineDestinations(p) {
     })
     .filter(d => d && d.effectiveMax > 0);
 
-  // Merge mid-line connection destinations, chained ones included
-  // (e.g. Chuo → Ome at Tachikawa, Sobu → Narita → Narita Airport)
+  // Merge the destinations of the connections ahead, chained ones included (e.g. Chuo →
+  // Ome at Tachikawa, Sobu → Narita → Narita Airport); a boardAtJunction connection counts
+  // at its junction itself (Keiyo → Musashino from 南船橋)
   for (const conn of p._connections || []) {
     if (!conn.destinations) continue;
     const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
-    if (stopsToJunction <= 0) continue;
+    if (stopsToJunction < 0 || (stopsToJunction === 0 && !conn.boardAtJunction)) continue;
     for (const d of servedDests(conn, p)) dests.push(connDestChoice(p, conn, d, stopsToJunction));
     dests.push(...chainDestChoices(p, conn, stopsToJunction).filter(d => d.effectiveMax > 0));
   }
