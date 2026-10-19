@@ -185,19 +185,34 @@ function resolveTrainTypes(p) {
     }
   }
 
+  // Same-name entries whose stop lists differ in length (a quarter of the daytime Shonan-Shinjuku
+  // 快速 call at 西大井 / 新川崎) are one signboard type: one button faced by the longest member,
+  // the boarded train picked among the members (pickTrainType keeps its own stops)
+  const byName = [];
+  for (const g of merged) {
+    // same list only: the line's own entries, or one connection's (two connections' "Local" are different rides)
+    const catOf = m => (m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' + m._connIdx : 'src')
+      + (m.expressIndices ? ':exp' : ':local') + (m._chainExpressStops ? ':chain' : '');
+    const i = byName.findIndex(m => normalize(m.name) === normalize(g.name) && catOf(m) === catOf(g));
+    if (i === -1) { byName.push(g); continue; }
+    const face = byName[i]._count >= g._count ? byName[i] : g;
+    byName[i] = { ...face, _members: [...byName[i]._members, ...g._members] };
+  }
+
   // Express types that merged into one button (準急 + 急行 to Shibuya at night) still apply
-  if (merged.length <= 1) return merged[0]?.expressIndices ? { autoSelect: merged[0] } : null;
-  return { types: merged };
+  if (byName.length <= 1) return byName[0]?.expressIndices ? { autoSelect: byName[0] } : null;
+  return { types: byName };
 }
 
 // Board one train from a (possibly grouped) train-type button: a random member
-// ("Yamabiko" from "Yamabiko / Tsubasa") — members share the group's stops.
+// ("Yamabiko" from "Yamabiko / Tsubasa") — a member rides its own stops (same-name
+// entries may differ by a stop or two), the group's when it has none of its own.
 // `name` picks a specific member (session restore).
 function pickTrainType(g, name) {
   const members = g._members || [g];
   const pick = members.find(m => m.name === name)
     || members[Math.floor(Math.random() * members.length)];
-  return { ...pick, expressIndices: g.expressIndices };
+  return { ...pick, expressIndices: pick.expressIndices !== undefined ? pick.expressIndices : g.expressIndices };
 }
 
 function showTrainTypeButtons(p) {

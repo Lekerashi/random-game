@@ -331,6 +331,7 @@ function computeConnectionExtra(connections, stationName, visited) {
 //   _connTotalMax       — total reachable stops: source + via + target (+ chain)
 //   _chainExpressStops  — Set<normalized name> for multi-line chain filtering (optional)
 //   _srcExpIndices      — source-line express indices for junction routing (optional)
+//   _connIdx            — index of the connection in state.connections (same-name grouping)
 //
 // These fields are read by getStationsAlongRoute, getEffectiveStops, and
 // resolveTrainTypes (via trainTypeOpts). The _terminatesAtJunction field is
@@ -354,7 +355,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         : platform.maxStops;
       // Include chain extensions from onward connections
       if (connObj) localMax += computeConnectionExtra(getOnwardConnections(connObj), '', new Set([connObj.to]));
-      results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax });
+      results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax, _connIdx: state.connections.indexOf(connObj) });
       continue;
     }
     const joinedNames = new Set(resolvedStops.map(s => normalize(s)));
@@ -430,7 +431,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       }
 
     }
-    const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax };
+    const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax,
+      _connIdx: state.connections.indexOf(connObj) };
     // Attach chain express stops for downstream filtering in getStationsAlongRoute
     if (chainStops) { entry._chainExpressStops = chainStops; entry._chainHops = chainHops; }
     // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
