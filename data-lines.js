@@ -47,7 +47,7 @@ const EXPRESS_SERVICES = {
       "鳥沢","猿橋","大月","初狩","笹子",
       "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
       "山梨市","春日居町","石和温泉","酒折","甲府",
-    ], schedule: { weekday: { timeRange: [[6, 7], [9, 17], [22, 24]] } } },
+    ], schedule: { weekday: { timeRange: [[6, 8], [9, 18], [22, 1]] } } },
     { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", direction: "start", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
       "中野","三鷹","国分寺","立川",
@@ -56,7 +56,7 @@ const EXPRESS_SERVICES = {
       "鳥沢","猿橋","大月","初狩","笹子",
       "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
       "山梨市","春日居町","石和温泉","酒折","甲府",
-    ], schedule: { weekday: { timeRange: [[5, 7], [9, 23]] } } },
+    ], schedule: { weekday: { timeRange: [[5, 8], [9, 24]] } } },
     // Westbound only, weekday evenings; 5 a day run on to 大月 (all stations past 高尾)
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
@@ -64,16 +64,28 @@ const EXPRESS_SERVICES = {
       "日野","豊田","八王子","西八王子","高尾",
       "相模湖","藤野","上野原","四方津","梁川",
       "鳥沢","猿橋","大月",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 23] } } },
     // Eastbound only, weekday mornings: passes 三鷹 and 中野. One from 大月 runs all
     // stations to 高尾 (the 青梅 ones are connection express)
     { name: "Commuter Sp. Rapid", ja: "通勤特快", color: "#1a6fd8", direction: "start", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿","国分寺","立川","八王子","高尾",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 9] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
     { name: "Commuter Sp. Rapid", ja: "通勤特快", color: "#1a6fd8", direction: "start", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿","国分寺","立川","八王子","高尾",
       "相模湖","藤野","上野原","四方津","梁川","鳥沢","猿橋","大月",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 7] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
+  ],
+  // Weekend ホリデー快速おくたま 青梅 ↔ 奥多摩 (the 東京 ↔ 青梅 leg is connection express on the
+  // Chuo ↔ Ome connections): 2–3 a day each way, 青梅 7–10h out and 奥多摩 15–16h back;
+  // toward 奥多摩 they call at 二俣尾 (ODPT 2026-03, typed 特別快速 there)
+  "JR Ome Line": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "end", stops: [
+      "青梅","二俣尾","御嶽","奥多摩",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 11] } } },
+    { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "start", stops: [
+      "青梅","御嶽","奥多摩",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [15, 18] } } },
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },

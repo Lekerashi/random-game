@@ -1536,7 +1536,7 @@ const LINE_CONNECTIONS = [
                 '西立川','東中神','中神','昭島',
                 '拝島','牛浜','福生','羽村','小作','河辺',
                 '東青梅','青梅'],
-        schedule: { weekday: { timeRange: [[10, 15], [22, 23]] }, weekend: { timeRange: [7, 21] } } },
+        schedule: { weekday: { timeRange: [[10, 16], [22, 23]] }, weekend: { timeRange: [[7, 18], [20, 22]] } } },
       // ホリデー快速おくたま: weekends, 東京 6:30, 7:29, 8:22 (the 奥多摩 extension runs on set days only)
       { name: 'Holiday Rapid Okutama', ja: 'ホリデー快速おくたま', color: '#2a8a4a',
         stops: ['東京','神田','御茶ノ水','四ツ谷','新宿',
@@ -1547,9 +1547,11 @@ const LINE_CONNECTIONS = [
 
   // ── Ome → Chuo at Tachikawa ─────────────────────────────────────────
   // Ome trains run on to Tokyo all day as 快速 / 青梅特快; others end at Tachikawa.
+  // Half the trains from 奥多摩 end at 青梅 (ODPT 2026-03)
   { from: 'JR Ome Line',  fromEnd: '立川',
     to:   'JR Chuo Line', toStation: '立川', toDir: 'start',
     lineDests: [
+      { until: '青梅', name: 'Ome',       ja: '青梅方面', color: '#6a5020' },
       { until: '立川', name: 'Tachikawa', ja: '立川方面', color: '#b8a060' },
     ],
     destinations: [
@@ -1561,7 +1563,7 @@ const LINE_CONNECTIONS = [
         stops: ['青梅','東青梅','河辺','小作','羽村','福生','牛浜',
                 '拝島','昭島','中神','東中神','西立川','立川',
                 '国分寺','三鷹','中野','新宿','四ツ谷','御茶ノ水','神田','東京'],
-        schedule: { weekday: { timeRange: [[5, 6], [9, 15], [18, 19]] }, weekend: { timeRange: [6, 19] } } },
+        schedule: { weekday: { timeRange: [[5, 7], [9, 16], [18, 19]] }, weekend: { timeRange: [[6, 16], [18, 19]] } } },
       // 2 weekday-morning trains (青梅 6:35, 7:51): all stations to 立川, then 通勤特快
       // ホリデー快速おくたま: weekends, 青梅 15:42, 16:54, 17:27
       { name: 'Holiday Rapid Okutama', ja: 'ホリデー快速おくたま', color: '#2a8a4a',
@@ -1572,8 +1574,25 @@ const LINE_CONNECTIONS = [
         stops: ['青梅','東青梅','河辺','小作','羽村','福生','牛浜',
                 '拝島','昭島','中神','東中神','西立川','立川',
                 '国分寺','新宿','四ツ谷','御茶ノ水','神田','東京'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 8] } } },
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
     ] },
+
+  // ── Itsukaichi → Ome at Haijima ──────────────────────────────────────
+  // A third of the trains from 武蔵五日市 run on to 立川 (28 wd / 13 we, rushes and the
+  // last one), the rest end at 拝島 (ODPT 2026-03). The Ome → Itsukaichi direction is the
+  // Itsukaichi Line's own platform at 拝島 (Y-junction).
+  { from: 'JR Itsukaichi Line', fromEnd: '拝島',
+    to:   'JR Ome Line',        toStation: '拝島', toDir: 'start',
+    toUntil: '立川',
+    lineDests: [
+      { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#b8a060' },
+    ],
+    destinations: [
+      { until: '立川', name: 'Tachikawa', ja: '立川方面', color: '#b8a060',
+        schedule: { weekday: { timeRange: [[5, 10], [15, 22], [23, 24]] }, weekend: { timeRange: [[5, 9], [15, 18], [19, 21]] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通',
+      schedule: { weekday: { timeRange: [[5, 10], [15, 22], [23, 24]] }, weekend: { timeRange: [[5, 9], [15, 18], [19, 21]] } } }] },
 
   // ── Chuo → Fuji Express at Otsuki ────────────────────────────────────
   // 2 evening trains through-run to Kawaguchiko: weekday Commuter Rapid, weekend
@@ -1584,11 +1603,11 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '河口湖', name: 'Kawaguchiko', ja: '河口湖方面', color: '#67db56',
         services: ['Commuter Rapid', 'Chuo Sp. Rapid'],
-        schedule: { weekday: { timeRange: [17, 20] }, weekend: { timeRange: [18, 20] } } },
+        schedule: { weekday: { timeRange: [18, 21] }, weekend: { timeRange: [18, 21] } } },
     ],
     express: [
       { name: 'Chuo Sp. Rapid', ja: '中央特快', color: '#f07000',
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 20] } },
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 21] } },
         stops: ['東京','神田','御茶ノ水','四ツ谷','新宿',
                 '中野','三鷹','国分寺',
                 '立川','日野','豊田','八王子','西八王子','高尾',
@@ -1599,7 +1618,7 @@ const LINE_CONNECTIONS = [
                 '三つ峠','寿','葭池温泉前','下吉田',
                 '月江寺','富士山','富士急ハイランド','河口湖'] },
       { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030',
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 20] } },
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [18, 21] } },
         stops: ['東京','神田','御茶ノ水','四ツ谷','新宿',
                 '中野','荻窪','吉祥寺','三鷹','国分寺',
                 '立川','日野','豊田','八王子','西八王子','高尾',
