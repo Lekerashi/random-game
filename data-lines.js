@@ -822,18 +822,25 @@ const LINE_DESTINATIONS = {
         { until: 'あざみ野', name: 'Azamino',    ja: 'あざみ野方面', color: '#1976d2' },
       ] },
   ],
-  // 8 weekday / 9 weekend trains from 都庁前 (toward 光が丘, via 飯田橋) turn back at
-  // 清澄白河, rushes and the last ones (ODPT 2025-03). The 28 a day the other way round
-  // (光が丘 → 清澄白河 via 六本木) aren't offered: their 都庁前 alternative is the loop's
-  // second 都庁前, which rides from the 光が丘 side stop short of (OEDO_LOOP_END)
-  'Toei Oedo Line': {
-    direction: 'end',  // toward Hikarigaoka (via Iidabashi)
-    destinations: [
-      { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
-        schedule: { weekday: { timeRange: [[9, 10], [19, 22], [23, 1]] }, weekend: { timeRange: [[8, 10], [19, 20], [22, 1]] } } },
-      { until: '光が丘',   name: 'Hikarigaoka',        ja: '光が丘方面',   color: '#b6007a' },
-    ],
-  },
+  // 清澄白河 turn-backs both ways round the loop, rushes and the last ones: 8 weekday / 9
+  // weekend trains from 都庁前 (toward 光が丘, via 飯田橋) and 28 / 13 from 光が丘 (toward
+  // 都庁前, via 六本木) (ODPT 2025-03). Toward 都庁前 the alternative is the plain ride:
+  // the loop's second 都庁前 can't be named by `until` (rides from the 光が丘 side stop
+  // short of it, OEDO_LOOP_END)
+  'Toei Oedo Line': [
+    { direction: 'end',  // toward Hikarigaoka (via Iidabashi)
+      destinations: [
+        { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
+          schedule: { weekday: { timeRange: [[9, 10], [19, 22], [23, 1]] }, weekend: { timeRange: [[8, 10], [19, 20], [22, 1]] } } },
+        { until: '光が丘',   name: 'Hikarigaoka',        ja: '光が丘方面',   color: '#b6007a' },
+      ] },
+    { direction: 'start',  // toward Tochomae (via Roppongi)
+      destinations: [
+        { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
+          schedule: { weekday: { timeRange: [[7, 11], [19, 1]] }, weekend: { timeRange: [[9, 11], [18, 1]] } } },
+        { plain: true,       name: 'Tochomae',           ja: '都庁前方面',   color: '#b6007a' },
+      ] },
+  ],
   // Short turns at the depot (荒川車庫前) both ways, 王子駅前 / 大塚駅前 toward 早稲田 and
   // 町屋駅前 toward 三ノ輪橋, mornings and evenings (ODPT 2021)
   'Tokyo Sakura Tram': [
