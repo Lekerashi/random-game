@@ -85,6 +85,9 @@ function handleLineDestinations(p) {
           services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
+  // No line destination ahead (a segment the table's stations aren't on, e.g. the southern JR
+  // Hachiko Line): the connection picker handles the platform
+  if (dests.length === 0) return { pickerShown: false };
 
   // Merge the destinations of the connections ahead, chained ones included (e.g. Chuo →
   // Ome at Tachikawa, Sobu → Narita → Narita Airport); a boardAtJunction connection counts
