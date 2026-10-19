@@ -56,10 +56,17 @@ function resolveTrainTypes(p) {
   // A connection service hidden by today's schedule still replaces its source-line
   // namesake (daytime Odakyu 急行 don't run on to Fujisawa as locals) — on the
   // connection being ridden only (weekday 中央特快 still run to 大月 when the
-  // weekend-only Kawaguchiko one is off)
+  // weekend-only Kawaguchiko one is off). So does one that calls at source-line
+  // stations but not this one: the namesake boarded here doesn't run onto the
+  // target either (no 特急 to 湘南台 from 横浜, only from 西谷)
+  const here = line.stations[p.fromIdx];
   for (const a of allConnExpress) for (const e of a.express) {
-    if (a.connObj !== conn) continue;
-    if (e.stops && resolveServiceStops(e, a.targetLine, p.direction).length === 0) connExpNames.add(normalize(e.name));
+    if (a.connObj !== conn || !e.stops) continue;
+    const stops = resolveServiceStops(e, a.targetLine, p.direction);
+    if (stops.length === 0) { connExpNames.add(normalize(e.name)); continue; }
+    const names = new Set(stops.map(s => normalize(s)));
+    const anchoredOnSource = line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(names, s));
+    if (anchoredOnSource && !stopSetHas(names, here)) connExpNames.add(normalize(e.name));
   }
   // A local-class entry of the connection being ridden replaces the source line's own
   // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速)
