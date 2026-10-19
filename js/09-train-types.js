@@ -163,6 +163,22 @@ function resolveTrainTypes(p) {
     return null;
   }
 
+  // Same-name entries of one list whose stop lists differ in length (a quarter of the daytime
+  // Shonan-Shinjuku 快速 call at 西大井 / 新川崎) are one signboard type: one button faced by the
+  // longest member, the boarded train picked among the members (pickTrainType keeps its own stops).
+  // Same list only: the line's own entries, or one connection's (two connections' "Local" differ)
+  const catOf = m => (m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' + m._connIdx : 'src')
+    + (m.expressIndices ? ':exp' : ':local') + (m._chainExpressStops ? ':chain' : '');
+  const sameList = [];
+  for (const g of reachable) {
+    const i = sameList.findIndex(m => normalize(m.name) === normalize(g.name) && catOf(m) === catOf(g));
+    if (i === -1) { sameList.push(g); continue; }
+    const face = effOf.get(sameList[i]).validCount >= effOf.get(g).validCount ? sameList[i] : g;
+    face._members = [...sameList[i]._members, ...g._members];
+    sameList[i] = face;
+  }
+  reachable = sameList;
+
   // Merge express types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
   // Never merge local with express, or source-line with connection types — same count can mean different destinations
   const merged = [];
@@ -185,23 +201,9 @@ function resolveTrainTypes(p) {
     }
   }
 
-  // Same-name entries whose stop lists differ in length (a quarter of the daytime Shonan-Shinjuku
-  // 快速 call at 西大井 / 新川崎) are one signboard type: one button faced by the longest member,
-  // the boarded train picked among the members (pickTrainType keeps its own stops)
-  const byName = [];
-  for (const g of merged) {
-    // same list only: the line's own entries, or one connection's (two connections' "Local" are different rides)
-    const catOf = m => (m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' + m._connIdx : 'src')
-      + (m.expressIndices ? ':exp' : ':local') + (m._chainExpressStops ? ':chain' : '');
-    const i = byName.findIndex(m => normalize(m.name) === normalize(g.name) && catOf(m) === catOf(g));
-    if (i === -1) { byName.push(g); continue; }
-    const face = byName[i]._count >= g._count ? byName[i] : g;
-    byName[i] = { ...face, _members: [...byName[i]._members, ...g._members] };
-  }
-
   // Express types that merged into one button (準急 + 急行 to Shibuya at night) still apply
-  if (byName.length <= 1) return byName[0]?.expressIndices ? { autoSelect: byName[0] } : null;
-  return { types: byName };
+  if (merged.length <= 1) return merged[0]?.expressIndices ? { autoSelect: merged[0] } : null;
+  return { types: merged };
 }
 
 // Board one train from a (possibly grouped) train-type button: a random member
