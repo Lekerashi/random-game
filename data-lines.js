@@ -313,23 +313,36 @@ const EXPRESS_SERVICES = {
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
     ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
+    // 快速急行 from 池袋: weekday morning peak and daytime (the Fukutoshin through ones are the
+    // F-Liner on the connection), all day Sat/hol; up also 22–23h / 20–21h (ODPT 2026-03)
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "池袋","和光市","朝霞台",
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
-    ], schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [6, 10] } } }, // a few morning trains (F-Liner by day)
-    // No-extra-fare 川越特急: mostly up trains, twice an hour from late afternoon
-    // (only ~3 down trains, late morning — can't gate by direction, so evening only)
-    { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", stops: [
+    ], schedule: { weekday: { timeRange: [[7, 9], [11, 18]] }, weekend: { timeRange: [6, 18] } } },
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
+      "池袋","和光市","朝霞台",
+      "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
+      "坂戸","北坂戸","高坂","東松山","森林公園",
+      "つきのわ","武蔵嵐山","小川町",
+    ], schedule: { weekday: { timeRange: [[9, 16], [22, 24]] }, weekend: { timeRange: [[6, 18], [20, 22]] } } },
+    // No-extra-fare 川越特急: up trains twice an hour from mid-afternoon, 2–3 down trains late morning
+    { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", direction: "end", stops: [
       "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
     ],
-      schedule: { weekday: { timeRange: [16, 23] }, weekend: { timeRange: [16, 21] } } },
+      schedule: { weekday: { timeRange: [10, 12] }, weekend: { timeRange: [10, 12] } } },
+    { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", direction: "start", stops: [
+      "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
+      "つきのわ","武蔵嵐山","小川町",
+    ],
+      schedule: { weekday: { timeRange: [15, 24] }, weekend: { timeRange: [15, 22] } } },
   ],
   "Tobu Isesaki Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", stops: [
+    // 区間急行: early mornings and from the evening (down), early and late (up); hours per direction (ODPT 2026-03)
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "end", stops: [
       "浅草","とうきょうスカイツリー","曳舟","東向島",
       "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
       "新越谷","越谷","せんげん台","春日部",
@@ -337,23 +350,67 @@ const EXPRESS_SERVICES = {
       "花崎","加須","南羽生","羽生","川俣","茂林寺前",
       "館林",
     ],
-      // Rush/early-late only: gone 10–16h weekdays, 10–20h weekends (wrapping ranges)
-      schedule: { weekday: { timeRange: [17, 10] }, weekend: { timeRange: [21, 10] } } },
-    // Rush hours only (mornings and evenings, both ways)
-    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", stops: [
+      schedule: { weekday: { timeRange: [17, 10] }, weekend: { timeRange: [21, 11] } } },
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
+      "浅草","とうきょうスカイツリー","曳舟","東向島",
+      "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
+      "新越谷","越谷","せんげん台","春日部",
+      "東武動物公園","和戸","久喜","鷲宮",
+      "花崎","加須","南羽生","羽生","川俣","茂林寺前",
+      "館林",
+    ],
+      schedule: { weekday: { timeRange: [[4, 10], [22, 1]] }, weekend: { timeRange: [[4, 10], [22, 24]] } } },
+    // 区間準急: mornings and from the late afternoon, most to 久喜; a third run on to 館林
+    // (same-name entries share one button; hours per direction, ODPT 2026-03)
+    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", direction: "end", stops: [
       "浅草","とうきょうスカイツリー","曳舟","東向島",
       "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
       "新越谷","越谷","北越谷","大袋","せんげん台",
       "武里","一ノ割","春日部","北春日部","姫宮",
       "東武動物公園","和戸","久喜",
     ],
-      schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
+      schedule: { weekday: { timeRange: [[6, 12], [16, 1]] }, weekend: { timeRange: [[6, 11], [17, 1]] } } },
+    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", direction: "end", stops: [
+      "浅草","とうきょうスカイツリー","曳舟","東向島",
+      "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
+      "新越谷","越谷","北越谷","大袋","せんげん台",
+      "武里","一ノ割","春日部","北春日部","姫宮",
+      "東武動物公園","和戸","久喜","鷲宮",
+      "花崎","加須","南羽生","羽生","川俣","茂林寺前",
+      "館林",
+    ],
+      schedule: { weekday: { timeRange: [[7, 10], [17, 19], [20, 23]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 23]] } } },
+    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", direction: "start", stops: [
+      "浅草","とうきょうスカイツリー","曳舟","東向島",
+      "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
+      "新越谷","越谷","北越谷","大袋","せんげん台",
+      "武里","一ノ割","春日部","北春日部","姫宮",
+      "東武動物公園","和戸","久喜",
+    ],
+      schedule: { weekday: { timeRange: [[8, 12], [17, 1]] }, weekend: { timeRange: [[8, 11], [17, 1]] } } },
+    { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", direction: "start", stops: [
+      "浅草","とうきょうスカイツリー","曳舟","東向島",
+      "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
+      "新越谷","越谷","北越谷","大袋","せんげん台",
+      "武里","一ノ割","春日部","北春日部","姫宮",
+      "東武動物公園","和戸","久喜","鷲宮",
+      "花崎","加須","南羽生","羽生","川俣","茂林寺前",
+      "館林",
+    ],
+      schedule: { weekday: { timeRange: [[8, 10], [18, 19], [20, 21], [22, 23]] }, weekend: { timeRange: [[8, 10], [18, 19], [20, 21], [22, 23]] } } },
+    // 準急: early morning and from 20h (19h up Sat/hol); hours per direction (ODPT 2026-03)
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
       "曳舟","北千住","西新井","草加",
       "新越谷","越谷","北越谷","大袋","せんげん台",
       "武里","一ノ割","春日部","北春日部","姫宮",
       "東武動物公園","和戸","久喜",
-    ], schedule: { weekday: { timeRange: [20, 10] }, weekend: { timeRange: [20, 10] } } }, // early morning and night
+    ], schedule: { weekday: { timeRange: [[5, 11], [20, 1]] }, weekend: { timeRange: [[5, 11], [19, 1]] } } },
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "start", stops: [
+      "曳舟","北千住","西新井","草加",
+      "新越谷","越谷","北越谷","大袋","せんげん台",
+      "武里","一ノ割","春日部","北春日部","姫宮",
+      "東武動物公園","和戸","久喜",
+    ], schedule: { weekday: { timeRange: [[5, 12], [20, 24]] }, weekend: { timeRange: [[5, 12], [20, 24]] } } },
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "曳舟","北千住","西新井","草加",
       "新越谷","越谷","せんげん台","春日部",
@@ -377,11 +434,18 @@ const EXPRESS_SERVICES = {
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
       "大宮","岩槻","春日部","藤の牛島","南桜井","川間","七光台","清水公園",
       "愛宕","野田市","梅郷","運河","江戸川台","初石","流山おおたかの森","豊四季","柏",
-    ], schedule: { weekday: { timeRange: [8, 9] }, weekend: { timeRange: [[6, 9], [17, 21]] } } },
+    ], schedule: { weekday: { timeRange: [8, 10] }, weekend: { timeRange: [[6, 10], [17, 21]] } } },
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "end", stops: [
       "大宮","岩槻","春日部","藤の牛島","南桜井","川間","七光台","清水公園",
       "愛宕","野田市","梅郷","運河","江戸川台","初石","流山おおたかの森","豊四季","柏",
-    ], schedule: { weekday: { timeRange: [16, 17] }, weekend: { timeRange: [16, 21] } } },
+    ], schedule: { weekday: { timeRange: [16, 18] }, weekend: { timeRange: [16, 22] } } },
+  ],
+  // North of 南栗橋 every train is a 普通 except two morning 急行 to 東武日光 (ODPT 2026-03)
+  "Tobu Nikko Line (Nikko)": [
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
+      "南栗橋","栗橋","板倉東洋大前","新大平下","栃木","新栃木","新鹿沼","下今市","東武日光",
+    ], schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [7, 10] } } },
   ],
   // 特急 (2025-12): weekdays only, 5 morning trains toward 西馬込 (印旛日本医大 6:46–8:09)
   // and 2 evening ones from the Asakusa Line (京成高砂 20h, 21h)
@@ -1197,28 +1261,100 @@ const LINE_DESTINATIONS = {
       { until: '海老名', name: 'Ebina',   ja: '海老名方面', color: '#003087' },
     ],
   },
-  // Down termini: 成増, 志木, 川越市, 森林公園 (急行), 小川町 (快速急行/川越特急)
-  'Tobu Tojo Line': {
-    direction: 'end',  // away from Ikebukuro
+  // Down termini: 成増, 志木, 川越市, 森林公園 (急行), 小川町 (快速急行/川越特急), 寄居 (from the
+  // Yorii connection); up, 27 daytime 各停 from 小川町 turn at 森林公園 (ODPT 2026-03)
+  'Tobu Tojo Line': [
+    { direction: 'end',  // away from Ikebukuro
+      destinations: [
+        { until: '成増',     name: 'Narimasu',     ja: '成増方面',     color: '#5aa0d8' },
+        { until: '志木',     name: 'Shiki',        ja: '志木方面',     color: '#4890c8' },
+        { until: '川越市',   name: 'Kawagoeshi',   ja: '川越市方面',   color: '#2a78b8' },
+        { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
+        { until: '小川町',   name: 'Ogawamachi',   ja: '小川町方面',   color: '#003878' },
+      ] },
+    { direction: 'start',  // toward Ikebukuro (渋谷 / 新木場 merge in from the 和光市 connections)
+      destinations: [
+        { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local'],
+          schedule: { weekday: { timeRange: [[11, 16], [22, 23], [0, 1]] }, weekend: { timeRange: [[9, 10], [11, 17], [21, 23], [0, 1]] } } },
+        { until: '池袋',     name: 'Ikebukuro',    ja: '池袋方面',     color: '#003087' },
+      ] },
+  ],
+  // Down: daytime 普通 from 浅草 end at 北千住; Hibiya through 普通 at 竹ノ塚 / 草加 / 北春日部 (also
+  // 区間準急 from 浅草); 区間急行/区間準急 run to 東武動物公園/久喜/館林. Up: 館林 各停 end at 久喜,
+  // a few trains at 北千住 (ODPT 2026-03)
+  'Tobu Isesaki Line': [
+    { direction: 'end',  // away from Asakusa
+      destinations: [
+        { until: '北千住',       name: 'Kita-Senju',        ja: '北千住方面',       color: '#5a8ad0' },
+        { until: '竹ノ塚',       name: 'Takenotsuka',       ja: '竹ノ塚方面',       color: '#3890c8', services: ['Local'], localFrom: '北千住',
+          schedule: { weekday: { timeRange: [[8, 12], [16, 1]] }, weekend: { timeRange: [[6, 7], [8, 9], [18, 19], [20, 1]] } } },
+        { until: '草加',         name: 'Soka',              ja: '草加方面',         color: '#2a80c0', services: ['Local'], localFrom: '北千住',
+          schedule: { weekday: { timeRange: [[7, 9], [17, 19]] }, weekend: { timeRange: [19, 20] } } },
+        { until: '北越谷',       name: 'Kita-Koshigaya',    ja: '北越谷方面',       color: '#3a72c0' },
+        { until: '北春日部',     name: 'Kita-Kasukabe',     ja: '北春日部方面',     color: '#004890', services: ['Local', 'Sec. Semi-Exp'], localFrom: '北千住',
+          schedule: { weekday: { timeRange: [8, 1] }, weekend: { timeRange: [[8, 9], [10, 17], [19, 1]] } } },
+        { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
+        { until: '久喜',         name: 'Kuki',              ja: '久喜方面',         color: '#005AAA' },
+        { until: '館林',         name: 'Tatebayashi',       ja: '館林方面',         color: '#002a60' },
+      ] },
+    { direction: 'start',  // toward Asakusa (渋谷 / 押上 / 中目黒 merge in from the connections)
+      destinations: [
+        { until: '久喜',   name: 'Kuki',       ja: '久喜方面',   color: '#005AAA', services: ['Local'],
+          schedule: { weekday: { timeRange: [8, 22] }, weekend: { timeRange: [9, 22] } } },
+        { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#5a8ad0', services: ['Local', 'Sec. Semi-Exp'],
+          schedule: { weekday: { timeRange: [[9, 10], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
+        { until: '浅草',   name: 'Asakusa',    ja: '浅草方面',   color: '#003087' },
+      ] },
+  ],
+  // 館林–伊勢崎 one-man section: half the trains turn at 太田 (ODPT 2026-03)
+  'Tobu Isesaki Line (Isesaki)': {
+    direction: 'end',  // toward Isesaki
     destinations: [
-      { until: '成増',     name: 'Narimasu',     ja: '成増方面',     color: '#5aa0d8' },
-      { until: '志木',     name: 'Shiki',        ja: '志木方面',     color: '#4890c8' },
-      { until: '川越市',   name: 'Kawagoeshi',   ja: '川越市方面',   color: '#2a78b8' },
-      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
-      { until: '小川町',   name: 'Ogawamachi',   ja: '小川町方面',   color: '#003878' },
+      { until: '太田',   name: 'Ota',     ja: '太田方面',   color: '#3a72c0',
+        schedule: { weekday: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] }, weekend: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] } } },
+      { until: '伊勢崎', name: 'Isesaki', ja: '伊勢崎方面', color: '#005AAA' },
     ],
   },
-  // Daytime 普通 from 浅草 end at 北千住; 区間急行/区間準急 run to 東武動物公園/久喜/館林
-  'Tobu Isesaki Line': {
-    direction: 'end',  // away from Asakusa
-    destinations: [
-      { until: '北千住',       name: 'Kita-Senju',        ja: '北千住方面',       color: '#5a8ad0' },
-      { until: '北越谷',       name: 'Kita-Koshigaya',    ja: '北越谷方面',       color: '#3a72c0' },
-      { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
-      { until: '久喜',         name: 'Kuki',              ja: '久喜方面',         color: '#005AAA' },
-      { until: '館林',         name: 'Tatebayashi',       ja: '館林方面',         color: '#002a60' },
-    ],
-  },
+  // North of 南栗橋: evening 普通 end at 新栃木, half the day's trains from 東武日光 at 下今市
+  // (ODPT 2026-03); the 東武宇都宮 through trains branch at 新栃木 (the Utsunomiya Line's own platform)
+  'Tobu Nikko Line (Nikko)': [
+    { direction: 'end',  // toward Tobu-Nikko
+      destinations: [
+        { until: '新栃木',   name: 'Shin-Tochigi', ja: '新栃木方面',   color: '#e0a040', services: ['Local'],
+          schedule: { weekday: { timeRange: [19, 1] }, weekend: { timeRange: [19, 1] } } },
+        { until: '東武日光', name: 'Tobu-Nikko',   ja: '東武日光方面', color: '#FFA500' },
+      ] },
+    { direction: 'start',  // toward Minami-Kurihashi
+      destinations: [
+        { until: '下今市', name: 'Shimo-Imaichi',    ja: '下今市方面', color: '#e0a040',
+          schedule: { weekday: { timeRange: [[6, 7], [8, 10], [11, 12], [13, 14], [15, 16], [21, 23]] }, weekend: { timeRange: [[6, 7], [8, 10], [11, 12], [13, 14], [15, 16], [21, 23]] } } },
+        { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
+      ] },
+  ],
+  // Urban Park Line: most trains turn at 柏, where the line reverses; 春日部 / 運河 / 七光台 / 高柳
+  // short turns (ODPT 2026-03)
+  'Tobu Noda line': [
+    { direction: 'end',  // toward Funabashi
+      destinations: [
+        { until: '春日部', name: 'Kasukabe',  ja: '春日部方面', color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [[6, 18], [22, 23], [0, 1]] }, weekend: { timeRange: [[6, 23], [0, 1]] } } },
+        { until: '柏',     name: 'Kashiwa',   ja: '柏方面',     color: '#2a90c0', services: ['Local', 'Sub-Exp', 'Express'],
+          schedule: { weekday: { timeRange: [5, 2] }, weekend: { timeRange: [5, 1] } } },
+        { until: '船橋',   name: 'Funabashi', ja: '船橋方面',   color: '#00a0e8' },
+      ] },
+    { direction: 'start',  // toward Omiya
+      destinations: [
+        { until: '高柳',   name: 'Takayanagi',  ja: '高柳方面',   color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [[8, 9], [22, 23], [0, 2]] }, weekend: { timeRange: [[7, 9], [22, 2]] } } },
+        { until: '柏',     name: 'Kashiwa',     ja: '柏方面',     color: '#2a90c0', services: ['Local', 'Express'],
+          schedule: { weekday: { timeRange: [5, 1] }, weekend: { timeRange: [5, 1] } } },
+        { until: '運河',   name: 'Unga',        ja: '運河方面',   color: '#3a90c8', services: ['Local'],
+          schedule: { weekday: { timeRange: [6, 18] }, weekend: { timeRange: [[6, 8], [9, 17]] } } },
+        { until: '七光台', name: 'Nanakodai',   ja: '七光台方面', color: '#2a80b8', services: ['Local'],
+          schedule: { weekday: { timeRange: [[8, 10], [17, 18], [19, 20], [22, 2]] }, weekend: { timeRange: [[8, 9], [17, 18], [22, 1]] } } },
+        { until: '大宮',   name: 'Omiya',       ja: '大宮方面',   color: '#00a0e8' },
+      ] },
+  ],
   // 各駅停車 mostly end at 我孫子, some at 取手; 松戸 / 柏 in the rushes and late (ODPT 2026-03)
   'JR Joban Line (Local)': {
     direction: 'end',  // toward Toride
