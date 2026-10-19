@@ -742,6 +742,16 @@ const LINE_SCHEDULES = {
 
 // ── Line destinations (trains terminating at different stations on the same line) ──
 const LINE_DESTINATIONS = {
+  // 17 weekday trains from 渋谷 (mornings, evenings, the last ones) and 2 weekend
+  // night trains end at 上野 (ODPT 2026-09)
+  'Tokyo Metro Ginza Line': {
+    direction: 'start',  // toward Asakusa
+    destinations: [
+      { until: '上野', name: 'Ueno',    ja: '上野方面', color: '#f39700',
+        schedule: { weekday: { timeRange: [[8, 10], [18, 20], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+      { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#f39700' },
+    ],
+  },
   'JR Chuo Line': {
     direction: 'end',  // only when heading toward end (west)
     destinations: [

@@ -66,8 +66,18 @@ const LINE_CONNECTIONS = [
 
   // ── Hanzomon ↔ Den-en-toshi at Shibuya ──────────────────────────────────
   // Simple 1:1 through-running — no picker needed, route extends transparently
+  // Toward 渋谷 the through trains end at 中央林間, 長津田 (50 wd, all types) or 鷺沼
+  // (9 wd 各停, mornings and the last ones); 1 a day ends at 渋谷 (ODPT 2026-03)
   { from: 'Tokyo Metro Hanzomon Line', fromEnd: '渋谷',
-    to:   'Tokyu Den-en-toshi Line',   toEnd:   '渋谷' },
+    to:   'Tokyu Den-en-toshi Line',   toEnd:   '渋谷',
+    destinations: [
+      // chainFrom []: the 鷺沼 trains start on the Hanzomon, none comes through from Tobu
+      { until: '鷺沼',     name: 'Saginuma',    ja: '鷺沼方面',     color: '#50b8a0', services: ['Local'], chainFrom: [],
+        schedule: { weekday: { timeRange: [[7, 11], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+      { until: '長津田',   name: 'Nagatsuta',   ja: '長津田方面',   color: '#30a890',
+        schedule: { weekday: { timeRange: [[6, 12], [15, 1]] }, weekend: { timeRange: [[8, 11], [16, 21], [22, 1]] } } },
+      { until: '中央林間', name: 'Chuo-Rinkan', ja: '中央林間方面', color: '#20a288' },
+    ] },
   { from: 'Tokyu Den-en-toshi Line',   fromEnd: '渋谷',
     to:   'Tokyo Metro Hanzomon Line', toEnd:   '渋谷' },
 
@@ -538,20 +548,26 @@ const LINE_CONNECTIONS = [
     via:  ['曳舟'],
     toUntil: '久喜',
     lineDests: [
+      // 17 weekday trains (mornings and the last ones) turn back at 清澄白河 (ODPT 2026-03)
+      { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
+        schedule: { weekday: { timeRange: [[6, 11], [23, 1]] }, weekend: { timeRange: [21, 1] } } },
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
     ],
     destinations: [
+      // Evening 準急 (and 2 weekday early ones) end at 北越谷
+      { until: '北越谷', name: 'Kita-Koshigaya', ja: '北越谷方面', color: '#3a72c0', services: ['Semi-Exp'],
+        schedule: { weekday: { timeRange: [[6, 8], [20, 1]] }, weekend: { timeRange: [19, 1] } } },
       { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
       { until: '久喜', name: 'Kuki', ja: '久喜方面', color: '#005AAA' },
     ],
     express: [
-      // Early morning and night, as the Isesaki Line's own 準急
+      // Early morning and evening (from 19h), as the Isesaki Line's own 準急
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['渋谷','表参道','青山一丁目','永田町','半蔵門','九段下','神保町','大手町',
                 '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
                 '曳舟','北千住','西新井','草加','新越谷','越谷','北越谷','大袋','せんげん台',
                 '武里','一ノ割','春日部','北春日部','姫宮','東武動物公園','和戸','久喜'],
-        schedule: { weekday: { timeRange: [20, 10] }, weekend: { timeRange: [20, 10] } } },
+        schedule: { weekday: { timeRange: [19, 9] }, weekend: { timeRange: [19, 10] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['渋谷','表参道','青山一丁目','永田町','半蔵門','九段下','神保町','大手町',
                 '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
@@ -645,11 +661,18 @@ const LINE_CONNECTIONS = [
     to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end',
     toUntil: '東武動物公園',
     lineDests: [
+      // 10 weekday-morning trains turn back at 南千住 (ODPT 2026-03)
+      { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00',
+        schedule: { weekday: { timeRange: [8, 12] }, weekend: { stops: [] } } },
       { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#9B7A00' },
     ],
     destinations: [
       { until: '竹ノ塚', name: 'Takenotsuka', ja: '竹ノ塚方面', color: '#3890c8' },
+      { until: '草加', name: 'Soka', ja: '草加方面', color: '#2a80c0',
+        schedule: { weekday: { timeRange: [[6, 9], [16, 19]] }, weekend: { timeRange: [18, 20] } } },
       { until: '北越谷', name: 'Kita-Koshigaya', ja: '北越谷方面', color: '#005AAA' },
+      { until: '北春日部', name: 'Kita-Kasukabe', ja: '北春日部方面', color: '#004890',
+        schedule: { weekday: { timeRange: [[9, 16], [17, 1]] }, weekend: { timeRange: [[9, 16], [18, 20], [21, 1]] } } },
       { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878' },
     ],
     // Hibiya through-trains are all-station Local only
