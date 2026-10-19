@@ -91,8 +91,9 @@ function resolveConnections() {
         if (untilIdx === -1) warn(conn, 'destinations.until', d.until, 'destination not found on target line');
         return { ...d, untilIdx };
       }).filter(d => d.untilIdx !== -1);
-      // No destination resolved: a picker would have zero buttons
-      if (destinations.length === 0) continue;
+      // No destination resolved: a picker would have zero buttons. An empty list is deliberate:
+      // the connection's only destinations are chained ones (Narita Airport → Narita → Sobu)
+      if (destinations.length === 0 && conn.destinations.length > 0) continue;
     }
 
     // Express services spanning both lines (stop indices are computed at platform time)
