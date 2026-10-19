@@ -61,7 +61,12 @@ function resolveTrainTypes(p) {
     if (a.connObj !== conn) continue;
     if (e.stops && resolveServiceStops(e, a.targetLine, p.direction).length === 0) connExpNames.add(normalize(e.name));
   }
-  trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null || !connExpNames.has(normalize(t.name)));
+  // A local-class entry of the connection being ridden replaces the source line's own
+  // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速)
+  const connLocal = allConnExpress.some(a => a.connObj === conn
+    && a.express.some(e => e.stops === null && resolveServiceStops(e, a.targetLine, p.direction)?.length !== 0));
+  trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null
+    || (!connExpNames.has(normalize(t.name)) && !(connLocal && t.stops === null)));
 
   // Add target line's express services (e.g. Den-en-toshi Semi-Exp/Express via Hanzomon)
   // Skip if connection express already covered this target line (avoid duplicates)
