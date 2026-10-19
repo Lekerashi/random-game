@@ -231,11 +231,15 @@ const EXPRESS_SERVICES = {
   ],
   "Toei Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    // Daytime 急行 ended 2023: a few morning and evening trains only
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    // Daytime 急行 ended 2023: evenings toward 本八幡, mornings toward 新宿 (ODPT 2025-03)
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "新宿","市ヶ谷","神保町","馬喰横山",
       "森下","大島","船堀","本八幡",
-    ], schedule: { weekday: { timeRange: [[7, 10], [17, 22]] }, weekend: { timeRange: [[7, 11], [16, 22]] } } },
+    ], schedule: { weekday: { timeRange: [17, 20] }, weekend: { timeRange: [16, 19] } } },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
+      "新宿","市ヶ谷","神保町","馬喰横山",
+      "森下","大島","船堀","本八幡",
+    ], schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
   ],
   // 快速 run all day both ways and continue as locals onto Toyo Rapid / Chuo-Sobu.
   "Tokyo Metro Tozai Line": [
@@ -852,6 +856,15 @@ const LINE_DESTINATIONS = {
         { until: '三ノ輪橋',   name: 'Minowabashi',      ja: '三ノ輪橋方面',   color: '#d4007a' },
       ] },
   ],
+  // 8 weekday trains (8–9h and the last one) and 4 weekend ones end at 大島 (ODPT 2025-03)
+  'Toei Shinjuku Line': {
+    direction: 'end',  // toward Moto-Yawata
+    destinations: [
+      { until: '大島',   name: 'Ojima',      ja: '大島方面',   color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [[8, 11], [0, 1]] }, weekend: { timeRange: [[17, 19], [0, 1]] } } },
+      { until: '本八幡', name: 'Moto-Yawata', ja: '本八幡方面', color: '#6CBB5A' },
+    ],
+  },
   // 22 weekday / 6 weekend trains end at 高島平 (mornings, evenings, the last ones) (ODPT 2026-03)
   'Toei Mita Line': {
     direction: 'end',  // toward Nishi-Takashimadaira

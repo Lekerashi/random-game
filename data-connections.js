@@ -1354,24 +1354,26 @@ const LINE_CONNECTIONS = [
     to:   'Keio Line',          toStation: '笹塚', toDir: 'end',
     via:  ['初台', '幡ヶ谷', '笹塚'],
     impliedLines: ['Keio new line'],
+    // Through trains end at 笹塚 or run on to the Sagamihara Line (橋本 / 京王多摩センター,
+    // chained); none reaches 京王八王子 (ODPT 2025-03)
     destinations: [
       { until: '笹塚',       name: 'Sasazuka',      ja: '笹塚方面',       color: '#B0C800' },
-      { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
         '新宿','笹塚','明大前','桜上水','千歳烏山','仙川','つつじヶ丘','調布'] },
+      // 急行: weekday mornings and one evening train, weekend mornings; on to the Sagamihara Line
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '本八幡','船堀','大島','森下','馬喰横山','神保町','市ヶ谷','新宿',
-        '笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布','東府中','府中',
-        '分倍河原','聖蹟桜ヶ丘','高幡不動','北野','京王八王子'],
-        schedule: { weekday: { timeRange: [[7, 10], [17, 22]] }, weekend: { stops: [] } } },
-      // 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター
+        '笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布'],
+        schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
+      // 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター; weekdays by day only
       { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
         '本八幡','篠崎','瑞江','一之江','船堀','東大島','大島','西大島','住吉','菊川','森下',
         '浜町','馬喰横山','岩本町','小川町','神保町','九段下','市ヶ谷','曙橋','新宿三丁目','新宿',
-        '笹塚','明大前','下高井戸','桜上水','八幡山','千歳烏山','仙川','つつじヶ丘','調布'] },
+        '笹塚','明大前','下高井戸','桜上水','八幡山','千歳烏山','仙川','つつじヶ丘','調布'],
+        schedule: { weekday: { timeRange: [[10, 18], [23, 24]] } } },
     ] },
   { from: 'Keio Line',          fromStation: '笹塚', fromDir: 'start',
     to:   'Toei Shinjuku Line', toEnd:   '新宿',
@@ -1990,6 +1992,8 @@ const LINE_CONNECTIONS = [
       { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
     ],
     destinations: [
+      // 京王多摩センター: 72 Keio and 54 Toei through trains a day end there (ODPT 2025-03)
+      { until: '京王多摩センター', name: 'Keio-Tama-Center', ja: '京王多摩センター方面', color: '#e070b8' },
       { until: '橋本', name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa',
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
     ],
