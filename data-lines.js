@@ -563,28 +563,43 @@ const EXPRESS_SERVICES = {
       "東京","上野","大宮","高崎",
     ]},
   ],
+  // 快速 by day, plus weekday evenings toward 立川 (ODPT 2026-03)
   "JR Nambu Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "川崎","鹿島田","武蔵小杉","武蔵中原",
       "武蔵新城","武蔵溝ノ口","登戸","稲田堤",
       "稲城長沼","府中本町","分倍河原","立川",
-    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 17] } } }, // daytime
+    ], schedule: { weekday: { timeRange: [10, 20] }, weekend: { timeRange: [9, 17] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "川崎","鹿島田","武蔵小杉","武蔵中原",
+      "武蔵新城","武蔵溝ノ口","登戸","稲田堤",
+      "稲城長沼","府中本町","分倍河原","立川",
+    ], schedule: { weekday: { timeRange: [[10, 17], [18, 20]] }, weekend: { timeRange: [9, 17] } } },
   ],
+  // Weekday rushes run 通勤快速 instead of 快速 (hours per direction, ODPT 2026-03)
   "JR Saikyo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Rapid", ja: "快速", color: "#00b900", stops: [
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","戸田公園","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮",
     ],
-      // Weekday evenings run 通勤快速 instead of 快速
-      schedule: { weekday: { timeRange: [5, 17] } } },
-    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", stops: [
+      schedule: { weekday: { timeRange: [6, 18] } } },
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
+      "赤羽","戸田公園","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮",
+    ],
+      schedule: { weekday: { timeRange: [10, 18] } } },
+    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","武蔵浦和","大宮",
     ],
-      // Weekdays, both directions, mornings (6–10h) and evenings (16–22h)
-      schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 10] } } },
+      schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [16, 24]] } } },
+    { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "start", stops: [
+      "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
+      "赤羽","武蔵浦和","大宮",
+    ],
+      schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [17, 23]] } } },
   ],
   "Tsukuba Express": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
@@ -746,10 +761,14 @@ const LINE_BRANCHES = {
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','武蔵白石','浜川崎','昭和','扇町'] },
     { name: 'Umi-Shibaura', ja: '海芝浦支線', color: '#58a6ff',
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','新芝浦','海芝浦'] },
-    // No 大川 trains by day (9–16h); weekends 2 morning + 1 evening round trips
-    { name: 'Okawa', ja: '大川支線', color: '#f07000',
+    // 大川 trains only in the rushes (weekdays 7–8h and 17–20h, weekends 2 morning + 1
+    // evening round trips); hours per direction (ODPT 2026-03)
+    { name: 'Okawa', ja: '大川支線', color: '#f07000', direction: 'end',
       stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'],
-      schedule: { weekday: { timeRange: [17, 9] }, weekend: { timeRange: [[6, 9], [17, 19]] } } },
+      schedule: { weekday: { timeRange: [[7, 9], [17, 21]] }, weekend: { timeRange: [[7, 9], [17, 18]] } } },
+    { name: 'Okawa', ja: '大川支線', color: '#f07000', direction: 'start',
+      stations: ['鶴見','国道','鶴見小野','弁天橋','浅野','安善','大川'],
+      schedule: { weekday: { timeRange: [[7, 10], [17, 21]] }, weekend: { timeRange: [[7, 9], [18, 19]] } } },
   ],
   // Toward 池袋 the 方南町 branch is a separate entry so its label reads 池袋方面, and the
   // branch shuttles (93 a day, turning back at 中野坂上) get their own; 13 weekday trains from
@@ -768,11 +787,18 @@ const LINE_BRANCHES = {
       stations: ['中野坂上','中野新橋','中野富士見町','方南町'],
       schedule: { weekday: { timeRange: [[5, 8], [9, 1]] }, weekend: { timeRange: [5, 1] } } },
   ],
+  // Toward 川崎 the branch shuttles turn back at 尻手 (41 a day, 5–22h); the 川崎 entry labels
+  // the branch 川崎方面 that way (ODPT 2026-03)
   'JR Nambu Line': [
     { name: 'Tachikawa', ja: '立川方面', color: '#ffd400',
       stations: ['川崎','尻手','矢向','鹿島田','平間','向河原','武蔵小杉','武蔵中原','武蔵新城','武蔵溝ノ口','津田山','久地','宿河原','登戸','中野島','稲田堤','矢野口','稲城長沼','南多摩','府中本町','分倍河原','西府','谷保','矢川','西国立','立川'] },
-    { name: 'Hamakawasaki', ja: '浜川崎方面', color: '#c8a048',
+    { name: 'Hamakawasaki', ja: '浜川崎方面', color: '#c8a048', direction: 'end',
       stations: ['川崎','尻手','八丁畷','川崎新町','小田栄','浜川崎'] },
+    { name: 'Kawasaki', ja: '川崎方面', color: '#c8a048', direction: 'start',
+      stations: ['川崎','尻手','八丁畷','川崎新町','小田栄','浜川崎'] },
+    { name: 'Shitte', ja: '尻手方面', color: '#a08030', direction: 'start',
+      stations: ['尻手','八丁畷','川崎新町','小田栄','浜川崎'],
+      schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } },
   ],
   // (Keikyu Airport and Tokaido through-running now handled by LINE_CONNECTIONS)
 };
@@ -989,11 +1015,51 @@ const LINE_DESTINATIONS = {
       { until: '青梅', name: 'Ome',     ja: '青梅方面', color: '#6a5020' },
     ],
   },
-  'JR Sagami Line': {
-    direction: 'start',  // heading toward start (toward Chigasaki)
+  // (No Sagami Line destinations: every train toward 茅ケ崎 runs the whole way, ODPT 2026-03)
+  // Hachiko north segment: 6 a day each way turn back at 小川町 / 児玉 (ODPT 2026-03)
+  'JR Hachiko Line': [
+    { direction: 'end',  // toward Takasaki
+      destinations: [
+        { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#996633',
+          schedule: { weekday: { timeRange: [[7, 9], [10, 11], [14, 17], [20, 23]] }, weekend: { timeRange: [[7, 9], [10, 11], [14, 17], [20, 23]] } } },
+        { until: '高崎',   name: 'Takasaki',   ja: '高崎方面',   color: '#996633' },
+      ] },
+    { direction: 'start',  // toward Komagawa
+      destinations: [
+        { until: '児玉',   name: 'Kodama',     ja: '児玉方面',   color: '#996633',
+          schedule: { weekday: { timeRange: [[7, 12], [14, 18], [21, 23]] }, weekend: { timeRange: [[7, 12], [14, 18], [21, 23]] } } },
+        { until: '高麗川', name: 'Komagawa',   ja: '高麗川方面', color: '#996633' },
+      ] },
+  ],
+  // Most trains from 木更津 turn back at 久留里; 3 a day start there toward 木更津 (ODPT 2026-03)
+  'JR Kururi Line': [
+    { direction: 'end',  // toward Kazusa-Kameyama
+      destinations: [
+        { until: '久留里',   name: 'Kururi',          ja: '久留里方面',   color: '#8a6a3a',
+          schedule: { weekday: { timeRange: [[8, 10], [11, 13], [14, 24]] }, weekend: { timeRange: [[8, 10], [11, 13], [14, 24]] } } },
+        { until: '上総亀山', name: 'Kazusa-Kameyama', ja: '上総亀山方面', color: '#6a4a1a' },
+      ] },
+    { direction: 'start',  // toward Kisarazu
+      destinations: [
+        { until: '久留里', name: 'Kururi',   ja: '久留里方面', color: '#8a6a3a',
+          schedule: { weekday: { timeRange: [[17, 19], [21, 22]] }, weekend: { timeRange: [[17, 19], [21, 22]] } } },
+        { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#8a6a3a' },
+      ] },
+  ],
+  // Toward 扇町 short turns at 弁天橋 (rushes), 武蔵白石 and 浜川崎 (ODPT 2026-03); the branch
+  // ends keep each branch's own ride
+  'JR Tsurumi Line': {
+    direction: 'end',  // away from Tsurumi
     destinations: [
-      { until: '海老名', name: 'Ebina',     ja: '海老名方面', color: '#6a9a8a' },
-      { until: '茅ケ崎', name: 'Chigasaki', ja: '茅ケ崎方面', color: '#4a786f' },
+      { until: '弁天橋',   name: 'Bentembashi',       ja: '弁天橋方面',   color: '#80c0b0',
+        schedule: { weekday: { timeRange: [[8, 11], [18, 19], [21, 23]] }, weekend: { timeRange: [[8, 10], [19, 22]] } } },
+      { until: '海芝浦',   name: 'Umi-Shibaura',      ja: '海芝浦方面',   color: '#58a6ff' },
+      { until: '大川',     name: 'Okawa',             ja: '大川方面',     color: '#f07000' },
+      { until: '武蔵白石', name: 'Musashi-Shiraishi', ja: '武蔵白石方面', color: '#40a080',
+        schedule: { weekday: { timeRange: [[7, 9], [11, 13], [14, 16]] }, weekend: { timeRange: [[11, 13], [14, 16], [17, 18], [19, 21]] } } },
+      { until: '浜川崎',   name: 'Hama-Kawasaki',     ja: '浜川崎方面',   color: '#20a060',
+        schedule: { weekday: { timeRange: [[6, 8], [10, 19], [20, 24]] }, weekend: { timeRange: [[8, 9], [10, 17], [18, 19], [23, 24]] } } },
+      { until: '扇町',     name: 'Ogimachi',          ja: '扇町方面',     color: '#00b900' },
     ],
   },
   // Half the 各停 toward 蘇我 end at 海浜幕張, rush-hour and late ones at 新習志野; toward 東京 a

@@ -1731,9 +1731,12 @@ const LINE_CONNECTIONS = [
       { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#007540',
         schedule: { weekday: { timeRange: [[7, 11], [16, 20], [22, 23]] }, weekend: { timeRange: [[6, 10], [16, 21], [22, 23]] } } },
     ] },
+  // 8 a day end at 池袋 (the first and last trains) (ODPT 2026-03)
   { from: 'JR Saikyo Line', fromEnd: '大崎',
     to:   'Rinkai Line',    toEnd:   '大崎',
     lineDests: [
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#007540', services: ['Local'],
+        schedule: { weekday: { timeRange: [[4, 6], [23, 1]] }, weekend: { timeRange: [[4, 6], [23, 1]] } } },
       { until: '新宿', name: 'Shinjuku', ja: '新宿行き', color: '#007540' },
       { until: '大崎', name: 'Osaki',    ja: '大崎方面', color: '#007540' },
     ],
@@ -1760,8 +1763,9 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       // 特急: mornings and evenings (各停 only by day)
+      // (hours at 西谷, ODPT 2026-03: boarding on the Saikyo is earlier)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','北戸田','戸田','戸田公園','浮間舟渡','北赤羽','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
-        '西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[7, 11], [17, 22]] }, weekend: { timeRange: [[7, 12], [17, 23]] } } },
+        '西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[5, 9], [10, 12], [18, 1]] }, weekend: { timeRange: [[5, 13], [17, 1]] } } },
     ] },
   { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
     to:   'JR Saikyo Line',    toEnd: '大崎',
@@ -1801,25 +1805,37 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
-        '大崎','西大井','武蔵小杉','羽沢横浜国大','西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[7, 11], [17, 22]] }, weekend: { timeRange: [[7, 12], [17, 23]] } } },
+        '大崎','西大井','武蔵小杉','羽沢横浜国大','西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[5, 9], [10, 12], [18, 1]] }, weekend: { timeRange: [[5, 13], [17, 1]] } } },
     ] },
 
   // ── Saikyo ↔ Kawagoe Line at Omiya ────────────────────────────────────
   // Nearly all Saikyo trains through-run onto the Kawagoe Line to Kawagoe.
   // Beyond Kawagoe (toward Komagawa) is a separate shuttle — toUntil stops there.
+  // Toward 大宮 the 各停 from 大崎 end at 新宿 (by day), 池袋 (3 mornings), 赤羽 (rushes,
+  // late) or 武蔵浦和 (half of them); the 快速 all run to 川越 (ODPT 2026-03)
   { from: 'JR Saikyo Line',  fromEnd: '大宮',
     to:   'JR Kawagoe Line', toEnd:   '大宮',
     toUntil: '川越',
     lineDests: [
-      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#007540' },
+      { until: '新宿',     name: 'Shinjuku',      ja: '新宿方面',     color: '#007540', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 8], [9, 24]] }, weekend: { timeRange: [[6, 8], [9, 24]] } } },
+      { until: '池袋',     name: 'Ikebukuro',     ja: '池袋方面',     color: '#007540', services: ['Local'],
+        schedule: { weekday: { timeRange: [8, 10] }, weekend: { timeRange: [8, 10] } } },
+      { until: '赤羽',     name: 'Akabane',       ja: '赤羽方面',     color: '#2a9a60', services: ['Local'],
+        schedule: { weekday: { timeRange: [[4, 5], [7, 10], [19, 1]] }, weekend: { timeRange: [[4, 5], [22, 1]] } } },
+      { until: '武蔵浦和', name: 'Musashi-Urawa', ja: '武蔵浦和方面', color: '#1a8a50', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 20] }, weekend: { timeRange: [6, 23] } } },
+      { until: '大宮',     name: 'Omiya',         ja: '大宮方面',     color: '#007540' },
     ],
     destinations: [
       { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
     ] },
+  // Half the trains from 高麗川 end at 川越 (ODPT 2026-03)
   { from: 'JR Kawagoe Line', fromEnd: '大宮',
     to:   'JR Saikyo Line',  toEnd:   '大宮',
     lineDests: [
-      { until: '大宮', name: 'Omiya', ja: '大宮方面', color: '#4a786f' },
+      { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
+      { until: '大宮', name: 'Omiya',   ja: '大宮方面', color: '#4a786f' },
     ],
     destinations: [
       { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#007540' },
@@ -2686,10 +2702,12 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '川越', name: 'Kawagoe', ja: '川越方面', color: '#4a786f' },
     ] },
+  // Most trains from 大宮 end at 川越 (ODPT 2026-03)
   { from: 'JR Kawagoe Line',  fromEnd: '高麗川',
     to:   'JR Hachiko Line',  toEnd:   '高麗川', toLineHas: '八王子',
     name: 'Hachioji', ja: '八王子方面', color: '#996633',
     lineDests: [
+      { until: '川越',   name: 'Kawagoe',  ja: '川越方面',   color: '#4a786f' },
       { until: '高麗川', name: 'Komagawa', ja: '高麗川方面', color: '#4a786f' },
     ],
     destinations: [
