@@ -1110,9 +1110,17 @@ const LINE_CONNECTIONS = [
     // (weekends), none at 浦賀 (ODPT 2025-12). chainFrom: Sky Access アクセス特急 riders
     // only chain on to Haneda
     lineDests: [
+      // the last trains from Hokuso / Keisei end at 浅草橋 / 泉岳寺 (ODPT 2025-12)
+      { until: '浅草橋', name: 'Asakusabashi', ja: '浅草橋方面', color: '#e85298',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '泉岳寺', name: 'Sengakuji', ja: '泉岳寺方面', color: '#e85298',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '西馬込', name: 'Nishi-magome', ja: '西馬込方面', color: '#e85298' },
     ],
     destinations: [
+      // ...and one at 品川
+      { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#e57053', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 24] } }, chainFrom: ['Keisei Oshiage Line', 'Hokuso Railway Hokuso Line'] },
       { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Ltd. Express'],
         schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } }, chainFrom: ['Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
       { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Ltd. Express'],
@@ -2209,6 +2217,11 @@ const LINE_CONNECTIONS = [
     impliedLines: ['Keio new line'],
     // Through trains end at 笹塚 or run on to the Sagamihara Line (橋本 / 京王多摩センター,
     // chained); none reaches 京王八王子 (ODPT 2025-03)
+    // the last train from 本八幡 ends at 大島 (ODPT 2025-03)
+    lineDests: [
+      { until: '大島', name: 'Ojima', ja: '大島方面', color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+    ],
     destinations: [
       { until: '笹塚',       name: 'Sasazuka',      ja: '笹塚方面',       color: '#B0C800' },
     ],
@@ -2307,6 +2320,11 @@ const LINE_CONNECTIONS = [
       // 大島 short turns in the rushes and late (8 wd / 4 Sat/hol; ODPT 2026-08)
       { until: '大島',   name: 'Ojima',       ja: '大島方面',   color: '#6CBB5A',
         schedule: { weekday: { timeRange: [[8, 10], [23, 24]] }, weekend: { timeRange: [[17, 19], [23, 24]] } } },
+      // the last trains from 笹塚 end at 瑞江 / 岩本町 (ODPT 2026-08)
+      { until: '瑞江',   name: 'Mizue',       ja: '瑞江方面',   color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
+      { until: '岩本町', name: 'Iwamotocho',  ja: '岩本町方面', color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
     ] },
 
   // ── Keio → Keio New Line at Sasazuka ───────────────────────────────────

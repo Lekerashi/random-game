@@ -1107,14 +1107,41 @@ const LINE_DESTINATIONS = {
       { until: '日暮里',   name: 'Nippori',     ja: '日暮里方面',   color: '#ff7e2e' },
     ],
   },
-  // Toward つくば half the trains end at 守谷; 7 weekday-morning ones at 八潮 (ODPT 2025-03)
-  'Tsukuba Express': {
-    direction: 'end',  // toward Tsukuba
+  // Toward つくば half the trains end at 守谷; 7 weekday-morning ones at 八潮; toward 秋葉原 the
+  // last trains end at 守谷 / 八潮 (ODPT 2025-03)
+  'Tsukuba Express': [
+    { direction: 'end',  // toward Tsukuba
+      destinations: [
+        { until: '八潮',   name: 'Yashio',  ja: '八潮方面',   color: '#0067c0',
+          schedule: { weekday: { timeRange: [6, 10] }, weekend: { stops: [] } } },
+        { until: '守谷',   name: 'Moriya',  ja: '守谷方面',   color: '#0067c0' },
+        { until: 'つくば', name: 'Tsukuba', ja: 'つくば方面', color: '#0067c0' },
+      ] },
+    { direction: 'start',  // toward Akihabara
+      destinations: [
+        { until: '守谷',   name: 'Moriya',    ja: '守谷方面',   color: '#0067c0',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '八潮',   name: 'Yashio',    ja: '八潮方面',   color: '#0067c0',
+          schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
+        { until: '秋葉原', name: 'Akihabara', ja: '秋葉原方面', color: '#0067c0' },
+      ] },
+  ],
+  // The last trains from 新木場 end at 東京テレポート (ODPT 2026-03)
+  'Rinkai Line': {
+    direction: 'start',  // toward Shin-Kiba
     destinations: [
-      { until: '八潮',   name: 'Yashio',  ja: '八潮方面',   color: '#0067c0',
-        schedule: { weekday: { timeRange: [6, 10] }, weekend: { stops: [] } } },
-      { until: '守谷',   name: 'Moriya',  ja: '守谷方面',   color: '#0067c0' },
-      { until: 'つくば', name: 'Tsukuba', ja: 'つくば方面', color: '#0067c0' },
+      { until: '東京テレポート', name: 'Tokyo Teleport', ja: '東京テレポート方面', color: '#0065a6',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '新木場',         name: 'Shin-Kiba',      ja: '新木場方面',         color: '#0065a6' },
+    ],
+  },
+  // A late train from 多摩センター ends at 立川北 (ODPT 2023-03)
+  'Tama Monorail': {
+    direction: 'end',  // toward Kamikitadai
+    destinations: [
+      { until: '立川北', name: 'Tachikawa-Kita', ja: '立川北方面', color: '#e46574',
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+      { until: '上北台', name: 'Kamikitadai',    ja: '上北台方面', color: '#e46574' },
     ],
   },
   // Short turns both ways: 上永谷 (rushes and the last ones), 踊場 by day toward 湘南台,
@@ -1122,6 +1149,11 @@ const LINE_DESTINATIONS = {
   'Blue Line': [
     { direction: 'end',  // toward Shonandai
       destinations: [
+        // the last trains from あざみ野 end at 新羽 (depot) / 新横浜
+        { until: '新羽',   name: 'Nippa',         ja: '新羽方面',   color: '#1976d2',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+        { until: '新横浜', name: 'Shin-Yokohama', ja: '新横浜方面', color: '#1976d2',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
         { until: '上永谷', name: 'Kaminagaya', ja: '上永谷方面', color: '#1976d2',
           schedule: { weekday: { timeRange: [[8, 10], [20, 1]] }, weekend: { timeRange: [[8, 11], [18, 20], [23, 1]] } } },
         { until: '踊場',   name: 'Odoriba',    ja: '踊場方面',   color: '#1976d2',
@@ -1132,6 +1164,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '上永谷',   name: 'Kaminagaya', ja: '上永谷方面',   color: '#1976d2',
           schedule: { weekday: { timeRange: [[8, 10], [20, 21], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        // a late train from 湘南台 ends at 上大岡
+        { until: '上大岡',   name: 'Kami-Ooka',  ja: '上大岡方面',   color: '#1976d2',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
         { until: '新羽',     name: 'Nippa',      ja: '新羽方面',     color: '#1976d2',
           schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [[8, 21], [23, 1]] } } },
         { until: 'あざみ野', name: 'Azamino',    ja: 'あざみ野方面', color: '#1976d2' },
@@ -1147,12 +1182,20 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
           schedule: { weekday: { timeRange: [[9, 10], [19, 22], [23, 1]] }, weekend: { timeRange: [[8, 10], [19, 20], [22, 1]] } } },
+        // the loop's second 都庁前: a late train round the loop from 都庁前 ends there
+        { until: '都庁前',   name: 'Tochomae',           ja: '都庁前方面',   color: '#b6007a',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
         { until: '光が丘',   name: 'Hikarigaoka',        ja: '光が丘方面',   color: '#b6007a' },
       ] },
     { direction: 'start',  // toward Tochomae (via Roppongi)
       destinations: [
+        // the last trains from 光が丘 end at 汐留 / 新御徒町
+        { until: '汐留',     name: 'Shiodome',           ja: '汐留方面',     color: '#b6007a',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#b6007a',
           schedule: { weekday: { timeRange: [[7, 11], [19, 1]] }, weekend: { timeRange: [[9, 11], [18, 1]] } } },
+        { until: '新御徒町', name: 'Shin-okachimachi',   ja: '新御徒町方面', color: '#b6007a',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
         { plain: true,       name: 'Tochomae',           ja: '都庁前方面',   color: '#b6007a' },
       ] },
   ],
@@ -1182,8 +1225,13 @@ const LINE_DESTINATIONS = {
   'Toei Shinjuku Line': {
     direction: 'end',  // toward Moto-Yawata
     destinations: [
+      // the last trains from 笹塚 end at 岩本町 / 瑞江
+      { until: '岩本町', name: 'Iwamotocho',  ja: '岩本町方面', color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '大島',   name: 'Ojima',      ja: '大島方面',   color: '#6CBB5A',
         schedule: { weekday: { timeRange: [[8, 11], [0, 1]] }, weekend: { timeRange: [[17, 19], [0, 1]] } } },
+      { until: '瑞江',   name: 'Mizue',       ja: '瑞江方面',   color: '#6CBB5A',
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '本八幡', name: 'Moto-Yawata', ja: '本八幡方面', color: '#6CBB5A' },
     ],
   },
