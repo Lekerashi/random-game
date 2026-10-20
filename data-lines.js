@@ -1431,6 +1431,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '富士見ヶ丘', name: 'Fujimigaoka', ja: '富士見ヶ丘方面', color: '#3aa0c0', services: ['Local'],
           schedule: { weekday: { timeRange: [[19, 21], [22, 23], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        // the last train from 吉祥寺 ends at 明大前 (ODPT 2025-03)
+        { until: '明大前',     name: 'Meidaimae',   ja: '明大前方面',     color: '#3aa0c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '渋谷',       name: 'Shibuya',     ja: '渋谷方面',       color: '#0070A0' },
       ] },
   ],

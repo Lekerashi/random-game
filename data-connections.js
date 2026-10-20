@@ -2309,6 +2309,9 @@ const LINE_CONNECTIONS = [
   { from: 'Keio new line', fromEnd: '笹塚',
     to:   'Keio Line',     toStation: '笹塚', toDir: 'end',
     destinations: [
+      // the last 各停 from 新線新宿 end at 桜上水 (ODPT 2026-08)
+      { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
     ],
     express: [
@@ -3244,6 +3247,9 @@ const LINE_CONNECTIONS = [
       // 区間急行 from 橋本 ending one stop past 調布 in the evening (9 wd / 2 Sat/hol)
       { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Sub-Exp'],
         schedule: { weekday: { timeRange: [[17, 20], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+      // the last 各停 (and a weekday 区間急行) from 橋本 end at 桜上水 (ODPT 2026-08)
+      { until: '桜上水', name: 'Sakurajosui', ja: '桜上水方面', color: '#b080d0', services: ['Local', 'Sub-Exp'],
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
       { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#800080' },
     ],
     express: [
