@@ -101,6 +101,8 @@ const ASAKUSA_UP = ['泉岳寺', '三田', '大門', '新橋', '東銀座', '宝
 const ASAKUSA_DOWN = [...ASAKUSA_UP].reverse();
 const ASAKUSA_SOUTH = ['高輪台', '五反田', '戸越', '中延', '馬込', '西馬込']; // 泉岳寺 → 西馬込
 const OSHIAGE_DOWN = ['京成高砂', '青砥', '京成立石', '四ツ木', '八広', '京成曳舟', '押上(スカイツリー前)']; // 京成高砂 → 押上
+// Tokaido Main Line 熱海 → 東京, every station (the morning ラビット / アーバン through trains call at all of them)
+const TOKAIDO_ALL_UP = ['熱海', '湯河原', '真鶴', '根府川', '早川', '小田原', '鴨宮', '国府津', '二宮', '大磯', '平塚', '茅ケ崎', '辻堂', '藤沢', '大船', '戸塚', '横浜', '川崎', '品川', '新橋', '東京'];
 
 const LINE_CONNECTIONS = [
 
@@ -479,15 +481,15 @@ const LINE_CONNECTIONS = [
       { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e', services: ['Local'] },
       { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848' },
     ],
-    // ラビット through trains: 2 a morning from 小田原/熱海/国府津, every Tokaido station
-    // (the evening ラビット start at 上野, so the Utsunomiya Line's own type is hidden here);
-    // hours as seen on the Utsunomiya side (ODPT 2026-03)
+    // ラビット through trains: 2 a morning from 小田原/熱海/国府津, every Tokaido station, typed 快速
+    // on the Tokaido (ODPT) and 快速ラビット from 上野 on (toName); the evening ラビット start at 上野,
+    // so the Utsunomiya Line's own type is hidden here. Hours as seen on the Utsunomiya side (ODPT 2026-03)
     express: [
       { stops: null, name: 'Local', ja: '普通' },
-      { name: 'Rapid Rabbit', ja: '快速ラビット', color: '#e85050',
-        stops: ['上野','赤羽','浦和','大宮','東大宮','蓮田','久喜','古河',
+      { name: 'Rapid', ja: '快速', color: '#e85050', toName: 'Rapid Rabbit', toJa: '快速ラビット',
+        stops: [...TOKAIDO_ALL_UP, '上野','赤羽','浦和','大宮','東大宮','蓮田','久喜','古河',
                 '小山','小金井','自治医大','石橋','雀宮','宇都宮'],
-        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [6, 10] } } },
+        schedule: { weekday: { timeRange: [5, 8] }, weekend: { timeRange: [5, 8] } } },
     ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Takasaki Line',     toEnd:   '上野',
@@ -498,14 +500,15 @@ const LINE_CONNECTIONS = [
       { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d', services: ['Local'] },
       { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
     ],
-    // アーバン through trains: 2 a morning from 小田原/国府津, every Tokaido station
-    // (the evening アーバン start at 上野, so the Takasaki Line's own type is hidden here)
+    // アーバン through trains: 2 a morning from 小田原/国府津, every Tokaido station, typed 快速 on the
+    // Tokaido (ODPT) and 快速アーバン from 上野 on (toName); the evening アーバン start at 上野, so the
+    // Takasaki Line's own type is hidden here
     express: [
       { stops: null, name: 'Local', ja: '普通' },
-      { name: 'Rapid Urban', ja: '快速アーバン', color: '#f07000',
-        stops: ['上野','赤羽','浦和','大宮','上尾','桶川','鴻巣','熊谷','籠原',
+      { name: 'Rapid', ja: '快速', color: '#f07000', toName: 'Rapid Urban', toJa: '快速アーバン',
+        stops: [...TOKAIDO_ALL_UP, '上野','赤羽','浦和','大宮','上尾','桶川','鴻巣','熊谷','籠原',
                 '深谷','岡部','本庄','神保原','新町','倉賀野','高崎'],
-        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [8, 12] } } },
+        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [7, 10] } } },
     ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Joban Line',        toEnd:   '上野',
