@@ -2152,6 +2152,7 @@ const LINE_CONNECTIONS = [
     to:   'JR Saikyo Line',    toEnd: '大崎',
     via:  ['羽沢横浜国大', '武蔵小杉', '西大井', '大崎'],
     impliedLines: ['Sotetsu-JR Direct Line', 'Sotetsu Shin-Yokohama Line'],
+    chainFrom: [], // every JR-direct train comes from 海老名: none from the Izumino Line (ODPT 2026-03)
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     lineDests: [
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
