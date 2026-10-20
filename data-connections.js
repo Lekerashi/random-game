@@ -3047,15 +3047,25 @@ const LINE_CONNECTIONS = [
       { until: '京成上野', name: 'Keisei Ueno', ja: '京成上野方面', color: '#0073CF' },
     ],
     destinations: [],
-    // 普通 board at 京成高砂 only (Main Line 普通 run to 京成上野); chainFrom: the Chiba Line 快速 and the
-    // 芝山千代田 快速 / 快特 run through, a 芝山 特急 or 普通 goes to 京成上野
+    // The through trains from the Main Line stations east of 京成高砂 (Toei TrainTimetable 2026-03, by origin):
+    // 快速 all day (on as 普通 to 西馬込, or 特急 / 急行 to Haneda by the hour at 押上), 特急 in the rushes (→ 普通
+    // 西馬込), 快速特急 (→ 快特 Haneda, wd 5–7h and 11–15h, we 5h and 9–18h); the stops are the Main Line's own
+    // lists so each type boards where it calls. 普通 board at 京成高砂 only (Main Line 普通 run to 京成上野).
+    // chainFrom: the Chiba Line 快速 and the 芝山千代田 快速 / 快特 run through, a 芝山 特急 or 普通 goes to 京成上野
     express: [
       { name: 'Local', ja: '普通', chainFrom: [], stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
       { name: 'Rapid', ja: '快速', color: '#00b900', chainFrom: ['Keisei Chiba Line', 'Shibayama Railway Line', 'Keisei Higashi-Narita Line'],
-        stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
-      { name: 'Ltd. Express', ja: '特急', color: '#e83030', chainFrom: [], stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
+        stops: ['成田空港（第１旅客ターミナル）','空港第２ビル（第２旅客ターミナル）','京成成田','公津の杜','宗吾参道','京成酒々井','大佐倉','京成佐倉',
+                '京成臼井','ユーカリが丘','志津','勝田台','京成大和田','八千代台','実籾','京成大久保','京成津田沼','船橋競馬場','京成船橋',
+                '東中山','京成八幡','京成小岩','京成高砂','青砥','押上(スカイツリー前)'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030', chainFrom: [],
+        stops: ['成田空港（第１旅客ターミナル）','空港第２ビル（第２旅客ターミナル）','京成成田','公津の杜','宗吾参道','京成酒々井','大佐倉','京成佐倉',
+                '勝田台','八千代台','京成津田沼','京成船橋','京成八幡','京成高砂','青砥','押上(スカイツリー前)'],
+        schedule: { weekday: { timeRange: [15, 11] }, weekend: { timeRange: [17, 10] } } },
       { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000', chainFrom: ['Shibayama Railway Line', 'Keisei Higashi-Narita Line'],
-        stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
+        stops: ['成田空港（第１旅客ターミナル）','空港第２ビル（第２旅客ターミナル）','京成成田','京成佐倉','勝田台','八千代台','京成津田沼','京成船橋',
+                '京成八幡','京成高砂','青砥','押上(スカイツリー前)'],
+        schedule: { weekday: { timeRange: [11, 16] }, weekend: { timeRange: [9, 19] } } }, // (the 5h / 7h ones start at 京成高砂)
     ] },
   // アクセス特急 from Narita run on via Oshiage as エアポート快特 to Haneda (renamed at 押上 by the
   // Keisei Oshiage → Asakusa entry's toName; the Asakusa → Keikyu → Airport hops carry it by name)
