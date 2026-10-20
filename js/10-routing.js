@@ -176,7 +176,13 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
     const r = walkIndices(line, ei, platform.fromIdx, platform.direction, stops,
       midLine ? { boundIdx: conn.fromJunctionIdx } : undefined);
     trace?.push('walkIndices(express): ' + r.stations.length + ' stops, exhausted=' + r.exhausted);
-    if (!r.exhausted || !conn) { if (trace) r.stations._trace = trace; return r.stations; }
+    // A line's own express runs on as a local past a connection that names through trains
+    // (express entries, a target with types) only to a destination whose `services` name it
+    // (Chuo 快速 → 青梅), never to a chained one (no DET 準急 → 北越谷 as Tobu 準急)
+    const sd = state.selectedDestination;
+    const blocked = conn && (EXPRESS_SERVICES[conn.to] || conn.express) && sd
+      && (sd.chain?.length || (sd.services && !sd.services.some(s => normalize(s) === normalize(tt?.name || ''))));
+    if (!r.exhausted || !conn || blocked) { if (trace) r.stations._trace = trace; return r.stations; }
     trace?.push('findRouteConnection: ' + conn.from + ' → ' + conn.to);
     const result = routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
     trace?.push('routeConnectionExtension: total ' + result.length + ' stops');
@@ -508,7 +514,7 @@ function getEffectiveStops(platform, opts = {}) {
   const tt = opts._tt !== undefined ? opts._tt : (opts.ei === null ? null : state.selectedTrainType);
   const ttOverride = (connTargetLineIdx != null || terminates)
     ? { ...(tt || {}), expressIndices: ei, _connTargetLineIdx: connTargetLineIdx, _terminatesAtJunction: terminates }
-    : undefined;
+    : tt || undefined; // a line's own type too: routing reads its name against the destination's services
 
   // A picked destination station (stopAt): end the ride there, or at the last stop
   // before the type passes it. Counting along the actual route keeps express types

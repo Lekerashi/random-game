@@ -12,9 +12,12 @@ function trainTypeOpts(g) {
 // The name a type carries where destination sd's `services` apply: a chained destination
 // names types by its own connection's source line (the last hop of sd.chain), everything
 // else by the boarding line. Past the last hop with a continuing entry the name carries
-// over (hops without express keep it: Shonan-Shinjuku 快速 onto the Tokaido at 大船).
+// over (hops without express keep it: Shonan-Shinjuku 快速 onto the Tokaido at 大船). An
+// express that rides no connection entries (a line's own type) has no name on a chain.
+// Services a chained destination inherits from the first hop are first-hop names.
 function typeNameForDest(tt, sd) {
-  if (!tt._hopConns || !sd?.chain?.length) return tt.name;
+  if (!sd?.chain?.length || sd.servicesFirstHop) return tt.name;
+  if (!tt._hopConns) return tt.expressIndices ? null : tt.name;
   const last = sd.chain[sd.chain.length - 1];
   const k = tt._hopConns.findIndex(c => c.to === last.to && c.toDir === last.toDir);
   return k === -1 ? tt._hopNames[tt._hopNames.length - 1] : tt._hopNames[k];
@@ -23,7 +26,7 @@ function typeNameForDest(tt, sd) {
 // Whether a (possibly grouped) type is one of destination sd's `services`
 function typeMatchesServices(g, sd) {
   const allowed = new Set(sd.services.map(s => normalize(s)));
-  return (g._members || [g]).some(m => allowed.has(normalize(typeNameForDest(m, sd))));
+  return (g._members || [g]).some(m => { const n = typeNameForDest(m, sd); return n != null && allowed.has(normalize(n)); });
 }
 
 // Resolve available train types for a platform, returning grouped/merged types
@@ -142,7 +145,8 @@ function resolveTrainTypes(p) {
   const grouped = [];
   for (const tt of trainTypes) {
     const key = (tt._terminatesAtJunction ? 'term:' : tt._connTargetLineIdx != null ? 'conn' + (tt._connTotalMax || '') + ':' : '')
-      + (tt.expressIndices ? tt.expressIndices.join(',') : 'local');
+      + (tt.expressIndices ? tt.expressIndices.join(',') : 'local')
+      + (tt._hopNames ? '|' + tt._hopNames.join('>') + '|' + (tt._chainHops || []).map(h => h.to).join('>') : '');
     const existing = grouped.find(g => g._key === key);
     if (existing) {
       existing._members.push(tt);
@@ -172,21 +176,33 @@ function resolveTrainTypes(p) {
   // Fallback heuristic for connection destinations without `services`: chain express
   // types that pass through (don't terminate at) the destination are filtered.
   if (state.selectedDestination?.services) {
-    reachable = reachable.filter(g => typeMatchesServices(g, state.selectedDestination));
-    trace?.push('services ' + state.selectedDestination.services.join('/') + ' keep: ' + reachable.map(describe).join(', '));
-  } else if (state.selectedDestination && conn) {
-    // Heuristic fallback: chain express types pass through intermediate destinations
+    // Member by member: a group keeps only the members the destination's services name (its
+    // members ride alike, so the group's count holds for whichever faces it)
+    const sd = state.selectedDestination;
+    reachable = reachable.flatMap(g => {
+      const all = g._members || [g];
+      const kept = all.filter(m => typeMatchesServices(m, sd));
+      if (!kept.length) return [];
+      if (kept.length === all.length) return [g];
+      const ng = { ...kept[0], _key: g._key, _members: kept,
+        name: kept.map(m => m.name).reduce(joinNames), ja: kept.map(m => m.ja).reduce(joinNames) };
+      effOf.set(ng, effOf.get(g));
+      return [ng];
+    });
+    trace?.push('services ' + sd.services.join('/') + ' keep: ' + reachable.map(describe).join(', '));
+  } else if (state.selectedDestination && conn && !state.selectedDestination.chain?.length) {
+    // Heuristic fallback: chain express types pass through intermediate destinations on the
+    // connection's own target line (a chained destination is reached by the chain itself)
     if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
       reachable = reachable.filter(g => !g._chainExpressStops);
     }
   }
 
-  if (reachable.length <= 1) {
-    if (reachable.length === 1 && reachable[0].expressIndices) {
-      return { autoSelect: reachable[0] };
-    }
-    return null;
-  }
+  // One type left: an express applies on its own; so does a group whose members ride differently
+  // (Fukutoshin 各停 that run on as Toyoko 各停 or 急行: _rides counts the merged groups), since a
+  // member must be boarded
+  const lone = g => g.expressIndices || (g._rides || 1) > 1 ? { autoSelect: g } : null;
+  if (reachable.length <= 1) return reachable.length === 1 ? lone(reachable[0]) : null;
 
   // Same-name entries of one list whose rides differ (a quarter of the daytime Shonan-Shinjuku
   // 快速 call at 西大井 / 新川崎; Fukutoshin 各停 run on as Toyoko 各停 or 急行) are one signboard
@@ -200,6 +216,7 @@ function resolveTrainTypes(p) {
     if (i === -1) { sameList.push(g); continue; }
     const face = effOf.get(sameList[i]).validCount >= effOf.get(g).validCount ? sameList[i] : g;
     face._members = [...sameList[i]._members, ...g._members];
+    face._rides = (sameList[i]._rides || 1) + (g._rides || 1);
     sameList[i] = face;
   }
   reachable = sameList;
@@ -207,27 +224,32 @@ function resolveTrainTypes(p) {
   // Merge express types with the same valid stop count (e.g. Semi-Exp/Express/Rapid Exp all 1-1)
   // Never merge local with express, or source-line with connection types — same count can mean different destinations
   const merged = [];
+  const routeKey = g => {
+    if (g._routeKey === undefined) g._routeKey = getStationsAlongRoute(p, g._cappedMax ?? effOf.get(g).cappedMax, g.expressIndices || null, g).map(s => s.ja).join(',');
+    return g._routeKey;
+  };
   for (const g of reachable) {
     const eff = effOf.get(g);
     const isLocal = !g.expressIndices;
     const cat = g._terminatesAtJunction ? 'term' : g._connTargetLineIdx != null ? 'conn' : 'src';
     const hasChain = !!g._chainExpressStops;
+    // Same count and the same stations: a 各停 that runs on as 急行 and an 急行 with equal counts differ
     const existing = merged.find(m => {
       const mCat = m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' : 'src';
       return m._count === eff.validCount && !m.expressIndices === isLocal && mCat === cat
-        && !!m._chainExpressStops === hasChain;
+        && !!m._chainExpressStops === hasChain && routeKey(m) === routeKey(g);
     });
     if (existing) {
       existing._members.push(...g._members);
       existing.name = joinNames(existing.name, g.name);
       existing.ja = joinNames(existing.ja, g.ja);
     } else {
-      merged.push({ ...g, _count: eff.validCount, _rawMax: eff.rawMax });
+      merged.push({ ...g, _count: eff.validCount, _rawMax: eff.rawMax, _cappedMax: eff.cappedMax });
     }
   }
 
   // Express types that merged into one button (準急 + 急行 to Shibuya at night) still apply
-  if (merged.length <= 1) return merged[0]?.expressIndices ? { autoSelect: merged[0] } : null;
+  if (merged.length <= 1) return merged.length === 1 ? lone(merged[0]) : null;
   return { types: merged };
 }
 

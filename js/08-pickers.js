@@ -491,13 +491,14 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const chainPath = []; // hops after conn that lead to chainConn
   // chainFrom: a connection chained rides only continue onto when boarded on one of these lines
   const chainAllowed = c => !c.chainFrom || c.chainFrom.includes(p.lineName);
-  // Chained rides board one of conn's through trains: a chained destination
-  // without its own `services` keeps the ones the first hop allows (e.g. Odakyu
-  // 準急/急行 to Joban), so none when no conn destination is served here.
+  // Chained rides board one of conn's through trains: on a hop without express entries a
+  // chained destination without its own `services` keeps the ones the first hop allows
+  // (e.g. Odakyu 準急/急行 to Joban), so none when no conn destination is served here. A hop
+  // with express entries names its through trains itself: the chain decides what reaches.
   // One with its own `services` only needs them to run (firstHopRunsNow).
   const served = servedDests(conn, p);
   const chainBlocked = served.length === 0 && conn.destinations.some(d => d.services);
-  const inheritedServices = served.length && served.every(d => d.services)
+  const inheritedServices = !conn.express && served.length && served.every(d => d.services)
     ? [...new Set(served.flatMap(d => d.services))] : null;
   // A chained destination's `services` must be boardable here: one of them calls at this
   // station now on the first hop (Haneda → Sky Access needs an エアポート快特, which skips
@@ -520,8 +521,9 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const pushChainDests = (nextConn, base, path, midLine) => {
     for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
       if (chainBlocked && !d0.services) continue;
-      const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices };
-      if (d.services && !firstHopServes(d, [...path, nextConn])) continue;
+      // Inherited services are first-hop names already (servicesFirstHop: typeNameForDest reads them so)
+      const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices, _firstHop: true };
+      if (d.services && !(d._firstHop ? destServesStation(conn, d, p) : firstHopServes(d, [...path, nextConn]))) continue;
       const stopsOnNext = nextConn.toDir === 'start'
         ? nextConn.toJunctionIdx - d.untilIdx
         : d.untilIdx - nextConn.toJunctionIdx;
@@ -537,7 +539,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
         _sourceConn: conn, // first hop: the one that leaves the boarding line
         onSelect: () => {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja, chain,
+          state.selectedDestination = { totalMax: cappedMax, services: d.services || null, servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,
             stopAt: { lineIdx: nextConn.toLineIdx, idx: d.untilIdx, dir: nextConn.toDir } };
         },
       });

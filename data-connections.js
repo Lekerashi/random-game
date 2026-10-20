@@ -51,7 +51,7 @@
 //   transparent    — no name/destinations/express → auto-extends (e.g. Hanzomon↔DET)
 //   destination    — destinations present → destination picker (e.g. UTL southbound)
 //   named          — name present, no destinations → branch picker label (e.g. Keikyu Kamata N/S)
-//   express-only   — express present, no name/dest → custom train types only (e.g. F-Liner)
+//   express-only   — express present, no name/dest → custom train types only (e.g. Seibu Ikebukuro → Yurakucho 快速急行)
 //
 // ── FIELD EFFECTS ──
 //   destinations + services   → filtered train types per destination
@@ -1304,52 +1304,66 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Tozai Line',   toEnd: '西船橋' },
 
   // ── Seibu Yurakucho ↔ Fukutoshin at Kotake-mukaihara ──────────────────
-  // Seibu Yurakucho connects to Fukutoshin for through-running to Shibuya/Toyoko
-  // F-Liner: Seibu Rapid Exp → Fukutoshin Express → Toyoko Express (all-express through-service)
+  // Seibu Yurakucho connects to Fukutoshin for through-running to Shibuya/Toyoko. Types by the
+  // Seibu side, renamed at 小竹向原 (toName): the F-Liner is Seibu 快速急行 → Metro 急行 → Toyoko
+  // 特急; 各停 (8 wd / 7 Sat/hol) and 準急 (5 wd) in the rushes run on as Metro 急行 (ODPT 2026-03)
   { from: 'Seibu Yurakucho Line',       fromEnd: '小竹向原',
     to:   'Tokyo Metro Fukutoshin Line', toStation: '小竹向原', toDir: 'end',
     name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      // Seibu 各停 / 準急 / 快速 in the rushes run on as Fukutoshin 急行 (17 wd / 8 Sat/hol; the
-      // Seibu-side name is the type-name engine's; hours seen on the Fukutoshin, ODPT 2026-03)
-      { name: 'Express', ja: '急行', color: '#e83030',
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行',
         stops: ['練馬','新桜台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { timeRange: [[6, 11], [16, 19], [20, 22]] }, weekend: { timeRange: [[7, 9], [17, 22]] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        schedule: { weekday: { timeRange: [[6, 8], [17, 22]] }, weekend: { timeRange: [[6, 8], [17, 22]] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Express', toJa: '急行',
+        stops: ['練馬','新桜台','小竹向原','池袋','新宿三丁目',
+                "明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [[9, 10], [18, 22]] } } },
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', toName: 'Express', toJa: '急行',
         stops: ['小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
         schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } }, // daytime only
     ] },
-  // All-day Seibu Ikebukuro through trains also run onto the Yurakucho Line
+  // All-day Seibu Ikebukuro through trains also run onto the Yurakucho Line: 各停 (57 wd / 50
+  // Sat/hol) and the rush-hour 準急 (11 wd), all 普通 on the Metro (ODPT 2026-03)
   { from: 'Seibu Yurakucho Line',       fromEnd: '小竹向原',
     to:   'Tokyo Metro Yurakucho Line',  toStation: '小竹向原', toDir: 'end',
-    name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
+    name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Local', toJa: '各停',
+        stops: ['練馬','新桜台','小竹向原','千川','要町','池袋','東池袋','護国寺','江戸川橋','飯田橋','市ケ谷','麹町','永田町',
+                '桜田門','有楽町','銀座一丁目','新富町','月島','豊洲','辰巳','新木場'],
+        schedule: { weekday: { timeRange: [[7, 9], [17, 23]] }, weekend: { timeRange: [[7, 8], [17, 18]] } } },
+    ] },
   // ── Fukutoshin / Yurakucho → Seibu Yurakucho at Kotake-mukaihara ──────
   // Toward 和光市, 70 Fukutoshin and 74 wd / 61 Sat/hol Yurakucho trains a day leave at 小竹向原 for
   // the Seibu lines, on to 練馬 and the Ikebukuro Line's 石神井公園 / 保谷 / 清瀬 / 所沢 / 小手指 / 飯能
   // (chained over the 練馬 connection above, which carries the termini and their hours). Types by
-  // the Seibu side (the Metro names are the type-name engine's): Fukutoshin 普通 run on as 各停 (33)
-  // or 準急 (11 wd), 急行 as 準急 (7 Sat/hol) or 快速 (6 wd), Fライナー as Fライナー (13); Yurakucho 普通
-  // as 各停 (59), 準急 as 準急 (7 wd) (ODPT 2026-03). At 小竹向原 itself the Seibu Yurakucho Line is its
-  // own platform
+  // the Metro side, renamed at 小竹向原 (toName): Fukutoshin 普通 run on as Seibu 各停 (33) or 準急
+  // (11 wd), 急行 as 準急 (7 Sat/hol), 快速 (6 wd) or 各停 (5 wd), the F-Liner 急行 as 快速急行 (13);
+  // Yurakucho 普通 as 各停 (59), 準急 (7 wd) (ODPT 2026-03). At 小竹向原 itself the Seibu Yurakucho
+  // Line is its own platform
   { from: 'Tokyo Metro Fukutoshin Line', fromStation: '小竹向原', fromDir: 'start',
     to:   'Seibu Yurakucho Line',        toEnd: '小竹向原',
     name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
     destinations: [],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+      { name: 'Local', ja: '各停', color: '#00b900', toName: 'Semi-Exp', toJa: '準急',
         stops: ['渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川','小竹向原','新桜台','練馬'],
         schedule: { weekday: { timeRange: [[6, 9], [10, 17]] }, weekend: { timeRange: [[6, 9], [10, 17]] } } },
-      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+      { name: 'Express', ja: '急行', color: '#00b900', toName: 'Semi-Exp', toJa: '準急',
         stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','新桜台','練馬'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 8], [16, 22]] } } },
-      { name: 'Rapid', ja: '快速', color: '#f07000',
+      { name: 'Express', ja: '急行', color: '#f07000', toName: 'Rapid', toJa: '快速',
         stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','新桜台','練馬'],
-        schedule: { weekday: { timeRange: [[8, 10], [15, 21]] }, weekend: { stops: [] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        schedule: { weekday: { timeRange: [[9, 10], [16, 21]] }, weekend: { stops: [] } } },
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { timeRange: [[8, 10], [18, 21]] }, weekend: { stops: [] } } },
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Rapid Exp', toJa: '快速急行',
         stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','練馬'],
         schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 17] } } },
     ] },
@@ -1357,6 +1371,7 @@ const LINE_CONNECTIONS = [
     to:   'Seibu Yurakucho Line',       toEnd: '小竹向原',
     name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
     destinations: [],
+    // (the Yurakucho boards show the Seibu 準急 as 準急: no rename)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
@@ -1381,11 +1396,12 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[6, 10], [17, 24]] }, weekend: { timeRange: [[6, 10], [14, 17], [19, 22], [23, 24]] } } },
       { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
         schedule: { weekday: { timeRange: [[7, 8], [9, 11], [16, 19], [20, 21]] }, weekend: { timeRange: [[7, 9], [16, 19], [20, 22]] } } },
-      { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp', 'F-Liner'],
+      { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp'],
         schedule: { weekday: { timeRange: [[5, 18], [19, 1]] }, weekend: { timeRange: [6, 1] } } },
-      { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210', services: ['Semi-Exp', 'Rapid', 'F-Liner'],
+      { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210', services: ['Semi-Exp', 'Rapid', 'Rapid Exp'],
         schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
     ],
+    // 快速急行: the weekday-morning ones and the daytime F-Liners (to 小手指 weekdays, 飯能 Sat/hol)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
@@ -1398,23 +1414,20 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[9, 10], [17, 21], [23, 24]] }, weekend: { timeRange: [16, 20] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 11] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
-        stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [10, 17] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 17] } } },
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指','入間市','飯能'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 17] } } },
     ] },
 
   // ── Seibu Ikebukuro → Seibu Yurakucho at Nerima (mid-line junction) ───
   // Nerima is mid-line on Ikebukuro (idx 5), end on Yurakucho (idx 2)
-  // F-Liner runs express on Seibu Ikebukuro, doesn't go to Ikebukuro station (toward 吾野 it is
-  // an EXPRESS_SERVICES type from 練馬)
+  // The F-Liner 快速急行 run express on Seibu Ikebukuro and leave at 練馬 for the subway (toward 吾野
+  // the type is an EXPRESS_SERVICES one from 練馬)
   { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'start',
     to:   'Seibu Yurakucho Line', toEnd: '練馬',
     express: [
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['飯能','入間市','小手指','所沢',
                 'ひばりヶ丘','石神井公園','練馬','小竹向原'],
         schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
@@ -1480,30 +1493,43 @@ const LINE_CONNECTIONS = [
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
         schedule: { weekday: { timeRange: [[7, 12], [17, 24]] }, weekend: { timeRange: [20, 24] } } },
     ],
-    // 急行 run on as Toyoko 急行; 通勤急行 mostly as 通勤特急. Most Toyoko 急行 (72 a day, all day)
-    // are Fukutoshin 普通: the second entry calls at every Fukutoshin station (ODPT 2026-03; the
-    // Metro-side name is the type-name engine's)
+    // Types by the Metro side, renamed at 渋谷 (toName; ODPT 2026-03): 普通 run on as Toyoko 各停
+    // (112 wd) or 急行 (72, all day); 急行 as 特急 (the daytime F-Liners, 21 wd / 35 Sat/hol, plus
+    // 7 / 21 at other hours), 通勤特急 (9 wd) or 急行 (6 / 8); 通勤急行 as 通勤特急 (18 wd) or 急行 (5 wd)
     express: [
-      { name: 'Express', ja: '急行', color: '#e83030',
-        stops: ['和光市','小竹向原','池袋','新宿三丁目',
-                "明治神宮前〈原宿〉",'渋谷',
-                '中目黒','学芸大学','自由が丘','田園調布',
-                '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'] },
-      { name: 'Express', ja: '急行', color: '#e83030',
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行',
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','千川','要町','池袋',
                 '雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',"明治神宮前〈原宿〉",'渋谷',
                 '中目黒','学芸大学','自由が丘','田園調布',
                 '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'] },
+      { name: 'Express', ja: '急行', color: '#e83080', toName: 'Ltd. Express', toJa: '特急',
+        stops: ['和光市','小竹向原','池袋','新宿三丁目',
+                "明治神宮前〈原宿〉",'渋谷',
+                '中目黒','自由が丘','武蔵小杉','菊名','横浜'],
+        schedule: { weekday: { timeRange: [[6, 17], [18, 19], [20, 22]] }, weekend: { timeRange: [5, 23] } } },
+      { name: 'Express', ja: '急行', color: '#3a6fd8', toName: 'Commuter Ltd. Exp', toJa: '通勤特急',
+        stops: ['和光市','小竹向原','池袋','新宿三丁目',
+                "明治神宮前〈原宿〉",'渋谷',
+                '中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[8, 9], [17, 19], [20, 22]] } } },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['和光市','小竹向原','池袋','新宿三丁目',
+                "明治神宮前〈原宿〉",'渋谷',
+                '中目黒','学芸大学','自由が丘','田園調布',
+                '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'],
+        schedule: { weekday: { timeRange: [[6, 10], [20, 22]] }, weekend: { timeRange: [[6, 10], [19, 23]] } } },
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Commuter Ltd. Exp', toJa: '通勤特急',
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
                 '中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [16, 23]] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
-        stops: ['和光市','小竹向原','池袋','新宿三丁目',
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 11], [16, 23]] } } },
+      { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Express', toJa: '急行',
+        stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
-                '中目黒','自由が丘','武蔵小杉','菊名','横浜'],
-        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
+                '中目黒','学芸大学','自由が丘','田園調布',
+                '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 9], [19, 20]] } } },
     ] },
   { from: 'Tokyu Toyoko Line',           fromEnd: '渋谷',
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
@@ -1517,12 +1543,45 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '和光市', name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31' },
     ],
+    // Types by the Tokyu side, renamed at 渋谷 (toName; ODPT 2026-03): 急行 run on as Metro 普通 (71 wd
+    // / 74 Sat/hol, all day) or 通勤急行 (10 wd); 特急 as 急行 (the daytime F-Liners, 24 / 27, plus 2 / 26
+    // at other hours) or 普通 (6 Sat/hol); 通勤特急 as 通勤急行 (16 wd), 急行 (10 wd) or 普通 (6 wd); 各停
+    // run through as 普通 (102 / 85)
     express: [
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停',
+        stops: ['横浜','菊名','綱島','日吉','武蔵小杉','多摩川','田園調布','自由が丘','学芸大学','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川',
+                '小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市'] },
+      { name: 'Express', ja: '急行', color: '#3a6fd8', toName: 'Commuter Exp', toJa: '通勤急行',
+        stops: ['横浜','菊名','綱島','日吉','武蔵小杉','多摩川','田園調布','自由が丘','学芸大学','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋',
+                '小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [21, 22]] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030', toName: 'Express', toJa: '急行',
         stops: ['横浜','菊名','武蔵小杉','自由が丘','中目黒',
                 '渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋',
                 '小竹向原','和光市'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [7, 17] } } },
+        schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [6, 24] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83080', toName: 'Local', toJa: '各停',
+        stops: ['横浜','菊名','武蔵小杉','自由が丘','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川',
+                '小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 7], [16, 19], [22, 24]] } } },
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', toName: 'Commuter Exp', toJa: '通勤急行',
+        stops: ['横浜','菊名','日吉','武蔵小杉','自由が丘','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋',
+                '小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [17, 24]] } } },
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#e83030', toName: 'Express', toJa: '急行',
+        stops: ['横浜','菊名','日吉','武蔵小杉','自由が丘','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋',
+                '小竹向原','和光市'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[8, 9], [17, 21]] } } },
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', toName: 'Local', toJa: '各停',
+        stops: ['横浜','菊名','日吉','武蔵小杉','自由が丘','中目黒',
+                '渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川',
+                '小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [9, 10], [21, 24]] } } },
     ] },
 
   // ── Tokyu Toyoko ↔ Minato Mirai at Yokohama ──────────────────────────
@@ -1541,15 +1600,18 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '元町・中華街', name: 'Motomachi-Chukagai', ja: '元町・中華街方面', color: '#015193' },
     ],
-    // Types carry on unchanged: 特急 skip 新高島/馬車道/日本大通り, 急行 skip 新高島
+    // Types carry on unchanged: 特急 skip 新高島/馬車道/日本大通り, 急行 skip 新高島; the Local entry lets a
+    // chained 各停 (Tojo 普通 → Fukutoshin 普通 → Toyoko 各停) run on
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '渋谷','中目黒','学芸大学','自由が丘','田園調布',
         '多摩川','武蔵小杉','日吉','綱島','菊名','横浜',
         'みなとみらい','馬車道','日本大通り','元町・中華街'] },
+      // 特急 incl. the daytime F-Liners (Fukutoshin 急行 renamed at 渋谷)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','菊名','横浜',
-        'みなとみらい','元町・中華街'], schedule: { weekday: { timeRange: [[9, 12], [16, 17]] }, weekend: { timeRange: [[6, 12], [18, 24]] } } },
+        'みなとみらい','元町・中華街'], schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [6, 24] } } },
       // 通勤特急 pass only 新高島; Fukutoshin 通勤急行 continue as these (toName at 渋谷)
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜',
@@ -1565,16 +1627,14 @@ const LINE_CONNECTIONS = [
         '元町・中華街','日本大通り','馬車道','みなとみらい',
         '横浜','菊名','綱島','日吉','武蔵小杉','多摩川',
         '田園調布','自由が丘','学芸大学','中目黒','渋谷'] },
+      // 特急 incl. the daytime F-Liners (急行 on the Fukutoshin from 渋谷)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '元町・中華街','みなとみらい',
-        '横浜','菊名','武蔵小杉','自由が丘','中目黒','渋谷'], schedule: { weekday: { timeRange: [[6, 7], [9, 11], [16, 18]] }, weekend: { timeRange: [[6, 11], [15, 1]] } } },
+        '横浜','菊名','武蔵小杉','自由が丘','中目黒','渋谷'], schedule: { weekday: { timeRange: [[6, 7], [9, 18]] }, weekend: { timeRange: [6, 1] } } },
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [
         '元町・中華街','日本大通り','馬車道','みなとみらい',
         '横浜','菊名','日吉','武蔵小杉','自由が丘','中目黒','渋谷'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [17, 1]] } } },
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030', stops: [
-        '元町・中華街','みなとみらい',
-        '横浜','菊名','武蔵小杉','自由が丘','中目黒','渋谷'], schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [7, 17] } } },
     ] },
 
   // ── Namboku ↔ Tokyu Meguro at Meguro ──────────────────────────────────
@@ -2017,10 +2077,35 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Fukutoshin Line', toEnd: '和光市',
     name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
     destinations: [
-      // Through trains are 普通 and 快速急行 (F-Liner); 準急, 急行 and 川越特急 run only to
-      // 池袋 (ja.wikipedia.org/wiki/東武東上本線)
+      // Through trains are 普通 and 快速急行 (the F-Liner); 準急, 急行 and 川越特急 run only to 池袋
+      // (ja.wikipedia.org/wiki/東武東上本線)
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
-        services: ['Local', 'F-Liner', 'Fukutoshin Express'] },
+        services: ['Local'] }, // the 快速急行 run on to 元町・中華街 (a chained destination)
+    ],
+    // Types by the Tobu side, renamed at 和光市 (toName; ODPT 2026-03): 快速急行 run on as Metro 急行 (the
+    // F-Liner, 9 wd / 16 Sat/hol), 普通 as 普通 (24 / 17), 通勤急行 (13 wd) or 急行 (9 Sat/hol). The through
+    // 普通 is a stop list (every station of both lines) so it forks at 渋谷 with the Fukutoshin → Toyoko
+    // entries (Toyoko 各停 or 急行)
+    express: [
+      { name: 'Local', ja: '各停', color: '#00a0e8',
+        stops: ['森林公園','東松山','高坂','北坂戸','坂戸','若葉','鶴ヶ島','霞ヶ関','川越市','川越','新河岸','上福岡','ふじみ野',
+                '鶴瀬','みずほ台','柳瀬川','志木','朝霞台','朝霞','和光市',
+                '地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','千川','要町','池袋','雑司が谷','西早稲田','東新宿','新宿三丁目',
+                '北参道',"明治神宮前〈原宿〉",'渋谷'] },
+      { name: 'Local', ja: '各停', color: '#3a6fd8', toName: 'Commuter Exp', toJa: '通勤急行',
+        stops: ['森林公園','東松山','高坂','北坂戸','坂戸','若葉','鶴ヶ島','霞ヶ関','川越市','川越','新河岸','上福岡','ふじみ野',
+                '鶴瀬','みずほ台','柳瀬川','志木','朝霞台','朝霞','和光市',
+                '地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',"明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [16, 18], [19, 23]] } } },
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行',
+        stops: ['森林公園','東松山','高坂','北坂戸','坂戸','若葉','鶴ヶ島','霞ヶ関','川越市','川越','新河岸','上福岡','ふじみ野',
+                '鶴瀬','みずほ台','柳瀬川','志木','朝霞台','朝霞','和光市',
+                '小竹向原','池袋','新宿三丁目',"明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 9], [10, 11], [18, 20], [21, 23]] } } },
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', toName: 'Express', toJa: '急行',
+        stops: ['小川町','武蔵嵐山','つきのわ','森林公園','東松山','高坂','北坂戸','坂戸','若葉','鶴ヶ島','霞ヶ関','川越市','川越','朝霞台','和光市',
+                '小竹向原','池袋','新宿三丁目',"明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [6, 18] } } },
     ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',
@@ -2048,9 +2133,28 @@ const LINE_CONNECTIONS = [
       { until: '志木', name: 'Shiki', ja: '志木方面', color: '#5aa0d8', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 8], [9, 10], [14, 23]] }, weekend: { timeRange: [[7, 9], [15, 17], [19, 21]] } } },
       { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Commuter Exp'] },
-      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'F-Liner', 'Commuter Exp'] },
-      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Express', 'F-Liner'],
+      { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'Commuter Exp'] },
+      { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Express'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 9] } } },
+    ],
+    // Types by the Metro side, renamed at 和光市 (toName; ODPT 2026-03): the F-Liner 急行 run on as Tojo
+    // 快速急行 (11 wd / 13 Sat/hol), 通勤急行 (9 wd) and a few 急行 (6 Sat/hol) as 普通, 普通 as 普通 (23 / 19)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#f07000', toName: 'Rapid Exp', toJa: '快速急行',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','和光市',
+                '朝霞台','川越','川越市','霞ヶ関','鶴ヶ島','若葉','坂戸','北坂戸','高坂','東松山','森林公園','つきのわ','武蔵嵐山','小川町'],
+        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [6, 17] } } },
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','和光市',
+                '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市','霞ヶ関','鶴ヶ島','若葉',
+                '坂戸','北坂戸','高坂','東松山','森林公園'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[9, 12], [18, 20], [21, 23]] } } },
+      { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Local', toJa: '各停',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市',
+                '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市','霞ヶ関','鶴ヶ島','若葉',
+                '坂戸','北坂戸','高坂','東松山','森林公園'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [18, 19], [21, 24]] } } },
     ] },
   // Yurakucho through-trains are local only (no express on Tojo); 5 weekday trains end
   // at 志木, 5 at 池袋 (mornings and the last ones) (ODPT 2026-03)

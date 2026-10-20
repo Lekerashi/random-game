@@ -97,7 +97,9 @@ const EXPRESS_SERVICES = {
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    // Toward 和光市 the weekday 急行 run only in the rushes (the F-Liner carries the day)
+    // The F-Liner is a 急行 on the Metro (特急 on the Toyoko, 快速急行 on Seibu / Tobu): the connection
+    // entries carry it and rename it at the borders. The line's own 急行 toward 和光市 (ending there)
+    // run in the weekday rushes only (ODPT 2026-03)
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
@@ -105,17 +107,7 @@ const EXPRESS_SERVICES = {
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [[8, 11], [16, 21]] } } },
-    // Daytime; weekend F-Liners start at 8h and run to 18h toward 渋谷 (ODPT 2026-03)
-    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
-      "和光市","小竹向原","池袋","新宿三丁目",
-      "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
-    // (toward 和光市 the 10h weekday F-Liner is a Seibu one: the 小竹向原 connection's)
-    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "start", stops: [
-      "和光市","小竹向原","池袋","新宿三丁目",
-      "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [11, 17] }, weekend: { timeRange: [8, 17] } } },
+    ], schedule: { weekday: { timeRange: [[8, 11], [16, 17]] }, weekend: { timeRange: [[6, 11], [16, 24]] } } },
     // Weekday mornings and evenings: 急行 plus every station 和光市–小竹向原
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "end", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
@@ -156,22 +148,18 @@ const EXPRESS_SERVICES = {
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
     ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
-    // Weekday 快速急行: 4 from the subway via 練馬 to 小手指 in the morning, 2 from 飯能 to 池袋
-    // (7h, 16h); none from 池袋 since the F-Liner took over (ODPT 2026-03)
+    // 快速急行 from the subway via 練馬 (the F-Liners, 10–17h, and 4 weekday-morning ones): weekdays to
+    // 小手指 only, Sat/hol on to 飯能; toward 池袋 2 weekday trains from 飯能 (7h, 16h), the rest leave
+    // at 練馬 for the subway (connection express); none from 池袋 (ODPT 2026-03)
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "練馬","石神井公園","ひばりヶ丘","所沢","小手指",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 11] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 18] } } },
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
+      "練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 18] } } },
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
       "池袋","練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
     ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [16, 17]] } } },
-    // F-Liner from the subway via 練馬: weekdays to 小手指 only, Sat/hol on to 飯能 (toward 池袋 it
-    // leaves at 練馬 for the subway: connection express)
-    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
-      "練馬","石神井公園","ひばりヶ丘","所沢","小手指",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [10, 18] } } },
-    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
-      "練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
-    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 18] } } },
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -282,7 +270,8 @@ const EXPRESS_SERVICES = {
       "渋谷","中目黒","学芸大学","自由が丘","田園調布",
       "多摩川","武蔵小杉","日吉","綱島","菊名","横浜",
     ]},
-    // 特急 only at the hours ODPT lists them (the daytime ones are the F-Liner, connection express)
+    // 特急 only at the hours ODPT lists them (the daytime F-Liners are 特急 too, but run through: the
+    // Fukutoshin and Minato Mirai connections' entries carry them)
     { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "start", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉",
       "菊名","横浜",
@@ -379,7 +368,7 @@ const EXPRESS_SERVICES = {
       "つきのわ","武蔵嵐山","小川町",
     ]},
     // 快速急行 from 池袋: weekday morning peak and daytime (the Fukutoshin through ones are the
-    // F-Liner on the connection), all day Sat/hol; up also 22–23h / 20–21h (ODPT 2026-03)
+    // the Fukutoshin connections 快速急行 → 急行), all day Sat/hol; up also 22–23h / 20–21h (ODPT 2026-03)
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "池袋","和光市","朝霞台",
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
@@ -391,7 +380,7 @@ const EXPRESS_SERVICES = {
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
-    ], schedule: { weekday: { timeRange: [[9, 16], [22, 24]] }, weekend: { timeRange: [[6, 18], [20, 22]] } } },
+    ], schedule: { weekday: { timeRange: [[9, 11], [22, 24]] }, weekend: { timeRange: [[6, 9], [20, 22]] } } },
     // No-extra-fare 川越特急: up trains twice an hour from mid-afternoon, 2–3 down trains late morning
     { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", direction: "end", stops: [
       "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
@@ -1351,7 +1340,7 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[5, 6], [7, 10], [17, 24]] }, weekend: { timeRange: [[5, 10], [14, 22], [23, 1]] } } },
         { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
           schedule: { weekday: { timeRange: [7, 24] }, weekend: { timeRange: [7, 23] } } },
-        { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid', 'Rapid Exp', 'F-Liner'] },
+        { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid', 'Rapid Exp'] },
         { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210' },
         { until: '吾野',       name: 'Agano',         ja: '吾野方面',       color: '#c85a00' },
       ] },
