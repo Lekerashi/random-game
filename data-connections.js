@@ -153,95 +153,127 @@ const LINE_CONNECTIONS = [
   { from: 'Keikyu Airport Line',  fromEnd: '京急蒲田',
     to:   'Keikyu Main Line',     toStation: '京急蒲田', toDir: 'start',
     name: 'Shinagawa', ja: '品川方面', color: '#e57053',
+    // The Airport Line's own 各停 shuttle to 京急蒲田 (EXPRESS_SERVICES "Airport Local") runs early
+    // and late only; by day every train is a through 急行 / 特急 / 快特 (ODPT 2025-12)
     lineDests: [
       { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
     ],
     destinations: [
-      { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#0073CF',
-        services: ['Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp'] },
+      { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#0073CF',
+        services: ['Airport Local', 'Express', 'Rapid Ltd. Exp'] },
+      // 4–6 急行 a day end at 泉岳寺 (the rest run on to the Asakusa Line: chained)
+      { until: '泉岳寺', name: 'Sengakuji', ja: '泉岳寺方面', color: '#e85298', services: ['Express'],
+        schedule: { weekday: { timeRange: [[6, 7], [16, 17], [20, 23]] }, weekend: { timeRange: [[5, 8], [22, 24]] } } },
     ],
     express: [
-      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['泉岳寺','品川','青物横丁','立会川','平和島','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekend: { timeRange: [[5, 10], [21, 24]] } } },
       // 特急 call at every Airport Line station; 快特 at both Haneda stations
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['泉岳寺','品川','青物横丁','平和島','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [[9, 17], [22, 23]] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['泉岳寺','品川','京急蒲田',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['泉岳寺','品川',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
-        schedule: { weekday: { timeRange: [[10, 16], [20, 23]] }, weekend: { timeRange: [10, 19] } } },
+        schedule: { weekday: { timeRange: [11, 16] }, weekend: { timeRange: [9, 19] } } },
     ] },
+  // Toward 横浜 the Haneda 急行 run the whole way to 逗子・葉山 (59 wd / 51 Sat/hol, chained over
+  // the Zushi connection) or end at 金沢文庫 (13 wd); one 特急 and one 快特 a day (ODPT 2025-12)
   { from: 'Keikyu Airport Line',  fromEnd: '京急蒲田',
     to:   'Keikyu Main Line',     toStation: '京急蒲田', toDir: 'end',
-    toUntil: '横浜',
     name: 'Yokohama', ja: '横浜方面', color: '#1a8fe8',
+    lineDests: [
+      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+    ],
+    destinations: [
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Express'],
+        schedule: { weekday: { timeRange: [[7, 9], [10, 11], [12, 15], [19, 20], [22, 24]] }, weekend: { timeRange: [22, 24] } } },
+    ],
     express: [
-      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['京急蒲田','京急川崎','京急鶴見','神奈川新町',
-                '京急東神奈川','横浜',
+                '京急東神奈川','横浜','日ノ出町','井土ヶ谷','弘明寺',
+                '上大岡','杉田','能見台','金沢文庫','金沢八景',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
-        stops: ['横浜','京急川崎','京急蒲田',
+        stops: ['金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [[16, 17], [21, 23]] }, weekend: { timeRange: [23, 24] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
-        stops: ['横浜','京急川崎','京急蒲田',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+        stops: ['金沢八景','金沢文庫','上大岡','横浜','京急川崎','京急蒲田',
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
     ] },
 
   // From Main Line past Keikyu Kamata → branch onto Airport Line (both directions)
   { from: 'Keikyu Main Line',     fromStation: '京急蒲田', fromDir: 'end',
     to:   'Keikyu Airport Line',   toEnd: '京急蒲田',
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
+    // Main Line short turns toward 浦賀: 神奈川新町 (各停, 17 wd) and 金沢文庫 (各停 / 急行, 21 wd);
+    // no train ends at 京急蒲田 or 横浜 (ODPT 2025-12)
     lineDests: [
-      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
-      { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#c83030' },
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 11], [12, 15], [20, 21], [23, 1]] }, weekend: { timeRange: [[5, 6], [7, 12], [15, 16], [21, 1]] } } },
+      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local', 'Express'],
+        schedule: { weekday: { timeRange: [[8, 10], [12, 14], [15, 16], [23, 1]] }, weekend: { timeRange: [[10, 11], [13, 15], [23, 1]] } } },
     ],
     destinations: [
-      // services: chained Asakusa/Sky Access riders board express-class trains only
+      // services: chained Asakusa / Sky Access riders board express-class trains only (the Sky
+      // Access アクセス特急 keeps its boarding-line name); no 普通 runs through to Haneda
       { until: '羽田空港第1・第2ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8',
-        services: ['Airport Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp', 'Airport Rapid', 'Access Express'] },
+        services: ['Express', 'Ltd. Express', 'Rapid Ltd. Exp', 'Airport Rapid', 'Access Express'] },
     ],
     express: [
-      { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['泉岳寺','品川','青物横丁','立会川','平和島','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekend: { timeRange: [[5, 10], [19, 24]] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['泉岳寺','品川','青物横丁','平和島','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [[5, 6], [9, 17]] }, weekend: { timeRange: [[5, 6], [9, 20]] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['泉岳寺','品川','京急蒲田',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [[5, 8], [9, 10], [11, 17]] }, weekend: { timeRange: [[5, 6], [9, 22]] } } },
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
         stops: ['品川',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
-        schedule: { weekday: { timeRange: [[6, 7], [9, 16]] }, weekend: { timeRange: [[6, 7], [9, 19]] } } },
+        schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [10, 19] } } },
     ] },
+  // From the 横浜 side: 普通 end at 金沢文庫 (51 wd), 神奈川新町 (11) or 京急川崎 (6); 品川 is the
+  // signboard end of most 特急 / 快特; a few early 普通 run through to Haneda (ODPT 2025-12)
   { from: 'Keikyu Main Line',     fromStation: '京急蒲田', fromDir: 'start',
     to:   'Keikyu Airport Line',   toEnd: '京急蒲田',
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
     lineDests: [
-      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
+      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 17], [20, 1]] }, weekend: { timeRange: [9, 1] } } },
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Local'],
+        schedule: { weekday: { timeRange: [[8, 11], [14, 16], [17, 1]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 1]] } } },
+      { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 10], [22, 1]] }, weekend: { stops: [] } } },
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
     ],
     destinations: [
-      { until: '羽田空港第1・第2ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8' },
+      { until: '羽田空港第1・第2ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8',
+        services: ['Airport Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp'] },
     ],
     express: [
-      { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null },
+      { name: 'Airport Local', ja: '空港各停', color: '#00a0e8', stops: null,
+        schedule: { weekday: { timeRange: [[5, 10], [21, 24]] }, weekend: { stops: [] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['横浜','京急東神奈川','神奈川新町','京急鶴見',
                 '京急川崎','京急蒲田',
@@ -250,10 +282,12 @@ const LINE_CONNECTIONS = [
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['横浜','京急川崎','京急蒲田',
                 '糀谷','大鳥居','穴守稲荷','天空橋',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [5, 9] }, weekend: { stops: [] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['横浜','京急川崎','京急蒲田',
-                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'] },
+                '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
+        schedule: { weekday: { timeRange: [5, 6] }, weekend: { timeRange: [5, 6] } } },
     ] },
 
   // ── Keikyu Main → Kurihama Line at Horinouchi ───────────────────────────
@@ -272,7 +306,9 @@ const LINE_CONNECTIONS = [
         services: ['Ltd. Express', 'Rapid Ltd. Exp'], chainFrom: ['Toei Asakusa Line', 'Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
     ],
     express: [
-      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      // The through 普通 to 京急久里浜 run weekday mornings and late evening only (ODPT 2025-12)
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [[5, 9], [21, 24]] }, weekend: { stops: [] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['泉岳寺','品川','青物横丁','平和島','京急蒲田',
                 '京急川崎','神奈川新町','横浜','上大岡',
@@ -283,10 +319,34 @@ const LINE_CONNECTIONS = [
         stops: ['泉岳寺','品川','京急蒲田','京急川崎','横浜',
                 '上大岡','金沢文庫','金沢八景','横須賀中央',
                 '堀ノ内','新大津','北久里浜','京急久里浜','ＹＲＰ野比',
-                '京急長沢','津久井浜','三浦海岸','三崎口'] },
+                '京急長沢','津久井浜','三浦海岸','三崎口'],
+        schedule: { weekend: { timeRange: [8, 20] } } },
     ] },
+  // Toward 堀ノ内 the 特急 / 快特 run on to 品川, 泉岳寺 and the Asakusa / Keisei chain (青砥);
+  // 17 weekday 特急 / 快特 turn at 京急久里浜, 5 early 普通 run to 品川 / Haneda (ODPT 2025-12)
   { from: 'Keikyu Kurihama Line', fromEnd: '堀ノ内',
-    to:   'Keikyu Main Line',     toStation: '堀ノ内', toDir: 'start' },
+    to:   'Keikyu Main Line',     toStation: '堀ノ内', toDir: 'start',
+    name: 'Shinagawa', ja: '品川方面', color: '#0073CF',
+    lineDests: [
+      { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f', services: ['Ltd. Express', 'Rapid Ltd. Exp'],
+        schedule: { weekday: { timeRange: [[8, 12], [14, 15], [17, 18], [19, 23]] }, weekend: { stops: [] } } },
+    ],
+    destinations: [
+      { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#0073CF', services: ['Local', 'Ltd. Express', 'Rapid Ltd. Exp'] },
+      { until: '泉岳寺', name: 'Sengakuji', ja: '泉岳寺方面', color: '#e85298', services: ['Ltd. Express', 'Rapid Ltd. Exp'] },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { stops: [] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['三崎口','三浦海岸','津久井浜','京急長沢','ＹＲＰ野比','京急久里浜','北久里浜','新大津','堀ノ内',
+                '横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎',
+                '京急蒲田','平和島','青物横丁','品川','泉岳寺'] },
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
+        stops: ['三崎口','三浦海岸','津久井浜','京急長沢','ＹＲＰ野比','京急久里浜','北久里浜','新大津','堀ノ内',
+                '横須賀中央','金沢八景','金沢文庫','上大岡','横浜','京急川崎','京急蒲田','品川','泉岳寺'],
+        schedule: { weekday: { timeRange: [[4, 6], [8, 16], [17, 23]] }, weekend: { timeRange: [[4, 6], [8, 19]] } } },
+    ] },
 
   // ── Keikyu Main → Zushi Line at Kanazawa-Hakkei ──────────────────────────
   // 急行 (former エアポート急行, renamed Nov 2023) runs Haneda→Zushi-Hayama via
@@ -295,12 +355,14 @@ const LINE_CONNECTIONS = [
   { from: 'Keikyu Main Line',  fromStation: '金沢八景', fromDir: 'end',
     to:   'Keikyu Zushi Line', toEnd: '金沢八景',
     lineDests: [
-      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030' },
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Local', 'Express'],
+        schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 1]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 1]] } } },
     ],
     destinations: [
-      // chainFrom: no Asakusa-line train ends here (ODPT 2025-12); the Haneda 急行 do (Airport Line boarders)
+      // chainFrom: no Asakusa-line train ends here (ODPT 2025-12); the Haneda 急行 do (Airport Line
+      // boarders). 普通 to 逗子・葉山 start as far north as 品川
       { until: '逗子・葉山', name: 'Zushi-Hayama', ja: '逗子・葉山方面', color: '#00a662',
-        services: ['Local', 'Express'], localFrom: '金沢文庫', chainFrom: ['Keikyu Airport Line'] },
+        services: ['Local', 'Express'], chainFrom: ['Keikyu Airport Line'] },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
@@ -310,16 +372,33 @@ const LINE_CONNECTIONS = [
                 '上大岡','杉田','能見台','金沢文庫','金沢八景',
                 '六浦','神武寺','逗子・葉山'] },
     ] },
+  // Toward 金沢八景 the 普通 end at 金沢文庫 (52 Sat/hol / 35 wd) or 品川 (9 wd), the 急行 run on to
+  // Haneda (chained over the Airport connection), 5 weekday-morning 特急 to Haneda / 青砥 (ODPT 2025-12)
   { from: 'Keikyu Zushi Line', fromEnd: '金沢八景',
     to:   'Keikyu Main Line',  toStation: '金沢八景', toDir: 'start',
-    toUntil: '京急蒲田',
+    name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030',
+    lineDests: [
+      { until: '金沢八景', name: 'Kanazawa-hakkei', ja: '金沢八景方面', color: '#00a662',
+        schedule: { weekday: { timeRange: [5, 6] }, weekend: { timeRange: [5, 7] } } },
+    ],
+    destinations: [
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 9], [10, 16], [21, 1]] }, weekend: { timeRange: [9, 1] } } },
+      { until: '品川',     name: 'Shinagawa',      ja: '品川方面',     color: '#0073CF', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 9], [10, 11], [19, 20]] }, weekend: { stops: [] } } },
+    ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['逗子・葉山','神武寺','六浦','金沢八景','金沢文庫',
                 '能見台','杉田','上大岡','弘明寺','井土ヶ谷','日ノ出町','横浜',
                 '京急東神奈川','神奈川新町','京急鶴見',
-                '京急川崎','京急蒲田'] },
+                '京急川崎','京急蒲田'],
+        schedule: { weekday: { timeRange: [[6, 7], [8, 21]] }, weekend: { timeRange: [6, 22] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
+        stops: ['逗子・葉山','神武寺','六浦','金沢八景','金沢文庫','上大岡','横浜','神奈川新町',
+                '京急川崎','京急蒲田','平和島','青物横丁','品川','泉岳寺'],
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [23, 24] } } },
     ] },
 
   // ── Tokaido UTL northbound ──────────────────────────────────────────────
@@ -873,17 +952,26 @@ const LINE_CONNECTIONS = [
   { from: 'Keikyu Main Line',  fromEnd: '泉岳寺',
     to:   'Toei Asakusa Line', toStation: '泉岳寺', toDir: 'end',
     name: 'Aoto', ja: '青砥方面', color: '#0073CF',
+    // (京急蒲田 is a direction label, not a terminus; the up short turns sit on the Airport connection)
     lineDests: [
-      { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
     ],
+    // Only 3 weekday trains end at 押上 (8–9h, 15–16h); the rest run on to 青砥 and beyond (chained)
     destinations: [
-      { until: '押上(スカイツリー前)', name: 'Aoto', ja: '青砥方面', color: '#0073CF',
-        services: ['Local', 'Express', 'Ltd. Express', 'Rapid Ltd. Exp'] },
+      { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#0073CF',
+        services: ['Local', 'Express', 'Ltd. Express'],
+        schedule: { weekday: { timeRange: [[8, 10], [15, 17], [22, 23]] }, weekend: { stops: [] } } },
     ],
     // 特急/快特 run all stations on the Asakusa Line, then on as Keisei 快速
-    // (特急, Haneda ↔ Narita via the Main Line) or 快速特急 (快特, to Aoto/Takasago)
+    // (特急, Haneda ↔ Narita via the Main Line) or 快速特急 (快特, to Aoto/Takasago).
+    // 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a day)
     express: [
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
+        schedule: { weekday: { timeRange: [[7, 8], [10, 16], [19, 21], [22, 23]] }, weekend: { timeRange: [8, 20] } } },
+      { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
+        stops: ['品川','泉岳寺','三田','大門','新橋','日本橋','東日本橋','浅草','押上(スカイツリー前)'],
+        schedule: { weekday: { timeRange: [[4, 8], [9, 10], [16, 17], [21, 22]] }, weekend: { timeRange: [[4, 10], [19, 20], [21, 22]] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川','泉岳寺',
                 '三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'] },
@@ -897,7 +985,7 @@ const LINE_CONNECTIONS = [
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['品川','泉岳寺','三田','大門','新橋','日本橋',
                 '東日本橋','浅草','押上(スカイツリー前)'],
-        schedule: { weekday: { timeRange: [[10, 16], [20, 23]] }, weekend: { timeRange: [10, 19] } } }, // northbound hours at 泉岳寺
+        schedule: { weekday: { timeRange: [[10, 16], [20, 23]] }, weekend: { timeRange: [9, 19] } } }, // northbound hours at 泉岳寺
     ] },
 
   // ── Asakusa ↔ Keisei Oshiage at Oshiage (toward Narita) ──────────────
@@ -915,7 +1003,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[6, 10], [11, 15], [16, 18]] }, weekend: { timeRange: [9, 19] } } },
     ],
     destinations: [
-      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local'] },
+      // Asakusa 各停 end at 青砥; so do the chained Keikyu 特急 (36 a day from the Kurihama Line) and
+      // a few 急行, which carry their Keikyu names here
+      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local', 'Express', 'Ltd. Express'] },
       { until: '京成高砂', name: 'Keisei Takasago', ja: '京成高砂方面', color: '#0073CF',
         services: ['Local', 'Rapid', 'Rapid Ltd. Exp'] },
     ],
@@ -931,7 +1021,8 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Ltd. Exp', ja: '快速特急', color: '#f07000',
         stops: ['泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
         schedule: { weekday: { timeRange: [12, 20] }, weekend: { timeRange: [10, 19] } } },
-      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
+      // chainName: the アクセス特急 boarded at 品川 (Keikyu Main → Asakusa) continues as this
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
         stops: ['泉岳寺','三田','大門','新橋','日本橋',
                 '東日本橋','浅草','押上(スカイツリー前)',
                 '青砥','京成高砂'],

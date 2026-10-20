@@ -625,7 +625,14 @@ const EXPRESS_SERVICES = {
       "堀ノ内",
     ]},
   ],
-  // Keikyu Airport Line express handled entirely by connection express (data-connections.js)
+  // The Airport Line's own trains are the 各停 shuttle to 京急蒲田 (early and late only; by day every
+  // train is a Main Line through service, connection express) (ODPT 2025-12)
+  "Keikyu Airport Line": [
+    { name: "Airport Local", ja: "空港各停", color: "#00a0e8", direction: "start", stops: null,
+      schedule: { weekday: { timeRange: [[6, 7], [8, 9], [23, 1]] }, weekend: { timeRange: [[5, 7], [23, 1]] } } },
+    { name: "Airport Local", ja: "空港各停", color: "#00a0e8", direction: "end", stops: null,
+      schedule: { weekday: { timeRange: [[5, 6], [7, 10], [16, 17], [22, 1]] }, weekend: { timeRange: [[5, 8], [21, 24]] } } },
+  ],
   // ラビット: toward 宇都宮 only, 2 morning (through from the Tokaido Line, 6–9h on this line; ODPT files
   // them under the Tokaido railway, so the checker sees only the evening pair) + 2 evening from 上野
   "Utsunomiya Line": [
@@ -1422,6 +1429,16 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '藤沢',       name: 'Fujisawa',        ja: '藤沢方面',       color: '#c86020' },
       { until: '片瀬江ノ島', name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830', services: ['Local'] },
+    ],
+  },
+  // Toward 三崎口 half the 特急 / 快特 (and the few through 普通) end at 京急久里浜 (59 wd / 28
+  // Sat/hol); the up short turns there come from the Main Line connection (ODPT 2025-12)
+  'Keikyu Kurihama Line': {
+    direction: 'end',  // toward Misakiguchi
+    destinations: [
+      { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f',
+        schedule: { weekend: { timeRange: [[7, 13], [15, 1]] } } },
+      { until: '三崎口',     name: 'Misakiguchi',     ja: '三崎口方面',     color: '#e83080' },
     ],
   },
   // Toward 中央林間: 各停 turn back at 鷺沼 in the morning rush and late, every type at 長津田
