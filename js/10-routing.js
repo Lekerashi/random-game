@@ -136,14 +136,18 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
   // local-class type rides on only over hops whose express entries (if any) include a Local
   // calling where it comes onto the hop's source line
   const localClass = tt && tt.stops === null && !tt._chainExpressStops;
-  const onwardFor = c => { const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n, enteredAt(c)) ? null : n; };
+  // A train ending on a line (the entry's `until`, _untilAt) stops there and rides no hop off it
+  const ua = tt?._untilAt;
+  const endsOn = c => !!ua && c.toLineIdx === ua.lineIdx;
+  const boundOn = (c, n) => endsOn(c) ? ua.idx : chainBoundIdx(c, n);
+  const onwardFor = c => { if (endsOn(c)) return null; const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n, enteredAt(c)) ? null : n; };
   visitedLines.add(currentConn.to);
   let next = onwardFor(currentConn);
 
   // Add target line stations (express-filtered if target-line train type selected)
   if (stopsLeft > 0) {
     const connTargetEi = (tt?._connTargetLineIdx != null) ? ei : null;
-    const bound = chainBoundIdx(currentConn, next);
+    const bound = boundOn(currentConn, next);
     if (connTargetEi) {
       const toLine = state.lines[currentConn.toLineIdx];
       const step = dirStep(currentConn.toDir);
@@ -176,7 +180,7 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
       stopsLeft--;
     }
     if (stopsLeft > 0) {
-      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops, chainBoundIdx(currentConn, next))) result.push(cs);
+      for (const cs of walkConnectionStations(currentConn, stopsLeft, tt?._chainExpressStops, boundOn(currentConn, next))) result.push(cs);
       stopsLeft = stops - result.length;
     }
   }
