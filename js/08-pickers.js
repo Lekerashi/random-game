@@ -53,6 +53,13 @@ function handlePhysicalBranches(p) {
 
 // ── Line destinations (trains terminating at different stations) ──
 // Returns { pickerShown: true } if picker displayed, { pickerShown: false } otherwise.
+// untilAhead: the first station named `ja` ahead of fromIdx in travel direction dir, or -1
+// (a line may list a station twice: the Oedo loop's second 都庁前 toward 光が丘)
+function untilAhead(line, ja, fromIdx, dir) {
+  const step = dirStep(dir);
+  for (let i = fromIdx + step; i >= 0 && i < line.stations.length; i += step) if (line.stations[i].ja === ja) return i;
+  return -1;
+}
 function handleLineDestinations(p) {
   const lineDest = lineDestFor(p.lineName, p.direction);
   if (!lineDest || state.selectedDestination) return { pickerShown: false };
@@ -71,7 +78,7 @@ function handleLineDestinations(p) {
         return { ...d, effectiveMax: max, _outOfWards: outOfWards(line, endIdx), _connRef: null, _isLineDest: true, _plainEnd: true,
           onSelect: () => { state.selectedDestination = { totalMax: max, name: d.name, ja: d.ja, plainEnd: true }; } };
       }
-      const untilIdx = line.stations.findIndex(s => s.ja === d.until);
+      const untilIdx = untilAhead(line, d.until, p.fromIdx, lineDest.direction);
       if (untilIdx === -1 || !destServesStation({}, d, p)) return null;
       // Skip destinations not on the selected branch (e.g. Nambu Tachikawa dests on Hamakawasaki branch)
       if (state.selectedBranch?.branchIndices && !state.selectedBranch.branchIndices.includes(untilIdx)) return null;
