@@ -143,6 +143,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '長津田', name: 'Nagatsuta', ja: '長津田方面', color: '#30a890', services: ['Local'],
         schedule: { weekday: { timeRange: [21, 1] }, weekend: { timeRange: [[17, 18], [21, 1]] } } },
+      // the last 各停 from 中央林間 end at 二子玉川 (ODPT 2026-03)
+      { until: '二子玉川', name: 'Futako-tamagawa', ja: '二子玉川方面', color: '#30a890', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '渋谷',   name: 'Shibuya',   ja: '渋谷方面',   color: '#20a288',
         schedule: { weekday: { timeRange: [[5, 7], [23, 1]] }, weekend: { timeRange: [[5, 7], [22, 1]] } } },
     ],
@@ -184,6 +187,9 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyu Oimachi Line',      fromEnd: '溝の口',
     to:   'Tokyu Den-en-toshi Line', toStation: '溝の口', toDir: 'end',
     lineDests: [
+      // the last 各停 from 大井町 end at 二子玉川 (ODPT 2026-03)
+      { until: '二子玉川', name: 'Futako-tamagawa', ja: '二子玉川方面', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '溝の口', name: 'Mizonokuchi', ja: '溝の口方面' },
     ],
     destinations: [
@@ -1759,9 +1765,18 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Fukutoshin Line', toEnd:   '渋谷',
     name: 'Wakoshi', ja: '和光市方面', color: '#9C5E31',
     lineDests: [
+      // the last 各停 from 横浜 end at 菊名 / 日吉 / 元住吉 (depot) / 自由が丘 (ODPT 2026-03)
+      { until: '菊名',     name: 'Kikuna',         ja: '菊名方面',     color: '#c0304a', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '日吉',     name: 'Hiyoshi',        ja: '日吉方面',     color: '#da0442', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '元住吉',   name: 'Motosumiyoshi',  ja: '元住吉方面',   color: '#da0442', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       // 10 late 各停/急行 from 横浜 turn at 武蔵小杉 (ODPT 2026-03)
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442', services: ['Local', 'Express'],
         schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
+      { until: '自由が丘', name: 'Jiyugaoka',      ja: '自由が丘方面', color: '#da0442', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
     ],
     destinations: [
@@ -1815,9 +1830,14 @@ const LINE_CONNECTIONS = [
     to:   'Minato Mirai Line',  toEnd:   '横浜',
     name: 'Motomachi-Chukagai', ja: '元町・中華街方面', color: '#015193',
     lineDests: [
-      // 武蔵小杉 (20 wd 各停/急行, rushes and evenings) and 菊名 (各停, evenings) short turns (ODPT 2026-03)
+      // 武蔵小杉 (20 wd 各停/急行, rushes and evenings) and 菊名 (各停, evenings) short turns; the last
+      // 各停 from 渋谷 end at 自由が丘 (Sat/hol) / 元住吉 (depot) (ODPT 2026-03)
+      { until: '自由が丘', name: 'Jiyugaoka',      ja: '自由が丘方面', color: '#da0442', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442', services: ['Local', 'Express'],
         schedule: { weekday: { timeRange: [[7, 12], [18, 19], [20, 1]] }, weekend: { timeRange: [[16, 18], [19, 22], [23, 1]] } } },
+      { until: '元住吉',   name: 'Motosumiyoshi',  ja: '元住吉方面',   color: '#da0442', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '菊名',     name: 'Kikuna',         ja: '菊名方面',     color: '#c0304a', services: ['Local'],
         schedule: { weekday: { timeRange: [[18, 19], [21, 1]] }, weekend: { timeRange: [[7, 8], [18, 22], [23, 1]] } } },
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
@@ -1888,9 +1908,15 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Namboku Line', toEnd:   '目黒',
     name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
     lineDests: [
+      // the last 各停 from 日吉 end at 奥沢 (depot) (ODPT 2026-03)
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     destinations: [
+      // a Sat/hol late train ends at 駒込
+      { until: '駒込', name: 'Komagome', ja: '駒込方面', color: '#00AC9B', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
       { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B' },
     ],
     // Meguro 急行 run on as Namboku 普通 (43 wd / 22 Sat/hol; toName at 目黒, ODPT 2026-03)
@@ -1939,6 +1965,8 @@ const LINE_CONNECTIONS = [
     to:   'Toei Mita Line',   toEnd:   '目黒',
     name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1',
     lineDests: [
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     destinations: [
@@ -1963,6 +1991,8 @@ const LINE_CONNECTIONS = [
     lineDests: [
       // 29 weekday 各停 (rushes and evenings) end at 武蔵小杉 (ODPT 2026-03); listed on each
       // Hiyoshi connection so the merged picker keeps it whichever is shown
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -1976,6 +2006,8 @@ const LINE_CONNECTIONS = [
     impliedLines: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line'],
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     lineDests: [
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -1997,6 +2029,8 @@ const LINE_CONNECTIONS = [
     impliedLines: ['Tokyu Shin-Yokohama Line', 'Sotetsu Shin-Yokohama Line', 'Sotetsu Main Line'],
     name: 'Shonandai', ja: '湘南台方面', color: '#003087',
     lineDests: [
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -2021,6 +2055,9 @@ const LINE_CONNECTIONS = [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
     ],
     destinations: [
+      // the last 各停 from 新横浜 end at 奥沢 (depot)
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     // Tokyu types as the Sotetsu → Tokyu entries name them (the Shin-Yokohama Line has no types of its own)
