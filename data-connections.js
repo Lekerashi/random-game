@@ -1443,9 +1443,11 @@ const LINE_CONNECTIONS = [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
         schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
     ],
-    // 5 weekday 快速 run on as JR 普通 (toName at 西船橋; 7h, 17–18h, ODPT 2026-03)
+    // 5 weekday 快速 run on as JR 普通 (toName at 西船橋; 7h, 17–18h, ODPT 2026-03); 各停 in the
+    // weekday rushes only, like the 津田沼 destination
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['中野','落合','高田馬場','早稲田','神楽坂','飯田橋','九段下','竹橋','大手町','日本橋','茅場町','門前仲町','木場','東陽町','浦安','西船橋',
                 '船橋','東船橋','津田沼'],
@@ -3126,9 +3128,11 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
     ],
     // 特急/急行 share the Sagamihara stops; 区間急行/快速 call everywhere past 調布
-    // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through too
+    // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through weekdays
+    // 5–10h, 18–20h and late, Sat/hol 5–6h and late (ODPT 2026-08)
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[5, 11], [18, 21], [22, 1]] }, weekend: { timeRange: [[5, 7], [22, 1]] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '新宿','笹塚','明大前','千歳烏山','調布','京王稲田堤','京王永山','京王多摩センター','南大沢','橋本'] },
       // 急行: weekday morning and evening peaks, Sat/hol mornings (ODPT 2026-08)

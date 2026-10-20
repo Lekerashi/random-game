@@ -953,11 +953,9 @@ const EXPRESS_SERVICES = {
   // 快速 is all-stations here; the 特急 toward 湘南台 are the Tokyu through trains
   // (二俣川 5–8h and 18–20h weekdays, one Sat/hol at 8h; ODPT 2026-03)
   "Sotetsu Izumino Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", direction: "end", stops: null },
-    // Toward 二俣川 the line's own 各停 are the late/first trains ending at 二俣川; by day
-    // every 各停 runs through (the connections' Local)
-    { name: "Local", ja: "各停", color: "#00a0e8", direction: "start", stops: null,
-      schedule: { weekday: { timeRange: [22, 5] }, weekend: { timeRange: [21, 5] } } },
+    // Toward 二俣川 by day every 各停 runs through (the connections' Local); the ones ending at
+    // 二俣川 are the 二俣川 lineDest's hours
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
       "二俣川","いずみ野","湘南台",
     ], schedule: { weekday: { timeRange: [[5, 9], [18, 21]] }, weekend: { timeRange: [8, 9] } } },
