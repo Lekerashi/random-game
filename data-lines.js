@@ -905,12 +905,11 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","永田","本納","新茂原","茂原","八積","上総一ノ宮",
     ], schedule: { weekday: { timeRange: [[11, 15], [22, 23]] }, weekend: { timeRange: [[11, 15], [22, 23]] } } },
+    // (toward 千葉 the all-stations 快速 are the Keiyo Line trains, which leave at 蘇我: the
+    // Sotobo → Keiyo connection carries them)
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","茂原","上総一ノ宮",
-    ], schedule: { weekday: { timeRange: [[6, 8], [10, 12], [16, 20], [21, 22]] }, weekend: { timeRange: [[6, 8], [10, 12], [16, 20], [21, 22]] } } },
-    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
-      "千葉","本千葉","蘇我","鎌取","誉田","土気","大網","永田","本納","新茂原","茂原","八積","上総一ノ宮",
-    ], schedule: { weekday: { timeRange: [[12, 16], [20, 21]] }, weekend: { timeRange: [[12, 16], [20, 21]] } } },
+    ], schedule: { weekday: { timeRange: [[6, 8], [10, 12], [16, 22]] }, weekend: { timeRange: [[6, 8], [10, 12], [16, 22]] } } },
   ],
   // Uchibo 快速 run 千葉 ↔ 君津 passing 巌根 only (ODPT 2026-03)
   "JR Uchibo Line": [
