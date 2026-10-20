@@ -1013,14 +1013,17 @@ const LINE_CONNECTIONS = [
   { from: 'Odakyu Line',              fromStation: '代々木上原', fromDir: 'start',
     to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
     name: 'Ayase', ja: '綾瀬方面', color: '#00BB85',
-    lineDests: [
-      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
-    ],
+    // (新宿 and the up short turns come from LINE_DESTINATIONS["Odakyu Line"], which merges this);
+    // chainFrom: Tama Line 急行 run through to 我孫子 by day, Enoshima Line trains never do
+    chainFrom: ['Odakyu Tama Line'],
     destinations: [
+      // 14 weekday 各停 run through in the rushes (ODPT 2026-03)
       { until: '綾瀬', name: 'Ayase', ja: '綾瀬方面', color: '#00BB85',
-        services: ['Semi-Exp', 'Express', 'Commuter Semi-Exp'] },
+        services: ['Local', 'Semi-Exp', 'Express', 'Commuter Semi-Exp'] },
     ],
     express: [
+      { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
+        schedule: { weekday: { timeRange: [[5, 10], [17, 23]] }, weekend: { timeRange: [[9, 10], [21, 23]] } } },
       // Weekday mornings: all stations 伊勢原–登戸, then 成城学園前/経堂/下北沢
       { name: 'Commuter Semi-Exp', ja: '通勤準急', color: '#3aa0c8',
         stops: ['伊勢原','愛甲石田','本厚木','厚木','海老名','座間','相武台前','小田急相模原',
@@ -1039,7 +1042,7 @@ const LINE_CONNECTIONS = [
                 '国会議事堂前','霞ケ関','日比谷','二重橋前','大手町',
                 '新御茶ノ水','湯島','根津','千駄木','西日暮里','町屋',
                 '北千住','綾瀬','北綾瀬'],
-        schedule: { weekday: { timeRange: [16, 21] }, weekend: { timeRange: [[10, 12], [19, 21]] } } }, // not by day
+        schedule: { weekday: { timeRange: [[8, 11], [16, 22]] }, weekend: { timeRange: [[10, 12], [18, 22]] } } }, // not by day
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['伊勢原','愛甲石田','本厚木','海老名','相模大野','町田',
                 '新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂',
@@ -1049,7 +1052,7 @@ const LINE_CONNECTIONS = [
                 '新御茶ノ水','湯島','根津','千駄木','西日暮里','町屋',
                 '北千住','綾瀬','北綾瀬'],
         // None in the weekday rushes (通勤準急 7–9h, 準急 16–20h)
-        schedule: { weekday: { timeRange: [[6, 7], [9, 16], [21, 22]] }, weekend: { timeRange: [[6, 10], [12, 21]] } } },
+        schedule: { weekday: { timeRange: [[5, 7], [9, 16], [21, 22]] }, weekend: { timeRange: [[5, 10], [11, 22]] } } },
     ] },
 
   // ── Tozai ↔ Chuo-Sobu at Nakano and Nishi-Funabashi ───────────────────
@@ -2405,37 +2408,50 @@ const LINE_CONNECTIONS = [
   { from: 'Odakyu Line',          fromStation: '相模大野', fromDir: 'end',
     to:   'Odakyu Enoshima Line', toEnd: '相模大野',
     chainFrom: [], // Chiyoda through trains never run onto the Enoshima Line
-    name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830',
-    lineDests: [
-      { until: '小田原', name: 'Odawara', ja: '小田原方面', color: '#0099DD' },
-    ],
-    // Since 2022 快速急行/急行 terminate at 藤沢; 藤沢–片瀬江ノ島 is a local shuttle
+    name: 'Fujisawa', ja: '藤沢方面', color: '#c86020',
+    // (小田原 and the down short turns come from LINE_DESTINATIONS["Odakyu Line"], which merges this.)
+    // Since 2022 快速急行/急行 terminate at 藤沢; 藤沢–片瀬江ノ島 is a local shuttle, and no
+    // Odawara Line train runs to 片瀬江ノ島; the through 各停 start at 町田 (ODPT 2026-03)
     destinations: [
       { until: '藤沢', name: 'Fujisawa', ja: '藤沢方面', color: '#c86020',
-        services: ['Local', 'Express', 'Rapid Exp'], localFrom: '相模大野' },
-      { until: '片瀬江ノ島', name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830',
-        services: ['Local'] },
+        services: ['Local', 'Express', 'Rapid Exp'], localFrom: '町田' },
     ],
     express: [
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
         '新宿','代々木上原','下北沢','登戸','新百合ヶ丘','町田','相模大野',
         '中央林間','大和','湘南台','藤沢'] },
+      // Early-morning 急行 only (ODPT 2026-03)
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '新宿','代々木上原','下北沢','経堂','成城学園前','登戸','向ヶ丘遊園','新百合ヶ丘','町田','相模大野',
         '中央林間','南林間','大和','長後','湘南台','藤沢'],
-        schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [5, 8] } } },
     ] },
+  // Toward 相模大野: the 各停 end at 相模大野 (or 町田, 9–10 a day); 急行 / 快速急行 run on to
+  // 新宿; from the 片瀬江ノ島 end the shuttle 各停 turn at 藤沢 (ODPT 2026-03)
   { from: 'Odakyu Enoshima Line', fromEnd: '相模大野',
     to:   'Odakyu Line',          toStation: '相模大野', toDir: 'start',
+    name: 'Shinjuku', ja: '新宿方面', color: '#0099DD',
+    lineDests: [
+      { until: '藤沢',     name: 'Fujisawa',   ja: '藤沢方面',     color: '#c86020',
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [6, 1] } } },
+      { until: '相模大野', name: 'Sagami-Ono', ja: '相模大野方面', color: '#2a80d0' },
+    ],
+    destinations: [
+      { until: '町田', name: 'Machida',  ja: '町田方面', color: '#1a8fe8', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 10], [21, 1]] }, weekend: { timeRange: [[7, 11], [12, 15], [17, 19], [22, 1]] } } },
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD', services: ['Express', 'Rapid Exp'] },
+    ],
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      // the through 各停 are the 町田 ones
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[7, 10], [21, 1]] }, weekend: { timeRange: [[7, 11], [12, 15], [17, 19], [22, 1]] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
         '藤沢','湘南台','大和','中央林間',
         '相模大野','町田','新百合ヶ丘','登戸','下北沢','代々木上原','新宿'] },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '藤沢','湘南台','長後','大和','南林間','中央林間',
         '相模大野','町田','新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂','下北沢','代々木上原','新宿'],
-        schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
+        schedule: { weekday: { timeRange: [[5, 10], [21, 24]] }, weekend: { timeRange: [[5, 6], [20, 24]] } } },
     ] },
 
   // ── Odakyu ↔ Odakyu Tama at Shin-Yurigaoka ───────────────────────────
@@ -2445,27 +2461,44 @@ const LINE_CONNECTIONS = [
   { from: 'Odakyu Line',      fromStation: '新百合ヶ丘', fromDir: 'end',
     to:   'Odakyu Tama Line', toEnd: '新百合ヶ丘',
     name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8',
-    lineDests: [
-      { until: '小田原', name: 'Odawara', ja: '小田原方面', color: '#0099DD' },
-    ],
+    // (小田原 and the down short turns come from LINE_DESTINATIONS["Odakyu Line"], which merges this)
     destinations: [
       { until: '唐木田', name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8',
-        services: ['Local', 'Express'] }, // 快速急行: only a few peak trains
+        services: ['Local', 'Express', 'Rapid Exp'] },
     ],
     express: [
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '新宿','代々木上原','下北沢','経堂','成城学園前','登戸','向ヶ丘遊園','新百合ヶ丘','五月台','栗平','黒川','はるひ野','小田急永山','小田急多摩センター','唐木田'] },
+      // 5 weekday 快速急行 (morning rush, 22h) pass 五月台 / 黒川 / はるひ野 (ODPT 2026-03)
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
+        '新宿','代々木上原','下北沢','登戸','新百合ヶ丘','栗平','小田急永山','小田急多摩センター','唐木田'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 9], [22, 23]] } } },
     ] },
+  // Toward 新百合ヶ丘: 各停 end there (41–49 a day; 3 early ones run on to 新宿), 急行 run on to
+  // 新宿 or, by day, to 我孫子 over the Chiyoda Line (chained) (ODPT 2026-03)
   { from: 'Odakyu Tama Line', fromEnd: '新百合ヶ丘',
     to:   'Odakyu Line',      toStation: '新百合ヶ丘', toDir: 'start',
+    name: 'Shinjuku', ja: '新宿方面', color: '#0099DD',
+    lineDests: [
+      { until: '新百合ヶ丘', name: 'Shin-Yurigaoka', ja: '新百合ヶ丘方面', color: '#1a8fe8',
+        schedule: { weekday: { timeRange: [[5, 11], [16, 1]] }, weekend: { timeRange: [[5, 12], [16, 1]] } } },
+    ],
+    destinations: [
+      { until: '新宿', name: 'Shinjuku', ja: '新宿方面', color: '#0099DD' },
+    ],
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [4, 7] }, weekend: { timeRange: [[4, 7], [11, 12]] } } },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '唐木田','小田急多摩センター','小田急永山','はるひ野','黒川','栗平','五月台','新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂','下北沢','代々木上原','新宿'] },
-      // Weekday mornings: skips 登戸 and 経堂
+      // Weekday mornings: passes 五月台 / 黒川 / はるひ野, 登戸 and 経堂
       { name: 'Commuter Exp', ja: '通勤急行', color: '#e8508a', stops: [
-        '唐木田','小田急多摩センター','小田急永山','はるひ野','黒川','栗平','五月台','新百合ヶ丘','向ヶ丘遊園','成城学園前','下北沢','代々木上原','新宿'],
+        '唐木田','小田急多摩センター','小田急永山','栗平','新百合ヶ丘','向ヶ丘遊園','成城学園前','下北沢','代々木上原','新宿'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+      // Two Sat/hol 快速急行 at 6h
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
+        '唐木田','小田急多摩センター','小田急永山','栗平','新百合ヶ丘','登戸','下北沢','代々木上原','新宿'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 7] } } },
     ] },
 
   // ── Musashino ↔ Keiyo at Nishi-Funabashi ──────────────────────────────
