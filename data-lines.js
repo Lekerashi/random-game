@@ -1609,6 +1609,9 @@ const LINE_DESTINATIONS = {
         schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [6, 1] } } },
       { until: '大和',   name: 'Yamato',  ja: '大和方面',   color: '#2a70c0', services: ['Local', 'Rapid'],
         schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
+      // the last 各停 from 横浜 end at かしわ台 (depot) (ODPT 2026-03)
+      { until: 'かしわ台', name: 'Kashiwadai', ja: 'かしわ台方面', color: '#2a70c0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } },
       { until: '海老名', name: 'Ebina',   ja: '海老名方面', color: '#003087' },
     ],
   },

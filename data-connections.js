@@ -2146,6 +2146,9 @@ const LINE_CONNECTIONS = [
     to:   'Sotetsu Shin-Yokohama Line',  toEnd: '西谷',
     name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
     lineDests: [
+      // a late 各停 from 海老名 ends at 二俣川 (ODPT 2026-03)
+      { until: '二俣川', name: 'Futamatagawa', ja: '二俣川方面', color: '#003087', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
     ],
     destinations: [
@@ -2798,6 +2801,8 @@ const LINE_CONNECTIONS = [
     chainFrom: [], // every JR-direct train comes from 海老名: none from the Izumino Line (ODPT 2026-03)
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     lineDests: [
+      { until: '二俣川', name: 'Futamatagawa', ja: '二俣川方面', color: '#003087', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#003087' },
     ],
     destinations: [
