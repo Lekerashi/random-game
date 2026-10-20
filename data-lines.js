@@ -1512,12 +1512,19 @@ const LINE_DESTINATIONS = {
   'Odakyu Line': [
     { direction: 'end',  // toward Odawara
       destinations: [
+        // the last trains from 新宿 end at 経堂 / 新百合ヶ丘 / 海老名 (ODPT 2026-03)
+        { until: '経堂',       name: 'Kyodo',           ja: '経堂方面',       color: '#3aa0e0', services: ['Local'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0', services: ['Local', 'Semi-Exp'],
           schedule: { weekday: { timeRange: [[7, 11], [16, 22], [23, 1]] }, weekend: { timeRange: [[8, 12], [17, 21], [22, 1]] } } },
         { until: '向ヶ丘遊園', name: 'Mukogaoka-Yuen',  ja: '向ヶ丘遊園方面', color: '#1a8fe8', services: ['Local', 'Semi-Exp', 'Express'],
           schedule: { weekday: { timeRange: [[6, 11], [16, 23], [0, 1]] }, weekend: { timeRange: [[6, 12], [16, 22], [23, 1]] } } },
+        { until: '新百合ヶ丘', name: 'Shin-Yurigaoka',  ja: '新百合ヶ丘方面', color: '#1a8fe8', services: ['Local'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '相模大野',   name: 'Sagami-Ono',      ja: '相模大野方面',   color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[8, 9], [21, 1]] }, weekend: { timeRange: [[7, 9], [16, 20], [21, 1]] } } },
+        { until: '海老名',     name: 'Ebina',           ja: '海老名方面',     color: '#2a80d0', services: ['Local', 'Express'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express'] },
         { until: '伊勢原',     name: 'Isehara',         ja: '伊勢原方面',     color: '#005090', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[4, 10], [18, 24]] } } },
@@ -1535,6 +1542,15 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[5, 10], [15, 18], [21, 22], [0, 1]] }, weekend: { timeRange: [[7, 9], [16, 19], [0, 1]] } } },
         { until: '町田',     name: 'Machida',      ja: '町田方面',     color: '#1a8fe8', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[7, 18], [21, 1]] }, weekend: { timeRange: [6, 1] } } },
+        // the last 各停 from 本厚木 end at 新百合ヶ丘 / 向ヶ丘遊園 (weekday) / 成城学園前 (Sat/hol) / 経堂
+        { until: '新百合ヶ丘', name: 'Shin-Yurigaoka',  ja: '新百合ヶ丘方面', color: '#1a8fe8', services: ['Local'],
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '向ヶ丘遊園', name: 'Mukogaoka-Yuen',  ja: '向ヶ丘遊園方面', color: '#1a8fe8', services: ['Local'],
+          schedule: { weekday: { timeRange: [22, 24] }, weekend: { stops: [] } } },
+        { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0', services: ['Local'],
+          schedule: { weekday: { stops: [] }, weekend: { timeRange: [22, 24] } } },
+        { until: '経堂',       name: 'Kyodo',           ja: '経堂方面',       color: '#3aa0e0', services: ['Local'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '新宿',     name: 'Shinjuku',     ja: '新宿方面',     color: '#0099DD' },
       ] },
   ],
@@ -1543,6 +1559,9 @@ const LINE_DESTINATIONS = {
   'Odakyu Enoshima Line': {
     direction: 'end',  // toward Katase-Enoshima
     destinations: [
+      // the last 各停 from 相模大野 end at 大和 (ODPT 2026-03)
+      { until: '大和',       name: 'Yamato',          ja: '大和方面',       color: '#c86020', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '藤沢',       name: 'Fujisawa',        ja: '藤沢方面',       color: '#c86020' },
       { until: '片瀬江ノ島', name: 'Katase-Enoshima', ja: '片瀬江ノ島方面', color: '#e87830', services: ['Local'] },
     ],
