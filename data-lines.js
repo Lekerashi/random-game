@@ -10,13 +10,21 @@
 const EXPRESS_SERVICES = {
   "Seibu Shinjuku Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
+    // Not by day (ODPT 2026-03 hours per direction)
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井",
       "武蔵関","東伏見","西武柳沢","田無",
       "花小金井","小平","久米川","東村山",
       "所沢","航空公園","新所沢","入曽",
       "狭山市","新狭山","南大塚","本川越",
-    ], schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } }, // not by day
+    ], schedule: { weekday: { timeRange: [[5, 6], [7, 10], [16, 1]] }, weekend: { timeRange: [[5, 6], [7, 11], [17, 21], [23, 1]] } } },
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "start", stops: [
+      "西武新宿","高田馬場","鷺ノ宮","上石神井",
+      "武蔵関","東伏見","西武柳沢","田無",
+      "花小金井","小平","久米川","東村山",
+      "所沢","航空公園","新所沢","入曽",
+      "狭山市","新狭山","南大塚","本川越",
+    ], schedule: { weekday: { timeRange: [15, 10] }, weekend: { timeRange: [[16, 20], [21, 9]] } } },
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井",
       "田無","花小金井","小平","久米川",
@@ -130,19 +138,39 @@ const EXPRESS_SERVICES = {
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
     ]},
-    // Mornings and evenings, both ways (also via 練馬 from the subway)
-    { name: "Rapid", ja: "快速", color: "#f07000", stops: [
+    // Mornings and evenings, both ways (also via 練馬 from the subway) (ODPT 2026-03 hours)
+    { name: "Rapid", ja: "快速", color: "#f07000", direction: "end", stops: [
       "池袋","練馬","石神井公園","ひばりヶ丘","東久留米","清瀬","秋津","所沢",
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
-    ], schedule: { weekday: { timeRange: [16, 10] }, weekend: { timeRange: [16, 10] } } },
+    ], schedule: { weekday: { timeRange: [[7, 10], [17, 24]] }, weekend: { timeRange: [[6, 9], [10, 12], [15, 1]] } } },
+    { name: "Rapid", ja: "快速", color: "#f07000", direction: "start", stops: [
+      "池袋","練馬","石神井公園","ひばりヶ丘","東久留米","清瀬","秋津","所沢",
+      "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
+      "稲荷山公園","入間市","仏子","元加治","飯能",
+    ], schedule: { weekday: { timeRange: [[5, 11], [16, 24]] }, weekend: { timeRange: [[5, 11], [18, 24]] } } },
     // Weekday mornings toward 池袋 only: all stations to 所沢, skips ひばりヶ丘
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "池袋","石神井公園","大泉学園","保谷","東久留米","所沢",
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
     ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
-    // 快速急行 omitted: none leave 池袋 since the F-Liner took over (one weekday up train)
+    // Weekday 快速急行: 4 from the subway via 練馬 to 小手指 in the morning, 2 from 飯能 to 池袋
+    // (7h, 16h); none from 池袋 since the F-Liner took over (ODPT 2026-03)
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
+      "練馬","石神井公園","ひばりヶ丘","所沢","小手指",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 11] } } },
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
+      "池袋","練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [16, 17]] } } },
+    // F-Liner from the subway via 練馬: weekdays to 小手指 only, Sat/hol on to 飯能 (toward 池袋 it
+    // leaves at 練馬 for the subway: connection express)
+    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
+      "練馬","石神井公園","ひばりヶ丘","所沢","小手指",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [10, 18] } } },
+    { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "end", stops: [
+      "練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 18] } } },
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -234,6 +262,10 @@ const EXPRESS_SERVICES = {
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "相模大野","中央林間","大和","湘南台","藤沢",
     ], schedule: { weekday: { timeRange: [8, 24] }, weekend: { timeRange: [7, 24] } } },
+  ],
+  // Every Sayama Line train is a 各停; the Sat/hol evening ones to 池袋 are connection express
+  "Seibu Sayama Line": [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
   ],
   // Weekday 快速急行 from 新宿 run on to 唐木田 in the morning rush and at 22h (5 a day), passing
   // 五月台 / 黒川 / はるひ野; the other types call at every Tama Line station (ODPT 2026-03)
@@ -1298,6 +1330,58 @@ const LINE_DESTINATIONS = {
       { until: '高尾',     name: 'Takao',         ja: '高尾方面',     color: '#5aa85a', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 6], [21, 1]] }, weekend: { timeRange: [[20, 21], [22, 1]] } } },
       { until: '高尾山口', name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a' },
+    ],
+  },
+  // Signboard termini toward 吾野 (ODPT 2026-03); from the 吾野 side every train ends at 飯能
+  'Seibu Ikebukuro Line': [
+    { direction: 'end',  // toward Agano
+      destinations: [
+        { until: '石神井公園', name: 'Shakujii-koen', ja: '石神井公園方面', color: '#f5a060', services: ['Local', 'Semi-Exp'],
+          schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [5, 24] } } },
+        { until: '保谷',       name: 'Hoya',          ja: '保谷方面',       color: '#f29a50', services: ['Local'],
+          schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [[6, 17], [19, 1]] } } },
+        { until: '清瀬',       name: 'Kiyose',        ja: '清瀬方面',       color: '#ef9040', services: ['Local'],
+          schedule: { weekday: { timeRange: [[5, 6], [7, 10], [17, 24]] }, weekend: { timeRange: [[5, 10], [14, 22], [23, 1]] } } },
+        { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
+          schedule: { weekday: { timeRange: [7, 24] }, weekend: { timeRange: [7, 23] } } },
+        { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid', 'Rapid Exp', 'F-Liner'] },
+        { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210' },
+        { until: '吾野',       name: 'Agano',         ja: '吾野方面',       color: '#c85a00' },
+      ] },
+    { direction: 'start',  // toward Ikebukuro (no entry for 池袋 itself: the picker only applies east of 飯能)
+      destinations: [
+        { until: '飯能', name: 'Hanno', ja: '飯能方面', color: '#e67210' },
+      ] },
+  ],
+  // Toward 本川越 (ODPT 2026-03); 拝島 and 玉川上水 merge in from the Haijima connection
+  'Seibu Shinjuku Line': {
+    direction: 'end',  // toward Hon-Kawagoe
+    destinations: [
+      { until: '上石神井', name: 'Kami-Shakujii',  ja: '上石神井方面', color: '#60c0f0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 9], [15, 22], [23, 1]] }, weekend: { timeRange: [[6, 9], [22, 1]] } } },
+      { until: '田無',     name: 'Tanashi',        ja: '田無方面',     color: '#40b0e8', services: ['Local'],
+        schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[6, 7], [8, 24]] } } },
+      { until: '新所沢',   name: 'Shin-Tokorozawa', ja: '新所沢方面',  color: '#20a0e0', services: ['Local', 'Semi-Exp', 'Express'],
+        schedule: { weekday: { timeRange: [[5, 11], [14, 1]] }, weekend: { timeRange: [[5, 6], [8, 11], [12, 1]] } } },
+      { until: '本川越',   name: 'Hon-Kawagoe',    ja: '本川越方面',   color: '#00a0e8' },
+    ],
+  },
+  // 玉川上水 (depot) short turns toward 拝島 by day and in the evening (ODPT 2026-03)
+  'Seibu Haijima Line': {
+    direction: 'end',  // toward Haijima
+    destinations: [
+      { until: '玉川上水', name: 'Tamagawa-josui', ja: '玉川上水方面', color: '#5ab8e8',
+        schedule: { weekday: { timeRange: [[8, 16], [21, 24]] }, weekend: { timeRange: [[7, 16], [20, 23]] } } },
+      { until: '拝島',     name: 'Haijima',        ja: '拝島方面',     color: '#36a9e1' },
+    ],
+  },
+  // 萩山 short turns toward 多摩湖 (30–41 a day; ODPT 2026-03)
+  'Seibu Tama Lake Line': {
+    direction: 'end',  // toward Tamako
+    destinations: [
+      { until: '萩山',   name: 'Hagiyama', ja: '萩山方面',   color: '#f5a060',
+        schedule: { weekday: { timeRange: [[5, 7], [9, 17], [22, 1]] }, weekend: { timeRange: [[5, 6], [8, 22]] } } },
+      { until: '多摩湖', name: 'Tamako',   ja: '多摩湖方面', color: '#ED772D' },
     ],
   },
   // Signboard termini both ways (ODPT 2026-03); 唐木田 and 藤沢 merge in from the Tama / Enoshima

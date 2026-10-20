@@ -1109,10 +1109,16 @@ const LINE_CONNECTIONS = [
     name: 'Shibuya', ja: '渋谷方面', color: '#9C5E31',
     express: [
       { stops: null, name: 'Local', ja: '各停' },
+      // Seibu 各停 / 準急 / 快速 in the rushes run on as Fukutoshin 急行 (17 wd / 8 Sat/hol; the
+      // Seibu-side name is the type-name engine's; hours seen on the Fukutoshin, ODPT 2026-03)
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['練馬','新桜台','小竹向原','池袋','新宿三丁目',
+                "明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { timeRange: [[6, 11], [16, 19], [20, 22]] }, weekend: { timeRange: [[7, 9], [17, 22]] } } },
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } }, // daytime only
+        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } }, // daytime only
     ] },
   // All-day Seibu Ikebukuro through trains also run onto the Yurakucho Line
   { from: 'Seibu Yurakucho Line',       fromEnd: '小竹向原',
@@ -1122,28 +1128,84 @@ const LINE_CONNECTIONS = [
   // Seibu platform is available directly — see Pitfalls → Y-junctions)
 
   // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
-  // Yurakucho terminates at Nerima (idx 2), continues onto Ikebukuro toward Kotesashi/Hanno
+  // Yurakucho terminates at Nerima (idx 2), continues onto Ikebukuro toward Kotesashi/Hanno.
+  // Through trains end at 小手指 (56 wd), 石神井公園 (32), 保谷 (23), 清瀬 (17), 所沢 (9) or 飯能
+  // (5 wd / 14 Sat/hol); F-Liner and 快速急行 pass 新桜台 (ODPT 2026-03)
   { from: 'Seibu Yurakucho Line',  fromEnd: '練馬',
-    to:   'Seibu Ikebukuro Line',  toStation: '練馬', toDir: 'end' },
+    to:   'Seibu Ikebukuro Line',  toStation: '練馬', toDir: 'end',
+    name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
+    destinations: [
+      { until: '石神井公園', name: 'Shakujii-koen', ja: '石神井公園方面', color: '#f5a060', services: ['Local', 'Semi-Exp'],
+        schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
+      { until: '保谷',       name: 'Hoya',          ja: '保谷方面',       color: '#f29a50', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 7], [8, 17], [18, 20], [21, 22], [0, 1]] }, weekend: { timeRange: [[8, 17], [19, 21], [0, 1]] } } },
+      { until: '清瀬',       name: 'Kiyose',        ja: '清瀬方面',       color: '#ef9040', services: ['Local'],
+        schedule: { weekday: { timeRange: [[6, 10], [17, 24]] }, weekend: { timeRange: [[6, 10], [14, 17], [19, 22], [23, 24]] } } },
+      { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
+        schedule: { weekday: { timeRange: [[7, 8], [9, 11], [16, 19], [20, 21]] }, weekend: { timeRange: [[7, 9], [16, 19], [20, 22]] } } },
+      { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp', 'F-Liner'],
+        schedule: { weekday: { timeRange: [[5, 18], [19, 1]] }, weekend: { timeRange: [6, 1] } } },
+      { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210', services: ['Semi-Exp', 'Rapid', 'F-Liner'],
+        schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['小竹向原','新桜台','練馬','石神井公園','大泉学園','保谷','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
+                '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
+        schedule: { weekday: { timeRange: [[7, 17], [22, 23]] }, weekend: { timeRange: [[7, 8], [9, 16], [17, 22]] } } },
+      { name: 'Rapid', ja: '快速', color: '#f07000',
+        stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
+                '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
+        schedule: { weekday: { timeRange: [[9, 10], [17, 21], [23, 24]] }, weekend: { timeRange: [16, 20] } } },
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
+        stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 11] } } },
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [10, 17] } } },
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指','入間市','飯能'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 17] } } },
+    ] },
 
   // ── Seibu Ikebukuro → Seibu Yurakucho at Nerima (mid-line junction) ───
   // Nerima is mid-line on Ikebukuro (idx 5), end on Yurakucho (idx 2)
-  // F-Liner runs express on Seibu Ikebukuro, doesn't go to Ikebukuro station
+  // F-Liner runs express on Seibu Ikebukuro, doesn't go to Ikebukuro station (toward 吾野 it is
+  // an EXPRESS_SERVICES type from 練馬)
   { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'start',
     to:   'Seibu Yurakucho Line', toEnd: '練馬',
     express: [
       { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
         stops: ['飯能','入間市','小手指','所沢',
                 'ひばりヶ丘','石神井公園','練馬','小竹向原'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
+        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
     ] },
-  { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'end',
-    to:   'Seibu Yurakucho Line', toEnd: '練馬',
+
+  // ── Seibu Toshima / Sayama → Seibu Ikebukuro toward 池袋 ──────────────
+  // Every Toshima Line train runs through to 池袋 as a 各停 (77 a day); Sat/hol evenings 12
+  // Sayama Line trains (各停 / 準急) run on from 西所沢 to 池袋 (ODPT 2026-03)
+  { from: 'Seibu Toshima Line',   fromEnd: '練馬',
+    to:   'Seibu Ikebukuro Line', toStation: '練馬', toDir: 'start',
     express: [
-      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
-        stops: ['飯能','入間市','小手指','所沢',
-                'ひばりヶ丘','石神井公園','練馬','小竹向原'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
+      { stops: null, name: 'Local', ja: '各停' },
+    ] },
+  { from: 'Seibu Sayama Line',    fromEnd: '西所沢',
+    to:   'Seibu Ikebukuro Line', toStation: '西所沢', toDir: 'start',
+    name: 'Ikebukuro', ja: '池袋方面', color: '#ED772D',
+    lineDests: [
+      { until: '西所沢', name: 'Nishi-Tokorozawa', ja: '西所沢方面', color: '#ED772D' },
+    ],
+    destinations: [
+      { until: '池袋', name: 'Ikebukuro', ja: '池袋方面', color: '#ED772D', services: ['Local', 'Semi-Exp'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 24] } } },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 24] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['西武球場前','下山口','西所沢','所沢','秋津','清瀬','東久留米','ひばりヶ丘','保谷','大泉学園','石神井公園','練馬','池袋'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[16, 18], [20, 21]] } } },
     ] },
 
   // ── Fukutoshin ↔ Tokyu Toyoko at Shibuya ──────────────────────────────
@@ -2075,10 +2137,11 @@ const LINE_CONNECTIONS = [
   { from: 'Seibu Shinjuku Line', fromStation: '小平', fromDir: 'end',
     to:   'Seibu Haijima Line',  toEnd: '小平',
     name: 'Haijima', ja: '拝島方面', color: '#36a9e1',
-    lineDests: [
-      { until: '本川越', name: 'Hon-Kawagoe', ja: '本川越方面', color: '#00a0e8' },
-    ],
+    // (本川越 and the down short turns come from LINE_DESTINATIONS["Seibu Shinjuku Line"], which merges this)
     destinations: [
+      // 12 weekday 各停 (rushes, 14–15h, evening) end at 玉川上水 (ODPT 2026-03)
+      { until: '玉川上水', name: 'Tamagawa-josui', ja: '玉川上水方面', color: '#5ab8e8', services: ['Local', 'Semi-Exp'],
+        schedule: { weekday: { timeRange: [[7, 11], [14, 16], [20, 23]] }, weekend: { timeRange: [[6, 11], [21, 23]] } } },
       { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#36a9e1',
         services: ['Local', 'Express', 'Semi-Exp'] }, // no 快速急行 to 拝島
     ],
@@ -2087,11 +2150,11 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['西武新宿','高田馬場','鷺ノ宮','上石神井','田無','花小金井','小平',
                 '萩山','小川','東大和市','玉川上水','武蔵砂川','西武立川','拝島'] },
-      // Weekday mornings and evenings (weekends only a handful)
+      // Mornings and evenings (Sat/hol a handful, ODPT 2026-03)
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['西武新宿','高田馬場','鷺ノ宮','上石神井','武蔵関','東伏見','西武柳沢','田無','花小金井','小平',
                 '萩山','小川','東大和市','玉川上水','武蔵砂川','西武立川','拝島'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [16, 23]] } } },
+        schedule: { weekday: { timeRange: [[7, 10], [16, 23]] }, weekend: { timeRange: [[7, 9], [10, 11], [17, 19], [23, 24]] } } },
     ] },
   { from: 'Seibu Haijima Line',  fromEnd: '小平',
     to:   'Seibu Shinjuku Line', toStation: '小平', toDir: 'start',
@@ -2106,6 +2169,11 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['拝島','西武立川','武蔵砂川','玉川上水','東大和市','小川','萩山','小平',
                 '花小金井','田無','上石神井','鷺ノ宮','高田馬場','西武新宿'] },
+      // 9–10 準急 a day, mornings and evenings (ODPT 2026-03)
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['拝島','西武立川','武蔵砂川','玉川上水','東大和市','小川','萩山','小平',
+                '花小金井','田無','西武柳沢','東伏見','武蔵関','上石神井','鷺ノ宮','高田馬場','西武新宿'],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 9], [16, 21]] }, weekend: { timeRange: [[5, 6], [7, 9], [16, 19], [21, 22]] } } },
     ] },
 
   // ── Sobu ↔ Uchibo at Chiba ──────────────────────────────────────────
