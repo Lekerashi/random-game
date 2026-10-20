@@ -361,9 +361,13 @@ function destServesStation(conn, d, p) {
     const named = defs => defs.filter(t => normalize(t.name) === n);
     const connMatches = named(conn.express || []);
     const matches = connMatches.length ? connMatches : named(lineDefs);
-    // Express-class: allowed service stops at the current station (today's schedule)
+    // Express-class: allowed service stops at the current station (today's schedule). A terminus
+    // connection's entry naming no source station besides the junction describes the target line
+    // only, so every source station feeds it (as resolveConnectionExpress)
     const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction) : t.stops;
-    if (matches.some(t => stopsOf(t)?.some(s => curKeys.has(normalize(s))))) return true;
+    const targetOnly = (t, stops) => connMatches.includes(t) && conn.fromJunctionIdx === dirEnd(line.stations.length, p.direction)
+      && !line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(new Set(stops.map(normalize)), s));
+    if (matches.some(t => { const st = stopsOf(t); return st?.length && (st.some(s => curKeys.has(normalize(s))) || targetOnly(t, st)); })) return true;
     // Local-class: stops:null def, or an undefined "Local" name (implicit local)
     const runsLocal = t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0; // [] = hidden now
     const isLocalClass = matches.length ? matches.some(runsLocal) : n === 'local';
@@ -492,25 +496,19 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const chainBlocked = served.length === 0 && conn.destinations.some(d => d.services);
   const inheritedServices = served.length && served.every(d => d.services)
     ? [...new Set(served.flatMap(d => d.services))] : null;
-  // A chained destination's services that the first hop declares must run now
-  // (Haneda → Sky Access needs an エアポート快特: none in the morning). A Local the
-  // first hop doesn't declare still runs through (Toyoko → Tojo locals run after
-  // the F-Liner, the hop's only declared type, stops at 17h)
-  const firstHopRunsNow = services => {
-    if (!services || !conn.express) return true;
-    const declares = s => conn.express.some(e => normalize(e.name) === s || (e.chainName && normalize(e.chainName) === s));
-    const want = services.map(normalize);
-    if (want.some(s => s === normalize('Local') && !declares(s))) return true;
-    const declared = conn.express.filter(e => want.includes(normalize(e.name)) || (e.chainName && want.includes(normalize(e.chainName))));
-    return declared.some(e => resolveServiceStops(e, state.lines[conn.toLineIdx], p.direction)?.length !== 0);
-  };
+  // A chained destination's `services` must be boardable here: one of them calls at this
+  // station now on the first hop (Haneda → Sky Access needs an エアポート快特, which skips
+  // 穴守稲荷 and runs by day only); a Local the hop doesn't declare still runs through (Toyoko →
+  // Tojo locals run after the F-Liner, the hop's only declared type, stops at 17h). A hop
+  // without express leaves the types to its target line: nothing to check at the source
+  const firstHopServes = d => !conn.express || destServesStation(conn, d, p);
   // Destination choices of a chained hop reached after `base` stops (through its via).
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
   const pushChainDests = (nextConn, base, path, midLine) => {
     for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
       if (chainBlocked && !d0.services) continue;
       const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices };
-      if (!firstHopRunsNow(d.services)) continue;
+      if (!firstHopServes(d)) continue;
       const stopsOnNext = nextConn.toDir === 'start'
         ? nextConn.toJunctionIdx - d.untilIdx
         : d.untilIdx - nextConn.toJunctionIdx;
