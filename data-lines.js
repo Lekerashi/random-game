@@ -662,7 +662,7 @@ const EXPRESS_SERVICES = {
     ], schedule: { weekday: { timeRange: [[8, 11], [18, 22]] }, weekend: { timeRange: [[8, 12], [18, 21]] } } },
   ],
   "JR Shonan Shinjuku Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
     { name: "Rapid", ja: "快速", color: "#00b900", stops: [
       "大宮","浦和","赤羽","池袋","新宿","渋谷",
       "恵比寿","大崎","武蔵小杉","横浜","戸塚","大船",
@@ -849,7 +849,7 @@ const EXPRESS_SERVICES = {
       "大井町","大森","蒲田","川崎","鶴見",
       "新子安","東神奈川","横浜",
     ],
-      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 18] } } },
+      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
   ],
   // 快速 (daytime, both ways) skip 大口/小机/十日市場/成瀬/古淵/淵野辺/矢部 (hours ODPT 2026-03)
   "JR Yokohama Line": [
