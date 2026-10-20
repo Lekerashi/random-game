@@ -4,7 +4,7 @@
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v16';
 const ODPT_DATA_DATE = '2026-10-16'; // last ODPT fetch used to check the train data; shown under How to Play › Advanced › License
-const APP_VERSION = 'rg-v148'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
+const APP_VERSION = 'rg-v149'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // HERE Maps API key (developer.here.com) for the Bars & Cafes panels

@@ -92,12 +92,16 @@ function resolveTrainTypes(p) {
   // target either (no 特急 to 湘南台 from 横浜, only from 西谷)
   const here = line.stations[p.fromIdx];
   for (const a of allConnExpress) for (const e of a.express) {
+    // ...and one not boarded here (noBoard), also on an unselected terminus connection the
+    // namesake would ride onto (no Keikyu 特急 from 品川 to Narita: the board calls those 普通 / 快速)
+    const terminus = a.connObj.fromJunctionIdx === dirEnd(line.stations.length, p.direction);
+    if (e.stops && noBoardAt(e, here) && (a.connObj === conn || terminus)) { connExpNames.add(normalize(e.name)); continue; }
     if (a.connObj !== conn || !e.stops) continue;
     const stops = resolveServiceStops(e, a.targetLine, p.direction);
     if (stops.length === 0) { connExpNames.add(normalize(e.name)); continue; }
     const names = new Set(stops.map(s => normalize(s)));
     const anchoredOnSource = line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(names, s));
-    if (anchoredOnSource && (!stopSetHas(names, here) || noBoardAt(e, here))) connExpNames.add(normalize(e.name));
+    if (anchoredOnSource && !stopSetHas(names, here)) connExpNames.add(normalize(e.name));
   }
   // A local-class entry of the connection being ridden replaces the source line's own
   // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速), also when
