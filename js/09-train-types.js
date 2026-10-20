@@ -67,8 +67,12 @@ function resolveTrainTypes(p) {
     const ahead = new Set(dirStep(p.direction) > 0 ? bi.slice(biPos + 1) : bi.slice(0, biPos));
     trainTypes = trainTypes.filter(t => !t.expressIndices || t.expressIndices.some(i => ahead.has(i)));
   }
-  // Every type the consulted lists declare, before hours/direction/stop filtering
-  const declared = [...(EXPRESS_SERVICES[p.lineName] || []), ...allConnExpress.flatMap(a => a.express)];
+  // Every type the consulted lists declare, before hours/direction/stop filtering. A Local
+  // entry of the connection being ridden replaces the line's own Local (below), so the line's
+  // doesn't count as declared then (a lone 急行 → 普通 still applies while the connection's
+  // through 各停 are off-hours)
+  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(e => e.stops === null));
+  const declared = [...(EXPRESS_SERVICES[p.lineName] || []).filter(t => !(connLocal && t.stops === null)), ...allConnExpress.flatMap(a => a.express)];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
   for (const connExInfo of allConnExpress) {
     trainTypes.push(...resolveConnectionExpress(connExInfo, p, line));
@@ -93,12 +97,17 @@ function resolveTrainTypes(p) {
   // A local-class entry of the connection being ridden replaces the source line's own
   // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速), also when
   // today's schedule hides it (no Asakusa 普通 runs through to Keikyu by day)
-  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(e => e.stops === null));
+  const localPos = trainTypes.findIndex(t => t._connTargetLineIdx == null && t.stops === null && connLocal);
   trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null
     || (!connExpNames.has(normalize(t.name)) && !(connLocal && t.stops === null)));
-  // Local-class types first, as the line lists them (a connection's Local that replaced the
-  // line's keeps the Local button in front)
-  trainTypes = [...trainTypes.filter(t => t.stops === null), ...trainTypes.filter(t => t.stops !== null)];
+  // A connection's Local that replaced the line's takes the line's Local's place (the Local
+  // button stays in front)
+  if (localPos !== -1) {
+    const connLocals = trainTypes.filter(t => t._connTargetLineIdx != null && t.stops === null);
+    const rest = trainTypes.filter(t => !connLocals.includes(t));
+    rest.splice(Math.min(localPos, rest.length), 0, ...connLocals);
+    trainTypes = rest;
+  }
 
   // Add target line's express services (e.g. Den-en-toshi Semi-Exp/Express via Hanzomon)
   // Skip if connection express already covered this target line (avoid duplicates)
@@ -196,10 +205,11 @@ function resolveTrainTypes(p) {
     });
     trace?.push('services ' + sd.services.join('/') + ' keep: ' + reachable.map(describe).join(', '));
   } else if (state.selectedDestination && conn && !state.selectedDestination.chain?.length) {
-    // Heuristic fallback: chain express types pass through intermediate destinations on the
-    // connection's own target line (a chained destination is reached by the chain itself)
+    // Heuristic fallback: a type whose chain continues over named entries passes through the
+    // destinations on the connection's own target line (a chained destination is reached by
+    // the chain itself; a hop without express ridden on as a local says nothing)
     if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
-      reachable = reachable.filter(g => !g._chainExpressStops);
+      reachable = reachable.filter(g => !(g._chainHops || []).some(h => !h.implicit));
     }
   }
 

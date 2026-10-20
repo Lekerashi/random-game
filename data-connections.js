@@ -82,6 +82,16 @@ const DET_SEMI_UP = ['中央林間', 'つきみ野', '南町田グランベリ�
 const DET_EXP_UP = ['中央林間', '南町田グランベリーパーク', '長津田', '青葉台', 'あざみ野', 'たまプラーザ', '鷺沼', '溝の口', '二子玉川', '三軒茶屋', '渋谷'];
 const TOBU_EXP_UP = ['久喜', '和戸', '東武動物公園', '春日部', 'せんげん台', '越谷', '新越谷', '草加', '西新井', '北千住', '曳舟']; // Tobu 急行, 久喜 → 曳舟
 const TOBU_SEMI_UP = ['久喜', '和戸', '東武動物公園', '姫宮', '北春日部', '春日部', '一ノ割', '武里', 'せんげん台', '大袋', '北越谷', '越谷', '新越谷', '草加', '西新井', '北千住', '曳舟'];
+// Meguro Line through trains: 急行 run on as 普通 on the Namboku / Mita (every station)
+const MEGURO_EXP_UP = ['日吉', '武蔵小杉', '多摩川', '田園調布', '大岡山', '武蔵小山', '目黒'];
+const NAMBOKU_UP = ['目黒', '白金台', '白金高輪', '麻布十番', '六本木一丁目', '溜池山王', '永田町', '四ツ谷', '市ケ谷', '飯田橋', '後楽園', '東大前', '本駒込', '駒込', '西ケ原', '王子', '王子神谷', '志茂', '赤羽岩淵'];
+const MITA_UP = ['目黒', '白金台', '白金高輪', '三田', '芝公園', '御成門', '内幸町', '日比谷', '大手町', '神保町', '水道橋', '春日', '白山', '千石', '巣鴨', '西巣鴨', '新板橋', '板橋区役所前', '板橋本町', '本蓮沼', '志村坂上', '志村三丁目', '蓮根', '西台', '高島平', '新高島平', '西高島平'];
+// Shin-Yokohama Line through trains (both companies' lines, every station) and the Tokyu types beyond
+const SOTETSU_SY_UP = ['西谷', '羽沢横浜国大', '新横浜'];        // Sotetsu Shin-Yokohama toward 新横浜
+const TOKYU_SY_UP = ['新横浜', '新綱島', '日吉'];              // Tokyu Shin-Yokohama toward 日吉
+const TOYOKO_EXP_UP = ['日吉', '武蔵小杉', '多摩川', '田園調布', '自由が丘', '学芸大学', '中目黒', '渋谷'];
+const TOYOKO_ALL_UP = ['日吉', '元住吉', '武蔵小杉', '新丸子', '多摩川', '田園調布', '自由が丘', '都立大学', '学芸大学', '祐天寺', '中目黒', '代官山', '渋谷'];
+const MEGURO_ALL_UP = ['日吉', '元住吉', '武蔵小杉', '新丸子', '多摩川', '田園調布', '奥沢', '大岡山', '洗足', '西小山', '武蔵小山', '不動前', '目黒'];
 
 const LINE_CONNECTIONS = [
 
@@ -787,9 +797,14 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
+    ],
+    // Every Yokosuka 普通 runs on as a Sobu 快速 (97 wd / 84 Sat/hol; toName at 東京, ODPT 2026-03)
+    express: [
+      { name: 'Local', ja: '普通', color: '#00b900', toName: 'Rapid', toJa: '快速', stops: [...[...YOKOSUKA_PAST_TOKYO].reverse(), ...SOBU_RAPID_WEST] },
     ] },
-  // The 普通 from the east end at 千葉; every through train is a 快速, all stations past 東京
-  // (the 快速 entry lets the Narita Line's through 快速 chain onto it). 5 weekday 快速 end at 品川
+  // The 普通 from the east end at 千葉; every through train is a 快速, all stations past 東京 as a
+  // Yokosuka 普通 (toName; 99 wd / 85 Sat/hol). The 快速 entry lets the Narita Line's through 快速
+  // chain onto it. 5 weekday 快速 end at 品川
   { from: 'JR Sobu Line',     fromEnd: '東京',
     to:   'JR Yokosuka Line', toEnd: '東京',
     lineDests: [
@@ -810,7 +825,7 @@ const LINE_CONNECTIONS = [
         chainFrom: ['JR Narita Line', 'JR Narita Line (Airport)', 'JR Uchibo Line', 'JR Sotobo Line'] },
     ],
     express: [
-      { name: 'Rapid', ja: '快速', color: '#00b900', stops: [...SOBU_RAPID_WEST_UP, ...YOKOSUKA_PAST_TOKYO] },
+      { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '普通', stops: [...SOBU_RAPID_WEST_UP, ...YOKOSUKA_PAST_TOKYO] },
     ] },
 
   // ── Hanzomon → Tobu Skytree / Nikko at Oshiage ──────────────────────
@@ -1271,8 +1286,9 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
         schedule: { weekday: { timeRange: [[5, 10], [17, 23]] }, weekend: { timeRange: [[9, 10], [21, 23]] } } },
-      // Weekday mornings: all stations 伊勢原–登戸, then 成城学園前/経堂/下北沢
-      { name: 'Commuter Semi-Exp', ja: '通勤準急', color: '#3aa0c8',
+      // Every through train is a 普通 on the Chiyoda (toName; ODPT 2026-03: 急行 24 wd / 36 Sat/hol,
+      // 準急 18 / 9, 通勤準急 11 wd). Weekday mornings: all stations 伊勢原–登戸, then 成城学園前/経堂/下北沢
+      { name: 'Commuter Semi-Exp', ja: '通勤準急', color: '#3aa0c8', toName: 'Local', toJa: '各停',
         stops: ['伊勢原','愛甲石田','本厚木','厚木','海老名','座間','相武台前','小田急相模原',
                 '相模大野','町田','玉川学園前','鶴川','柿生','新百合ヶ丘','百合ヶ丘','読売ランド前',
                 '生田','向ヶ丘遊園','登戸','成城学園前','経堂','下北沢','代々木上原',
@@ -1281,7 +1297,7 @@ const LINE_CONNECTIONS = [
                 '新御茶ノ水','湯島','根津','千駄木','西日暮里','町屋',
                 '北千住','綾瀬','北綾瀬'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [5, 9] } } },
-      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['向ヶ丘遊園',
                 '登戸','和泉多摩川','狛江','喜多見','成城学園前',
                 '祖師ヶ谷大蔵','千歳船橋','経堂','下北沢','代々木上原',
@@ -1290,7 +1306,7 @@ const LINE_CONNECTIONS = [
                 '新御茶ノ水','湯島','根津','千駄木','西日暮里','町屋',
                 '北千住','綾瀬','北綾瀬'],
         schedule: { weekday: { timeRange: [[8, 11], [16, 22]] }, weekend: { timeRange: [[10, 12], [18, 22]] } } }, // not by day
-      { name: 'Express', ja: '急行', color: '#e83030',
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停',
         stops: ['伊勢原','愛甲石田','本厚木','海老名','相模大野','町田',
                 '新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂',
                 '下北沢','代々木上原',
@@ -1304,9 +1320,21 @@ const LINE_CONNECTIONS = [
 
   // ── Tozai ↔ Chuo-Sobu at Nakano and Nishi-Funabashi ───────────────────
   // Two junction points, both local-only
-  // Nakano: Tozai start terminus ↔ Chuo-Sobu mid-line
+  // Nakano: Tozai start terminus ↔ Chuo-Sobu mid-line. Every through train is a JR 普通: Tozai 快速
+  // (11 wd) and 通勤快速 (6 wd) are renamed at 中野 (toName; ODPT 2026-03)
   { from: 'Tokyo Metro Tozai Line', fromEnd: '中野',
-    to:   'JR Chuo-Sobu Line',      toStation: '中野', toDir: 'start' },
+    to:   'JR Chuo-Sobu Line',      toStation: '中野', toDir: 'start',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
+        stops: ['西船橋','浦安','東陽町','木場','門前仲町','茅場町','日本橋','大手町','竹橋','九段下','飯田橋','神楽坂','早稲田','高田馬場','落合','中野',
+                '高円寺','阿佐ケ谷','荻窪','西荻窪','吉祥寺','三鷹'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[10, 11], [16, 22]] } } },
+      { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030', toName: 'Local', toJa: '各停',
+        stops: ['西船橋','浦安','葛西','西葛西','南砂町','東陽町','木場','門前仲町','茅場町','日本橋','大手町','竹橋','九段下','飯田橋','神楽坂','早稲田','高田馬場','落合','中野',
+                '高円寺','阿佐ケ谷','荻窪','西荻窪','吉祥寺','三鷹'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
+    ] },
   // Through trains from 三鷹 end at 西船橋 (43 wd / 39 Sat/hol), 東葉勝田台 (chained, 20 wd) or, in the
   // weekday morning rush, 妙典 (6) / 東陽町 (4); the Chuo-Sobu's own 各停 run on to 津田沼 or 千葉
   // (ODPT 2026-03). At 中野 itself the Tozai is its own platform
@@ -1322,6 +1350,14 @@ const LINE_CONNECTIONS = [
       { until: '妙典',   name: 'Myoden',  ja: '妙典方面',   color: '#009BBF', services: ['Local'],
         schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
       { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#009BBF' },
+    ],
+    // JR 普通 run on as Tozai 普通, in the weekday rushes 16 as Tozai 快速 (toName at 中野; ODPT 2026-03)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Local', ja: '各停', color: '#00b900', toName: 'Rapid', toJa: '快速',
+        stops: ['三鷹','吉祥寺','西荻窪','荻窪','阿佐ケ谷','高円寺','中野',
+                '落合','高田馬場','早稲田','神楽坂','飯田橋','九段下','竹橋','大手町','日本橋','茅場町','門前仲町','木場','東陽町','浦安','西船橋'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 9], [16, 20]] } } },
     ] },
   // Nishi-Funabashi: Tozai end terminus ↔ Chuo-Sobu mid-line. Through trains run
   // as far as 津田沼 only, 17 a day on weekdays (rushes) (ODPT 2026-03)
@@ -1339,6 +1375,14 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
         schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
+    ],
+    // 5 weekday 快速 run on as JR 普通 (toName at 西船橋; 7h, 18h, ODPT 2026-03)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
+        stops: ['中野','落合','高田馬場','早稲田','神楽坂','飯田橋','九段下','竹橋','大手町','日本橋','茅場町','門前仲町','木場','東陽町','浦安','西船橋',
+                '船橋','東船橋','津田沼'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [18, 19]] } } },
     ] },
   { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'start',
     to:   'Tokyo Metro Tozai Line', toEnd: '西船橋',
@@ -1719,6 +1763,11 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B' },
+    ],
+    // Meguro 急行 run on as Namboku 普通 (43 wd / 22 Sat/hol; toName at 目黒, ODPT 2026-03)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停', stops: [...MEGURO_EXP_UP, ...NAMBOKU_UP.slice(1)] },
     ] },
 
   // ── Namboku ↔ Saitama Railway at Akabane-iwabuchi ─────────────────────
@@ -1765,6 +1814,11 @@ const LINE_CONNECTIONS = [
       { until: '高島平',   name: 'Takashimadaira',       ja: '高島平方面',   color: '#4a70b8', services: ['Local', 'Express'],
         schedule: { weekday: { timeRange: [[7, 10], [15, 16], [17, 20], [23, 24]] }, weekend: { timeRange: [[8, 9], [17, 19], [23, 24]] } } },
       { until: '西高島平', name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1' },
+    ],
+    // Meguro 急行 run on as Mita 普通 (32 wd / 29 Sat/hol; toName at 目黒, ODPT 2026-03)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停', stops: [...MEGURO_EXP_UP, ...MITA_UP.slice(1)] },
     ] },
 
   // ── Tokyu Meguro → Sotetsu at Hiyoshi ──────────────────────────────────
@@ -1836,6 +1890,11 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
+    ],
+    // Tokyu types as the Sotetsu → Tokyu entries name them (the Shin-Yokohama Line has no types of its own)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [...TOKYU_SY_UP, ...MEGURO_EXP_UP.slice(1)] },
     ] },
 
   // ── Tokyu Toyoko ↔ Tokyu Shin-Yokohama / Sotetsu at Hiyoshi (mid-line) ──
@@ -1904,20 +1963,53 @@ const LINE_CONNECTIONS = [
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442', services: ['Local', 'Express'],
         schedule: { weekday: { timeRange: [21, 1] }, weekend: { timeRange: [21, 24] } } },
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3', services: ['Express'] },
+    ],
+    // Tokyu types as the Sotetsu → Tokyu entries name them (the Shin-Yokohama Line has no types of its own)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [...TOKYU_SY_UP, ...TOYOKO_EXP_UP.slice(1)] },
     ] },
 
   // ── Tokyu Shin-Yokohama ↔ Sotetsu Shin-Yokohama at Shin-Yokohama ────
+  // Types by the Tokyu side, renamed at 新横浜 (toName; ODPT 2026-03): 急行 run on as Sotetsu 各停
+  // (60 wd / 56 Sat/hol) or 特急 (20 / 11), 各停 as 各停 (11 / 8) or 特急 (5 / 3)
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '新横浜',
-    to:   'Sotetsu Shin-Yokohama Line',  toEnd:   '新横浜' },
-  // (named: at 西谷 it shares the picker with the JR-direct connection at 羽沢横浜国大)
+    to:   'Sotetsu Shin-Yokohama Line',  toEnd:   '新横浜',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOKYU_SY_UP].reverse().concat([...SOTETSU_SY_UP].reverse().slice(1)) },
+      { name: 'Express', ja: '急行', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: [...TOKYU_SY_UP].reverse().concat([...SOTETSU_SY_UP].reverse().slice(1)),
+        schedule: { weekday: { timeRange: [[5, 9], [10, 11], [17, 24]] }, weekend: { timeRange: [[5, 9], [10, 11], [17, 24]] } } },
+      { name: 'Local', ja: '各停', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: [...TOKYU_SY_UP].reverse().concat([...SOTETSU_SY_UP].reverse().slice(1)),
+        schedule: { weekday: { timeRange: [[5, 6], [8, 9], [20, 24]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 24]] } } },
+    ] },
+  // (named: at 西谷 it shares the picker with the JR-direct connection at 羽沢横浜国大.) Types by the
+  // Sotetsu side, renamed at 新横浜: 各停 run on as Tokyu 急行 (61 / 58) or 各停 (5 / 14), 特急 as 急行
+  // (21 / 13) or 各停 (5 / 1), 通勤特急 as 急行 (5 wd); the Tokyu Shin-Yokohama → Toyoko / Meguro
+  // entries continue them by name (ODPT 2026-03)
   { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '新横浜',
     to:   'Tokyu Shin-Yokohama Line',    toEnd:   '新横浜',
-    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84' },
+    name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 9], [10, 11], [16, 23]] }, weekend: { timeRange: [[5, 6], [7, 9], [10, 11], [16, 23]] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[6, 8], [22, 24]] }, weekend: { stops: [] } } },
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
+    ] },
 
   // ── Sotetsu Shin-Yokohama ↔ Sotetsu Main at Nishiya ──────────────────
-  // Through-trains enter Main Line at Nishiya heading toward Ebina.
+  // Through-trains enter Main Line at Nishiya heading toward Ebina (各停 at every station, 特急 at
+  // 二俣川 / 大和 / 海老名: the Tokyu → Sotetsu entries above name them)
   { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '西谷',
-    to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end' },
+    to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: ['新横浜','羽沢横浜国大','西谷','二俣川','大和','海老名'] },
+    ] },
   { from: 'Sotetsu Main Line',           fromStation: '西谷', fromDir: 'start',
     to:   'Sotetsu Shin-Yokohama Line',  toEnd: '西谷',
     name: 'Shin-Yokohama', ja: '新横浜方面', color: '#890d84',
@@ -2016,17 +2108,19 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '笹塚',       name: 'Sasazuka',      ja: '笹塚方面',       color: '#B0C800' },
     ],
+    // Types by the Toei side, renamed at 新宿 (toName; ODPT 2026-03): 普通 run on as Keio 各停 (96 wd /
+    // 69 Sat/hol), 区間急行 (57 / 42) or 快速 (22 / 39); 急行 stay 急行 (5 / 3)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
+      { name: 'Local', ja: '各停', color: '#f0c000', toName: 'Sub-Exp', toJa: '区間急行', stops: [
         '新宿','笹塚','明大前','桜上水','千歳烏山','仙川','つつじヶ丘','調布'] },
       // 急行: weekday mornings and one evening train, weekend mornings; on to the Sagamihara Line
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '本八幡','船堀','大島','森下','馬喰横山','神保町','市ヶ谷','新宿',
         '笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布'],
         schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
-      // 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター; weekdays by day only
-      { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
+      // Keio 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター; weekdays by day only
+      { name: 'Local', ja: '各停', color: '#00a0a0', toName: 'Rapid', toJa: '快速', stops: [
         '本八幡','篠崎','瑞江','一之江','船堀','東大島','大島','西大島','住吉','菊川','森下',
         '浜町','馬喰横山','岩本町','小川町','神保町','九段下','市ヶ谷','曙橋','新宿三丁目','新宿',
         '笹塚','明大前','下高井戸','桜上水','八幡山','千歳烏山','仙川','つつじヶ丘','調布'],
@@ -2055,7 +2149,8 @@ const LINE_CONNECTIONS = [
       // connection) (ODPT 2026-08)
       { stops: null, name: 'Local', ja: '各停',
         schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [[6, 10], [19, 21]] } } },
-      { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
+      // 区間急行 and 快速 are 普通 on Toei (toName; 56 / 44 and 28 / 42 a day, ODPT 2026-03)
+      { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', toName: 'Local', toJa: '各停', stops: [
         '調布','つつじヶ丘','仙川','千歳烏山',
         '桜上水','明大前','笹塚',
         '新宿','新宿三丁目','曙橋','市ヶ谷','九段下','神保町','小川町','岩本町','馬喰横山','浜町',
@@ -2067,7 +2162,7 @@ const LINE_CONNECTIONS = [
         '新宿','市ヶ谷','神保町','馬喰横山','森下','大島','船堀','本八幡'],
         schedule: { weekday: { timeRange: [18, 19] }, weekend: { timeRange: [16, 17] } } },
       // 快速: weekday first train, daytime, 21h and 23h (Sat/hol all day; ODPT 2026-08)
-      { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
+      { name: 'Rapid', ja: '快速', color: '#00a0a0', toName: 'Local', toJa: '各停', stops: [
         '調布','つつじヶ丘','仙川','千歳烏山','八幡山','桜上水','下高井戸','明大前','笹塚',
         '新宿','新宿三丁目','曙橋','市ヶ谷','九段下','神保町','小川町','岩本町','馬喰横山','浜町',
         '森下','菊川','住吉','西大島','大島','東大島','船堀','一之江','瑞江','篠崎','本八幡'],
@@ -2417,13 +2512,16 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
     ],
+    // Every through train is a 普通 on the JR; the Chiyoda names a third of them by the Odakyu type
+    // they become (準急 23 wd / 12 Sat/hol, 急行 22 / 19: toName at 綾瀬, ODPT 2026-03), and the
+    // Chiyoda → Odakyu entries continue them by name
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
-      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+      { name: 'Local', ja: '各停', color: '#00b900', toName: 'Semi-Exp', toJa: '準急',
         stops: ['綾瀬','北千住','町屋','西日暮里','千駄木','根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
                 '霞ケ関','国会議事堂前','赤坂','乃木坂','表参道','明治神宮前〈原宿〉','代々木公園','代々木上原'],
         schedule: { weekday: { timeRange: [[6, 10], [15, 22]] }, weekend: { timeRange: [[8, 11], [15, 19]] } } },
-      { name: 'Express', ja: '急行', color: '#e83030',
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行',
         stops: ['綾瀬','北千住','町屋','西日暮里','千駄木','根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
                 '霞ケ関','国会議事堂前','赤坂','乃木坂','表参道','明治神宮前〈原宿〉','代々木公園','代々木上原'],
         schedule: { weekday: { timeRange: [[10, 16], [17, 23]] }, weekend: { timeRange: [[6, 16], [19, 23]] } } },
@@ -2503,6 +2601,19 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       { until: '新木場', name: 'Shin-Kiba', ja: '新木場方面', color: '#767c78' },
+    ],
+    // Every through train calls at every Rinkai station: 快速 (21 wd / 48 Sat/hol) and 通勤快速 (28 wd)
+    // become 各停 at 大崎 (toName; ODPT 2026-03)
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
+        stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','戸田公園','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
+                '大井町','品川シーサイド','天王洲アイル','東京テレポート','国際展示場','東雲','新木場'],
+        schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
+      { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030', toName: 'Local', toJa: '各停',
+        stops: ['大宮','武蔵浦和','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
+                '大井町','品川シーサイド','天王洲アイル','東京テレポート','国際展示場','東雲','新木場'],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [17, 23]] } } },
     ] },
 
   // ── Sotetsu–JR Direct (相鉄・JR直通線) at Osaki / Nishiya ─────────────
@@ -2518,14 +2629,15 @@ const LINE_CONNECTIONS = [
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087',
-        services: ['Local', 'Ltd. Express'] },
+        services: ['Local'] },
     ],
-    // JR-direct trains are 各停 or Sotetsu 特急 (local on the JR side)
+    // JR-direct trains are 各停 on the JR side; a third become Sotetsu 特急 (toName at 羽沢横浜国大:
+    // 13 wd / 12 Sat/hol, ODPT 2026-03)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       // 特急: mornings and evenings (各停 only by day)
       // (hours at 西谷, ODPT 2026-03: boarding on the Saikyo is earlier)
-      { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','北戸田','戸田','戸田公園','浮間舟渡','北赤羽','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
+      { name: 'Local', ja: '各停', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','北戸田','戸田','戸田公園','浮間舟渡','北赤羽','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
         '西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[5, 9], [10, 12], [18, 1]] }, weekend: { timeRange: [[5, 13], [17, 23]] } } },
     ] },
   { from: 'Sotetsu Main Line', fromStation: '西谷', fromDir: 'start',
@@ -2543,9 +2655,10 @@ const LINE_CONNECTIONS = [
       { until: '大宮', name: 'Omiya',    ja: '大宮方面', color: '#007540',
         services: ['Local', 'Ltd. Express'] },
     ],
+    // The 特急 are 各停 on the JR side (toName at 羽沢横浜国大; 16 wd / 13 Sat/hol, ODPT 2026-03)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
+      { name: 'Ltd. Express', ja: '特急', color: '#e83080', toName: 'Local', toJa: '各停', stops: [
         '海老名','大和','二俣川','西谷','大崎','恵比寿','渋谷','新宿','池袋','板橋','十条','赤羽','北赤羽','浮間舟渡','戸田公園','戸田','北戸田','武蔵浦和','中浦和','南与野','与野本町','北与野','大宮'],
         // Up hours of the JR-bound 特急 (wd 5–8h, 15–20h, 22h; Sat/hol 5–10h, 18h, 21–22h; the Tokyu-bound
         // ones are the 新横浜 connection's; ODPT 2026-03)
@@ -2565,9 +2678,10 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ],
+    // 各停 on the JR side, a third of them Sotetsu 特急 from 羽沢横浜国大 (toName)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
+      { name: 'Local', ja: '各停', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: [
         '大崎','西大井','武蔵小杉','羽沢横浜国大','西谷','二俣川','大和','海老名'], schedule: { weekday: { timeRange: [[5, 9], [10, 12], [18, 1]] }, weekend: { timeRange: [[5, 13], [17, 1]] } } },
     ] },
 
@@ -2580,10 +2694,11 @@ const LINE_CONNECTIONS = [
     chainFrom: [],
     name: 'Shinjuku', ja: '新宿方面', color: '#007540',
     destinations: [],
+    // The 特急 are 各停 on the JR side (toName at 羽沢横浜国大)
     express: [
       { stops: null, name: 'Local', ja: '各停',
         schedule: { weekday: { timeRange: [7, 22] }, weekend: { timeRange: [6, 22] } } },
-      { name: 'Ltd. Express', ja: '特急', color: '#e83080',
+      { name: 'Ltd. Express', ja: '特急', color: '#e83080', toName: 'Local', toJa: '各停',
         stops: ['西谷','羽沢横浜国大','武蔵小杉','西大井','大崎'],
         schedule: { weekday: { timeRange: [[5, 9], [16, 18], [19, 21], [22, 23]] }, weekend: { timeRange: [[5, 11], [18, 19], [21, 23]] } } },
     ] },
@@ -2960,6 +3075,7 @@ const LINE_CONNECTIONS = [
   // Since 2022 特急 run through to 高尾山口, calling at every Takao Line station.
   { from: 'Keio Line',       fromStation: '北野', fromDir: 'end',
     to:   'Keio Takao Line', toEnd: '北野',
+    chainFrom: [], // no Toei / Keio New through train runs on to the Takao Line
     name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a',
     // 京王八王子 comes from LINE_DESTINATIONS["Keio Line"], which merges this one
     destinations: [

@@ -458,9 +458,10 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         // and the chain set yields no stop past the junction
         let nextConn = ordered.find(c => continuingEntries(c, name, ex.name).length);
         let conts = nextConn ? continuingEntries(nextConn, name, ex.name) : null;
+        let implicit = false;
         if (!nextConn && !ordered.some(c => namesTrain(c, name, ex.name))) {
           nextConn = ordered.find(c => !c.express);
-          if (nextConn) conts = [{ stops: null, name }];
+          if (nextConn) { conts = [{ stops: null, name }]; implicit = true; }
         }
         if (nextConn) {
           const nextLine = state.lines[nextConn.toLineIdx];
@@ -479,8 +480,9 @@ function resolveConnectionExpress(connExInfo, platform, line) {
                 if (stopSetHas(s, nextLine.stations[k])) m++;
               }
             }
+            // implicit: a hop without express ridden at every station (no entry named the train)
             extend(nextConn, new Set([...visited, nextConn.to]), nextEx.toName || nextEx.name, s,
-              [...hops, { to: nextConn.to, toDir: nextConn.toDir }], [...conns, nextConn], [...names, name], m);
+              [...hops, { to: nextConn.to, toDir: nextConn.toDir, implicit }], [...conns, nextConn], [...names, name], m);
           }
           return;
         }
