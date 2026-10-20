@@ -323,6 +323,35 @@ function computeConnectionExtra(connections, stationName, visited) {
   return extra;
 }
 
+// The express entry of hop `conn` that continues a train named `name` on conn's source
+// line (a `stops` list; one running now first). `firstName`: the train's boarding-line
+// name, which a `chainName` on the entry may still name (older data).
+function continuingEntry(conn, name, firstName) {
+  const n = normalize(name);
+  const matches = (conn.express || []).filter(e => e.stops && (normalize(e.name) === n
+    || (e.chainName && normalize(e.chainName) === normalize(firstName))));
+  if (matches.length < 2) return matches[0] || null;
+  const line = state.lines[conn.toLineIdx];
+  return matches.find(e => !line || resolveServiceStops(e, line, conn.fromDir)?.length !== 0) || matches[0];
+}
+
+// The name a first-hop express entry carries onto the source line of the last of `hops`
+// (connections ridden after conn in order), following continuing entries; a hop with
+// no express keeps the name. null when a hop with express has no continuing entry (the
+// train does not run on).
+function nameAlongHops(ex, hops) {
+  let name = ex.toName || ex.name;
+  for (let i = 0; i < hops.length; i++) {
+    if (i === hops.length - 1) return name;
+    if (!hops[i].express) continue;
+    if (ex.stops === null) continue; // a Local rides the chain as is
+    const e = continuingEntry(hops[i], name, ex.name);
+    if (!e) return null;
+    name = e.toName || e.name;
+  }
+  return name;
+}
+
 // Resolve connection express services to train types with target-line indices.
 // Returns array of resolved types ready for the trainTypes list.
 //
@@ -333,6 +362,8 @@ function computeConnectionExtra(connections, stationName, visited) {
 //   _chainExpressStops  — Set<normalized name> for multi-line chain filtering (optional)
 //   _srcExpIndices      — source-line express indices for junction routing (optional)
 //   _connIdx            — index of the connection in state.connections (same-name grouping)
+//   _hopConns / _hopNames — the connections the train rides and its name entering each
+//                         (index 0: the boarding line; `toName` renames it at a border)
 //
 // These fields are read by getStationsAlongRoute, getEffectiveStops, and
 // resolveTrainTypes (via trainTypeOpts). The _terminatesAtJunction field is
@@ -382,6 +413,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     let totalMax = platform.maxStops; // fallback
     let chainStops = null;
     const chainHops = [];
+    const hopConns = [connObj], hopNames = [ex.name];
+    let curName = ex.toName || ex.name;
     if (connObj) {
       const pos = srcEi.indexOf(platform.fromIdx);
       let srcExpStops = Math.abs(connObj.fromJunctionIdx - platform.fromIdx); // fallback to raw
@@ -399,21 +432,30 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       const viaCount = effectiveViaCount(connObj, currentName);
       totalMax = srcExpStops + viaCount + tgtExpStops;
 
-      // Follow chain: merge express stops from onward connections running the
-      // same service (same name, or a `chainName` naming it, e.g. Airport Rapid
-      // continuing as Access Express onto Sky Access). The hops are kept in
-      // _chainHops so routing follows the same connections.
+      // Follow chain: merge express stops from onward connections the train runs on
+      // under its current name, hop by hop (an entry continues it when its `name` is the
+      // name the train carries onto that hop's source line: the previous entry's
+      // `toName || name`, so a train may rename at every border, e.g. Toyoko 特急 →
+      // Fukutoshin 急行 → Seibu 快速急行). The hops are kept in _chainHops so routing
+      // follows the same connections; _hopConns / _hopNames record the name on each
+      // hop's source line (index 0: the boarding line), for destination `services`.
       let chainConn = connObj;
       const chainVisited = new Set([connObj.from]);
       chainVisited.add(connObj.to);
-      const sameService = e => e.stops && (normalize(e.name) === normalize(ex.name)
-        || (e.chainName && normalize(e.chainName) === normalize(ex.name)));
       while (chainConn) {
         const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
-        const nextConn = onward.find(c => c.express?.some(sameService));
+        // Prefer the hop a picked chained destination names (as nextChainConn does)
+        const destHops = state.selectedDestination?.chain;
+        const ordered = destHops ? [...onward.filter(c => chainNames(destHops, c)), ...onward.filter(c => !chainNames(destHops, c))] : onward;
+        let nextConn = null, nextEx = null;
+        for (const c of ordered) {
+          const e = continuingEntry(c, curName, ex.name);
+          if (e) { nextConn = c; nextEx = e; break; }
+        }
         if (!nextConn) break;
-        const nextEx = nextConn.express.find(sameService);
         chainHops.push({ to: nextConn.to, toDir: nextConn.toDir });
+        hopConns.push(nextConn); hopNames.push(curName);
+        curName = nextEx.toName || nextEx.name;
         const nextLine = state.lines[nextConn.toLineIdx];
         // Build the chain stops set on first extension (schedule-resolved stops)
         if (!chainStops) chainStops = new Set(resolvedStops.map(s => normalize(s)));
@@ -436,6 +478,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       _connIdx: state.connections.indexOf(connObj) };
     // Attach chain express stops for downstream filtering in getStationsAlongRoute
     if (chainStops) { entry._chainExpressStops = chainStops; entry._chainHops = chainHops; }
+    // The connections the train rides and its name entering each (the last name: on the final line)
+    if (connObj) { entry._hopConns = hopConns; entry._hopNames = [...hopNames, curName]; }
     // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
     if (connObj && srcEi.length > 0) entry._srcExpIndices = srcEi;
     results.push(entry);

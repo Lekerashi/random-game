@@ -9,6 +9,23 @@ function trainTypeOpts(g) {
   return { ei: g.expressIndices, _connTargetLineIdx: g._connTargetLineIdx, _terminatesAtJunction: g._terminatesAtJunction, _connTotalMax: g._connTotalMax, _tt: g };
 }
 
+// The name a type carries where destination sd's `services` apply: a chained destination
+// names types by its own connection's source line (the last hop of sd.chain), everything
+// else by the boarding line. Past the last hop with a continuing entry the name carries
+// over (hops without express keep it: Shonan-Shinjuku 快速 onto the Tokaido at 大船).
+function typeNameForDest(tt, sd) {
+  if (!tt._hopConns || !sd?.chain?.length) return tt.name;
+  const last = sd.chain[sd.chain.length - 1];
+  const k = tt._hopConns.findIndex(c => c.to === last.to && c.toDir === last.toDir);
+  return k === -1 ? tt._hopNames[tt._hopNames.length - 1] : tt._hopNames[k];
+}
+
+// Whether a (possibly grouped) type is one of destination sd's `services`
+function typeMatchesServices(g, sd) {
+  const allowed = new Set(sd.services.map(s => normalize(s)));
+  return (g._members || [g]).some(m => allowed.has(normalize(typeNameForDest(m, sd))));
+}
+
 // Resolve available train types for a platform, returning grouped/merged types
 // with precomputed stop counts. Returns null if no picker needed, or:
 //   { autoSelect: type } — single reachable express type (auto-select it)
@@ -139,23 +156,24 @@ function resolveTrainTypes(p) {
   // Remove types with 0 reachable stops (e.g. Hayabusa from Omiya toward Utsunomiya).
   // Each type's stop count is computed once here (a full route walk) and reused below.
   const effOf = new Map();
+  const trace = window._routeDebug ? [] : null;
+  const describe = m => m.name + (m._hopNames ? ' [' + m._hopNames.join(' > ') + ']' : '') + (m.expressIndices ? '' : ' (local)');
   let reachable = grouped.filter(g => {
     const eff = getEffectiveStops(p, trainTypeOpts(g));
     effOf.set(g, eff);
+    trace?.push(describe(g) + ': validCount=' + eff.validCount + ' reachesDest=' + eff.reachesDest);
     // reachesDest: false when a picked destination is beyond where this type runs
     return eff.validCount > 0 && eff.reachesDest !== false;
   });
+  if (trace) state._typesTrace = trace;
   // Filter train types to match the selected destination's real signboard.
   // When `services` is declared (connection destinations, lineDests and LINE_DESTINATIONS
   // entries alike), only show types whose name matches the allowlist.
   // Fallback heuristic for connection destinations without `services`: chain express
   // types that pass through (don't terminate at) the destination are filtered.
   if (state.selectedDestination?.services) {
-    const allowed = new Set(state.selectedDestination.services.map(s => normalize(s)));
-    reachable = reachable.filter(g => {
-      const members = g._members || [g];
-      return members.some(m => allowed.has(normalize(m.name)));
-    });
+    reachable = reachable.filter(g => typeMatchesServices(g, state.selectedDestination));
+    trace?.push('services ' + state.selectedDestination.services.join('/') + ' keep: ' + reachable.map(describe).join(', '));
   } else if (state.selectedDestination && conn) {
     // Heuristic fallback: chain express types pass through intermediate destinations
     if (state.selectedDestination.totalMax <= (p._onLineStops || 0) + effectiveViaCount(conn, platformStation(p).name) + getConnectionMaxStops(conn)) {
@@ -170,12 +188,12 @@ function resolveTrainTypes(p) {
     return null;
   }
 
-  // Same-name entries of one list whose stop lists differ in length (a quarter of the daytime
-  // Shonan-Shinjuku 快速 call at 西大井 / 新川崎) are one signboard type: one button faced by the
-  // longest member, the boarded train picked among the members (pickTrainType keeps its own stops).
-  // Same list only: the line's own entries, or one connection's (two connections' "Local" differ)
-  const catOf = m => (m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' + m._connIdx : 'src')
-    + (m.expressIndices ? ':exp' : ':local') + (m._chainExpressStops ? ':chain' : '');
+  // Same-name entries of one list whose rides differ (a quarter of the daytime Shonan-Shinjuku
+  // 快速 call at 西大井 / 新川崎; Fukutoshin 各停 run on as Toyoko 各停 or 急行) are one signboard
+  // type: one button faced by the longest member, the boarded train picked among the members
+  // (pickTrainType keeps its own stops). Same list only: the line's own entries, or one
+  // connection's (two connections' "Local" differ)
+  const catOf = m => m._terminatesAtJunction ? 'term' : m._connTargetLineIdx != null ? 'conn' + m._connIdx : 'src';
   const sameList = [];
   for (const g of reachable) {
     const i = sameList.findIndex(m => normalize(m.name) === normalize(g.name) && catOf(m) === catOf(g));
@@ -216,12 +234,20 @@ function resolveTrainTypes(p) {
 // Board one train from a (possibly grouped) train-type button: a random member
 // ("Yamabiko" from "Yamabiko / Tsubasa") — a member rides its own stops (same-name
 // entries may differ by a stop or two), the group's when it has none of its own.
-// `name` picks a specific member (session restore).
-function pickTrainType(g, name) {
+// `name` / `key` pick a specific member (session restore; trainTypeKey tells same-name
+// members apart).
+function pickTrainType(g, name, key) {
   const members = g._members || [g];
-  const pick = members.find(m => m.name === name)
+  const pick = (key && members.find(m => trainTypeKey(m) === key))
+    || members.find(m => m.name === name)
     || members[Math.floor(Math.random() * members.length)];
   return { ...pick, expressIndices: pick.expressIndices !== undefined ? pick.expressIndices : g.expressIndices };
+}
+
+// A member's identity across reloads (data order is stable): name, connection, names along
+// its chain and stop count
+function trainTypeKey(m) {
+  return [m.name, m._connIdx ?? '', (m._hopNames || []).join('>'), m.expressIndices ? m.expressIndices.length : 'L'].join('|');
 }
 
 function showTrainTypeButtons(p) {

@@ -503,15 +503,27 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // station now on the first hop (Haneda → Sky Access needs an エアポート快特, which skips
   // 穴守稲荷 and runs by day only); a Local the hop doesn't declare still runs through (Toyoko →
   // Tojo locals run after the F-Liner, the hop's only declared type, stops at 17h). A hop
-  // without express leaves the types to its target line: nothing to check at the source
-  const firstHopServes = d => !conn.express || destServesStation(conn, d, p);
+  // without express leaves the types to its target line: nothing to check at the source.
+  // The services name types by the destination's own hop; the first hop's entries whose
+  // names reach it as one of them stand for them here (nameAlongHops)
+  const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(d.services, hops) }, p);
+  const firstHopServices = (services, hops) => {
+    const allowed = new Set(services.map(normalize));
+    const names = new Set(services.filter(n => normalize(n) === 'local' || conn.express.some(e => e.stops === null && normalize(e.name) === normalize(n))));
+    for (const e of conn.express) {
+      if (!e.stops) continue;
+      const n = nameAlongHops(e, hops);
+      if (n != null && allowed.has(normalize(n))) names.add(e.name);
+    }
+    return [...names];
+  };
   // Destination choices of a chained hop reached after `base` stops (through its via).
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
   const pushChainDests = (nextConn, base, path, midLine) => {
     for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
       if (chainBlocked && !d0.services) continue;
       const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices };
-      if (!firstHopServes(d)) continue;
+      if (d.services && !firstHopServes(d, [...path, nextConn])) continue;
       const stopsOnNext = nextConn.toDir === 'start'
         ? nextConn.toJunctionIdx - d.untilIdx
         : d.untilIdx - nextConn.toJunctionIdx;

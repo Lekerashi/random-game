@@ -206,6 +206,7 @@ function saveSession() {
       connectionToDir: state.selectedConnection?.toDir || null,
       destination: state.selectedDestination,
       trainType: state.selectedTrainType?.name || null,
+      trainTypeKey: state.selectedTrainType ? trainTypeKey(state.selectedTrainType) : null,
     } : null;
 
   store.set(SESSION_KEY, JSON.stringify({
@@ -477,7 +478,7 @@ function restoreMidRound(mr) {
     const resolved = resolveTrainTypes(matchP);
     const candidates = resolved?.types || (resolved?.autoSelect ? [resolved.autoSelect] : []);
     const g = candidates.find(t => (t._members || [t]).some(m => m.name === mr.trainType));
-    state.selectedTrainType = g ? pickTrainType(g, mr.trainType) : null;
+    state.selectedTrainType = g ? pickTrainType(g, mr.trainType, mr.trainTypeKey) : null;
   }
 
   dom.rollPlatformBtn.disabled = true;

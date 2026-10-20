@@ -36,13 +36,16 @@
 //                         feed this destination from that station onward toward the junction —
 //                         the destination is hidden at earlier stations no allowed service calls at
 //     lineDests         — [{ until (JA), name, ja, color?, services?, schedule? }] within-line short-turn picker
-//     express           — [{ name, ja, color?, stops, schedule?, chainName? }] cross-line express services
-//                         schedule as in EXPRESS_SERVICES (connections are already one-way);
-//                         same-name entries with different stops give per-segment hours
+//     express           — [{ name, ja, color?, stops, schedule?, toName?, toJa? }] cross-line express services
+//                         name / ja: the train's type on the source line (the boarding signboard, the
+//                         button); toName / toJa: its type on the target line when it changes there
+//                         (Fukutoshin 急行 → Toyoko 特急). An onward hop's entry continues the train
+//                         when its name is the train's current one, so a chain may rename at
+//                         every border. schedule as in EXPRESS_SERVICES (connections are already
+//                         one-way); same-name entries with different stops give per-segment hours
 //     destinations / lineDests entries and LINE_BRANCHES / LINE_DESTINATIONS entries take
 //                         schedule too (timeRange, or stops: [] to hide that day type)
-//                         chainName: an earlier hop's service that continues as this one
-//                         (Airport Rapid → Access Express onto Sky Access)
+//                         chainName (older form): an earlier hop's service that continues as this one
 //
 // ── PICKER BEHAVIOR (resolved as _type) ──
 //   transparent    — no name/destinations/express → auto-extends (e.g. Hanzomon↔DET)
