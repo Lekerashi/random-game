@@ -97,7 +97,7 @@ function resolveTrainTypes(p) {
     if (stops.length === 0) { connExpNames.add(normalize(e.name)); continue; }
     const names = new Set(stops.map(s => normalize(s)));
     const anchoredOnSource = line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(names, s));
-    if (anchoredOnSource && !stopSetHas(names, here)) connExpNames.add(normalize(e.name));
+    if (anchoredOnSource && (!stopSetHas(names, here) || noBoardAt(e, here))) connExpNames.add(normalize(e.name));
   }
   // A local-class entry of the connection being ridden replaces the source line's own
   // Local whatever its name (Ome 普通 run on to 東京 as the connection's 快速), also when

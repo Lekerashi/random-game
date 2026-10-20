@@ -36,7 +36,7 @@
 //                         feed this destination from that station onward toward the junction —
 //                         the destination is hidden at earlier stations no allowed service calls at
 //     lineDests         — [{ until (JA), name, ja, color?, services?, schedule? }] within-line short-turn picker
-//     express           — [{ name, ja, color?, stops, schedule?, toName?, toJa?, chainFrom? }] cross-line express services
+//     express           — [{ name, ja, color?, stops, schedule?, toName?, toJa?, chainFrom?, noBoard? }] cross-line express services
 //                         name / ja: the train's type on the source line (the boarding signboard, the
 //                         button); toName / toJa: its type on the target line when it changes there
 //                         (Fukutoshin 急行 → Toyoko 特急). An onward hop's entry continues the train
@@ -45,7 +45,9 @@
 //                         (per entry): it continues trains that came onto the source line from
 //                         these lines only ([] = boarded on the source line only), e.g. the Haneda
 //                         特急 that run on as Keisei 快速 came off the Airport Line, the 三崎口 ones
-//                         become 普通. schedule as in EXPRESS_SERVICES (connections are already
+//                         become 普通. noBoard (JA source stations it calls at): riders don't board
+//                         it there, the board shows another name (Keikyu's 品川 board for the Haneda 急行).
+//                         schedule as in EXPRESS_SERVICES (connections are already
 //                         one-way); same-name entries with different stops give per-segment hours
 //     destinations / lineDests entries and LINE_BRANCHES / LINE_DESTINATIONS entries take
 //                         schedule too (timeRange, or stops: [] to hide that day type)

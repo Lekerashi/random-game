@@ -389,7 +389,7 @@ function destServesStation(conn, d, p) {
     const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction) : t.stops;
     const targetOnly = (t, stops) => connMatches.includes(t) && conn.fromJunctionIdx === dirEnd(line.stations.length, p.direction)
       && !line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(new Set(stops.map(normalize)), s));
-    if (matches.some(t => { const st = stopsOf(t); return st?.length && (st.some(s => curKeys.has(normalize(s))) || targetOnly(t, st)); })) return true;
+    if (matches.some(t => { const st = stopsOf(t); return st?.length && !noBoardAt(t, platformStation(p)) && (st.some(s => curKeys.has(normalize(s))) || targetOnly(t, st)); })) return true;
     // Local-class: stops:null def, or an undefined "Local" name (implicit local)
     const runsLocal = t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0; // [] = hidden now
     const isLocalClass = matches.length ? matches.some(runsLocal) : n === 'local';
@@ -543,7 +543,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
       if (!stops.length) continue;
       const ss = new Set(stops.map(normalize));
       const anchored = srcLine.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(ss, s));
-      if ((!terminus || anchored) && !stopSetHas(ss, here)) continue;
+      if (((!terminus || anchored) && !stopSetHas(ss, here)) || noBoardAt(e, here)) continue;
       if (namesAlongHops(e, hops, conn).some(n => allowed.has(normalize(n)))) names.add(e.name);
     }
     return [...names];

@@ -326,6 +326,9 @@ function computeConnectionExtra(connections, stationName, visited) {
 // A connection's local-class entries: `stops: null` ones, and a 'Local' with a stops list (its
 // through locals board at those stations only: Keikyu 普通 run on to the Asakusa Line from 品川)
 const isLocalEntry = e => e.stops === null || normalize(e.name) === 'local';
+// An entry boards where it calls except at its `noBoard` stations (JA), where the board shows the
+// train under another name (Keikyu's 品川 board calls the Haneda 急行 快速 / 特急 / 快特 / 普通)
+const noBoardAt = (e, station) => !!e.noBoard && stopSetHas(new Set(e.noBoard.map(normalize)), station);
 // A connection with express entries lists its through trains: the source line's own Local runs
 // on only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run through).
 // With `station` (a station object), one calling there and running now (none at 鮫洲, where the
@@ -456,6 +459,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     const isTerminusConn = connObj && connObj.fromJunctionIdx === dirEnd(line.stations.length, platform.direction);
     const anchoredOnSource = srcEi.some(i => i !== connObj.fromJunctionIdx);
     if ((!isTerminusConn || anchoredOnSource) && !stopSetHas(joinedNames, here)) continue;
+    if (noBoardAt(ex, here)) continue;
     // Target line express indices
     const targetIndices = [];
     for (let i = 0; i < targetLine.stations.length; i++) {
