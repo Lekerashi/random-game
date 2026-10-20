@@ -652,6 +652,17 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
       }
     }
   }
+  // Chained destinations beyond each connection's target line (DET → Hanzomon → Tobu beside
+  // the Oimachi branch), after every direct one so a direct choice of the same name wins
+  for (let ci = 0; ci < conns.length; ci++) {
+    const conn = conns[ci];
+    if (!conn.destinations) continue;
+    for (const c of chainDestChoices(p, conn, stopsBeforeJunction(p, conn, onLineStops))) {
+      if (seenNames.has(c.name)) continue;
+      seenNames.add(c.name);
+      choices.push({ ...c, _isConnDest: true, _connIdx: ci });
+    }
+  }
 
   const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
 

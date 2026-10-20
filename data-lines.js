@@ -232,16 +232,24 @@ const EXPRESS_SERVICES = {
       "渋谷","中目黒","学芸大学","自由が丘","田園調布",
       "多摩川","武蔵小杉","日吉","綱島","菊名","横浜",
     ]},
-    // Weekday 特急 run by day only (通勤特急 at other times)
-    { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
+    // 特急 only at the hours ODPT lists them (the daytime ones are the F-Liner, connection express)
+    { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "start", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉",
       "菊名","横浜",
-    ], schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [6, 24] } } },
+    ], schedule: { weekday: { timeRange: [[6, 7], [9, 11], [16, 18]] }, weekend: { timeRange: [[6, 11], [15, 1]] } } },
+    { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
+      "渋谷","中目黒","自由が丘","武蔵小杉",
+      "菊名","横浜",
+    ], schedule: { weekday: { timeRange: [[9, 12], [16, 17]] }, weekend: { timeRange: [[6, 12], [18, 24]] } } },
     // Weekdays only: 特急 plus 日吉
-    { name: "Commuter Ltd. Exp", ja: "通勤特急", color: "#3a6fd8", stops: [
+    { name: "Commuter Ltd. Exp", ja: "通勤特急", color: "#3a6fd8", direction: "start", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉","日吉",
       "菊名","横浜",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 9], [16, 24]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [17, 1]] } } },
+    { name: "Commuter Ltd. Exp", ja: "通勤特急", color: "#3a6fd8", direction: "end", stops: [
+      "渋谷","中目黒","自由が丘","武蔵小杉","日吉",
+      "菊名","横浜",
+    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [17, 24]] } } },
   ],
   "Tokyu Meguro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -278,24 +286,31 @@ const EXPRESS_SERVICES = {
   ],
   "Tokyu Den-en-toshi Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
+    // 準急 all day on weekdays; Sat/hol mornings and daytime toward 渋谷, daytime and the
+    // last trains toward 中央林間 (ODPT 2026-03)
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "start", stops: [
       "渋谷","池尻大橋","三軒茶屋","駒沢大学",
       "桜新町","用賀","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","つくし野","すずかけ台",
       "南町田グランベリーパーク","つきみ野","中央林間",
-    ]},
-    // No weekday 急行 toward 渋谷 in the morning rush, and since 2026-03 準急 replace
-    // them weekday 18–20h toward 中央林間 and weekend 9–14h toward 渋谷
+    ], schedule: { weekend: { timeRange: [[5, 7], [9, 18]] } } },
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
+      "渋谷","池尻大橋","三軒茶屋","駒沢大学",
+      "桜新町","用賀","二子玉川","溝の口","鷺沼",
+      "たまプラーザ","あざみ野","青葉台","長津田","つくし野","すずかけ台",
+      "南町田グランベリーパーク","つきみ野","中央林間",
+    ], schedule: { weekend: { timeRange: [[9, 17], [23, 1]] } } },
+    // 急行 run all day both ways (ODPT 2026-03; Sat/hol 11–12h toward 渋谷 are 準急)
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
       "中央林間",
-    ], schedule: { weekday: { timeRange: [9, 6] }, weekend: { timeRange: [[5, 9], [14, 24]] } } },
+    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [[6, 11], [13, 24]] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
       "中央林間",
-    ], schedule: { weekday: { timeRange: [[5, 18], [20, 24]] } } },
+    ], schedule: { weekday: { timeRange: [[6, 8], [9, 1]] }, weekend: { timeRange: [6, 24] } } },
   ],
   "Tobu Tojo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -736,10 +751,22 @@ const EXPRESS_SERVICES = {
       "羽田空港第3ターミナル","羽田空港第1ターミナル","羽田空港第2ターミナル",
     ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [19, 22] } } },
   ],
+  // Most 各停 (Tokyu's blue 各停) run the Den-en-toshi express tracks past 二子新地 and 高津;
+  // the green 各停 that call there run by day and late evening (ODPT 2026-03: 21 of 197 wd)
   "Tokyu Oimachi Line": [
-    { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
-    // Weekdays 6–23h (rush hours too), weekends 9–21h only
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    { name: "Local", ja: "各停", color: "#00a0e8", stops: [
+      "大井町","下神明","戸越公園","中延","荏原町","旗の台","北千束","大岡山","緑が丘",
+      "自由が丘","九品仏","尾山台","等々力","上野毛","二子玉川","溝の口",
+    ]},
+    { name: "Local (G)", ja: "各停（緑）", color: "#00a870", direction: "end", stops: null,
+      schedule: { weekday: { timeRange: [[10, 17], [21, 1]] }, weekend: { timeRange: [[9, 17], [19, 1]] } } },
+    { name: "Local (G)", ja: "各停（緑）", color: "#00a870", direction: "start", stops: null,
+      schedule: { weekday: { timeRange: [[5, 7], [10, 17]] }, weekend: { timeRange: [5, 18] } } },
+    // Weekdays 6–22h (rush hours too), weekends 8–20h only (an hour later toward 溝の口)
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
+      "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
+    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [8, 21] } } },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
     ], schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [8, 22] } } },
   ],
@@ -951,6 +978,14 @@ const LINE_SCHEDULES = {
       schedule: { weekend: { stops: [] }, weekday: { timeRange: [18, 21] } } },
     { direction: 'start', stations: ['日暮里', '青砥', '京成高砂'],
       schedule: { weekend: { stops: [] }, weekday: { timeRange: [[19, 21], [22, 23]] } } },
+  ],
+  // Oimachi trains call at 二子新地 / 高津 only when the green 各停 run (EXPRESS_SERVICES; these
+  // are the hours at the two stations themselves)
+  'Tokyu Oimachi Line': [
+    { direction: 'end', stations: ['二子新地', '高津'],
+      schedule: { weekday: { timeRange: [[11, 17], [22, 1]] }, weekend: { timeRange: [[10, 17], [20, 1]] } } },
+    { direction: 'start', stations: ['二子新地', '高津'],
+      schedule: { weekday: { timeRange: [[5, 6], [10, 16]] }, weekend: { timeRange: [[5, 9], [10, 17]] } } },
   ],
 };
 
@@ -1248,6 +1283,48 @@ const LINE_DESTINATIONS = {
       { until: '高尾山口', name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a' },
     ],
   },
+  // Toward 中央林間: 各停 turn back at 鷺沼 in the morning rush and late, every type at 長津田
+  // (65 wd); the 渋谷-side termini come from the Hanzomon connection (ODPT 2026-03)
+  'Tokyu Den-en-toshi Line': {
+    direction: 'end',  // toward Chuo-Rinkan
+    destinations: [
+      { until: '鷺沼',     name: 'Saginuma',    ja: '鷺沼方面',     color: '#50b8a0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[7, 12], [22, 1]] }, weekend: { timeRange: [20, 1] } } },
+      { until: '長津田',   name: 'Nagatsuta',   ja: '長津田方面',   color: '#30a890',
+        schedule: { weekday: { timeRange: [[6, 13], [15, 1]] }, weekend: { timeRange: [[9, 11], [16, 1]] } } },
+      { until: '中央林間', name: 'Chuo-Rinkan', ja: '中央林間方面', color: '#20a288' },
+    ],
+  },
+  // 雪が谷大塚 (depot) short turns both ways: rushes and late (ODPT 2026-03)
+  'Tokyu Ikegami Line': [
+    { direction: 'end',  // toward Kamata
+      destinations: [
+        { until: '雪が谷大塚', name: 'Yukigaya-otsuka', ja: '雪が谷大塚方面', color: '#f0a0c0',
+          schedule: { weekday: { timeRange: [[7, 11], [19, 20], [23, 1]] }, weekend: { timeRange: [[20, 21], [0, 1]] } } },
+        { until: '蒲田',       name: 'Kamata',          ja: '蒲田方面',       color: '#ee86a7' },
+      ] },
+    { direction: 'start',  // toward Gotanda
+      destinations: [
+        { until: '雪が谷大塚', name: 'Yukigaya-otsuka', ja: '雪が谷大塚方面', color: '#f0a0c0',
+          schedule: { weekday: { timeRange: [[9, 11], [19, 1]] }, weekend: { timeRange: [[18, 20], [22, 1]] } } },
+        { until: '五反田',     name: 'Gotanda',         ja: '五反田方面',     color: '#ee86a7' },
+      ] },
+  ],
+  // 上町 (depot) short turns: evenings toward 三軒茶屋, the last trains toward 下高井戸 (ODPT 2026-03)
+  'Tokyu Setagaya Line': [
+    { direction: 'end',  // toward Shimo-Takaido
+      destinations: [
+        { until: '上町',     name: 'Kamimachi',     ja: '上町方面',     color: '#8ac8e8',
+          schedule: { weekday: { timeRange: [[9, 11], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        { until: '下高井戸', name: 'Shimo-Takaido', ja: '下高井戸方面', color: '#56b4e9' },
+      ] },
+    { direction: 'start',  // toward Sangen-jaya
+      destinations: [
+        { until: '上町',     name: 'Kamimachi',     ja: '上町方面',     color: '#8ac8e8',
+          schedule: { weekday: { timeRange: [19, 1] }, weekend: { timeRange: [[19, 21], [22, 1]] } } },
+        { until: '三軒茶屋', name: 'Sangen-jaya',   ja: '三軒茶屋方面', color: '#56b4e9' },
+      ] },
+  ],
   // Toward 海老名: 各停 turn back at 西谷 all day (48 wd / 52 Sat/hol, since the 2023 Shin-Yokohama
   // Line timetable) and 6 weekday-morning trains at 大和 (ODPT 2026-03); 湘南台 merges in from the
   // Izumino connection
