@@ -126,7 +126,7 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030', stops: [...HANZOMON_DOWN, ...[...DET_EXP_UP].reverse().slice(1)],
         schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900', stops: [...HANZOMON_DOWN, ...[...DET_SEMI_UP].reverse().slice(1)],
-        schedule: { weekday: { timeRange: [[7, 17], [18, 20], [23, 1]] }, weekend: { timeRange: [[7, 17], [18, 20], [23, 1]] } } },
+        schedule: { weekday: { timeRange: [[6, 20], [23, 1]] }, weekend: { timeRange: [[7, 17], [18, 20], [23, 1]] } } },
     ] },
   // Toward 渋谷 the late 各停 from 中央林間 turn at 長津田, a few at 渋谷; through trains end at
   // 押上 (161 wd), 清澄白河 (17 wd, mornings and the last ones) or on Tobu (chained: 久喜,
@@ -155,7 +155,7 @@ const LINE_CONNECTIONS = [
       { name: 'Local', ja: '各停', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...DET_ALL_UP, ...HANZOMON_UP.slice(1)],
         schedule: { weekday: { timeRange: [[5, 10], [19, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Local', toJa: '各停', stops: [...DET_SEMI_UP, ...HANZOMON_UP.slice(1)],
-        schedule: { weekday: { timeRange: [[6, 9], [10, 21], [23, 24]] }, weekend: { timeRange: [[6, 9], [10, 21], [23, 24]] } } },
+        schedule: { weekday: { timeRange: [[5, 9], [10, 21], [22, 24]] }, weekend: { timeRange: [[5, 21], [23, 24]] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...DET_SEMI_UP, ...HANZOMON_UP.slice(1)],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [[8, 9], [15, 16], [17, 19]] } } },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [...DET_EXP_UP, ...HANZOMON_UP.slice(1)],
@@ -893,13 +893,13 @@ const LINE_CONNECTIONS = [
     // (準急 → 急行 / 準急 3 each). The Hanzomon → DET entries continue them by name
     express: [
       { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
-        schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 23] } } },
+        schedule: { weekday: { timeRange: [5, 23] }, weekend: { timeRange: [5, 23] } } },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
         schedule: { weekday: { timeRange: [[8, 9], [10, 11], [15, 22]] }, weekend: { timeRange: [[8, 9], [10, 11], [15, 22]] } } },
       { name: 'Express', ja: '急行', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 8], [18, 19], [22, 23]] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOBU_SEMI_UP, ...HANZOMON_DOWN],
-        schedule: { weekday: { timeRange: [[5, 12], [21, 24]] }, weekend: { timeRange: [[5, 12], [21, 24]] } } },
+        schedule: { weekday: { timeRange: [[5, 12], [20, 24]] }, weekend: { timeRange: [[5, 12], [21, 24]] } } },
     ] },
 
   // ── Tobu Isesaki → Nikko at Tobu-Dobutsu-Koen ──────────────────────────
@@ -1157,10 +1157,10 @@ const LINE_CONNECTIONS = [
       // Haneda 急行 → Asakusa 普通 (on to Hokuso, 京成高砂, 青砥); Keikyu's board at 品川 shows them as 普通
       { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '普通', chainFrom: ['Keikyu Airport Line'],
         stops: ['京急蒲田','平和島','立会川','青物横丁','品川', ...ASAKUSA_UP],
-        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
+        schedule: { weekday: { timeRange: [[5, 11], [15, 1]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
       { name: 'Local', ja: '普通', color: '#00a0e8', chainFrom: [],
         stops: ['品川', ...ASAKUSA_UP],
-        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
+        schedule: { weekday: { timeRange: [[5, 11], [15, 1]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['堀ノ内','横須賀中央','金沢八景','金沢文庫','上大岡','横浜','京急川崎','京急蒲田','品川', ...ASAKUSA_UP] },
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
@@ -1196,11 +1196,11 @@ const LINE_CONNECTIONS = [
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
                 '東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋',
                 '押上(スカイツリー前)','青砥','京成高砂'] },
-      // Keikyu 快特 through trains run as Keisei 快速特急 (押上, 青砥 only) to 京成高砂 / 成田空港 (toName
-      // at 押上; 泉岳寺 wd 11–18h, we 10–20h)
+      // Keikyu 快特 through trains (泉岳寺 wd 11–18h, we 10–20h) and 6 weekday 快特 from 西馬込 (10h, 17–19h, 23h)
+      // run as Keisei 快速特急 (押上, 青砥 only) to 京成高砂 / 成田空港 (toName at 押上)
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#f07000', toName: 'Rapid Ltd', toJa: '快速特急',
-        stops: ['泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
-        schedule: { weekday: { timeRange: [11, 19] }, weekend: { timeRange: [10, 21] } } },
+        stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
+        schedule: { weekday: { timeRange: [[10, 20], [22, 24]] }, weekend: { timeRange: [10, 21] } } },
       // Keisei calls the Haneda エアポート快特 アクセス特急 from 押上 on (toName); the Keikyu Airport →
       // Main → Asakusa hops carry it here by name
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', toName: 'Access Express', toJa: 'アクセス特急',
@@ -1423,13 +1423,13 @@ const LINE_CONNECTIONS = [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
         schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
     ],
-    // 5 weekday 快速 run on as JR 普通 (toName at 西船橋; 7h, 18h, ODPT 2026-03)
+    // 5 weekday 快速 run on as JR 普通 (toName at 西船橋; 7h, 17–18h, ODPT 2026-03)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['中野','落合','高田馬場','早稲田','神楽坂','飯田橋','九段下','竹橋','大手町','日本橋','茅場町','門前仲町','木場','東陽町','浦安','西船橋',
                 '船橋','東船橋','津田沼'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [18, 19]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [17, 19]] } } },
     ] },
   { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'start',
     to:   'Tokyo Metro Tozai Line', toEnd: '西船橋',
