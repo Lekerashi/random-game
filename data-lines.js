@@ -989,6 +989,13 @@ const LINE_BRANCHES = {
     { name: 'Nakano-Fujimicho', ja: '中野富士見町方面', color: '#f07800', direction: 'end',
       stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町'],
       schedule: { weekday: { timeRange: [[8, 11], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+    // the last trains from 池袋 that end at 茗荷谷 / 新宿 (ODPT 2026-09)
+    { name: 'Myogadani', ja: '茗荷谷方面', color: '#e60012', direction: 'end',
+      stations: ['池袋','新大塚','茗荷谷'],
+      schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
+    { name: 'Shinjuku', ja: '新宿方面', color: '#e60012', direction: 'end',
+      stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿'],
+      schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
     { name: 'Ikebukuro', ja: '池袋方面', color: '#e60012', direction: 'start',
       stations: ['池袋','新大塚','茗荷谷','後楽園','本郷三丁目','御茶ノ水','淡路町','大手町','東京','銀座','霞ケ関','国会議事堂前','赤坂見附','四ツ谷','四谷三丁目','新宿御苑前','新宿三丁目','新宿','西新宿','中野坂上','中野新橋','中野富士見町','方南町'] },
     { name: 'Nakano-Sakaue', ja: '中野坂上方面', color: '#f07800', direction: 'start',
@@ -1036,22 +1043,59 @@ const LINE_SCHEDULES = {
 // Entries: { until (JA), name, ja, color, services?, schedule? }; services = the types that end there
 const LINE_DESTINATIONS = {
   // 17 weekday trains from 渋谷 (mornings, evenings, the last ones) and 2 weekend
-  // night trains end at 上野 (ODPT 2026-09)
-  'Tokyo Metro Ginza Line': {
-    direction: 'start',  // toward Asakusa
-    destinations: [
-      { until: '上野', name: 'Ueno',    ja: '上野方面', color: '#f39700',
-        schedule: { weekday: { timeRange: [[8, 10], [18, 20], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
-      { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#f39700' },
-    ],
-  },
-  // 7 weekday-morning trains (from 荻窪 and 方南町) end at 茗荷谷 (ODPT 2026-09)
+  // night trains end at 上野; the last ones from 浅草 too (ODPT 2026-09)
+  'Tokyo Metro Ginza Line': [
+    { direction: 'start',  // toward Asakusa
+      destinations: [
+        { until: '上野', name: 'Ueno',    ja: '上野方面', color: '#f39700',
+          schedule: { weekday: { timeRange: [[8, 10], [18, 20], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+        { until: '浅草', name: 'Asakusa', ja: '浅草方面', color: '#f39700' },
+      ] },
+    { direction: 'end',  // toward Shibuya
+      destinations: [
+        { until: '上野', name: 'Ueno',    ja: '上野方面', color: '#f39700',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#f39700' },
+      ] },
+  ],
+  // 7 weekday-morning trains (from 荻窪 and 方南町) end at 茗荷谷; the first and last ones at
+  // 新宿三丁目 (ODPT 2026-09)
   'Tokyo Metro Marunouchi Line': {
     direction: 'start',  // toward Ikebukuro
     destinations: [
+      { until: '新宿三丁目', name: 'Shinjuku-Sanchome', ja: '新宿三丁目方面', color: '#e60012',
+        schedule: { weekday: { timeRange: [[5, 6], [23, 1]] }, weekend: { timeRange: [[5, 6], [23, 1]] } } },
       { until: '茗荷谷', name: 'Myogadani', ja: '茗荷谷方面', color: '#e60012',
         schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
       { until: '池袋',   name: 'Ikebukuro', ja: '池袋方面',   color: '#e60012' },
+    ],
+  },
+  // The last trains from 北千住 end at 南千住 (depot) (ODPT 2026-03); toward 北千住 the
+  // 広尾 short turn is a lineDest on the Tobu connection
+  'Tokyo Metro Hibiya Line': {
+    direction: 'end',  // toward Naka-Meguro
+    destinations: [
+      { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#b5b5ac',
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '中目黒', name: 'Naka-Meguro',  ja: '中目黒方面', color: '#b5b5ac' },
+    ],
+  },
+  // The last trains from 西船橋 end at 東陽町 (ODPT 2026-03)
+  'Tokyo Metro Tozai Line': {
+    direction: 'start',  // toward Nakano
+    destinations: [
+      { until: '東陽町', name: 'Toyocho', ja: '東陽町方面', color: '#009bbf',
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [23, 1] } } },
+      { until: '中野',   name: 'Nakano',  ja: '中野方面',   color: '#009bbf' },
+    ],
+  },
+  // A late train from 和光市 ends at 池袋 (ODPT 2026-03)
+  'Tokyo Metro Yurakucho Line': {
+    direction: 'end',  // toward Shin-Kiba
+    destinations: [
+      { until: '池袋',   name: 'Ikebukuro', ja: '池袋方面',   color: '#c9a800',
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+      { until: '新木場', name: 'Shin-Kiba', ja: '新木場方面', color: '#c9a800' },
     ],
   },
   // 22 weekday / 12 weekend trains turn back at 舎人公園 (around 9h and the last ones) (ODPT 2025-02)

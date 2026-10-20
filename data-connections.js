@@ -112,6 +112,11 @@ const LINE_CONNECTIONS = [
   // (9 wd 各停, mornings and the last ones); 1 a day ends at 渋谷 (ODPT 2026-03)
   { from: 'Tokyo Metro Hanzomon Line', fromEnd: '渋谷',
     to:   'Tokyu Den-en-toshi Line',   toEnd:   '渋谷',
+    // the weekday last train from 押上 ends at 水天宮前
+    lineDests: [
+      { until: '水天宮前', name: 'Suitengumae', ja: '水天宮前方面', color: '#8F76D6',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { stops: [] } } },
+    ],
     destinations: [
       // chainFrom []: the 鷺沼 trains start on the Hanzomon, none comes through from Tobu
       { until: '鷺沼',     name: 'Saginuma',    ja: '鷺沼方面',     color: '#50b8a0', services: ['Local'], chainFrom: [],
@@ -142,6 +147,11 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[5, 7], [23, 1]] }, weekend: { timeRange: [[5, 7], [22, 1]] } } },
     ],
     destinations: [
+      // 2 Sat/hol last 各停 from 中央林間 end at 青山一丁目 / 永田町
+      { until: '青山一丁目', name: 'Aoyama-itchome', ja: '青山一丁目方面', color: '#8F76D6', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } },
+      { until: '永田町', name: 'Nagatacho', ja: '永田町方面', color: '#8F76D6', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
       { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
         schedule: { weekday: { timeRange: [[6, 11], [22, 1]] }, weekend: { timeRange: [20, 24] } } },
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
@@ -851,6 +861,11 @@ const LINE_CONNECTIONS = [
     via:  ['曳舟'],
     toUntil: '久喜',
     lineDests: [
+      // 2 Sat/hol last trains from 渋谷 end at 青山一丁目 / 永田町
+      { until: '青山一丁目', name: 'Aoyama-itchome', ja: '青山一丁目方面', color: '#8F76D6',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [0, 1] } } },
+      { until: '永田町', name: 'Nagatacho', ja: '永田町方面', color: '#8F76D6',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [0, 1] } } },
       // 17 weekday trains (mornings and the last ones) turn back at 清澄白河 (ODPT 2026-03)
       { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
         schedule: { weekday: { timeRange: [[6, 11], [23, 1]] }, weekend: { timeRange: [21, 1] } } },
@@ -1042,6 +1057,9 @@ const LINE_CONNECTIONS = [
     to:   'Tobu Isesaki Line',       toStation: '北千住', toDir: 'end',
     toUntil: '東武動物公園',
     lineDests: [
+      // the last trains from 中目黒 end at 広尾 (ODPT 2026-03)
+      { until: '広尾', name: 'Hiro-o', ja: '広尾方面', color: '#9B7A00',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       // 10 weekday-morning trains turn back at 南千住 (ODPT 2026-03)
       { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00',
         schedule: { weekday: { timeRange: [8, 12] }, weekend: { stops: [] } } },
@@ -1295,6 +1313,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       // 北綾瀬 shuttles turn back at 綾瀬 all day; 7 weekday-morning trains end at 明治神宮前
       { until: '綾瀬', name: 'Ayase', ja: '綾瀬方面', color: '#00BB85' },
+      // the first and last trains from 綾瀬 turn back at 北千住 (ODPT 2026-03)
+      { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#00BB85',
+        schedule: { weekday: { timeRange: [[4, 5], [0, 1]] }, weekend: { timeRange: [[4, 5], [0, 1]] } } },
       { until: '明治神宮前〈原宿〉', name: 'Meiji-jingumae', ja: '明治神宮前方面', color: '#00BB85',
         schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
@@ -1664,6 +1685,9 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
         schedule: { weekday: { timeRange: [[7, 12], [17, 24]] }, weekend: { timeRange: [20, 24] } } },
+      // a late 各停 from Seibu (小手指) ends at 元住吉 (depot); no `services`, as on 武蔵小杉
+      { until: '元住吉', name: 'Motosumiyoshi', ja: '元住吉方面', color: '#da0442', chainFrom: ['Seibu Yurakucho Line', 'Seibu Ikebukuro Line'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
     ],
     // Types by the Metro side, renamed at 渋谷 (toName; ODPT 2026-03): 普通 run on as Toyoko 各停
     // (112 wd) or 急行 (72, all day); 急行 as 特急 (the daytime F-Liners, 21 wd / 35 Sat/hol, plus
@@ -1815,11 +1839,19 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Namboku Line', fromEnd: '目黒',
     to:   'Tokyu Meguro Line',        toEnd:   '目黒',
     lineDests: [
+      // the last trains from 赤羽岩淵 end at 駒込 / 市ケ谷 (ODPT 2026-03)
+      { until: '駒込', name: 'Komagome', ja: '駒込方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '市ケ谷', name: 'Ichigaya', ja: '市ケ谷方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { stops: [] } } },
       { until: '白金高輪', name: 'Shirokane-takanawa', ja: '白金高輪方面', color: '#00AC9B',
         schedule: { weekday: { timeRange: [[5, 6], [7, 1]] }, weekend: { timeRange: [5, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
     destinations: [
+      // a late 各停 ends at 奥沢 (Tokyu depot)
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [[7, 11], [17, 20], [23, 1]] }, weekend: { timeRange: [[7, 9], [20, 21], [22, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
@@ -1846,6 +1878,9 @@ const LINE_CONNECTIONS = [
   { from: 'Tokyo Metro Namboku Line',     fromEnd: '赤羽岩淵',
     to:   'Saitama high-speed rail line', toEnd: '赤羽岩淵',
     lineDests: [
+      // the last trains from 目黒 end at 駒込
+      { until: '駒込', name: 'Komagome', ja: '駒込方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '王子神谷', name: 'Oji-kamiya', ja: '王子神谷方面', color: '#00AC9B',
         schedule: { weekday: { timeRange: [[8, 10], [19, 22]] }, weekend: { timeRange: [8, 10] } } },
       { until: '赤羽岩淵', name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
