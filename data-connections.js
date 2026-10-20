@@ -1457,11 +1457,6 @@ const LINE_CONNECTIONS = [
   { from: 'JR Chuo-Sobu Line',      fromStation: '中野', fromDir: 'end',
     to:   'Tokyo Metro Tozai Line', toEnd: '中野',
     lineDests: [
-      // the last trains from 三鷹 end at 中野 / 御茶ノ水 (ODPT 2026-03)
-      { until: '中野',     name: 'Nakano',     ja: '中野方面',     color: '#F7C948',
-        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '御茶ノ水', name: 'Ochanomizu', ja: '御茶ノ水方面', color: '#F7C948',
-        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
     ],

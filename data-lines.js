@@ -1266,15 +1266,26 @@ const LINE_DESTINATIONS = {
         { until: '東京',       name: 'Tokyo',           ja: '東京方面',       color: '#F15A22' },
       ] },
   ],
-  // The last 各停 from 千葉 end at 津田沼 (ODPT 2026-03)
-  'JR Chuo-Sobu Line': {
-    direction: 'start',  // toward Mitaka
-    destinations: [
-      { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
-        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '三鷹',   name: 'Mitaka',    ja: '三鷹方面',   color: '#F7C948' },
-    ],
-  },
+  // The last 各停 end at 津田沼 (from 千葉) and 中野 / 御茶ノ水 (from 三鷹) (ODPT 2026-03); toward 千葉
+  // the table applies only then (by day the Tozai connection's picker stays as it is)
+  'JR Chuo-Sobu Line': [
+    { direction: 'start',  // toward Mitaka
+      destinations: [
+        { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+        { until: '三鷹',   name: 'Mitaka',    ja: '三鷹方面',   color: '#F7C948' },
+      ] },
+    { direction: 'end',  // toward Chiba
+      shortTurnsOnly: true,
+      destinations: [
+        { until: '中野',     name: 'Nakano',     ja: '中野方面',     color: '#F7C948',
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+        { until: '御茶ノ水', name: 'Ochanomizu', ja: '御茶ノ水方面', color: '#F7C948',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '津田沼',   name: 'Tsudanuma',  ja: '津田沼方面',   color: '#F7C948' },
+        { until: '千葉',     name: 'Chiba',      ja: '千葉方面',     color: '#E85830' },
+      ] },
+  ],
   // From 取手 trains end at 守谷 or 水海道; some run on to 下館
   'Kanto Railway Joso Line': {
     direction: 'end',  // away from Toride
