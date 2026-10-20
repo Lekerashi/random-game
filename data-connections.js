@@ -232,9 +232,9 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       // services: chained Asakusa / Sky Access riders board express-class trains only (the Sky
-      // Access アクセス特急 keeps its boarding-line name); no 普通 runs through to Haneda
+      // Access アクセス特急 is エアポート快特 from 押上 on); no 普通 runs through to Haneda
       { until: '羽田空港第1・第2ターミナル', name: 'Haneda Airport', ja: '羽田空港方面', color: '#1a8fe8',
-        services: ['Express', 'Ltd. Express', 'Rapid Ltd. Exp', 'Airport Rapid', 'Access Express'] },
+        services: ['Express', 'Ltd. Express', 'Rapid Ltd. Exp', 'Airport Rapid'] },
     ],
     express: [
       { name: 'Express', ja: '急行', color: '#e83030',
@@ -251,7 +251,7 @@ const LINE_CONNECTIONS = [
         stops: ['泉岳寺','品川','京急蒲田',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
         schedule: { weekday: { timeRange: [[5, 8], [9, 10], [11, 17]] }, weekend: { timeRange: [[5, 6], [9, 22]] } } },
-      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['品川',
                 '羽田空港第3ターミナル','羽田空港第1・第2ターミナル'],
         schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [10, 19] } } },
@@ -1014,7 +1014,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } }, chainFrom: ['Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
     ],
     // Asakusa trains continue as Keikyu 急行 (to Haneda, rushes), 特急/快特; エアポート快特
-    // (and アクセス特急 from Narita, chainName) run on to Haneda via the Airport Line hop
+    // (the アクセス特急 from Narita, renamed at 押上) run on to Haneda via the Airport Line hop
     express: [
       // one 普通 a day runs through (23h); the other through trains are 急行 or better
       { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 24] } } },
@@ -1030,7 +1030,7 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
         stops: ['押上(スカイツリー前)','本所吾妻橋','浅草','蔵前','浅草橋','東日本橋','人形町','日本橋','宝町','東銀座','新橋','大門','三田','泉岳寺',
                 '品川','京急蒲田','京急川崎','横浜','上大岡','金沢文庫','金沢八景','横須賀中央','堀ノ内'] }, // 快特 never run to 浦賀
-      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['押上(スカイツリー前)','浅草','東日本橋','日本橋','新橋','大門','三田','泉岳寺','品川'],
         schedule: { weekday: { timeRange: [[6, 7], [9, 16]] }, weekend: { timeRange: [[6, 7], [9, 20]] } } }, // southbound hours at 押上
     ] },
@@ -1108,8 +1108,9 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Ltd. Exp', ja: '快速特急', color: '#f07000',
         stops: ['泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
         schedule: { weekday: { timeRange: [12, 20] }, weekend: { timeRange: [10, 19] } } },
-      // chainName: the アクセス特急 boarded at 品川 (Keikyu Main → Asakusa) continues as this
-      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
+      // Keisei calls the Haneda エアポート快特 アクセス特急 from 押上 on (toName); the Keikyu Airport →
+      // Main → Asakusa hops carry it here by name
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', toName: 'Access Express', toJa: 'アクセス特急',
         stops: ['泉岳寺','三田','大門','新橋','日本橋',
                 '東日本橋','浅草','押上(スカイツリー前)',
                 '青砥','京成高砂'],
@@ -1131,7 +1132,9 @@ const LINE_CONNECTIONS = [
         stops: ['京成高砂','青砥','押上(スカイツリー前)','本所吾妻橋','浅草','蔵前','浅草橋','東日本橋',
                 '人形町','日本橋','宝町','東銀座','新橋','大門','三田','泉岳寺',
                 '高輪台','五反田','戸越','中延','馬込','西馬込'] },
-      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', chainName: 'Access Express',
+      // The Sky Access アクセス特急 to Haneda (Keisei's name to 押上) is Toei's エアポート快特 from there
+      // (ODPT 2026-03: 10 wd / 15 Sat/hol southbound, 8 stops 押上 → 泉岳寺)
+      { name: 'Access Express', ja: 'アクセス特急', color: '#f08300', toName: 'Airport Rapid', toJa: 'エアポート快特',
         stops: ['京成高砂','青砥','押上(スカイツリー前)',
                 '浅草','東日本橋','日本橋',
                 '新橋','大門','三田','泉岳寺'],
@@ -1491,7 +1494,7 @@ const LINE_CONNECTIONS = [
                 '雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',"明治神宮前〈原宿〉",'渋谷',
                 '中目黒','学芸大学','自由が丘','田園調布',
                 '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'] },
-      { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8',
+      { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Commuter Ltd. Exp', toJa: '通勤特急',
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
                 '中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜'],
@@ -1547,8 +1550,8 @@ const LINE_CONNECTIONS = [
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','菊名','横浜',
         'みなとみらい','元町・中華街'], schedule: { weekday: { timeRange: [[9, 12], [16, 17]] }, weekend: { timeRange: [[6, 12], [18, 24]] } } },
-      // 通勤特急 pass only 新高島; Fukutoshin 通勤急行 continue as these
-      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', chainName: 'Commuter Exp', stops: [
+      // 通勤特急 pass only 新高島; Fukutoshin 通勤急行 continue as these (toName at 渋谷)
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜',
         'みなとみらい','馬車道','日本大通り','元町・中華街'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [17, 24]] } } },
@@ -2635,11 +2638,11 @@ const LINE_CONNECTIONS = [
     to:   'Narita Sky Access',   toStation: '京成高砂', toDir: 'end',
     destinations: [
       { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport (Sky Access)', ja: '成田空港方面（スカイアクセス経由）', color: '#f08300',
-        services: ['Access Express', 'Airport Rapid'] },
+        services: ['Access Express'] },
     ],
     express: [
-      // chainName: Airport Rapid trains from Haneda/Asakusa continue as this
-      { name: 'Access Express', ja: 'アクセス特急', color: '#f08300', chainName: 'Airport Rapid',
+      // The Haneda / Asakusa エアポート快特 arrive as this (renamed at 押上)
+      { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
         stops: ['押上(スカイツリー前)','青砥','京成高砂',
                 '東松戸','新鎌ヶ谷','千葉ニュータウン中央','印旛日本医大','成田湯川',
                 '空港第２ビル（第２旅客ターミナル）','成田空港（第１旅客ターミナル）'] },
@@ -2678,8 +2681,8 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Keisei Main Line',    fromStation: '京成高砂', fromDir: 'start',
     to:   'Keisei Oshiage Line', toEnd: '京成高砂' },
-  // アクセス特急 from Narita run on via Oshiage as エアポート快特 to Haneda
-  // (the Asakusa → Keikyu and Keikyu → Airport hops carry chainName for it)
+  // アクセス特急 from Narita run on via Oshiage as エアポート快特 to Haneda (renamed at 押上 by the
+  // Keisei Oshiage → Asakusa entry's toName; the Asakusa → Keikyu → Airport hops carry it by name)
   { from: 'Narita Sky Access',   fromStation: '京成高砂', fromDir: 'start',
     to:   'Keisei Oshiage Line', toEnd: '京成高砂',
     name: 'Haneda Airport', ja: '羽田空港方面', color: '#e83080',
