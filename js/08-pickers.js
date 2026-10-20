@@ -80,7 +80,7 @@ function handleLineDestinations(p) {
       if (stopsToEnd <= 0) return null;
       const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
       return { ...d, untilIdx, effectiveMax, _services: d.services || null,
-        _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true,
+        _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true, _plain: untilIdx === endIdx,
         onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja,
           services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
@@ -107,11 +107,13 @@ function handleLineDestinations(p) {
   // If all destinations have the same effectiveMax (cap makes them equivalent),
   // auto-select the furthest one — no meaningful choice to make. Prefer a
   // within-line destination so a capped plain ride doesn't become a through-run.
+  // The line's own end picked this way is the plain ride: no "towards" label (autoPick),
+  // so a short turn off-hours leaves the board as it is without one
   const allSameMax = wardDests.every(d => d.effectiveMax === wardDests[0].effectiveMax);
   if (allSameMax || wardDests.length === 1) {
     const lineOnly = wardDests.filter(d => d._isLineDest);
     const pool = lineOnly.length ? lineOnly : wardDests;
-    pool[pool.length - 1].onSelect();
+    autoPick(pool[pool.length - 1]);
     return { pickerShown: false };
   }
   showBranchPickerUI(p, wardDests.map(d => ({
