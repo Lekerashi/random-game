@@ -964,13 +964,14 @@ const LINE_CONNECTIONS = [
     ],
     // 特急/快特 run all stations on the Asakusa Line, then on as Keisei 快速
     // (特急, Haneda ↔ Narita via the Main Line) or 快速特急 (快特, to Aoto/Takasago).
-    // 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a day)
+    // 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a day); both call
+    // at every Asakusa Line station (the ones that skip are Toei's エアポート快特)
     express: [
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
         schedule: { weekday: { timeRange: [[7, 8], [10, 16], [19, 21], [22, 23]] }, weekend: { timeRange: [8, 20] } } },
       { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
-        stops: ['品川','泉岳寺','三田','大門','新橋','日本橋','東日本橋','浅草','押上(スカイツリー前)'],
+        stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
         schedule: { weekday: { timeRange: [[4, 8], [9, 10], [16, 17], [21, 22]] }, weekend: { timeRange: [[4, 10], [19, 20], [21, 22]] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川','泉岳寺',
