@@ -72,6 +72,16 @@ const YOKOSUKA_PAST_TOKYO = ['新橋', '品川', '西大井', '武蔵小杉', '�
   '北鎌倉', '鎌倉', '逗子', '東逗子', '田浦', '横須賀', '衣笠', '久里浜'];
 const UCHIBO_RAPID_PAST_CHIBA = ['本千葉', '蘇我', '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '木更津', '君津']; // passes 巌根
 const KEIYO_RAPID = ['東京', '八丁堀', '新木場', '舞浜', '新浦安', '南船橋', '海浜幕張', '検見川浜', '稲毛海岸', '千葉みなと', '蘇我'];
+// Hanzomon through trains (every Hanzomon train calls at every Hanzomon station; the Metro names
+// them by the type they carry on the other operator, so the entries below rename at 渋谷 / 押上)
+const HANZOMON_UP = ['渋谷', '表参道', '青山一丁目', '永田町', '半蔵門', '九段下', '神保町', '大手町', '三越前', '水天宮前', '清澄白河', '住吉', '錦糸町', '押上(スカイツリー前)']; // 渋谷 → 押上
+const HANZOMON_DOWN = [...HANZOMON_UP].reverse();
+const DET_ALL_UP = ['中央林間', 'つきみ野', '南町田グランベリーパーク', 'すずかけ台', 'つくし野', '長津田', '田奈', '青葉台', '藤が丘', '市が尾', '江田', 'あざみ野', 'たまプラーザ',
+  '鷺沼', '宮前平', '宮崎台', '梶が谷', '溝の口', '高津', '二子新地', '二子玉川', '用賀', '桜新町', '駒沢大学', '三軒茶屋', '池尻大橋', '渋谷']; // 各停, 中央林間 → 渋谷
+const DET_SEMI_UP = ['中央林間', 'つきみ野', '南町田グランベリーパーク', 'すずかけ台', 'つくし野', '長津田', '青葉台', 'あざみ野', 'たまプラーザ', '鷺沼', '溝の口', '二子玉川', '用賀', '桜新町', '駒沢大学', '三軒茶屋', '池尻大橋', '渋谷'];
+const DET_EXP_UP = ['中央林間', '南町田グランベリーパーク', '長津田', '青葉台', 'あざみ野', 'たまプラーザ', '鷺沼', '溝の口', '二子玉川', '三軒茶屋', '渋谷'];
+const TOBU_EXP_UP = ['久喜', '和戸', '東武動物公園', '春日部', 'せんげん台', '越谷', '新越谷', '草加', '西新井', '北千住', '曳舟']; // Tobu 急行, 久喜 → 曳舟
+const TOBU_SEMI_UP = ['久喜', '和戸', '東武動物公園', '姫宮', '北春日部', '春日部', '一ノ割', '武里', 'せんげん台', '大袋', '北越谷', '越谷', '新越谷', '草加', '西新井', '北千住', '曳舟'];
 
 const LINE_CONNECTIONS = [
 
@@ -88,6 +98,16 @@ const LINE_CONNECTIONS = [
       { until: '長津田',   name: 'Nagatsuta',   ja: '長津田方面',   color: '#30a890',
         schedule: { weekday: { timeRange: [[6, 12], [15, 1]] }, weekend: { timeRange: [[8, 11], [16, 21], [22, 1]] } } },
       { until: '中央林間', name: 'Chuo-Rinkan', ja: '中央林間方面', color: '#20a288' },
+    ],
+    // The Hanzomon names its trains by the DET type they become (普通 → 各停 183 wd, 急行 61, 準急 37;
+    // ODPT 2026-03), so these carry the Tobu 急行 / 準急 (renamed at 押上 by the Tobu → Hanzomon
+    // entries) on to the DET under one name
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [...HANZOMON_DOWN, ...[...DET_EXP_UP].reverse().slice(1)],
+        schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900', stops: [...HANZOMON_DOWN, ...[...DET_SEMI_UP].reverse().slice(1)],
+        schedule: { weekday: { timeRange: [[7, 17], [18, 20], [23, 1]] }, weekend: { timeRange: [[7, 17], [18, 20], [23, 1]] } } },
     ] },
   // Toward 渋谷 the late 各停 from 中央林間 turn at 長津田, a few at 渋谷; through trains end at
   // 押上 (161 wd), 清澄白河 (17 wd, mornings and the last ones) or on Tobu (chained: 久喜,
@@ -104,6 +124,27 @@ const LINE_CONNECTIONS = [
       { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
         schedule: { weekday: { timeRange: [[6, 11], [22, 1]] }, weekend: { timeRange: [20, 24] } } },
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
+    ],
+    // Types by the DET side, renamed at 渋谷 (toName): the Hanzomon names a train by the Tobu type it
+    // becomes (or 普通 when it ends on the Metro). ODPT 2026-03: 各停 → 普通 115 wd / 56 Sat/hol, →
+    // 急行 45 / 53, → 準急 17 / 17; 準急 → 普通 41 / 32, → 急行 5 wd; 急行 → 急行 33 / 22, → 普通 21 / 16,
+    // → 準急 7 / 9. The Hanzomon → Tobu entries continue the 急行 / 準急 by name
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...DET_ALL_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 21], [22, 24]] }, weekend: { timeRange: [[5, 21], [22, 24]] } } },
+      { name: 'Local', ja: '各停', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...DET_ALL_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 10], [19, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Local', toJa: '各停', stops: [...DET_SEMI_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[6, 9], [10, 21], [23, 24]] }, weekend: { timeRange: [[6, 9], [10, 21], [23, 24]] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...DET_SEMI_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[8, 9], [15, 16], [17, 19]] } } },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [...DET_EXP_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [7, 21] }, weekend: { timeRange: [7, 21] } } },
+      { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...DET_EXP_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[6, 11], [15, 16], [17, 24]] }, weekend: { timeRange: [[6, 11], [15, 16], [17, 24]] } } },
+      { name: 'Express', ja: '急行', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...DET_EXP_UP, ...HANZOMON_UP.slice(1)],
+        schedule: { weekday: { timeRange: [[6, 9], [19, 23]] }, weekend: { timeRange: [[6, 9], [19, 23]] } } },
     ] },
 
   // ── Oimachi → Den-en-toshi at Mizonokuchi ───────────────────────────────
@@ -551,8 +592,9 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Rapid (Utsunomiya–Yokosuka)'] },
     ],
     // Utsunomiya-Yokosuka system 快速 all day, all stations past 大船; most skip 西大井 / 新川崎,
-    // the daytime ones (a quarter) call there (ODPT 2026-03)
+    // the daytime ones (a quarter) call there (ODPT 2026-03); 普通 run through too
     express: [
+      { stops: null, name: 'Local', ja: '普通' },
       { name: 'Rapid (Utsunomiya–Yokosuka)', ja: '快速（宇都宮・横須賀線系統）', color: '#40a060',
         stops: ['大宮','浦和','赤羽','池袋','新宿','渋谷','恵比寿','大崎','武蔵小杉','横浜','保土ケ谷','東戸塚','戸塚','大船','北鎌倉','鎌倉','逗子'],
         schedule: { weekday: { timeRange: [10, 20] } } }, // the 逗子-bound 快速 run 10–19h on weekdays (ODPT 2026-03)
@@ -575,6 +617,9 @@ const LINE_CONNECTIONS = [
     // 特別快速 skip 辻堂/大磯/二宮/鴨宮 (快速 run all stations past 大船);
     // 特別快速 hourly by day only (新宿 11:00–17:00 southbound)
     express: [
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: ['大宮','浦和','赤羽','池袋','新宿','渋谷','恵比寿','大崎','武蔵小杉','横浜','戸塚','大船',
+                '藤沢','辻堂','茅ケ崎','平塚','大磯','二宮','国府津','鴨宮','小田原'] },
       { name: 'Special Rapid', ja: '特別快速', color: '#e83080',
         stops: ['大宮','浦和','赤羽','池袋','新宿','渋谷','大崎','武蔵小杉','横浜','戸塚','大船',
                 '藤沢','茅ケ崎','平塚','国府津','小田原'],
@@ -600,8 +645,9 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Rapid (Utsunomiya–Yokosuka)'] },
     ],
     // Utsunomiya-Yokosuka system 快速 all day: skips 土呂/白岡/新白岡/東鷲宮/栗橋/野木/間々田; most
-    // skip 西大井 / 新川崎, the daytime ones (a quarter) call there (ODPT 2026-03)
+    // skip 西大井 / 新川崎, the daytime ones (a quarter) call there (ODPT 2026-03); 普通 run through too
     express: [
+      { stops: null, name: 'Local', ja: '普通' },
       { name: 'Rapid (Utsunomiya–Yokosuka)', ja: '快速（宇都宮・横須賀線系統）', color: '#40a060',
         stops: ['大船','戸塚','東戸塚','保土ケ谷','横浜','武蔵小杉','大崎','恵比寿','渋谷','新宿','池袋','赤羽','浦和','大宮',
                 '東大宮','蓮田','久喜','古河','小山','小金井','自治医大','石橋','雀宮','宇都宮'] },
@@ -817,6 +863,19 @@ const LINE_CONNECTIONS = [
       // Nikko Line riders' weekday 23:06 準急 ends at 押上 (chained from Nikko → Isesaki)
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6',
         services: ['Semi-Exp (Oshiage)'], schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
+    ],
+    // Types by the Tobu side, renamed at 押上 (toName): the Hanzomon names them by the DET type they
+    // become. ODPT 2026-03: 急行 → 普通 51 wd / 57 Sat/hol, → 急行 21 / 17, → 準急 6 / 1; 準急 → 普通 26 / 21
+    // (準急 → 急行 / 準急 3 each). The Hanzomon → DET entries continue them by name
+    express: [
+      { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
+        schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 23] } } },
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
+        schedule: { weekday: { timeRange: [[8, 9], [10, 11], [15, 22]] }, weekend: { timeRange: [[8, 9], [10, 11], [15, 22]] } } },
+      { name: 'Express', ja: '急行', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
+        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 8], [18, 19], [22, 23]] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOBU_SEMI_UP, ...HANZOMON_DOWN],
+        schedule: { weekday: { timeRange: [[5, 12], [21, 24]] }, weekend: { timeRange: [[5, 12], [21, 24]] } } },
     ] },
 
   // ── Tobu Isesaki → Nikko at Tobu-Dobutsu-Koen ──────────────────────────
@@ -1548,6 +1607,7 @@ const LINE_CONNECTIONS = [
     // at other hours) or 普通 (6 Sat/hol); 通勤特急 as 通勤急行 (16 wd), 急行 (10 wd) or 普通 (6 wd); 各停
     // run through as 普通 (102 / 85)
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停',
         stops: ['横浜','菊名','綱島','日吉','武蔵小杉','多摩川','田園調布','自由が丘','学芸大学','中目黒',
                 '渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川',
@@ -1883,6 +1943,7 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Rapid', 'Ltd. Express'] },
     ],
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       // 快速 by day and in the evening on weekdays, all day Sat/hol (ODPT 2026-03)
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         '横浜','星川','西谷','鶴ヶ峰','二俣川',
@@ -2844,8 +2905,9 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
     ],
     // 特急/急行 share the Sagamihara stops; 区間急行/快速 call everywhere past 調布
-    // (快速 and most 区間急行 are Toei through trains — see Toei → Keio)
+    // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through too
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '新宿','笹塚','明大前','千歳烏山','調布','京王稲田堤','京王永山','京王多摩センター','南大沢','橋本'] },
       // 急行: weekday morning and evening peaks, Sat/hol mornings (ODPT 2026-08)
@@ -2946,6 +3008,7 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Express', 'Rapid Exp'], localFrom: '町田' },
     ],
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
         '新宿','代々木上原','下北沢','登戸','新百合ヶ丘','町田','相模大野',
         '中央林間','大和','湘南台','藤沢'] },
@@ -2996,6 +3059,7 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Express', 'Rapid Exp'] },
     ],
     express: [
+      { stops: null, name: 'Local', ja: '各停' },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '新宿','代々木上原','下北沢','経堂','成城学園前','登戸','向ヶ丘遊園','新百合ヶ丘','五月台','栗平','黒川','はるひ野','小田急永山','小田急多摩センター','唐木田'] },
       // 5 weekday 快速急行 (morning rush, 22h) pass 五月台 / 黒川 / はるひ野 (ODPT 2026-03)

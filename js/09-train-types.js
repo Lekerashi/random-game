@@ -17,7 +17,9 @@ function trainTypeOpts(g) {
 // Services a chained destination inherits from the first hop are first-hop names.
 function typeNameForDest(tt, sd) {
   if (!sd?.chain?.length || sd.servicesFirstHop) return tt.name;
-  if (!tt._hopConns) return tt.expressIndices ? null : tt.name;
+  // A line's own type: an express never rides a chain; a Local does where the first hop's
+  // entries (if any) include a Local
+  if (!tt._hopConns) return tt.expressIndices || (state.selectedConnection && !localRunsThrough(state.selectedConnection)) ? null : tt.name;
   const last = sd.chain[sd.chain.length - 1];
   const k = tt._hopConns.findIndex(c => c.to === last.to && c.toDir === last.toDir);
   return k === -1 ? tt._hopNames[tt._hopNames.length - 1] : tt._hopNames[k];
@@ -94,6 +96,9 @@ function resolveTrainTypes(p) {
   const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(e => e.stops === null));
   trainTypes = trainTypes.filter(t => t._connTargetLineIdx != null
     || (!connExpNames.has(normalize(t.name)) && !(connLocal && t.stops === null)));
+  // Local-class types first, as the line lists them (a connection's Local that replaced the
+  // line's keeps the Local button in front)
+  trainTypes = [...trainTypes.filter(t => t.stops === null), ...trainTypes.filter(t => t.stops !== null)];
 
   // Add target line's express services (e.g. Den-en-toshi Semi-Exp/Express via Hanzomon)
   // Skip if connection express already covered this target line (avoid duplicates)

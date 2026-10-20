@@ -62,13 +62,24 @@ function findRouteConnection(platform, tt) {
 // it or the player picked it in a picker (pickers set selectedDestination).
 // handleConnectionRouting also auto-sets selectedConnection just to skip a
 // picker — that alone keeps the ride on the source line.
-function routeConnectionFor(platform, conn, connTargetLineIdx) {
+function routeConnectionFor(platform, conn, connTargetLineIdx, tt) {
   if (!conn || platform.circular) return conn;
+  // A line's own local-class type rides a connection whose express entries name the through
+  // trains only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run
+  // through) or a direct destination's services name it (Chuo 快速 → 青梅)
+  if (tt && tt.stops === null && tt._connTargetLineIdx == null && !localRunsThrough(conn) && !destNamesType(tt)) return null;
   const N = state.lines[platform.lineIdx].stations.length;
   if (conn.fromJunctionIdx === dirEnd(N, platform.direction)) return conn;
   const taken = connTargetLineIdx != null
     || (state.selectedConnection === conn && !!state.selectedDestination);
   return taken ? conn : null;
+}
+
+// The picked destination lies on the connection's own target line and its services name
+// this type (a line's own type then rides the connection as the data says it does)
+function destNamesType(tt) {
+  const sd = state.selectedDestination;
+  return !!(sd && !sd.chain?.length && sd.services && tt && sd.services.some(s => normalize(s) === normalize(tt.name)));
 }
 
 // Walk local stops on the source line, limited by terminus or mid-line junction.
@@ -113,9 +124,12 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
     stopsLeft--;
   }
 
-  // The next chained hop: a mid-line one ends this target-line walk at its junction
+  // The next chained hop: a mid-line one ends this target-line walk at its junction. A
+  // local-class type rides on only over hops whose express entries (if any) include a Local
+  const localClass = tt && tt.stops === null && !tt._chainExpressStops;
+  const onwardFor = c => { const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n) ? null : n; };
   visitedLines.add(currentConn.to);
-  let next = nextChainConn(currentConn, visitedLines, tt);
+  let next = onwardFor(currentConn);
 
   // Add target line stations (express-filtered if target-line train type selected)
   if (stopsLeft > 0) {
@@ -145,7 +159,7 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
   while (stopsLeft > 0 && next) {
     currentConn = next;
     visitedLines.add(currentConn.to);
-    next = nextChainConn(currentConn, visitedLines, tt);
+    next = onwardFor(currentConn);
     for (const vs of currentConn.viaStations) {
       if (stopsLeft <= 0) break;
       if (result.length > 0 && vs.name === result[result.length - 1].name) continue;
@@ -180,8 +194,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
     // (express entries, a target with types) only to a destination whose `services` name it
     // (Chuo 快速 → 青梅), never to a chained one (no DET 準急 → 北越谷 as Tobu 準急)
     const sd = state.selectedDestination;
-    const blocked = conn && (EXPRESS_SERVICES[conn.to] || conn.express) && sd
-      && (sd.chain?.length || (sd.services && !sd.services.some(s => normalize(s) === normalize(tt?.name || ''))));
+    const blocked = conn && (EXPRESS_SERVICES[conn.to] || conn.express) && sd && (sd.chain?.length || (sd.services && !destNamesType(tt)));
     if (!r.exhausted || !conn || blocked) { if (trace) r.stations._trace = trace; return r.stations; }
     trace?.push('findRouteConnection: ' + conn.from + ' → ' + conn.to);
     const result = routeConnectionExtension(platform, stops, r.stations, tt, conn, ei);
@@ -200,7 +213,7 @@ function getStationsAlongRoute(platform, stops, expressIndicesOverride, trainTyp
   }
 
   // Normal routing with optional connection extension
-  const conn = routeConnectionFor(platform, findRouteConnection(platform, tt), tt?._connTargetLineIdx);
+  const conn = routeConnectionFor(platform, findRouteConnection(platform, tt), tt?._connTargetLineIdx, tt);
   trace?.push('strategy: local' + (conn ? ' + connection (' + conn.from + ' → ' + conn.to + ')' : ''));
   let result = [];
 

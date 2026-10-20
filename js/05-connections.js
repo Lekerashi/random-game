@@ -327,6 +327,9 @@ function computeConnectionExtra(connections, stationName, visited) {
 // line and run now: one per distinct onward name and stop list (a Local entry continues
 // it at every station). `firstName`: the train's boarding-line name, which a `chainName`
 // on the entry may still name (older data).
+// A connection with express entries lists its through trains: the source line's own Local runs
+// on only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run through)
+const localRunsThrough = conn => !conn.express || conn.express.some(e => e.stops === null);
 const namesTrain = (conn, name, firstName) => (conn.express || []).some(e => normalize(e.name) === normalize(name)
   || (e.chainName && normalize(e.chainName) === normalize(firstName)));
 function continuingEntries(conn, name, firstName) {
@@ -347,11 +350,11 @@ function continuingEntries(conn, name, firstName) {
 // The names a first-hop express entry can carry onto the source line of the last of `hops`
 // (connections ridden after conn in order), following continuing entries; a hop with no
 // express keeps the name. Empty when a hop with express has no continuing entry (the train
-// does not run on).
+// does not run on). A Local entry rides every hop as is.
 function namesAlongHops(ex, hops) {
   let names = [ex.toName || ex.name];
   for (let i = 0; i < hops.length - 1 && names.length; i++) {
-    if (!hops[i].express || ex.stops === null) continue; // a Local rides the chain as is
+    if (!hops[i].express || ex.stops === null) continue;
     names = [...new Set(names.flatMap(n => continuingEntries(hops[i], n, ex.name).map(e => e.toName || e.name)))];
   }
   return names;
@@ -449,14 +452,17 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         // Prefer the hop a picked chained destination names (as nextChainConn does)
         const destHops = state.selectedDestination?.chain;
         const ordered = destHops ? [...onward.filter(c => chainNames(destHops, c)), ...onward.filter(c => !chainNames(destHops, c))] : onward;
-        for (const nextConn of ordered) {
-          const conts = continuingEntries(nextConn, name, ex.name);
-          if (!conts.length) {
-            // The hop names the train but none of its entries runs now: it does not run through
-            // (the chain set then yields no stop past the junction); an unnamed hop carries it on
-            if (namesTrain(nextConn, name, ex.name)) { chains.push({ stops: stops || new Set(resolvedStops.map(x => normalize(x))), hops, conns, names: [...names, name], max }); return; }
-            continue;
-          }
+        // The hop the train takes: the first onward connection with an entry of its name running
+        // now; else a hop without express carries it on at every station, name unchanged; else
+        // (every hop names its through trains and none runs this one now) it does not run through
+        // and the chain set yields no stop past the junction
+        let nextConn = ordered.find(c => continuingEntries(c, name, ex.name).length);
+        let conts = nextConn ? continuingEntries(nextConn, name, ex.name) : null;
+        if (!nextConn && !ordered.some(c => namesTrain(c, name, ex.name))) {
+          nextConn = ordered.find(c => !c.express);
+          if (nextConn) conts = [{ stops: null, name }];
+        }
+        if (nextConn) {
           const nextLine = state.lines[nextConn.toLineIdx];
           for (const nextEx of conts) {
             // The chain stops set: the first hop's schedule-resolved stops, then each hop's (a Local
@@ -476,9 +482,11 @@ function resolveConnectionExpress(connExInfo, platform, line) {
             extend(nextConn, new Set([...visited, nextConn.to]), nextEx.toName || nextEx.name, s,
               [...hops, { to: nextConn.to, toDir: nextConn.toDir }], [...conns, nextConn], [...names, name], m);
           }
-          return; // the first onward connection with a continuation carries the train
+          return;
         }
-        chains.push({ stops, hops, conns, names: [...names, name], max });
+        // Onward hops that all name their through trains without this one: a dead end (the chain
+        // set, non-null, yields no stop past the junction); no onward hop: the ride simply ends
+        chains.push({ stops: ordered.length ? stops || new Set(resolvedStops.map(x => normalize(x))) : stops, hops, conns, names: [...names, name], max });
       };
       extend(connObj, new Set([connObj.from, connObj.to]), curName, null, [], [connObj], [ex.name], totalMax);
       for (const ch of chains) {
