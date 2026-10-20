@@ -1477,8 +1477,8 @@ const LINE_DESTINATIONS = {
       ] },
   ],
   // Toward 本川越 (ODPT 2026-03); 拝島 and 玉川上水 merge in from the Haijima connection
-  'Seibu Shinjuku Line': {
-    direction: 'end',  // toward Hon-Kawagoe
+  'Seibu Shinjuku Line': [
+    { direction: 'end',  // toward Hon-Kawagoe
     destinations: [
       { until: '上石神井', name: 'Kami-Shakujii',  ja: '上石神井方面', color: '#60c0f0', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 9], [15, 22], [23, 1]] }, weekend: { timeRange: [[6, 9], [22, 1]] } } },
@@ -1487,8 +1487,15 @@ const LINE_DESTINATIONS = {
       { until: '新所沢',   name: 'Shin-Tokorozawa', ja: '新所沢方面',  color: '#20a0e0', services: ['Local', 'Semi-Exp', 'Express'],
         schedule: { weekday: { timeRange: [[5, 11], [14, 1]] }, weekend: { timeRange: [[5, 6], [8, 11], [12, 1]] } } },
       { until: '本川越',   name: 'Hon-Kawagoe',    ja: '本川越方面',   color: '#00a0e8' },
-    ],
-  },
+    ] },
+    // Toward 西武新宿 the last 各停 from 本川越 end at 所沢 (ODPT 2026-03)
+    { direction: 'start',  // toward Seibu-Shinjuku
+      destinations: [
+        { until: '所沢',     name: 'Tokorozawa',     ja: '所沢方面',     color: '#20a0e0', services: ['Local'],
+          schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
+        { until: '西武新宿', name: 'Seibu-Shinjuku', ja: '西武新宿方面', color: '#00a0e8' },
+      ] },
+  ],
   // 玉川上水 (depot) short turns toward 拝島 by day and in the evening (ODPT 2026-03)
   'Seibu Haijima Line': {
     direction: 'end',  // toward Haijima
@@ -1499,12 +1506,28 @@ const LINE_DESTINATIONS = {
     ],
   },
   // 萩山 short turns toward 多摩湖 (30–41 a day; ODPT 2026-03)
-  'Seibu Tama Lake Line': {
-    direction: 'end',  // toward Tamako
+  'Seibu Tama Lake Line': [
+    { direction: 'end',  // toward Tamako
+      destinations: [
+        { until: '萩山',   name: 'Hagiyama', ja: '萩山方面',   color: '#f5a060',
+          schedule: { weekday: { timeRange: [[5, 7], [9, 17], [22, 1]] }, weekend: { timeRange: [[5, 6], [8, 22]] } } },
+        { until: '多摩湖', name: 'Tamako',   ja: '多摩湖方面', color: '#ED772D' },
+      ] },
+    // toward 国分寺 the first and last trains from 多摩湖 end at 萩山
+    { direction: 'start',  // toward Kokubunji
+      destinations: [
+        { until: '萩山',   name: 'Hagiyama',   ja: '萩山方面',   color: '#f5a060',
+          schedule: { weekday: { timeRange: [[5, 6], [23, 24]] }, weekend: { timeRange: [5, 6] } } },
+        { until: '国分寺', name: 'Kokubunji',  ja: '国分寺方面', color: '#ED772D' },
+      ] },
+  ],
+  // The last train from 飯能 ends at 吾野 (ODPT 2026-03)
+  'Seibu Chichibu Line': {
+    direction: 'end',  // toward Seibu-Chichibu
     destinations: [
-      { until: '萩山',   name: 'Hagiyama', ja: '萩山方面',   color: '#f5a060',
-        schedule: { weekday: { timeRange: [[5, 7], [9, 17], [22, 1]] }, weekend: { timeRange: [[5, 6], [8, 22]] } } },
-      { until: '多摩湖', name: 'Tamako',   ja: '多摩湖方面', color: '#ED772D' },
+      { until: '吾野',     name: 'Agano',         ja: '吾野方面',     color: '#c85a00',
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 24] } } },
+      { until: '西武秩父', name: 'Seibu-Chichibu', ja: '西武秩父方面', color: '#ED772D' },
     ],
   },
   // Signboard termini both ways (ODPT 2026-03); 唐木田 and 藤沢 merge in from the Tama / Enoshima
@@ -1573,6 +1596,9 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f',
         schedule: { weekend: { timeRange: [[7, 13], [15, 1]] } } },
+      // the last 特急 end at 三浦海岸
+      { until: '三浦海岸',   name: 'Miura-Kaigan',    ja: '三浦海岸方面',   color: '#c02060', services: ['Ltd. Express'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '三崎口',     name: 'Misakiguchi',     ja: '三崎口方面',     color: '#e83080' },
     ],
   },

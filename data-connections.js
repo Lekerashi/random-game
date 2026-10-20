@@ -384,6 +384,9 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f',
         services: ['Local', 'Ltd. Express', 'Rapid Ltd. Exp'], chainFrom: ['Toei Asakusa Line', 'Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
+      // the last 特急 from 泉岳寺 end at 三浦海岸 (ODPT 2025-12)
+      { until: '三浦海岸', name: 'Miura-Kaigan', ja: '三浦海岸方面', color: '#c02060', services: ['Ltd. Express'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [22, 1] } }, chainFrom: ['Toei Asakusa Line', 'Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
       { until: '三崎口', name: 'Misakiguchi', ja: '三崎口方面', color: '#e83080',
         services: ['Ltd. Express', 'Rapid Ltd. Exp'], chainFrom: ['Toei Asakusa Line', 'Keisei Oshiage Line', 'Keisei Main Line', 'Hokuso Railway Hokuso Line'] },
     ],
@@ -437,6 +440,11 @@ const LINE_CONNECTIONS = [
   { from: 'Keikyu Main Line',  fromStation: '金沢八景', fromDir: 'end',
     to:   'Keikyu Zushi Line', toEnd: '金沢八景',
     lineDests: [
+      // the last 普通 end at 品川 (from 泉岳寺) and 上大岡 (ODPT 2025-12)
+      { until: '品川',     name: 'Shinagawa',      ja: '品川方面',     color: '#c83030', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
+      { until: '上大岡',   name: 'Kami-Ooka',      ja: '上大岡方面',   color: '#c83030', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Local', 'Express'],
         schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 1]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 1]] } } },
     ],
