@@ -1028,6 +1028,13 @@ const LINE_CONNECTIONS = [
                 '東日本橋','浅草','押上(スカイツリー前)',
                 '青砥','京成高砂'],
         schedule: { weekday: { timeRange: [[10, 16], [20, 23]] }, weekend: { timeRange: [10, 20] } } },
+      // アクセス特急 from Haneda / 西馬込 call at every Asakusa Line station on their way to the Sky
+      // Access (13 a day: mornings, late afternoon and evening; ODPT 2026-03)
+      { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
+        stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
+                '東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋',
+                '押上(スカイツリー前)','青砥','京成高砂'],
+        schedule: { weekday: { timeRange: [[5, 10], [16, 18], [21, 22]] }, weekend: { timeRange: [[5, 10], [19, 22]] } } },
     ] },
   { from: 'Keisei Oshiage Line', fromEnd: '押上(スカイツリー前)',
     to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)',
@@ -1311,11 +1318,18 @@ const LINE_CONNECTIONS = [
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
         schedule: { weekday: { timeRange: [[7, 12], [17, 24]] }, weekend: { timeRange: [20, 24] } } },
     ],
-    // 急行 run on as Toyoko 急行; 通勤急行 mostly as 通勤特急
+    // 急行 run on as Toyoko 急行; 通勤急行 mostly as 通勤特急. Most Toyoko 急行 (72 a day, all day)
+    // are Fukutoshin 普通: the second entry calls at every Fukutoshin station (ODPT 2026-03; the
+    // Metro-side name is the type-name engine's)
     express: [
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['和光市','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
+                '中目黒','学芸大学','自由が丘','田園調布',
+                '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'] },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','千川','要町','池袋',
+                '雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',"明治神宮前〈原宿〉",'渋谷',
                 '中目黒','学芸大学','自由が丘','田園調布',
                 '多摩川','武蔵小杉','日吉','綱島','菊名','横浜'] },
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8',
