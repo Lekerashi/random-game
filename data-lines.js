@@ -1627,6 +1627,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local'],
           schedule: { weekday: { timeRange: [[11, 16], [22, 23], [0, 1]] }, weekend: { timeRange: [[9, 10], [11, 17], [21, 23], [0, 1]] } } },
+        // the last 各停 from 小川町 end at 川越市
+        { until: '川越市',   name: 'Kawagoeshi',   ja: '川越市方面',   color: '#2a78b8', services: ['Local'],
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
         { until: '池袋',     name: 'Ikebukuro',    ja: '池袋方面',     color: '#003087' },
       ] },
   ],
@@ -1657,6 +1660,15 @@ const LINE_DESTINATIONS = {
         { until: '浅草',   name: 'Asakusa',    ja: '浅草方面',   color: '#003087' },
       ] },
   ],
+  // A late train from 西小泉 ends at 東小泉 (ODPT 2026-03)
+  'Tobu Koizumi Line': {
+    direction: 'start',  // toward Tatebayashi
+    destinations: [
+      { until: '東小泉', name: 'Higashi-Koizumi', ja: '東小泉方面', color: '#3a6ab0',
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
+      { until: '館林',   name: 'Tatebayashi',     ja: '館林方面',   color: '#003087' },
+    ],
+  },
   // 館林–伊勢崎 one-man section: half the trains turn at 太田 (ODPT 2026-03)
   'Tobu Isesaki Line (Isesaki)': {
     direction: 'end',  // toward Isesaki
@@ -1691,6 +1703,9 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[6, 18], [22, 23], [0, 1]] }, weekend: { timeRange: [[6, 23], [0, 1]] } } },
         { until: '柏',     name: 'Kashiwa',   ja: '柏方面',     color: '#2a90c0', services: ['Local', 'Sub-Exp', 'Express'],
           schedule: { weekday: { timeRange: [5, 2] }, weekend: { timeRange: [5, 1] } } },
+        // the last 普通 from 柏 end at 高柳
+        { until: '高柳',   name: 'Takayanagi', ja: '高柳方面',  color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [22, 24] } } },
         { until: '船橋',   name: 'Funabashi', ja: '船橋方面',   color: '#00a0e8' },
       ] },
     { direction: 'start',  // toward Omiya
@@ -1703,6 +1718,11 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [6, 18] }, weekend: { timeRange: [[6, 8], [9, 17]] } } },
         { until: '七光台', name: 'Nanakodai',   ja: '七光台方面', color: '#2a80b8', services: ['Local'],
           schedule: { weekday: { timeRange: [[8, 10], [17, 18], [19, 20], [22, 2]] }, weekend: { timeRange: [[8, 9], [17, 18], [22, 1]] } } },
+        // the last ones end at 春日部 / 岩槻
+        { until: '春日部', name: 'Kasukabe',    ja: '春日部方面', color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '岩槻',   name: 'Iwatsuki',    ja: '岩槻方面',   color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
         { until: '大宮',   name: 'Omiya',       ja: '大宮方面',   color: '#00a0e8' },
       ] },
   ],
