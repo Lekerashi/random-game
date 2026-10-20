@@ -243,8 +243,11 @@ function handleConnectionRouting(p) {
       },
     };
   });
-  if (choicesRideAlike(p, choices)) return { pickerShown: furthestChoice(choices).onSelect() === 'subpicker' };
-  showBranchPickerUI(p, choices, false, 'connectionBranch');
+  // A connection without destinations is ridden as its chain stands (the first onward hop at each
+  // junction), which may be shorter than the chain's longest branch: show that ride's range
+  const ranged = choices.map((c, i) => conns[i].destinations ? c : serviceRange(p, c));
+  if (choicesRideAlike(p, ranged)) return { pickerShown: furthestChoice(ranged).onSelect() === 'subpicker' };
+  showBranchPickerUI(p, ranged, false, 'connectionBranch');
   return { pickerShown: true };
 }
 
