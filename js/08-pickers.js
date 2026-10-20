@@ -95,9 +95,9 @@ function handleLineDestinations(p) {
   // No line destination ahead (a segment the table's stations aren't on, e.g. the southern JR
   // Hachiko Line): the connection picker handles the platform
   if (dests.length === 0) return { pickerShown: false };
-  // `shortTurnsOnly`: a table of late short turns that applies only while one of them runs;
-  // otherwise the connection picker ahead keeps the board as without the table (Chuo → 三鷹)
-  if (lineDest.shortTurnsOnly && dests.every(d => d._plain || d._plainEnd)) return { pickerShown: false };
+  // `shortTurnsOnly`: the table applies only while one of its scheduled entries (the short
+  // turns) runs; otherwise the board is as without it (Chuo → 三鷹, Chuo-Sobu → 御茶ノ水)
+  if (lineDest.shortTurnsOnly && !dests.some(d => d.schedule)) return { pickerShown: false };
 
   // Merge the destinations of the connections ahead, chained ones included (e.g. Chuo →
   // Ome at Tachikawa, Sobu → Narita → Narita Airport); a boardAtJunction connection counts
