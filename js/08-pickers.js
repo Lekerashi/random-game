@@ -222,10 +222,11 @@ function handleConnectionRouting(p) {
       if (svc.length) connMax = Math.min(connMax, Math.max(...svc.map(t => t._connTotalMax)));
     }
     let effectiveMax = Math.min(capStops(connMax), p.maxStops);
-    // No longer than its destinations ride on the trains running now (芝山千代田 →
-    // 京成上野 at 7h: only the 通勤特急); a lone one names the button (宗吾参道 at 20h)
+    // As far as its destinations ride on the trains running now (芝山千代田 → 京成上野 at 7h:
+    // only the 通勤特急; a chained mid-line hop may reach past the line's own extent, 芝山千代田 →
+    // Haneda over the Oshiage hop); a lone one names the button (宗吾参道 at 20h)
     const dests = conn.destinations ? destinationChoices(p, conn, onLineStops) : [];
-    if (dests.length) effectiveMax = Math.min(effectiveMax, Math.max(...dests.map(d => d.effectiveMax)));
+    if (dests.length) effectiveMax = Math.max(...dests.map(d => d.effectiveMax));
     const label = dests.length === 1 && !dests[0]._outOfWards ? dests[0] : null;
     return {
       name: label?.name || conn.name || conn.to, ja: label?.ja || conn.ja || LINE_NAMES_JA[conn.to] || conn.to,
@@ -582,7 +583,11 @@ function chainDestChoices(p, conn, effectiveOnLine) {
       for (const nextConn of onward) {
         if (!nextConn.destinations) { nextChain = nextConn; visited.add(nextConn.to); continue; }
         if (!nextConn.destinations.some(d => d.untilIdx !== -1)) continue;
-        pushChainDests(nextConn, chainBase + effectiveViaCount(nextConn, ''), path, midLine);
+        const jb = chainBase + effectiveViaCount(nextConn, '');
+        pushChainDests(nextConn, jb, path, midLine);
+        // Mid-line hops off every onward hop's target line (Oshiage → Main → Shibayama at 京成成田
+        // while the chain itself follows the Hokuso hop)
+        addMidLineHops(nextConn, jb, [...path, nextConn], new Set([...visited, nextConn.to]));
         nextChain = nextConn;
         visited.add(nextConn.to);
       }
@@ -590,7 +595,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
       const junctionBase = chainBase + effectiveViaCount(nextChain, '');
       chainBase = junctionBase + getConnectionMaxStops(nextChain);
       path.push(nextChain);
-      addMidLineHops(nextChain, junctionBase, path.slice(), visited);
+      if (!nextChain.destinations) addMidLineHops(nextChain, junctionBase, path.slice(), visited);
       chainConn = nextChain;
     }
   };
