@@ -189,8 +189,9 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     // No train runs it now: every destination is off-hours (or not boarded here), no
     // real short-turn choice is left (a lineDest to the line's own end is the plain ride)
     // and nothing on its onward chain runs either (Fukutoshin → Toyoko trains end on the
-    // Minato Mirai / Sotetsu chain, not on the Toyoko itself)
-    if (c.destinations?.length && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja))
+    // Minato Mirai / Sotetsu chain, not on the Toyoko itself); a chained-only connection
+    // (destinations: []) is offered only while its chain runs
+    if (c.destinations && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja))
         && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule))
         && !chainRunsNow(c, lineIdx, direction, fromIdx)) return false;
     // Terminus junction: must be at the end of the line in our direction

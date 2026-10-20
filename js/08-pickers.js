@@ -479,8 +479,7 @@ function stopsBeforeJunction(p, conn, onLineStops) {
 function chainDestChoices(p, conn, effectiveOnLine) {
   const choices = [];
   const viaCount = effectiveViaCount(conn, platformStation(p).name);
-  let chainConn = conn;
-  let chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
+  const chainBase = effectiveOnLine + viaCount + getConnectionMaxStops(conn);
   const chainVisited = new Set([conn.from, conn.to]);
   const chainPath = []; // hops after conn that lead to chainConn
   // chainFrom: a connection chained rides only continue onto when boarded on one of these lines
@@ -534,33 +533,43 @@ function chainDestChoices(p, conn, effectiveOnLine) {
     }
   };
   // Mid-line hops off hop's target line (e.g. Keio Line → Toei Shinjuku at
-  // Sasazuka), recursively. `base`: stops ridden up to hop's target junction.
+  // Sasazuka), recursively, each followed on past its own target line's far end
+  // (Toyoko → Fukutoshin → Seibu Yurakucho at 小竹向原 → Seibu Ikebukuro at 練馬).
+  // `base`: stops ridden up to hop's target junction.
   const addMidLineHops = (hop, base, path, visited) => {
     for (const m of getMidLineOnward(hop)) {
       if (visited.has(m.to) || !chainAllowed(m)) continue;
       const mBase = base + Math.abs(m.fromJunctionIdx - hop.toJunctionIdx) + effectiveViaCount(m, '');
       pushChainDests(m, mBase, path, true);
-      addMidLineHops(m, mBase, [...path, m], new Set([...visited, m.to]));
+      const mVisited = new Set([...visited, m.to]);
+      addMidLineHops(m, mBase, [...path, m], mVisited);
+      followFar(m, mBase + getConnectionMaxStops(m), [...path, m], mVisited, true);
+    }
+  };
+  // Far-terminus hops past hop's target line, then on along the chain. `base`: stops
+  // ridden to that far end; midLine: the route already left the boarding line mid-way
+  const followFar = (hop, base, path, visited, midLine) => {
+    let chainConn = hop, chainBase = base;
+    while (chainConn) {
+      const onward = getOnwardConnections(chainConn).filter(c => !visited.has(c.to) && chainAllowed(c));
+      let nextChain = null;
+      for (const nextConn of onward) {
+        if (!nextConn.destinations) { nextChain = nextConn; visited.add(nextConn.to); continue; }
+        if (!nextConn.destinations.some(d => d.untilIdx !== -1)) continue;
+        pushChainDests(nextConn, chainBase + effectiveViaCount(nextConn, ''), path, midLine);
+        nextChain = nextConn;
+        visited.add(nextConn.to);
+      }
+      if (!nextChain) break;
+      const junctionBase = chainBase + effectiveViaCount(nextChain, '');
+      chainBase = junctionBase + getConnectionMaxStops(nextChain);
+      path.push(nextChain);
+      addMidLineHops(nextChain, junctionBase, path.slice(), visited);
+      chainConn = nextChain;
     }
   };
   addMidLineHops(conn, effectiveOnLine + viaCount, [], chainVisited);
-  while (chainConn) {
-    const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to) && chainAllowed(c));
-    let nextChain = null;
-    for (const nextConn of onward) {
-      if (!nextConn.destinations) { nextChain = nextConn; chainVisited.add(nextConn.to); continue; }
-      if (!nextConn.destinations.some(d => d.untilIdx !== -1)) continue;
-      pushChainDests(nextConn, chainBase + effectiveViaCount(nextConn, ''), chainPath, false);
-      nextChain = nextConn;
-      chainVisited.add(nextConn.to);
-    }
-    if (!nextChain) break;
-    const junctionBase = chainBase + effectiveViaCount(nextChain, '');
-    chainBase = junctionBase + getConnectionMaxStops(nextChain);
-    chainPath.push(nextChain);
-    addMidLineHops(nextChain, junctionBase, chainPath.slice(), chainVisited);
-    chainConn = nextChain;
-  }
+  followFar(conn, chainBase, chainPath, chainVisited, false);
   return choices;
 }
 
