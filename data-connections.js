@@ -898,6 +898,20 @@ const LINE_CONNECTIONS = [
     ],
     express: [{ stops: null, name: 'Local', ja: '普通' }] },
 
+  // ── Tobu Nikko → Utsunomiya at Shin-Tochigi ────────────────────────────
+  // 25 普通 a day (20 from 南栗橋, 5 from 栃木) run on from 新栃木 to 東武宇都宮 (5–11h, 13–19h, 21–23h
+  // at 新栃木; ODPT 2026-03). The Utsunomiya → Nikko direction is above
+  { from: 'Tobu Nikko Line (Nikko)', fromStation: '新栃木', fromDir: 'end',
+    to:   'Tobu Utsunomiya Line',    toStation: '新栃木', toDir: 'end',
+    chainFrom: [],
+    name: 'Tobu Utsunomiya', ja: '東武宇都宮方面', color: '#9B7A00',
+    destinations: [
+      { until: '東武宇都宮', name: 'Tobu Utsunomiya', ja: '東武宇都宮方面', color: '#9B7A00', services: ['Local'],
+        schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通',
+      schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } }] },
+
   // ── Tobu Kiryu ↔ Koizumi (Ota) at Ota ──────────────────────────────────
   // Every 赤城 train runs through 太田 to 東小泉 and back (21–22 a day each way; ODPT 2026-03)
   { from: 'Tobu Kiryu Line',          fromEnd: '太田',
@@ -1306,8 +1320,44 @@ const LINE_CONNECTIONS = [
   { from: 'Seibu Yurakucho Line',       fromEnd: '小竹向原',
     to:   'Tokyo Metro Yurakucho Line',  toStation: '小竹向原', toDir: 'end',
     name: 'Shin-kiba', ja: '新木場方面', color: '#C9A800' },
-  // (No Fukutoshin/Yurakucho→Seibu connection needed: at Kotake-mukaihara the
-  // Seibu platform is available directly — see Pitfalls → Y-junctions)
+  // ── Fukutoshin / Yurakucho → Seibu Yurakucho at Kotake-mukaihara ──────
+  // Toward 和光市, 70 Fukutoshin and 74 wd / 61 Sat/hol Yurakucho trains a day leave at 小竹向原 for
+  // the Seibu lines, on to 練馬 and the Ikebukuro Line's 石神井公園 / 保谷 / 清瀬 / 所沢 / 小手指 / 飯能
+  // (chained over the 練馬 connection above, which carries the termini and their hours). Types by
+  // the Seibu side (the Metro names are the type-name engine's): Fukutoshin 普通 run on as 各停 (33)
+  // or 準急 (11 wd), 急行 as 準急 (7 Sat/hol) or 快速 (6 wd), Fライナー as Fライナー (13); Yurakucho 普通
+  // as 各停 (59), 準急 as 準急 (7 wd) (ODPT 2026-03). At 小竹向原 itself the Seibu Yurakucho Line is its
+  // own platform
+  { from: 'Tokyo Metro Fukutoshin Line', fromStation: '小竹向原', fromDir: 'start',
+    to:   'Seibu Yurakucho Line',        toEnd: '小竹向原',
+    name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
+    destinations: [],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'北参道','新宿三丁目','東新宿','西早稲田','雑司が谷','池袋','要町','千川','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { timeRange: [[6, 9], [10, 17]] }, weekend: { timeRange: [[6, 9], [10, 17]] } } },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 8], [16, 22]] } } },
+      { name: 'Rapid', ja: '快速', color: '#f07000',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { timeRange: [[8, 10], [15, 21]] }, weekend: { stops: [] } } },
+      { name: 'F-Liner', ja: 'Fライナー', color: '#e83030',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','練馬'],
+        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 17] } } },
+    ] },
+  { from: 'Tokyo Metro Yurakucho Line', fromStation: '小竹向原', fromDir: 'start',
+    to:   'Seibu Yurakucho Line',       toEnd: '小竹向原',
+    name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
+    destinations: [],
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Semi-Exp', ja: '準急', color: '#00b900',
+        stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
+                '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { timeRange: [[6, 11], [22, 23]] }, weekend: { timeRange: [[8, 11], [14, 16], [19, 20]] } } },
+    ] },
 
   // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
   // Yurakucho terminates at Nerima (idx 2), continues onto Ikebukuro toward Kotesashi/Hanno.
@@ -1389,6 +1439,29 @@ const LINE_CONNECTIONS = [
         stops: ['西武球場前','下山口','西所沢','所沢','秋津','清瀬','東久留米','ひばりヶ丘','保谷','大泉学園','石神井公園','練馬','池袋'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [[16, 18], [20, 21]] } } },
     ] },
+
+  // ── Seibu Ikebukuro → Toshima at Nerima / → Sayama at Nishi-Tokorozawa ──
+  // Every Toshima Line train comes from 池袋 (76 a day, 各停, all day); on Sat/hol evenings 10 trains
+  // from 池袋 run on from 西所沢 to 西武球場前 (各停 7, 準急 2, 快速 1; 16–21h at 池袋) (ODPT 2026-03).
+  // At the junctions themselves each branch is its own platform; the 西武秩父 trains start at 飯能
+  // on the Chichibu Line (its own platform there too)
+  { from: 'Seibu Ikebukuro Line', fromStation: '練馬', fromDir: 'end',
+    to:   'Seibu Toshima Line',   toEnd: '練馬',
+    chainFrom: [],
+    name: 'Toshimaen', ja: '豊島園方面', color: '#009944',
+    destinations: [
+      { until: '豊島園', name: 'Toshimaen', ja: '豊島園方面', color: '#009944', services: ['Local'] },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
+  { from: 'Seibu Ikebukuro Line', fromStation: '西所沢', fromDir: 'end',
+    to:   'Seibu Sayama Line',    toEnd: '西所沢',
+    chainFrom: [],
+    name: 'Seibukyujo-mae', ja: '西武球場前方面', color: '#009944',
+    destinations: [
+      { until: '西武球場前', name: 'Seibukyujo-mae', ja: '西武球場前方面', color: '#009944', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } }] },
 
   // ── Fukutoshin ↔ Tokyu Toyoko at Shibuya ──────────────────────────────
   // Through-running to Toyoko (chains with Seibu Yurakucho above)
@@ -1850,21 +1923,22 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [8, 10] }, weekend: { stops: [] } } },
     ],
     express: [
-      // Through 各停: early mornings and the last trains (Sat/hol also 19–20h); by day the through
-      // trains are 区間急行 / 快速 (ODPT 2026-08)
+      // Through 各停 in the morning (6–9h; Sat/hol also one at 19–20h); by day the through trains are
+      // 区間急行 / 快速, the first and last all-stations trains end at 新線新宿 (the 笹塚 → Keio New
+      // connection) (ODPT 2026-08)
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { timeRange: [[4, 10], [23, 1]] }, weekend: { timeRange: [[4, 10], [19, 21], [23, 1]] } } },
+        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [[6, 10], [19, 21]] } } },
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
         '調布','つつじヶ丘','仙川','千歳烏山',
         '桜上水','明大前','笹塚',
         '新宿','新宿三丁目','曙橋','市ヶ谷','九段下','神保町','小川町','岩本町','馬喰横山','浜町',
         '森下','菊川','住吉','西大島','大島','東大島','船堀','一之江','瑞江','篠崎','本八幡'] },
-      // 急行: weekday morning and evening peaks, Sat/hol mornings and the late afternoon (ODPT 2026-08)
+      // 急行: 2 a day to 本八幡 (weekday 18h, Sat/hol 16h); the other peak 急行 end at 新線新宿 (ODPT 2026-08)
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '京王八王子','北野','高幡不動','聖蹟桜ヶ丘','分倍河原','府中','東府中','調布',
         'つつじヶ丘','千歳烏山','桜上水','明大前','笹塚',
         '新宿','市ヶ谷','神保町','馬喰横山','森下','大島','船堀','本八幡'],
-        schedule: { weekday: { timeRange: [[7, 9], [17, 21]] }, weekend: { timeRange: [[8, 11], [16, 18]] } } },
+        schedule: { weekday: { timeRange: [18, 19] }, weekend: { timeRange: [16, 17] } } },
       // 快速: weekday first train, daytime, 21h and 23h (Sat/hol all day; ODPT 2026-08)
       { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
         '調布','つつじヶ丘','仙川','千歳烏山','八幡山','桜上水','下高井戸','明大前','笹塚',
@@ -1897,6 +1971,8 @@ const LINE_CONNECTIONS = [
   { from: 'Keio new line',      fromStation: '初台', fromDir: 'start',
     to:   'Toei Shinjuku Line', toEnd: '新宿',
     via:  ['新宿'],
+    chainFrom: [], // Keio Line riders reach Toei over the 笹塚 connection, which models this stretch as via
+
     lineDests: [
       { until: '新線新宿', name: 'Shinsen-Shinjuku', ja: '新線新宿方面', color: '#800080' },
     ],
@@ -1905,6 +1981,26 @@ const LINE_CONNECTIONS = [
       // 大島 short turns in the rushes and late (8 wd / 4 Sat/hol; ODPT 2026-08)
       { until: '大島',   name: 'Ojima',       ja: '大島方面',   color: '#6CBB5A',
         schedule: { weekday: { timeRange: [[8, 10], [23, 24]] }, weekend: { timeRange: [[17, 19], [23, 24]] } } },
+    ] },
+
+  // ── Keio → Keio New Line at Sasazuka ───────────────────────────────────
+  // Toward 新宿, 10 wd / 9 Sat/hol trains leave at 笹塚 for the New Line's 新線新宿: the 急行 from the
+  // Sagamihara Line (7 / 6: wd 8h, 18–20h; Sat/hol 8–10h, 17h at 笹塚) and three all-stations trains
+  // (ODPT files them as 快速) from 高幡不動 / つつじヶ丘 / 桜上水 at 4–5h and 0h (ODPT 2026-08). The
+  // Keio New → Keio direction is above
+  { from: 'Keio Line',     fromStation: '笹塚', fromDir: 'start',
+    to:   'Keio new line', toEnd: '笹塚',
+    chainFrom: ['Keio Sagamihara line'],
+    name: 'Shinsen-Shinjuku', ja: '新線新宿方面', color: '#800080',
+    destinations: [
+      { until: '新線新宿', name: 'Shinsen-Shinjuku', ja: '新線新宿方面', color: '#800080', services: ['Express', 'Local'], localFrom: '高幡不動' },
+    ],
+    express: [
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[4, 6], [23, 1]] }, weekend: { timeRange: [[4, 6], [23, 1]] } } },
+      { name: 'Express', ja: '急行', color: '#e83030',
+        stops: ['調布','つつじヶ丘','千歳烏山','桜上水','明大前','笹塚','幡ヶ谷','初台','新線新宿'],
+        schedule: { weekday: { timeRange: [[7, 9], [17, 21]] }, weekend: { timeRange: [[8, 11], [16, 18]] } } },
     ] },
 
   // ── Tobu Tojo ↔ Fukutoshin/Yurakucho at Wakoshi ──────────────────────

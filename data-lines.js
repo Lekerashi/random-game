@@ -111,10 +111,11 @@ const EXPRESS_SERVICES = {
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
     ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
+    // (toward 和光市 the 10h weekday F-Liner is a Seibu one: the 小竹向原 connection's)
     { name: "F-Liner", ja: "Fライナー", color: "#e83030", direction: "start", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 17] } } },
+    ], schedule: { weekday: { timeRange: [11, 17] }, weekend: { timeRange: [8, 17] } } },
     // Weekday mornings and evenings: 急行 plus every station 和光市–小竹向原
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "end", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
