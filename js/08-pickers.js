@@ -100,7 +100,7 @@ function handleLineDestinations(p) {
     dests.push(...chainDestChoices(p, conn, stopsToJunction).filter(d => d.effectiveMax > 0));
   }
 
-  const wardDests = collapseOutOfWardChoices(p, applyServiceRanges(p, dests));
+  const wardDests = collapseOutOfWardChoices(p, applyServiceRanges(p, labelSharedNames(p, dests)));
 
   if (wardDests.length === 0) return { pickerShown: false };
 
@@ -639,41 +639,29 @@ function showDestinationPicker(p, conn, onLineStops) {
 // (e.g. Meguro → Hiyoshi / Shin-Yokohama / Ebina / Shonandai).
 function showMergedDestinationPicker(p, conns, onLineStops) {
   const choices = [];
-  const seenNames = new Set();
 
   for (let ci = 0; ci < conns.length; ci++) {
     const conn = conns[ci];
-    // lineDests (within-line short-turns, deduplicated across connections)
+    // lineDests (within-line short-turns; one on several connections is the same ride)
     for (const d of conn.lineDests || []) {
-      if (seenNames.has(d.name)) continue;
       const c = lineDestChoice(p, conn, d);
-      if (!c) continue;
-      seenNames.add(d.name);
-      choices.push(c);
+      if (c) choices.push(c);
     }
     // destinations (through-running to target line)
     if (conn.destinations) {
       const effectiveOnLine = stopsBeforeJunction(p, conn, onLineStops);
-      for (const d of servedDests(conn, p)) {
-        if (seenNames.has(d.name)) continue;
-        seenNames.add(d.name);
-        choices.push({ ...connDestChoice(p, conn, d, effectiveOnLine), _isConnDest: true, _connIdx: ci });
-      }
+      for (const d of servedDests(conn, p)) choices.push({ ...connDestChoice(p, conn, d, effectiveOnLine), _isConnDest: true, _connIdx: ci });
     }
   }
   // Chained destinations beyond each connection's target line (DET → Hanzomon → Tobu beside
-  // the Oimachi branch), after every direct one so a direct choice of the same name wins
+  // the Oimachi branch), after every direct one so a direct choice of the same ride wins
   for (let ci = 0; ci < conns.length; ci++) {
     const conn = conns[ci];
     if (!conn.destinations) continue;
-    for (const c of chainDestChoices(p, conn, stopsBeforeJunction(p, conn, onLineStops))) {
-      if (seenNames.has(c.name)) continue;
-      seenNames.add(c.name);
-      choices.push({ ...c, _isConnDest: true, _connIdx: ci });
-    }
+    for (const c of chainDestChoices(p, conn, stopsBeforeJunction(p, conn, onLineStops))) choices.push({ ...c, _isConnDest: true, _connIdx: ci });
   }
 
-  const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, choices).filter(c => c.effectiveMax > 0));
+  const filtered = collapseOutOfWardChoices(p, applyServiceRanges(p, labelSharedNames(p, choices)).filter(c => c.effectiveMax > 0));
 
   if (filtered.length <= 1) {
     if (filtered.length === 1) {
@@ -698,6 +686,55 @@ function showMergedDestinationPicker(p, conns, onLineStops) {
     return false;
   }
   return showBranchPickerUI(p, filtered, !!EXPRESS_SERVICES[p.lineName] || conns.some(c => c.express && c.express.some(e => e.stops !== null)), 'destination');
+}
+
+// Label for the route a choice takes: the connection's display name or its target line
+// ("Ueno Tokyo Line" / "上野東京ライン", "Shonan Shinjuku Line" / "湘南新宿ライン")
+function connLabel(conn) {
+  if (!conn) return null;
+  const en = (conn.displayName || conn.to).replace(/^(JR|Tokyo Metro|Toei|Tokyu|Hokuso Railway) /, '');
+  const ja = (LINE_NAMES_JA[conn.displayName] || LINE_NAMES_JA[conn.to] || state.lines[conn.toLineIdx]?.ja || conn.to)
+    .replace(/^(JR|東京メトロ|都営|東急)/, '');
+  return { en, ja };
+}
+
+// The stations of the plain ride a choice sets up, cut at its destination (the selection is put back)
+function probeChoiceStations(p, c) {
+  const SEL = ['selectedBranch', 'selectedConnection', 'selectedDestination', 'selectedTrainType'];
+  const saved = SEL.map(k => state[k]);
+  try {
+    state.selectedTrainType = null;
+    c.onSelect();
+    const full = getStationsAlongRoute(p, 999, null, null);
+    const sa = state.selectedDestination?.stopAt;
+    const end = sa ? full.indexOf(state.lines[sa.lineIdx].stations[sa.idx]) : -1;
+    return (end === -1 ? full : full.slice(0, end + 1)).map(s => s.ja).join(',');
+  } finally {
+    SEL.forEach((k, i) => { state[k] = saved[i]; });
+  }
+}
+
+// Choices sharing a name: a repeat of the same ride (a direct destination and its chained
+// namesake, one lineDest on two connections) keeps the first; different rides (高崎 over the
+// Ueno-Tokyo Line or the Shonan-Shinjuku Line from 藤沢) both stay, labelled with their route
+function labelSharedNames(p, choices) {
+  const byName = new Map();
+  for (const c of choices) (byName.get(c.name) || byName.set(c.name, []).get(c.name)).push(c);
+  const drop = new Set(), labels = new Map();
+  for (const group of byName.values()) {
+    if (group.length < 2) continue;
+    const kept = [];
+    for (const c of group) {
+      const ride = probeChoiceStations(p, c);
+      if (kept.some(k => k.ride === ride)) { drop.add(c); continue; }
+      kept.push({ c, ride });
+    }
+    if (kept.length > 1) for (const { c } of kept) labels.set(c, connLabel(c._sourceConn || c._connRef));
+  }
+  return choices.filter(c => !drop.has(c)).map(c => {
+    const l = labels.get(c);
+    return l ? { ...c, name: `${c.name} (${l.en})`, ja: `${c.ja}（${l.ja}）` } : c;
+  });
 }
 
 // Whether every enabled choice rides the same stops with the same train types (a
