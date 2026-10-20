@@ -102,13 +102,14 @@ function handleLineDestinations(p) {
 
   const wardDests = collapseOutOfWardChoices(p, applyServiceRanges(p, labelSharedNames(p, dests)));
 
-  if (wardDests.length === 0) return { pickerShown: false };
+  // Nothing left but the line's own end (the short turns are off-hours): the plain ride,
+  // so step aside as if the table weren't there (no label; a through-run ahead still runs)
+  if (wardDests.length === 0 || (wardDests.length === 1 && wardDests[0]._plain)) return { pickerShown: false };
 
   // If all destinations have the same effectiveMax (cap makes them equivalent),
   // auto-select the furthest one — no meaningful choice to make. Prefer a
   // within-line destination so a capped plain ride doesn't become a through-run.
-  // The line's own end picked this way is the plain ride: no "towards" label (autoPick),
-  // so a short turn off-hours leaves the board as it is without one
+  // The line's own end picked this way is the plain ride: no "towards" label (autoPick)
   const allSameMax = wardDests.every(d => d.effectiveMax === wardDests[0].effectiveMax);
   if (allSameMax || wardDests.length === 1) {
     const lineOnly = wardDests.filter(d => d._isLineDest);
