@@ -477,6 +477,7 @@ function restoreMidRound(mr) {
     // Saved name is the boarded member ("Yamabiko"), not the button's group name
     const resolved = resolveTrainTypes(matchP);
     const candidates = resolved?.types || (resolved?.autoSelect ? [resolved.autoSelect] : []);
+    // (resolved.none: no type serves the saved pick any more; the ride falls back to the plain local)
     const g = candidates.find(t => (t._members || [t]).some(m => m.name === mr.trainType));
     state.selectedTrainType = g ? pickTrainType(g, mr.trainType, mr.trainTypeKey) : null;
   }

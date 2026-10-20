@@ -65,9 +65,17 @@ function findRouteConnection(platform, tt) {
 function routeConnectionFor(platform, conn, connTargetLineIdx, tt) {
   if (!conn || platform.circular) return conn;
   // A line's own local-class type rides a connection whose express entries name the through
-  // trains only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run
-  // through) or a direct destination's services name it (Chuo 快速 → 青梅)
-  if (tt && tt.stops === null && tt._connTargetLineIdx == null && !localRunsThrough(conn) && !destNamesType(tt)) return null;
+  // trains only where one of them is a Local calling here now (none on Tobu → Hanzomon: only
+  // 急行 / 準急 run through), or where a direct destination's services name the type (Chuo 快速 →
+  // 青梅). A Local entry with a stops list says where the through locals board (Keikyu 普通 run
+  // on to the Asakusa Line from 品川): elsewhere no local-class ride, typed or not, takes the
+  // connection
+  const stopsLocal = (conn.express || []).some(e => isLocalEntry(e) && e.stops);
+  // tt without a `stops` field: no type at all (the plain ride)
+  const typed = tt && 'stops' in tt;
+  const localClass = typed && tt.stops === null && tt._connTargetLineIdx == null && !tt._terminatesAtJunction;
+  if ((localClass || (!typed && stopsLocal)) && !localRunsThrough(conn, platformStation(platform))
+    && (stopsLocal || !destNamesType(tt))) return null;
   const N = state.lines[platform.lineIdx].stations.length;
   if (conn.fromJunctionIdx === dirEnd(N, platform.direction)) return conn;
   const taken = connTargetLineIdx != null
@@ -126,8 +134,9 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
 
   // The next chained hop: a mid-line one ends this target-line walk at its junction. A
   // local-class type rides on only over hops whose express entries (if any) include a Local
+  // calling where it comes onto the hop's source line
   const localClass = tt && tt.stops === null && !tt._chainExpressStops;
-  const onwardFor = c => { const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n) ? null : n; };
+  const onwardFor = c => { const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n, enteredAt(c)) ? null : n; };
   visitedLines.add(currentConn.to);
   let next = onwardFor(currentConn);
 

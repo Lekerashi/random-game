@@ -454,7 +454,9 @@ function serviceRange(p, c) {
     state.selectedTrainType = null;
     c.onSelect();
     const r = resolveTrainTypes(p);
-    const effs = r?.types ? r.types.map(g => ({ validCount: g._count, rawMax: g._rawMax }))
+    // No type serves the pick: a 0 range drops the choice (no plain-local ride stands in)
+    const effs = r?.none ? [{ validCount: 0, rawMax: 0 }]
+      : r?.types ? r.types.map(g => ({ validCount: g._count, rawMax: g._rawMax }))
       : [getEffectiveStops(p, r?.autoSelect ? trainTypeOpts(r.autoSelect) : undefined)];
     return { ...c, effectiveMax: Math.max(...effs.map(e => e.validCount)),
       _fullMax: Math.max(...effs.map(e => e.rawMax)) };
@@ -505,14 +507,25 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // 穴守稲荷 and runs by day only); a Local the hop doesn't declare still runs through (Toyoko →
   // Tojo locals run after the F-Liner, the hop's only declared type, stops at 17h). A hop
   // without express leaves the types to its target line: nothing to check at the source.
-  // The services name types by the destination's own hop; the first hop's entries whose
-  // names reach it as one of them stand for them here (nameAlongHops)
+  // The services name types by the destination's own hop; the first hop's entries calling here
+  // now whose names reach it as one of them stand for them (namesAlongHops; the entry itself
+  // must call here: the Haneda 特急 that run on as 快速 don't make a 浦賀 特急 one)
   const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(d.services, hops) }, p);
   const firstHopServices = (services, hops) => {
     const allowed = new Set(services.map(normalize));
     const names = new Set(services.filter(n => normalize(n) === 'local' || conn.express.some(e => e.stops === null && normalize(e.name) === normalize(n))));
+    const here = platformStation(p), targetLine = state.lines[conn.toLineIdx], srcLine = state.lines[p.lineIdx];
+    // (as resolveConnectionExpress: a terminus connection's entry naming no source-line stop
+    // besides the junction describes the target line only, so every source station feeds it)
+    const terminus = conn.fromJunctionIdx === dirEnd(srcLine.stations.length, p.direction);
     for (const e of conn.express) {
-      if (e.stops && namesAlongHops(e, hops).some(n => allowed.has(normalize(n)))) names.add(e.name);
+      if (!e.stops) continue;
+      const stops = resolveServiceStops(e, targetLine, p.direction);
+      if (!stops.length) continue;
+      const ss = new Set(stops.map(normalize));
+      const anchored = srcLine.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(ss, s));
+      if ((!terminus || anchored) && !stopSetHas(ss, here)) continue;
+      if (namesAlongHops(e, hops, conn).some(n => allowed.has(normalize(n)))) names.add(e.name);
     }
     return [...names];
   };
@@ -774,6 +787,7 @@ function probeChoiceRide(p, c) {
     if (c.onSelect() === 'subpicker' || handlePhysicalBranches(p).pickerShown
       || handleLineDestinations(p).pickerShown || handleConnectionRouting(p).pickerShown) return null;
     const tt = resolveTrainTypes(p);
+    if (tt?.none) return 'none';
     return (tt?.types || (tt?.autoSelect ? [tt.autoSelect] : [null])).map(g => {
       state.selectedTrainType = g;
       const t = g || { name: 'Local', expressIndices: null };

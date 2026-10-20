@@ -15,20 +15,25 @@ function trainTypeOpts(g) {
 // over (hops without express keep it: Shonan-Shinjuku 快速 onto the Tokaido at 大船). An
 // express that rides no connection entries (a line's own type) has no name on a chain.
 // Services a chained destination inherits from the first hop are first-hop names.
-function typeNameForDest(tt, sd) {
+function typeNameForDest(tt, sd, p = state.selectedPlatform) {
   if (!sd?.chain?.length || sd.servicesFirstHop) return tt.name;
   // A line's own type: an express never rides a chain; a Local does where the first hop's
-  // entries (if any) include a Local
-  if (!tt._hopConns) return tt.expressIndices || (state.selectedConnection && !localRunsThrough(state.selectedConnection)) ? null : tt.name;
-  const last = sd.chain[sd.chain.length - 1];
-  const k = tt._hopConns.findIndex(c => c.to === last.to && c.toDir === last.toDir);
-  return k === -1 ? tt._hopNames[tt._hopNames.length - 1] : tt._hopNames[k];
+  // entries (if any) include a Local calling here
+  if (!tt._hopConns) return tt.expressIndices || (state.selectedConnection && !localRunsThrough(state.selectedConnection, p && platformStation(p))) ? null : tt.name;
+  // Follow the destination's chain (the hops after the first) along the type's hops: the name on
+  // a hop is the one the train enters it with. Where the chain leaves the type's hops (a Keikyu
+  // 特急 bound for the Asakusa Line, asked about Haneda on the Airport hop) the type carries the
+  // name it had on that line; a chain running past the type's hops keeps its final name
+  const same = (a, b) => a.to === b.to && a.toDir === b.toDir;
+  let m = 0;
+  while (m < sd.chain.length && m + 1 < tt._hopConns.length && same(tt._hopConns[m + 1], sd.chain[m])) m++;
+  return tt._hopNames[m === sd.chain.length ? m : m + 1];
 }
 
 // Whether a (possibly grouped) type is one of destination sd's `services`
-function typeMatchesServices(g, sd) {
+function typeMatchesServices(g, sd, p) {
   const allowed = new Set(sd.services.map(s => normalize(s)));
-  return (g._members || [g]).some(m => { const n = typeNameForDest(m, sd); return n != null && allowed.has(normalize(n)); });
+  return (g._members || [g]).some(m => { const n = typeNameForDest(m, sd, p); return n != null && allowed.has(normalize(n)); });
 }
 
 // Resolve available train types for a platform, returning grouped/merged types
@@ -71,7 +76,7 @@ function resolveTrainTypes(p) {
   // entry of the connection being ridden replaces the line's own Local (below), so the line's
   // doesn't count as declared then (a lone 急行 → 普通 still applies while the connection's
   // through 各停 are off-hours)
-  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(e => e.stops === null));
+  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(isLocalEntry));
   const declared = [...(EXPRESS_SERVICES[p.lineName] || []).filter(t => !(connLocal && t.stops === null)), ...allConnExpress.flatMap(a => a.express)];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
   for (const connExInfo of allConnExpress) {
@@ -103,7 +108,7 @@ function resolveTrainTypes(p) {
   // A connection's Local that replaced the line's takes the line's Local's place (the Local
   // button stays in front)
   if (localPos !== -1) {
-    const connLocals = trainTypes.filter(t => t._connTargetLineIdx != null && t.stops === null);
+    const connLocals = trainTypes.filter(t => t._connTargetLineIdx != null && isLocalEntry(t));
     const rest = trainTypes.filter(t => !connLocals.includes(t));
     rest.splice(Math.min(localPos, rest.length), 0, ...connLocals);
     trainTypes = rest;
@@ -195,7 +200,7 @@ function resolveTrainTypes(p) {
     const sd = state.selectedDestination;
     reachable = reachable.flatMap(g => {
       const all = g._members || [g];
-      const kept = all.filter(m => typeMatchesServices(m, sd));
+      const kept = all.filter(m => typeMatchesServices(m, sd, p));
       if (!kept.length) return [];
       if (kept.length === all.length) return [g];
       const ng = { ...kept[0], _key: g._key, _members: kept,
@@ -215,9 +220,11 @@ function resolveTrainTypes(p) {
 
   // One type left: an express applies on its own; so does a group whose members ride differently
   // (Fukutoshin 各停 that run on as Toyoko 各停 or 急行: _rides counts the merged groups), since a
-  // member must be boarded
+  // member must be boarded. None left while the lists declared types: no train serves this pick
+  // ({ none: true }; the pickers drop such a choice rather than ride a plain local)
   const lone = g => g.expressIndices || (g._rides || 1) > 1 ? { autoSelect: g } : null;
-  if (reachable.length <= 1) return reachable.length === 1 ? lone(reachable[0]) : null;
+  if (reachable.length === 0) return { none: true };
+  if (reachable.length === 1) return lone(reachable[0]);
 
   // Same-name entries of one list whose rides differ (a quarter of the daytime Shonan-Shinjuku
   // 快速 call at 西大井 / 新川崎; Fukutoshin 各停 run on as Toyoko 各停 or 急行) are one signboard
@@ -290,7 +297,7 @@ function trainTypeKey(m) {
 function showTrainTypeButtons(p) {
   if (!p) { showRollStopsUI(); return false; }
   const resolved = resolveTrainTypes(p);
-  if (!resolved) { showRollStopsUI(); return false; }
+  if (!resolved || resolved.none) { showRollStopsUI(); return false; }
   if (resolved.autoSelect) {
     state.selectedTrainType = pickTrainType(resolved.autoSelect);
     showRollStopsUI();

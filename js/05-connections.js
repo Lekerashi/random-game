@@ -323,22 +323,63 @@ function computeConnectionExtra(connections, stationName, visited) {
   return extra;
 }
 
+// A connection's local-class entries: `stops: null` ones, and a 'Local' with a stops list (its
+// through locals board at those stations only: Keikyu 普通 run on to the Asakusa Line from 品川)
+const isLocalEntry = e => e.stops === null || normalize(e.name) === 'local';
+// A connection with express entries lists its through trains: the source line's own Local runs
+// on only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run through).
+// With `station` (a station object), one calling there and running now (none at 鮫洲, where the
+// Keikyu → Asakusa 普通 entry starts at 品川; the Asakusa → Keikyu one runs at 23h only)
+function localRunsThrough(conn, station) {
+  if (!conn.express) return true;
+  const locals = conn.express.filter(isLocalEntry);
+  if (!station) return locals.length > 0;
+  return locals.some(e => scheduleActive(e.schedule) && (e.stops === null || stopSetHas(new Set(e.stops.map(normalize)), station)));
+}
+// The station a ride over `conn` comes onto its target line at
+const enteredAt = conn => state.lines[conn.toLineIdx]?.stations[conn.toJunctionIdx];
+// How a ride over prevConn calling at `set` (normalized names; null = every station) runs on
+// prevConn's target line up to where nextConn leaves it: the stations strictly between the two
+// junctions (`range`) and those among them it calls at (`calls`); null when `set` names none of
+// them (the entry ridden says nothing about that stretch). An entry of nextConn continues the
+// train only when its own stops there agree: a 三崎口 特急 calling at 横浜 is not the Haneda 特急
+// that runs on as 快速, while the エアポート快特 that skips 京急蒲田 is the one anchored at 品川
+function rideOnLine(prevConn, set, nextConn) {
+  const line = state.lines[prevConn.toLineIdx];
+  if (!line || nextConn.fromLineIdx !== prevConn.toLineIdx) return null;
+  const a = prevConn.toJunctionIdx, b = nextConn.fromJunctionIdx;
+  const range = line.stations.slice(Math.min(a, b) + 1, Math.max(a, b));
+  const calls = set === null ? range : range.filter(st => stopSetHas(set, st));
+  return calls.length ? { range, calls, fwd: a < b } : null;
+}
 // The express entries of hop `conn` that continue a train named `name` on conn's source
 // line and run now: one per distinct onward name and stop list (a Local entry continues
-// it at every station). `firstName`: the train's boarding-line name, which a `chainName`
-// on the entry may still name (older data).
-// A connection with express entries lists its through trains: the source line's own Local runs
-// on only when one of them is a Local (none on Tobu → Hanzomon: only 急行 / 準急 run through)
-const localRunsThrough = conn => !conn.express || conn.express.some(e => e.stops === null);
-const namesTrain = (conn, name, firstName) => (conn.express || []).some(e => normalize(e.name) === normalize(name)
-  || (e.chainName && normalize(e.chainName) === normalize(firstName)));
-function continuingEntries(conn, name, firstName) {
+// it at every station). `fromLine`: the line the train came onto conn's source line from; an
+// entry with `chainFrom` continues trains from those lines only (the Haneda 特急 that run on
+// as 快速 came off the Airport Line; `[]`: boarded here only). `ride` (rideOnLine): how the
+// train runs on conn's source line; an entry naming stops on that stretch continues it only
+// when, from its first stop there on, they are the train's stations (one anchored at the
+// junction, or at a station the train has passed, says nothing about the stretch before)
+const namesTrain = (conn, name) => (conn.express || []).some(e => normalize(e.name) === normalize(name));
+function continuingEntries(conn, name, ride, fromLine) {
   const line = state.lines[conn.toLineIdx];
   const seen = new Set(), out = [];
   for (const e of conn.express || []) {
-    if (!namesTrain({ express: [e] }, name, firstName)) continue;
-    const stops = e.stops === null ? null : line ? resolveServiceStops(e, line, conn.fromDir) : e.stops;
+    if (normalize(e.name) !== normalize(name)) continue;
+    if (e.chainFrom && fromLine && !e.chainFrom.includes(fromLine)) continue;
+    // (a Local entry resolves to null, or [] when its hours hide it now)
+    const stops = line ? resolveServiceStops(e, line, conn.fromDir) : e.stops;
     if (stops && stops.length === 0) continue; // hidden now
+    if (stops && ride) {
+      const ss = new Set(stops.map(normalize));
+      const calls = ride.range.filter(st => stopSetHas(ss, st));
+      if (calls.length) {
+        const first = ride.range.indexOf(ride.fwd ? calls[0] : calls[calls.length - 1]);
+        const covered = ride.fwd ? ride.range.slice(first) : ride.range.slice(0, first + 1);
+        const mine = ride.calls.filter(st => covered.includes(st));
+        if (mine.length !== calls.length || mine.some((st, i) => st !== calls[i])) continue;
+      }
+    }
     const key = normalize(e.toName || e.name) + '|' + (stops ? stops.join(',') : '*');
     if (seen.has(key)) continue;
     seen.add(key);
@@ -347,17 +388,20 @@ function continuingEntries(conn, name, firstName) {
   return out;
 }
 
-// The names a first-hop express entry can carry onto the source line of the last of `hops`
-// (connections ridden after conn in order), following continuing entries; a hop with no
-// express keeps the name. Empty when a hop with express has no continuing entry (the train
-// does not run on). A Local entry rides every hop as is.
-function namesAlongHops(ex, hops) {
-  let names = [ex.toName || ex.name];
-  for (let i = 0; i < hops.length - 1 && names.length; i++) {
+// The names a first-hop express entry (of connection `from`) can carry onto the source line of
+// the last of `hops` (connections ridden after `from` in order), following continuing entries;
+// a hop with no express keeps the name. Empty when a hop with express has no continuing entry
+// (the train does not run on). A Local entry rides every hop as is.
+function namesAlongHops(ex, hops, from) {
+  // Each train: its name on the next hop's source line, the connection it rode last and the
+  // stops it has called at (null: every station)
+  let trains = [{ name: ex.toName || ex.name, prev: from, set: ex.stops === null ? null : new Set(ex.stops.map(normalize)) }];
+  for (let i = 0; i < hops.length - 1 && trains.length; i++) {
     if (!hops[i].express || ex.stops === null) continue;
-    names = [...new Set(names.flatMap(n => continuingEntries(hops[i], n, ex.name).map(e => e.toName || e.name)))];
+    trains = trains.flatMap(t => continuingEntries(hops[i], t.name, t.prev && rideOnLine(t.prev, t.set, hops[i]), t.prev && t.prev.from).map(e => ({
+      name: e.toName || e.name, prev: hops[i], set: e.stops === null ? null : new Set([...(t.set || []), ...e.stops.map(normalize)]) })));
   }
-  return names;
+  return [...new Set(trains.map(t => t.name))];
 }
 
 // Resolve connection express services to train types with target-line indices.
@@ -456,10 +500,12 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         // now; else a hop without express carries it on at every station, name unchanged; else
         // (every hop names its through trains and none runs this one now) it does not run through
         // and the chain set yields no stop past the junction
-        let nextConn = ordered.find(c => continuingEntries(c, name, ex.name).length);
-        let conts = nextConn ? continuingEntries(nextConn, name, ex.name) : null;
+        const cur = stops || new Set(resolvedStops.map(x => normalize(x)));
+        const conts0f = c => continuingEntries(c, name, rideOnLine(chainConn, cur, c), chainConn.from);
+        let nextConn = ordered.find(c => conts0f(c).length);
+        let conts = nextConn ? conts0f(nextConn) : null;
         let implicit = false;
-        if (!nextConn && !ordered.some(c => namesTrain(c, name, ex.name))) {
+        if (!nextConn && !ordered.some(c => namesTrain(c, name))) {
           nextConn = ordered.find(c => !c.express);
           if (nextConn) { conts = [{ stops: null, name }]; implicit = true; }
         }

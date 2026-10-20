@@ -36,16 +36,19 @@
 //                         feed this destination from that station onward toward the junction —
 //                         the destination is hidden at earlier stations no allowed service calls at
 //     lineDests         — [{ until (JA), name, ja, color?, services?, schedule? }] within-line short-turn picker
-//     express           — [{ name, ja, color?, stops, schedule?, toName?, toJa? }] cross-line express services
+//     express           — [{ name, ja, color?, stops, schedule?, toName?, toJa?, chainFrom? }] cross-line express services
 //                         name / ja: the train's type on the source line (the boarding signboard, the
 //                         button); toName / toJa: its type on the target line when it changes there
 //                         (Fukutoshin 急行 → Toyoko 特急). An onward hop's entry continues the train
-//                         when its name is the train's current one, so a chain may rename at
-//                         every border. schedule as in EXPRESS_SERVICES (connections are already
+//                         when its name is the train's current one and its stops on the stretch
+//                         ridden so far agree, so a chain may rename at every border; chainFrom
+//                         (per entry): it continues trains that came onto the source line from
+//                         these lines only ([] = boarded on the source line only), e.g. the Haneda
+//                         特急 that run on as Keisei 快速 came off the Airport Line, the 三崎口 ones
+//                         become 普通. schedule as in EXPRESS_SERVICES (connections are already
 //                         one-way); same-name entries with different stops give per-segment hours
 //     destinations / lineDests entries and LINE_BRANCHES / LINE_DESTINATIONS entries take
 //                         schedule too (timeRange, or stops: [] to hide that day type)
-//                         chainName (older form): an earlier hop's service that continues as this one
 //
 // ── PICKER BEHAVIOR (resolved as _type) ──
 //   transparent    — no name/destinations/express → auto-extends (e.g. Hanzomon↔DET)
@@ -92,6 +95,12 @@ const TOKYU_SY_UP = ['新横浜', '新綱島', '日吉'];              // Tokyu 
 const TOYOKO_EXP_UP = ['日吉', '武蔵小杉', '多摩川', '田園調布', '自由が丘', '学芸大学', '中目黒', '渋谷'];
 const TOYOKO_ALL_UP = ['日吉', '元住吉', '武蔵小杉', '新丸子', '多摩川', '田園調布', '自由が丘', '都立大学', '学芸大学', '祐天寺', '中目黒', '代官山', '渋谷'];
 const MEGURO_ALL_UP = ['日吉', '元住吉', '武蔵小杉', '新丸子', '多摩川', '田園調布', '奥沢', '大岡山', '洗足', '西小山', '武蔵小山', '不動前', '目黒'];
+// Asakusa Line through trains: the Toei boards name a southbound train by its Keikyu type and a northbound one by its
+// Keisei type (ODPT 2026-03), so the entries at 泉岳寺 and 押上 rename them
+const ASAKUSA_UP = ['泉岳寺', '三田', '大門', '新橋', '東銀座', '宝町', '日本橋', '人形町', '東日本橋', '浅草橋', '蔵前', '浅草', '本所吾妻橋', '押上(スカイツリー前)']; // 泉岳寺 → 押上
+const ASAKUSA_DOWN = [...ASAKUSA_UP].reverse();
+const ASAKUSA_SOUTH = ['高輪台', '五反田', '戸越', '中延', '馬込', '西馬込']; // 泉岳寺 → 西馬込
+const OSHIAGE_DOWN = ['京成高砂', '青砥', '京成立石', '四ツ木', '八広', '京成曳舟', '押上(スカイツリー前)']; // 京成高砂 → 押上
 
 const LINE_CONNECTIONS = [
 
@@ -1122,10 +1131,12 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Express', 'Ltd. Express'],
         schedule: { weekday: { timeRange: [[8, 10], [15, 17], [22, 23]] }, weekend: { stops: [] } } },
     ],
-    // 特急/快特 run all stations on the Asakusa Line, then on as Keisei 快速
-    // (特急, Haneda ↔ Narita via the Main Line) or 快速特急 (快特, to Aoto/Takasago).
-    // 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a day); both call
-    // at every Asakusa Line station (the ones that skip are Toei's エアポート快特)
+    // Northbound the Asakusa Line names a train by its Keisei type (toName at 泉岳寺; ODPT 2026-03): the
+    // 特急 from 三崎口 / 久里浜 / 逗子 become 普通 (to 青砥 / 京成高砂, 36 + 8 + 5 a day), the 特急 from
+    // Haneda 快速 (to 成田空港 12 / 佐倉 4, as Keisei 快速 beyond 押上), the 急行 from Haneda 普通 (43, on to
+    // Hokuso / 京成高砂 / 青砥; at 品川 Keikyu's board already shows them as 普通, the last entry), 快特 stay
+    // 快特 (then Keisei 快速特急); 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a
+    // day), calling at every Asakusa Line station (the ones that skip are Toei's エアポート快特)
     express: [
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
@@ -1133,16 +1144,25 @@ const LINE_CONNECTIONS = [
       { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
         stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
         schedule: { weekday: { timeRange: [[4, 8], [9, 10], [16, 17], [21, 22]] }, weekend: { timeRange: [[4, 10], [19, 20], [21, 22]] } } },
-      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
-        stops: ['堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川','泉岳寺',
-                '三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'] },
-      { name: 'Ltd. Express', ja: '特急', color: '#e84040',
-        stops: ['浦賀','馬堀海岸','京急大津','堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川','泉岳寺',
-                '三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
+      // (chainFrom: the 特急 from the Kurihama / Zushi lines are these, the Haneda ones the 快速 below)
+      { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '普通', chainFrom: ['Keikyu Kurihama Line', 'Keikyu Zushi Line'],
+        stops: ['堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川', ...ASAKUSA_UP] },
+      { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '普通', chainFrom: [],
+        stops: ['浦賀','馬堀海岸','京急大津','堀ノ内','横須賀中央','汐入','追浜','金沢八景','金沢文庫','上大岡','横浜','神奈川新町','京急川崎','京急蒲田','平和島','青物横丁','品川', ...ASAKUSA_UP],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+      // Haneda 特急 → Keisei 快速 (成田空港 / 京成佐倉)
+      { name: 'Ltd. Express', ja: '特急', color: '#00b900', toName: 'Rapid', toJa: '快速', chainFrom: ['Keikyu Airport Line'],
+        stops: ['京急蒲田','平和島','青物横丁','品川', ...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [[7, 8], [11, 16], [19, 21], [22, 23]] }, weekend: { timeRange: [8, 20] } } },
+      // Haneda 急行 → Asakusa 普通 (on to Hokuso, 京成高砂, 青砥); Keikyu's board at 品川 shows them as 普通
+      { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '普通', chainFrom: ['Keikyu Airport Line'],
+        stops: ['京急蒲田','平和島','立会川','青物横丁','品川', ...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
+      { name: 'Local', ja: '普通', color: '#00a0e8', chainFrom: [],
+        stops: ['品川', ...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[5, 10], [19, 24]] } } },
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#e83080',
-        stops: ['堀ノ内','横須賀中央','金沢八景','金沢文庫','上大岡','横浜','京急川崎','京急蒲田','品川','泉岳寺',
-                '三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'] },
+        stops: ['堀ノ内','横須賀中央','金沢八景','金沢文庫','上大岡','横浜','京急川崎','京急蒲田','品川', ...ASAKUSA_UP] },
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['品川','泉岳寺','三田','大門','新橋','日本橋',
                 '東日本橋','浅草','押上(スカイツリー前)'],
@@ -1164,24 +1184,23 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[6, 10], [11, 15], [16, 18]] }, weekend: { timeRange: [9, 19] } } },
     ],
     destinations: [
-      // Asakusa 各停 end at 青砥; so do the chained Keikyu 特急 (36 a day from the Kurihama Line) and
-      // a few 急行, which carry their Keikyu names here
-      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local', 'Express', 'Ltd. Express'] },
+      // Asakusa 普通 end at 青砥 (the Keikyu 特急 / 急行 are 普通 on the Asakusa Line: ODPT 2026-03)
+      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local'] },
       { until: '京成高砂', name: 'Keisei Takasago', ja: '京成高砂方面', color: '#0073CF',
         services: ['Local', 'Rapid', 'Rapid Ltd. Exp'] },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      // chainName: Keikyu 特急 from Haneda continue as this (Haneda ↔ Narita 快速)
-      { name: 'Rapid', ja: '快速', color: '#00b900', chainName: 'Ltd. Express',
+      // Keisei 快速 (from 西馬込, and the Haneda 特急 renamed at 泉岳寺): Haneda ↔ Narita via the Main Line
+      { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
                 '東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋',
                 '押上(スカイツリー前)','青砥','京成高砂'] },
-      // Keikyu 快特 through trains run as Keisei 快速特急 (押上, 青砥 only) to 京成高砂
-      // (押上 wd 12–15h and 17–19h, we 10–18h)
-      { name: 'Rapid Ltd. Exp', ja: '快速特急', color: '#f07000',
+      // Keikyu 快特 through trains run as Keisei 快速特急 (押上, 青砥 only) to 京成高砂 / 成田空港 (toName
+      // at 押上; 泉岳寺 wd 11–18h, we 10–20h)
+      { name: 'Rapid Ltd. Exp', ja: '快特', color: '#f07000', toName: 'Rapid Ltd', toJa: '快速特急',
         stops: ['泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
-        schedule: { weekday: { timeRange: [12, 20] }, weekend: { timeRange: [10, 19] } } },
+        schedule: { weekday: { timeRange: [11, 19] }, weekend: { timeRange: [10, 21] } } },
       // Keisei calls the Haneda エアポート快特 アクセス特急 from 押上 on (toName); the Keikyu Airport →
       // Main → Asakusa hops carry it here by name
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', toName: 'Access Express', toJa: 'アクセス特急',
@@ -1199,20 +1218,48 @@ const LINE_CONNECTIONS = [
     ] },
   { from: 'Keisei Oshiage Line', fromEnd: '押上(スカイツリー前)',
     to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)',
+    // Most trains run through: the destinations are the Asakusa Line's own end and the chained Keikyu ones
+    destinations: [
+      { until: '西馬込', name: 'Nishi-magome', ja: '西馬込方面', color: '#e85298', services: ['Local', 'Ltd. Express', 'Rapid', 'Access Express'] },
+    ],
+    // Southbound the Asakusa Line names a train by its Keikyu type (toName at 押上; ODPT 2026-03, hours at
+    // 押上): Keisei / Hokuso 普通 run on as 特急 to 三崎口 / 久里浜 (39 wd) or 急行 to Haneda (32 wd); Keisei
+    // 特急 and the 快速 to 西馬込 become 普通 (all stations); the 快速 from the Main Line to Haneda 特急
+    // (11 wd, 10–14h; 28 we) or 急行 (14 wd); 快速特急 快特 (11 wd); the Sky Access アクセス特急 エアポート快特
+    // (10 wd, 9–15h), 急行 (5 wd) or 普通 to 西馬込 (7 wd); the Asakusa → Keikyu entries continue them by name
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      // Keisei/Hokuso 特急 run all stations on the Asakusa Line
-      { name: 'Ltd. Express', ja: '特急', color: '#e83030',
-        stops: ['京成高砂','青砥','押上(スカイツリー前)','本所吾妻橋','浅草','蔵前','浅草橋','東日本橋',
-                '人形町','日本橋','宝町','東銀座','新橋','大門','三田','泉岳寺',
-                '高輪台','五反田','戸越','中延','馬込','西馬込'] },
+      { name: 'Local', ja: '各停', color: '#e84040', toName: 'Ltd. Express', toJa: '特急', stops: [...OSHIAGE_DOWN, ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[7, 20], [22, 24]] }, weekend: { timeRange: [7, 23] } } },
+      { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...OSHIAGE_DOWN, ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 11], [16, 23]] }, weekend: { timeRange: [[5, 9], [19, 23]] } } },
+      { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '普通',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1), ...ASAKUSA_SOUTH] },
+      { name: 'Rapid', ja: '快速', color: '#00a0e8', toName: 'Local', toJa: '普通',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1), ...ASAKUSA_SOUTH],
+        schedule: { weekday: { timeRange: [[6, 10], [16, 18], [19, 21], [22, 23]] }, weekend: { timeRange: [[6, 10], [16, 18], [19, 21], [22, 23]] } } },
+      { name: 'Rapid', ja: '快速', color: '#e84040', toName: 'Ltd. Express', toJa: '特急',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [10, 15] }, weekend: { timeRange: [9, 19] } } },
+      { name: 'Rapid', ja: '快速', color: '#e83030', toName: 'Express', toJa: '急行',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 8], [15, 16], [17, 23]] }, weekend: { timeRange: [[5, 9], [18, 24]] } } },
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 8], [11, 16]] }, weekend: { timeRange: [[5, 6], [9, 19]] } } },
       // The Sky Access アクセス特急 to Haneda (Keisei's name to 押上) is Toei's エアポート快特 from there
-      // (ODPT 2026-03: 10 wd / 15 Sat/hol southbound, 8 stops 押上 → 泉岳寺)
+      // (ODPT 2026-03: 10 wd / 15 Sat/hol southbound, 8 stops 押上 → 泉岳寺), 急行 outside those hours
       { name: 'Access Express', ja: 'アクセス特急', color: '#f08300', toName: 'Airport Rapid', toJa: 'エアポート快特',
         stops: ['京成高砂','青砥','押上(スカイツリー前)',
                 '浅草','東日本橋','日本橋',
                 '新橋','大門','三田','泉岳寺'],
         schedule: { weekday: { timeRange: [[6, 7], [9, 16]] }, weekend: { timeRange: [[6, 7], [9, 20]] } } },
+      { name: 'Access Express', ja: 'アクセス特急', color: '#e83030', toName: 'Express', toJa: '急行',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[8, 10], [17, 19], [21, 22]] }, weekend: { timeRange: [[7, 8], [20, 21]] } } },
+      { name: 'Access Express', ja: 'アクセス特急', color: '#00a0e8', toName: 'Local', toJa: '普通',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1), ...ASAKUSA_SOUTH],
+        schedule: { weekday: { timeRange: [[6, 7], [8, 9], [16, 18], [19, 21], [22, 23]] }, weekend: { stops: [] } } },
     ] },
 
   // ── Chiyoda ↔ Odakyu at Yoyogi-Uehara ─────────────────────────────────
@@ -2895,8 +2942,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[7, 11], [14, 18], [19, 21]] }, weekend: { stops: [] } } },
       { until: '京成成田', name: 'Keisei Narita', ja: '京成成田方面', color: '#0a4890', services: ['Rapid', 'Ltd. Express'],
         schedule: { weekday: { timeRange: [17, 24] }, weekend: { timeRange: [[17, 20], [21, 23]] } } },
+      // 快速 (Haneda / 西馬込), 特急 (西馬込), 快速特急 (the Keikyu 快特) and 通勤特急; no 普通 runs through
       { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport (Main Line)', ja: '成田空港方面（本線経由）', color: '#003878',
-        services: ['Local', 'Rapid', 'Ltd. Express', 'Commuter Ltd. Exp'] },
+        services: ['Rapid', 'Ltd. Express', 'Rapid Ltd', 'Commuter Ltd. Exp'] },
     ],
     express: [
       // 2 weekday-evening trains from Haneda (押上 21:49, 22:26)
@@ -2906,7 +2954,12 @@ const LINE_CONNECTIONS = [
                 '京成酒々井','宗吾参道','公津の杜','京成成田',
                 '空港第２ビル（第２旅客ターミナル）','成田空港（第１旅客ターミナル）'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [21, 23] } } },
-      { name: 'Rapid', ja: '快速', color: '#00b900', chainName: 'Ltd. Express',
+      // Keikyu 快特 run on as 快速特急 to 成田空港 / 京成成田 (5 + 2 a day, evenings; ODPT 2026-03)
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000',
+        stops: ['押上(スカイツリー前)','青砥','京成高砂','京成八幡','京成船橋','京成津田沼','八千代台','勝田台','京成佐倉','京成成田',
+                '空港第２ビル（第２旅客ターミナル）','成田空港（第１旅客ターミナル）'],
+        schedule: { weekday: { timeRange: [[17, 19], [22, 23]] }, weekend: { timeRange: [17, 21] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['押上(スカイツリー前)','青砥','京成高砂',
                 '京成小岩','京成八幡','東中山','京成船橋','船橋競馬場','京成津田沼',
                 '京成大久保','実籾','八千代台','京成大和田','勝田台','志津',
@@ -2959,8 +3012,16 @@ const LINE_CONNECTIONS = [
                 '新鎌ヶ谷','東松戸','京成高砂','青砥','押上(スカイツリー前)'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
     ] },
+  // Keisei 快速 / 特急 / 快速特急 call at 青砥 and 押上 only on the Oshiage Line; the Oshiage → Asakusa
+  // entries rename them at 押上
   { from: 'Keisei Main Line',    fromStation: '京成高砂', fromDir: 'start',
-    to:   'Keisei Oshiage Line', toEnd: '京成高砂' },
+    to:   'Keisei Oshiage Line', toEnd: '京成高砂',
+    express: [
+      { stops: null, name: 'Local', ja: '各停' },
+      { name: 'Rapid', ja: '快速', color: '#00b900', stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030', stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#f07000', stops: ['京成高砂','青砥','押上(スカイツリー前)'] },
+    ] },
   // アクセス特急 from Narita run on via Oshiage as エアポート快特 to Haneda (renamed at 押上 by the
   // Keisei Oshiage → Asakusa entry's toName; the Asakusa → Keikyu → Airport hops carry it by name)
   { from: 'Narita Sky Access',   fromStation: '京成高砂', fromDir: 'start',
