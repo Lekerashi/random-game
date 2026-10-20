@@ -1244,8 +1244,8 @@ const LINE_DESTINATIONS = {
       { until: '西高島平', name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1' },
     ],
   },
-  'JR Chuo Line': {
-    direction: 'end',  // only when heading toward end (west)
+  'JR Chuo Line': [
+    { direction: 'end',  // only when heading toward end (west)
     destinations: [
       { until: '武蔵小金井', name: 'Musashi-Koganei', ja: '武蔵小金井方面', color: '#8bc34a' },
       { until: '立川',       name: 'Tachikawa',       ja: '立川方面',       color: '#4caf50' },
@@ -1253,6 +1253,26 @@ const LINE_DESTINATIONS = {
       { until: '八王子',     name: 'Hachioji',         ja: '八王子方面',     color: '#00796b' },
       { until: '高尾',       name: 'Takao',            ja: '高尾方面',       color: '#E85B0B' },
       { until: '大月',       name: 'Otsuki',           ja: '大月方面',       color: '#bf360c' },
+    ] },
+    // Toward 東京 the last 快速 from 高尾 / 立川 end at 武蔵小金井 / 三鷹 (ODPT 2026-03); by day the
+    // 国立 connection's picker (むさしの) stays as it is
+    { direction: 'start',  // toward Tokyo
+      shortTurnsOnly: true,
+      destinations: [
+        { until: '武蔵小金井', name: 'Musashi-Koganei', ja: '武蔵小金井方面', color: '#8bc34a',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [0, 1] } } },
+        { until: '三鷹',       name: 'Mitaka',          ja: '三鷹方面',       color: '#8bc34a',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '東京',       name: 'Tokyo',           ja: '東京方面',       color: '#F15A22' },
+      ] },
+  ],
+  // The last 各停 from 千葉 end at 津田沼 (ODPT 2026-03)
+  'JR Chuo-Sobu Line': {
+    direction: 'start',  // toward Mitaka
+    destinations: [
+      { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948',
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '三鷹',   name: 'Mitaka',    ja: '三鷹方面',   color: '#F7C948' },
     ],
   },
   // From 取手 trains end at 守谷 or 水海道; some run on to 下館
@@ -1281,6 +1301,9 @@ const LINE_DESTINATIONS = {
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
       { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20' },
+      // a late 普通 from 千葉 ends at 八街 (ODPT 2026-03)
+      { until: '八街',   name: 'Yachimata', ja: '八街方面',   color: '#b06420',
+        schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
       { until: '成東',   name: 'Naruto',    ja: '成東方面',   color: '#a05a20' },
       { until: '銚子',   name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#804818' },
     ],
@@ -1767,6 +1790,11 @@ const LINE_DESTINATIONS = {
   'JR Keihin Tohoku Line': {
     direction: 'start',  // toward Omiya
     destinations: [
+      // the last 各停 from 横浜 end at 蒲田 / 上野
+      { until: '蒲田',   name: 'Kamata',        ja: '蒲田方面',   color: '#48b8d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '上野',   name: 'Ueno',          ja: '上野方面',   color: '#48b8d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '赤羽',   name: 'Akabane',       ja: '赤羽方面',   color: '#48b8d0', services: ['Local'],
         schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
       { until: '南浦和', name: 'Minami-Urawa',  ja: '南浦和方面', color: '#20a0c8' },
@@ -1792,16 +1820,23 @@ const LINE_DESTINATIONS = {
       { until: '八王子', name: 'Hachioji',  ja: '八王子方面', color: '#00AD53' },
     ],
   },
-  'JR Nambu Line': {
-    direction: 'end',  // heading toward end (toward Tachikawa on main branch)
+  'JR Nambu Line': [
+    { direction: 'end',  // heading toward end (toward Tachikawa on main branch)
     destinations: [
       { until: '武蔵中原',   name: 'Musashi-Nakahara',   ja: '武蔵中原方面',   color: '#ffe040' },
       { until: '武蔵溝ノ口', name: 'Musashi-Mizonokuchi', ja: '武蔵溝ノ口方面', color: '#e8c830' },
       { until: '登戸',       name: 'Noborito',           ja: '登戸方面',       color: '#d0b020' },
       { until: '稲城長沼',   name: 'Inagi-Naganuma',     ja: '稲城長沼方面',   color: '#b89810' },
       { until: '立川',       name: 'Tachikawa',          ja: '立川方面',       color: '#ffd400' },
-    ],
-  },
+    ] },
+    // Toward 川崎 the last trains from 立川 end at 武蔵中原 (ODPT 2026-03)
+    { direction: 'start',  // toward Kawasaki
+      destinations: [
+        { until: '武蔵中原', name: 'Musashi-Nakahara', ja: '武蔵中原方面', color: '#ffe040',
+          schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        { until: '川崎',     name: 'Kawasaki',         ja: '川崎方面',     color: '#ffd400' },
+      ] },
+  ],
 };
 
 // ── Station Aliases (physically connected stations with different names) ──
