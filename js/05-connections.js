@@ -323,33 +323,38 @@ function computeConnectionExtra(connections, stationName, visited) {
   return extra;
 }
 
-// The express entry of hop `conn` that continues a train named `name` on conn's source
-// line (a `stops` list; one running now first). `firstName`: the train's boarding-line
-// name, which a `chainName` on the entry may still name (older data).
-function continuingEntry(conn, name, firstName) {
-  const n = normalize(name);
-  const matches = (conn.express || []).filter(e => e.stops && (normalize(e.name) === n
-    || (e.chainName && normalize(e.chainName) === normalize(firstName))));
-  if (matches.length < 2) return matches[0] || null;
+// The express entries of hop `conn` that continue a train named `name` on conn's source
+// line and run now: one per distinct onward name and stop list (a Local entry continues
+// it at every station). `firstName`: the train's boarding-line name, which a `chainName`
+// on the entry may still name (older data).
+const namesTrain = (conn, name, firstName) => (conn.express || []).some(e => normalize(e.name) === normalize(name)
+  || (e.chainName && normalize(e.chainName) === normalize(firstName)));
+function continuingEntries(conn, name, firstName) {
   const line = state.lines[conn.toLineIdx];
-  return matches.find(e => !line || resolveServiceStops(e, line, conn.fromDir)?.length !== 0) || matches[0];
+  const seen = new Set(), out = [];
+  for (const e of conn.express || []) {
+    if (!namesTrain({ express: [e] }, name, firstName)) continue;
+    const stops = e.stops === null ? null : line ? resolveServiceStops(e, line, conn.fromDir) : e.stops;
+    if (stops && stops.length === 0) continue; // hidden now
+    const key = normalize(e.toName || e.name) + '|' + (stops ? stops.join(',') : '*');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+  }
+  return out;
 }
 
-// The name a first-hop express entry carries onto the source line of the last of `hops`
-// (connections ridden after conn in order), following continuing entries; a hop with
-// no express keeps the name. null when a hop with express has no continuing entry (the
-// train does not run on).
-function nameAlongHops(ex, hops) {
-  let name = ex.toName || ex.name;
-  for (let i = 0; i < hops.length; i++) {
-    if (i === hops.length - 1) return name;
-    if (!hops[i].express) continue;
-    if (ex.stops === null) continue; // a Local rides the chain as is
-    const e = continuingEntry(hops[i], name, ex.name);
-    if (!e) return null;
-    name = e.toName || e.name;
+// The names a first-hop express entry can carry onto the source line of the last of `hops`
+// (connections ridden after conn in order), following continuing entries; a hop with no
+// express keeps the name. Empty when a hop with express has no continuing entry (the train
+// does not run on).
+function namesAlongHops(ex, hops) {
+  let names = [ex.toName || ex.name];
+  for (let i = 0; i < hops.length - 1 && names.length; i++) {
+    if (!hops[i].express || ex.stops === null) continue; // a Local rides the chain as is
+    names = [...new Set(names.flatMap(n => continuingEntries(hops[i], n, ex.name).map(e => e.toName || e.name)))];
   }
-  return name;
+  return names;
 }
 
 // Resolve connection express services to train types with target-line indices.
@@ -411,10 +416,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
     }
     // Compute total max: source-line express to junction + target express from junction
     let totalMax = platform.maxStops; // fallback
-    let chainStops = null;
-    const chainHops = [];
-    const hopConns = [connObj], hopNames = [ex.name];
-    let curName = ex.toName || ex.name;
+    const curName = ex.toName || ex.name;
     if (connObj) {
       const pos = srcEi.indexOf(platform.fromIdx);
       let srcExpStops = Math.abs(connObj.fromJunctionIdx - platform.fromIdx); // fallback to raw
@@ -439,50 +441,59 @@ function resolveConnectionExpress(connExInfo, platform, line) {
       // Fukutoshin 急行 → Seibu 快速急行). The hops are kept in _chainHops so routing
       // follows the same connections; _hopConns / _hopNames record the name on each
       // hop's source line (index 0: the boarding line), for destination `services`.
-      let chainConn = connObj;
-      const chainVisited = new Set([connObj.from]);
-      chainVisited.add(connObj.to);
-      while (chainConn) {
-        const onward = getOnwardConnections(chainConn).filter(c => !chainVisited.has(c.to));
+      // Several continuations of one name (a Fukutoshin 普通 runs on as Seibu 各停 or 準急) fork
+      // into rides of their own: same button, one member each
+      const chains = [];
+      const extend = (chainConn, visited, name, stops, hops, conns, names, max) => {
+        const onward = getOnwardConnections(chainConn).filter(c => !visited.has(c.to));
         // Prefer the hop a picked chained destination names (as nextChainConn does)
         const destHops = state.selectedDestination?.chain;
         const ordered = destHops ? [...onward.filter(c => chainNames(destHops, c)), ...onward.filter(c => !chainNames(destHops, c))] : onward;
-        let nextConn = null, nextEx = null;
-        for (const c of ordered) {
-          const e = continuingEntry(c, curName, ex.name);
-          if (e) { nextConn = c; nextEx = e; break; }
-        }
-        if (!nextConn) break;
-        chainHops.push({ to: nextConn.to, toDir: nextConn.toDir });
-        hopConns.push(nextConn); hopNames.push(curName);
-        curName = nextEx.toName || nextEx.name;
-        const nextLine = state.lines[nextConn.toLineIdx];
-        // Build the chain stops set on first extension (schedule-resolved stops)
-        if (!chainStops) chainStops = new Set(resolvedStops.map(s => normalize(s)));
-        const nextStops = nextLine ? resolveServiceStops(nextEx, nextLine, nextConn.fromDir) : nextEx.stops;
-        nextStops.forEach(s => chainStops.add(normalize(s)));
-        // Count express stops on this chain hop
-        if (nextLine) {
-          const step = dirStep(nextConn.toDir);
-          for (let k = nextConn.toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
-            if (nextConn.toUntilIdx >= 0 && (step === 1 ? k > nextConn.toUntilIdx : k < nextConn.toUntilIdx)) break;
-            if (stopSetHas(chainStops, nextLine.stations[k])) totalMax++;
+        for (const nextConn of ordered) {
+          const conts = continuingEntries(nextConn, name, ex.name);
+          if (!conts.length) {
+            // The hop names the train but none of its entries runs now: it does not run through
+            // (the chain set then yields no stop past the junction); an unnamed hop carries it on
+            if (namesTrain(nextConn, name, ex.name)) { chains.push({ stops: stops || new Set(resolvedStops.map(x => normalize(x))), hops, conns, names: [...names, name], max }); return; }
+            continue;
           }
+          const nextLine = state.lines[nextConn.toLineIdx];
+          for (const nextEx of conts) {
+            // The chain stops set: the first hop's schedule-resolved stops, then each hop's (a Local
+            // continuation calls at every station of its line)
+            const s = new Set(stops || resolvedStops.map(x => normalize(x)));
+            const add = nextEx.stops === null ? (nextLine ? nextLine.stations.map(x => x.ja) : [])
+              : nextLine ? resolveServiceStops(nextEx, nextLine, nextConn.fromDir) : nextEx.stops;
+            add.forEach(x => s.add(normalize(x)));
+            let m = max;
+            if (nextLine) {
+              const step = dirStep(nextConn.toDir);
+              for (let k = nextConn.toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
+                if (nextConn.toUntilIdx >= 0 && (step === 1 ? k > nextConn.toUntilIdx : k < nextConn.toUntilIdx)) break;
+                if (stopSetHas(s, nextLine.stations[k])) m++;
+              }
+            }
+            extend(nextConn, new Set([...visited, nextConn.to]), nextEx.toName || nextEx.name, s,
+              [...hops, { to: nextConn.to, toDir: nextConn.toDir }], [...conns, nextConn], [...names, name], m);
+          }
+          return; // the first onward connection with a continuation carries the train
         }
-        chainVisited.add(nextConn.to);
-        chainConn = nextConn;
+        chains.push({ stops, hops, conns, names: [...names, name], max });
+      };
+      extend(connObj, new Set([connObj.from, connObj.to]), curName, null, [], [connObj], [ex.name], totalMax);
+      for (const ch of chains) {
+        const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: ch.max,
+          _connIdx: state.connections.indexOf(connObj), _hopConns: ch.conns, _hopNames: ch.names };
+        // Attach chain express stops for downstream filtering in getStationsAlongRoute
+        if (ch.stops) { entry._chainExpressStops = ch.stops; entry._chainHops = ch.hops; }
+        // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
+        if (srcEi.length > 0) entry._srcExpIndices = srcEi;
+        results.push(entry);
       }
-
+      continue;
     }
-    const entry = { ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax,
-      _connIdx: state.connections.indexOf(connObj) };
-    // Attach chain express stops for downstream filtering in getStationsAlongRoute
-    if (chainStops) { entry._chainExpressStops = chainStops; entry._chainHops = chainHops; }
-    // The connections the train rides and its name entering each (the last name: on the final line)
-    if (connObj) { entry._hopConns = hopConns; entry._hopNames = [...hopNames, curName]; }
-    // Attach source-line express indices for routing (e.g. Yokohama Line Rapid)
-    if (connObj && srcEi.length > 0) entry._srcExpIndices = srcEi;
-    results.push(entry);
+    results.push({ ...ex, expressIndices: targetIndices.length > 0 ? targetIndices : null, _connTargetLineIdx: targetLineIdx, _connTotalMax: totalMax,
+      _connIdx: state.connections.indexOf(connObj) });
   }
   return results;
 }

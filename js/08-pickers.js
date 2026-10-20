@@ -511,9 +511,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
     const allowed = new Set(services.map(normalize));
     const names = new Set(services.filter(n => normalize(n) === 'local' || conn.express.some(e => e.stops === null && normalize(e.name) === normalize(n))));
     for (const e of conn.express) {
-      if (!e.stops) continue;
-      const n = nameAlongHops(e, hops);
-      if (n != null && allowed.has(normalize(n))) names.add(e.name);
+      if (e.stops && namesAlongHops(e, hops).some(n => allowed.has(normalize(n)))) names.add(e.name);
     }
     return [...names];
   };
