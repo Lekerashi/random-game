@@ -103,9 +103,10 @@ function handleLineDestinations(p) {
   // Ome at Tachikawa, Sobu → Narita → Narita Airport); a boardAtJunction connection counts
   // at its junction itself (Keiyo → Musashino from 南船橋)
   for (const conn of p._connections || []) {
-    if (!conn.destinations) continue;
     const stopsToJunction = (conn.fromJunctionIdx - p.fromIdx) * dirStep(p.direction);
     if (stopsToJunction < 0 || (stopsToJunction === 0 && !conn.boardAtJunction)) continue;
+    // (a connection without destinations: only its chained short turns running now, 西谷 → 奥沢)
+    if (!conn.destinations) { dests.push(...chainedShortTurns(p, conn, stopsToJunction)); continue; }
     for (const d of servedDests(conn, p)) dests.push(connDestChoice(p, conn, d, stopsToJunction));
     dests.push(...chainDestChoices(p, conn, stopsToJunction).filter(d => d.effectiveMax > 0));
   }
@@ -153,7 +154,7 @@ function handleConnectionRouting(p) {
   // gets a picker only at their hours
   const chainShort = conns.filter(c => !c.destinations).flatMap(c =>
     (c.fromJunctionIdx - p.fromIdx) * dirStep(p.direction) < 0 ? []
-      : chainDestChoices(p, c, stopsBeforeJunction(p, c, onLineStops)).filter(d => d._shortTurn && d.effectiveMax > 0));
+      : chainedShortTurns(p, c, stopsBeforeJunction(p, c, onLineStops)));
 
   // If we can't even reach the junction, no connection matters
   // (but still show picker when connections have destinations — e.g. mid-line Y-junctions)
@@ -654,6 +655,26 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const srcN = state.lines[p.lineIdx].stations.length;
   followFar(conn, chainBase, chainPath, chainVisited, conn.fromJunctionIdx !== dirEnd(srcN, p.direction));
   return choices;
+}
+
+// The `shortTurn` destinations chained beyond conn that run now and that a train boarded here
+// reaches (its range, by the types riding it, is > 0); in-ward ones only in 23-wards mode
+function chainedShortTurns(p, conn, onLine) {
+  const reaches = c => {
+    const saved = [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType];
+    try {
+      state.selectedTrainType = null;
+      c.onSelect();
+      const r = resolveTrainTypes(p);
+      if (r?.none) return false;
+      if (r?.types) return r.types.length > 0;
+      return getEffectiveStops(p, r?.autoSelect ? trainTypeOpts(r.autoSelect) : undefined).reachesDest !== false;
+    } finally {
+      [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType] = saved;
+    }
+  };
+  return applyServiceRanges(p, chainDestChoices(p, conn, onLine).filter(d => d._shortTurn && !d._outOfWards && d.effectiveMax > 0 && reaches(d)))
+    .filter(d => d.effectiveMax > 0);
 }
 
 // Destination picker choices for conn, each with the range its train types ride
