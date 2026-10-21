@@ -148,6 +148,9 @@ function connFirstStop(c) {
 }
 
 // Destination d runs now for riders boarding at station ja (schedule + boardSchedule)
+// A destination's `services`: names, or { name, schedule } for a type that ends there only at some hours (one
+// 急行 a day to 本厚木); the names allowed now (null: no list, every type)
+const svcNames = services => services ? services.filter(s => typeof s === 'string' || scheduleActive(s.schedule)).map(s => typeof s === 'string' ? s : s.name) : null;
 const destRunsAt = (d, ja) => scheduleActive(d.schedule) && scheduleActive(d.boardSchedule?.[ja]);
 
 // A connection with express entries runs through from station fromIdx only while one of them runs now and calls

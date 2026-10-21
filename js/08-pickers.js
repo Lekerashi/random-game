@@ -86,10 +86,10 @@ function handleLineDestinations(p) {
       const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(lineDest.direction);
       if (stopsToEnd <= 0) return null;
       const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
-      return { ...d, untilIdx, effectiveMax, _services: d.services || null,
+      return { ...d, untilIdx, effectiveMax, _services: svcNames(d.services),
         _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true, _plain: untilIdx === endIdx,
         onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja,
-          services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
+          services: svcNames(d.services), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
   // No line destination ahead (a segment the table's stations aren't on, e.g. the southern JR
@@ -398,7 +398,7 @@ function destServesStation(conn, d, p) {
   const curKeys = new Set([normalize(platformStation(p).name),
                            normalize(platformStation(p).ja || '')]);
   const lineDefs = EXPRESS_SERVICES[p.lineName] || [];
-  for (const svc of d.services) {
+  for (const svc of svcNames(d.services)) {
     const n = normalize(svc);
     // The connection's own entry wins over a same-name source-line type (Odakyu 急行
     // runs at 18h, but not through to the Chiyoda Line)
@@ -443,11 +443,11 @@ function lineDestChoice(p, conn, d) {
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)), _fullMax: stopsToEnd,
-    _services: d.services || null,
+    _services: svcNames(d.services),
     _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
     _plain: untilIdx === dirEnd(line.stations.length, p.direction), // the line's own end
     onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja,
-      services: d.services || null, stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
+      services: svcNames(d.services), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
   };
 }
 
@@ -471,11 +471,11 @@ function connDestChoice(p, conn, d, onLine) {
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: destRollCap(p, conn, cappedMax), _fullMax: cappedMax,
-    _services: d.services || null,
+    _services: svcNames(d.services),
     _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
     onSelect: () => {
       state.selectedConnection = conn;
-      state.selectedDestination = { totalMax: cappedMax, services: d.services || null, name: d.name, ja: d.ja,
+      state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services), name: d.name, ja: d.ja,
         stopAt: { lineIdx: conn.toLineIdx, idx: d.untilIdx, dir: conn.toDir } };
     },
   };
@@ -543,7 +543,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const served = conn.destinations ? servedDests(conn, p) : [];
   const chainBlocked = served.length === 0 && !!conn.destinations?.some(d => d.services);
   const inheritedServices = !conn.express && served.length && served.every(d => d.services)
-    ? [...new Set(served.flatMap(d => d.services))] : null;
+    ? [...new Set(served.flatMap(d => svcNames(d.services)))] : null;
   // A chained destination's `services` must be boardable here: one of them calls at this
   // station now on the first hop (Haneda → Sky Access needs an エアポート快特, which skips
   // 穴守稲荷 and runs by day only); a Local the hop doesn't declare still runs through (Toyoko →
@@ -552,7 +552,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // The services name types by the destination's own hop; the first hop's entries calling here
   // now whose names reach it as one of them stand for them (namesAlongHops; the entry itself
   // must call here: the Haneda 特急 that run on as 快速 don't make a 浦賀 特急 one)
-  const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(d.services, hops) }, p);
+  const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(svcNames(d.services), hops) }, p);
   const firstHopServices = (services, hops) => {
     const allowed = new Set(services.map(normalize));
     const names = new Set(services.filter(n => normalize(n) === 'local' || conn.express.some(e => e.stops === null && normalize(e.name) === normalize(n))));
@@ -591,13 +591,13 @@ function chainDestChoices(p, conn, effectiveOnLine) {
       choices.push({
         name: d.name, ja: d.ja, color: d.color || p.lineColor,
         effectiveMax: capStops(cappedMax), _fullMax: totalMax,
-        _services: d.services || null,
+        _services: svcNames(d.services),
         _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
         _sourceConn: conn, // first hop: the one that leaves the boarding line
         _shortTurn: !!d.shortTurn,
         onSelect: () => {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: cappedMax, services: d.services || null, servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,
+          state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services), servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,
             stopAt: { lineIdx: nextConn.toLineIdx, idx: d.untilIdx, dir: nextConn.toDir } };
         },
       });
