@@ -1610,6 +1610,9 @@ const LINE_DESTINATIONS = {
         { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express'] },
         { until: '伊勢原',     name: 'Isehara',         ja: '伊勢原方面',     color: '#005090', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[4, 10], [18, 24]] } } },
+        // one 各停 a day from 新宿 ends at 秦野 (wd 6:43, Sat/hol 21:25; ODPT 2026-03)
+        { until: '秦野',       name: 'Hadano',          ja: '秦野方面',       color: '#004890', services: ['Local'],
+          schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [21, 1] } } },
         { until: '新松田',     name: 'Shin-Matsuda',    ja: '新松田方面',     color: '#004080', services: ['Express', 'Rapid Exp'],
           schedule: { weekday: { timeRange: [[5, 8], [15, 22]] }, weekend: { timeRange: [[5, 8], [20, 22]] } } },
         { until: '小田原',     name: 'Odawara',         ja: '小田原方面',     color: '#0099DD' },
