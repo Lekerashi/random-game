@@ -1742,6 +1742,12 @@ const LINE_CONNECTIONS = [
         stops: ['飯能','入間市','小手指','所沢',
                 'ひばりヶ丘','石神井公園','練馬','小竹向原'],
         schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
+      // the last 各停 from 小手指 runs on to 元住吉 (ODPT Seibu: 小手指 23:09 wd / 23:14 Sat/hol, 中村橋 23:42 / 23:44),
+      // + the trailing hour; offered by the 元住吉 short turn (shortTurn) on the Fukutoshin → Toyoko hop
+      { name: 'Local', ja: '各停', color: '#00a0e8', until: '元住吉',
+        stops: ['小手指','西所沢','所沢','秋津','清瀬','東久留米','ひばりヶ丘','保谷','大泉学園','石神井公園',
+                '練馬高野台','富士見台','中村橋','練馬','新桜台','小竹向原'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
     ] },
 
   // ── Seibu Toshima / Sayama → Seibu Ikebukuro toward 池袋 ──────────────
@@ -1804,7 +1810,7 @@ const LINE_CONNECTIONS = [
       { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
         schedule: { weekday: { timeRange: [[7, 12], [17, 24]] }, weekend: { timeRange: [20, 24] } } },
       // a late 各停 from Seibu (小手指) ends at 元住吉 (depot); no `services`, as on 武蔵小杉
-      { until: '元住吉', name: 'Motosumiyoshi', ja: '元住吉方面', color: '#da0442', chainFrom: ['Seibu Yurakucho Line', 'Seibu Ikebukuro Line'],
+      { until: '元住吉', name: 'Motosumiyoshi', ja: '元住吉方面', color: '#da0442', chainFrom: ['Seibu Yurakucho Line', 'Seibu Ikebukuro Line'], shortTurn: true,
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
     ],
     // Types by the Metro side, renamed at 渋谷 (toName; ODPT 2026-03): 普通 run on as Toyoko 各停
@@ -2139,8 +2145,8 @@ const LINE_CONNECTIONS = [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#890d84' },
     ],
     destinations: [
-      // the last 各停 from 新横浜 end at 奥沢 (depot)
-      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
+      // the last 各停 from 新横浜 end at 奥沢 (depot); from 西谷 too (Sotetsu 7952 / 7966, 0:14: shortTurn)
+      { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'], shortTurn: true,
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
     ],
