@@ -76,7 +76,9 @@ function resolveTrainTypes(p) {
   // entry of the connection being ridden replaces the line's own Local (below), so the line's
   // doesn't count as declared then (a lone 急行 → 普通 still applies while the connection's
   // through 各停 are off-hours)
-  const connLocal = allConnExpress.some(a => a.connObj === conn && a.express.some(isLocalEntry));
+  // (a mid-line connection auto-selected only to skip its picker isn't ridden: routeConnectionFor)
+  const ridden = !!conn && (conn.fromJunctionIdx === dirEnd(line.stations.length, p.direction) || !!state.selectedDestination);
+  const connLocal = ridden && allConnExpress.some(a => a.connObj === conn && a.express.some(isLocalEntry));
   const declared = [...(EXPRESS_SERVICES[p.lineName] || []).filter(t => !(connLocal && t.stops === null)), ...allConnExpress.flatMap(a => a.express)];
   // Add connection express services (e.g. Keikyu Express spanning both lines)
   for (const connExInfo of allConnExpress) {
@@ -96,7 +98,7 @@ function resolveTrainTypes(p) {
     // namesake would ride onto (no Keikyu 特急 from 品川 to Narita: the board calls those 普通 / 快速)
     const terminus = a.connObj.fromJunctionIdx === dirEnd(line.stations.length, p.direction);
     if (e.stops && noBoardAt(e, here) && (a.connObj === conn || terminus)) { connExpNames.add(normalize(e.name)); continue; }
-    if (a.connObj !== conn || !e.stops) continue;
+    if (a.connObj !== conn || !ridden || !e.stops) continue;
     const stops = resolveServiceStops(e, a.targetLine, p.direction);
     if (stops.length === 0) { connExpNames.add(normalize(e.name)); continue; }
     const names = new Set(stops.map(s => normalize(s)));

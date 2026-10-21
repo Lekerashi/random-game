@@ -621,6 +621,15 @@ function chainDestChoices(p, conn, effectiveOnLine) {
     while (chainConn) {
       const onward = getOnwardConnections(chainConn).filter(c => !visited.has(c.to) && chainAllowed(c));
       let nextChain = null;
+      // Plain hops (no destinations) other than the one the chain follows on: followed too (練馬 →
+      // Seibu Yurakucho → Fukutoshin beside → Yurakucho)
+      const plain = onward.filter(c => !c.destinations);
+      for (const other of plain.slice(0, -1)) {
+        const ob = chainBase + effectiveViaCount(other, '');
+        const ov = new Set([...visited, ...plain.map(c => c.to)]);
+        addMidLineHops(other, ob, [...path, other], ov);
+        followFar(other, ob + getConnectionMaxStops(other), [...path, other], ov, midLine);
+      }
       for (const nextConn of onward) {
         if (!nextConn.destinations) { nextChain = nextConn; visited.add(nextConn.to); continue; }
         if (!nextConn.destinations.some(d => d.untilIdx !== -1)) continue;
@@ -641,7 +650,9 @@ function chainDestChoices(p, conn, effectiveOnLine) {
     }
   };
   addMidLineHops(conn, effectiveOnLine + viaCount, [], chainVisited);
-  followFar(conn, chainBase, chainPath, chainVisited, false);
+  // (a mid-line first hop leaves the boarding line before its end: p.maxStops doesn't bound the chain)
+  const srcN = state.lines[p.lineIdx].stations.length;
+  followFar(conn, chainBase, chainPath, chainVisited, conn.fromJunctionIdx !== dirEnd(srcN, p.direction));
   return choices;
 }
 
