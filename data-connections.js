@@ -1178,6 +1178,9 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Hibiya Line', toEnd: '北千住',
     name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
     destinations: [
+      // 2 weekday 普通 (北越谷 7:51, 竹ノ塚 7:51) run through to 六本木 (ODPT 2026-03); chainFrom: none from the Nikko Line
+      { until: '六本木', name: 'Roppongi', ja: '六本木方面', color: '#9B7A00', services: ['Local'], localFrom: '北越谷', chainFrom: [],
+        schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
       // Hibiya through trains are all 普通 (THライナー is paid-seat)
       { until: '中目黒', name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
         services: ['Local'] },

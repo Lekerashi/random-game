@@ -1726,6 +1726,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '成増',     name: 'Narimasu',     ja: '成増方面',     color: '#5aa0d8' },
         { until: '志木',     name: 'Shiki',        ja: '志木方面',     color: '#4890c8' },
+        // one evening 各停 from 池袋 ends at 上福岡 (wd 21:55, Sat/hol 20:47; ODPT 2026-03)
+        { until: '上福岡',   name: 'Kami-Fukuoka', ja: '上福岡方面',   color: '#3a84c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [20, 23] } } },
         { until: '川越市',   name: 'Kawagoeshi',   ja: '川越市方面',   color: '#2a78b8' },
         { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7' },
         { until: '小川町',   name: 'Ogawamachi',   ja: '小川町方面',   color: '#003878' },
@@ -1762,6 +1765,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '久喜',   name: 'Kuki',       ja: '久喜方面',   color: '#005AAA', services: ['Local'],
           schedule: { weekday: { timeRange: [8, 22] }, weekend: { timeRange: [9, 22] } } },
+        // 普通 from 館林 ending at 東武動物公園: weekday 21:44, Sat/hol 9:25, 20:54 and 21:44 (ODPT 2026-03)
+        { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878', services: ['Local'],
+          schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [[9, 11], [20, 24]] } } },
         { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#5a8ad0', services: ['Local', 'Sec. Semi-Exp'],
           schedule: { weekday: { timeRange: [[9, 10], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
         { until: '浅草',   name: 'Asakusa',    ja: '浅草方面',   color: '#003087' },
@@ -1776,15 +1782,22 @@ const LINE_DESTINATIONS = {
       { until: '館林',   name: 'Tatebayashi',     ja: '館林方面',   color: '#003087' },
     ],
   },
-  // 館林–伊勢崎 one-man section: half the trains turn at 太田 (ODPT 2026-03)
-  'Tobu Isesaki Line (Isesaki)': {
-    direction: 'end',  // toward Isesaki
-    destinations: [
-      { until: '太田',   name: 'Ota',     ja: '太田方面',   color: '#3a72c0',
-        schedule: { weekday: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] }, weekend: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] } } },
-      { until: '伊勢崎', name: 'Isesaki', ja: '伊勢崎方面', color: '#005AAA' },
-    ],
-  },
+  // 館林–伊勢崎 one-man section: half the trains turn at 太田; up, 3 普通 a day from 伊勢崎 (8:09, 21:55, 23:06)
+  // end there (ODPT 2026-03)
+  'Tobu Isesaki Line (Isesaki)': [
+    { direction: 'end',  // toward Isesaki
+      destinations: [
+        { until: '太田',   name: 'Ota',     ja: '太田方面',   color: '#3a72c0',
+          schedule: { weekday: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] }, weekend: { timeRange: [[8, 10], [11, 16], [19, 21], [23, 24]] } } },
+        { until: '伊勢崎', name: 'Isesaki', ja: '伊勢崎方面', color: '#005AAA' },
+      ] },
+    { direction: 'start',  // toward Tatebayashi
+      destinations: [
+        { until: '太田',   name: 'Ota',         ja: '太田方面',   color: '#3a72c0',
+          schedule: { weekday: { timeRange: [[8, 10], [21, 1]] }, weekend: { timeRange: [[8, 10], [21, 1]] } } },
+        { until: '館林',   name: 'Tatebayashi', ja: '館林方面',   color: '#003087' },
+      ] },
+  ],
   // North of 南栗橋: evening 普通 end at 新栃木, half the day's trains from 東武日光 at 下今市
   // (ODPT 2026-03); the 東武宇都宮 through trains branch at 新栃木 (the Utsunomiya Line's own platform)
   'Tobu Nikko Line (Nikko)': [
@@ -1792,12 +1805,24 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '新栃木',   name: 'Shin-Tochigi', ja: '新栃木方面',   color: '#e0a040', services: ['Local'],
           schedule: { weekday: { timeRange: [19, 1] }, weekend: { timeRange: [19, 1] } } },
+        // 普通 ending at 新鹿沼: the 7:01 from 新栃木 and the 21:53 from 南栗橋 (ODPT 2026-03)
+        { until: '新鹿沼',   name: 'Shin-Kanuma',  ja: '新鹿沼方面',   color: '#e0a040', services: ['Local'], localFrom: '新栃木',
+          schedule: { weekday: { timeRange: [7, 9] }, weekend: { timeRange: [7, 9] } } },
+        { until: '新鹿沼',   name: 'Shin-Kanuma',  ja: '新鹿沼方面',   color: '#e0a040', services: ['Local'],
+          schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [21, 24] } } },
         { until: '東武日光', name: 'Tobu-Nikko',   ja: '東武日光方面', color: '#FFA500' },
       ] },
     { direction: 'start',  // toward Minami-Kurihashi
       destinations: [
         { until: '下今市', name: 'Shimo-Imaichi',    ja: '下今市方面', color: '#e0a040',
           schedule: { weekday: { timeRange: [[6, 7], [8, 10], [11, 12], [13, 14], [15, 16], [21, 23]] }, weekend: { timeRange: [[6, 7], [8, 10], [11, 12], [13, 14], [15, 16], [21, 23]] } } },
+        // 普通 from 東武日光 ending at 新栃木 (9:44, 10:24) and 栃木 (21:52); the 5:10 and 7:28 from 新鹿沼 at 栃木 (ODPT 2026-03)
+        { until: '新栃木', name: 'Shin-Tochigi',     ja: '新栃木方面', color: '#e0a040', services: ['Local'],
+          schedule: { weekday: { timeRange: [9, 12] }, weekend: { timeRange: [9, 12] } } },
+        { until: '栃木',   name: 'Tochigi',          ja: '栃木方面',   color: '#e0a040', services: ['Local'], localFrom: '新鹿沼',
+          schedule: { weekday: { timeRange: [5, 9] }, weekend: { timeRange: [5, 9] } } },
+        { until: '栃木',   name: 'Tochigi',          ja: '栃木方面',   color: '#e0a040', services: ['Local'],
+          schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [21, 24] } } },
         { until: '南栗橋', name: 'Minami-Kurihashi', ja: '南栗橋方面', color: '#FFA500' },
       ] },
   ],
@@ -1806,8 +1831,16 @@ const LINE_DESTINATIONS = {
   'Tobu Noda line': [
     { direction: 'end',  // toward Funabashi
       destinations: [
+        // 普通 from 大宮 ending at 岩槻 (wd 8:47, 21:29, 0:46; Sat/hol 21:06, 22:17, 0:17), 七光台 (wd 18:42, 19:37,
+        // 0:10, 0:23; Sat/hol 8:47, 23:40, 23:55) and 野田市 (wd 19:06, 20:44; Sat/hol 20:28) (ODPT 2026-03)
+        { until: '岩槻',   name: 'Iwatsuki',  ja: '岩槻方面',   color: '#5aa0d8', services: ['Local'],
+          schedule: { weekday: { timeRange: [[8, 10], [21, 23], [0, 2]] }, weekend: { timeRange: [21, 2] } } },
         { until: '春日部', name: 'Kasukabe',  ja: '春日部方面', color: '#5aa0d8', services: ['Local'],
           schedule: { weekday: { timeRange: [[6, 18], [22, 23], [0, 1]] }, weekend: { timeRange: [[6, 23], [0, 1]] } } },
+        { until: '七光台', name: 'Nanakodai', ja: '七光台方面', color: '#2a80b8', services: ['Local'],
+          schedule: { weekday: { timeRange: [[18, 21], [0, 2]] }, weekend: { timeRange: [[8, 10], [23, 1]] } } },
+        { until: '野田市', name: 'Nodashi',   ja: '野田市方面', color: '#2a80b8', services: ['Local'],
+          schedule: { weekday: { timeRange: [19, 22] }, weekend: { timeRange: [20, 22] } } },
         { until: '柏',     name: 'Kashiwa',   ja: '柏方面',     color: '#2a90c0', services: ['Local', 'Sub-Exp', 'Express'],
           schedule: { weekday: { timeRange: [5, 2] }, weekend: { timeRange: [5, 1] } } },
         // the last 普通 from 柏 end at 高柳
