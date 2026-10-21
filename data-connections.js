@@ -927,6 +927,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [0, 1] } } },
       { until: '永田町', name: 'Nagatacho', ja: '永田町方面', color: '#8F76D6',
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [0, 1] } } },
+      // a weekday 7h train from 長津田 ends at 半蔵門 (ODPT 2026-03)
+      { until: '半蔵門', name: 'Hanzomon', ja: '半蔵門方面', color: '#8F76D6',
+        schedule: { weekday: { timeRange: [7, 9] }, weekend: { stops: [] } } },
       // 17 weekday trains (mornings and the last ones) turn back at 清澄白河 (ODPT 2026-03)
       { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
         schedule: { weekday: { timeRange: [[6, 11], [23, 1]] }, weekend: { timeRange: [21, 1] } } },
@@ -1469,6 +1472,9 @@ const LINE_CONNECTIONS = [
       // the first and last trains from 綾瀬 turn back at 北千住 (ODPT 2026-03)
       { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#00BB85',
         schedule: { weekday: { timeRange: [[4, 5], [0, 1]] }, weekend: { timeRange: [[4, 5], [0, 1]] } } },
+      // 3 weekday early trains (6–7h) and a Sat/hol last one end at 霞ケ関 (ODPT 2026-03)
+      { until: '霞ケ関', name: 'Kasumigaseki', ja: '霞ケ関方面', color: '#00BB85',
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [0, 2] } } },
       { until: '明治神宮前〈原宿〉', name: 'Meiji-jingumae', ja: '明治神宮前方面', color: '#00BB85',
         schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
@@ -1478,6 +1484,11 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0',
         services: ['Local', 'Semi-Exp'] },
+      // one morning train from 北綾瀬 runs to 相模大野: a weekday 各停 (7:14), a Sat/hol 急行 (7:04) (ODPT 2026-03)
+      { until: '相模大野', name: 'Sagami-Ono', ja: '相模大野方面', color: '#2a80d0', chainFrom: [],
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
+                   { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 9] } } }],
+        schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [7, 9] } } },
       { until: '向ヶ丘遊園', name: 'Mukogaoka-Yuen', ja: '向ヶ丘遊園方面', color: '#1a8fe8',
         services: ['Local', 'Semi-Exp', 'Express'] },
       // 急行 from the Chiyoda Line run to 唐木田 by day and to 伊勢原 in the evening; one
@@ -1644,6 +1655,9 @@ const LINE_CONNECTIONS = [
       { until: '西船橋', name: 'Nishi-Funabashi', ja: '西船橋方面', color: '#009BBF' },
     ],
     destinations: [
+      // 2 weekday-morning 各停 from 中野 (8:01, 8:38) end at 八千代緑が丘 (ODPT 2026-03)
+      { until: '八千代緑が丘', name: 'Yachiyo-midorigaoka', ja: '八千代緑が丘方面', color: '#00a48c', services: ['Local'], chainFrom: [],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
       { until: '東葉勝田台', name: 'Toyo-Katsutadai', ja: '東葉勝田台方面', color: '#00a48c' },
     ] },
   { from: 'Toyo Rapid Railway Line',  fromEnd: '西船橋',
@@ -2017,6 +2031,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '市ケ谷', name: 'Ichigaya', ja: '市ケ谷方面', color: '#00AC9B',
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { stops: [] } } },
+      // 2 weekday-morning trains from Saitama (赤羽岩淵 8:14, 8:25) end at 麻布十番 (ODPT 2026-03)
+      { until: '麻布十番', name: 'Azabu-juban', ja: '麻布十番方面', color: '#00AC9B',
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
       { until: '白金高輪', name: 'Shirokane-takanawa', ja: '白金高輪方面', color: '#00AC9B',
         schedule: { weekday: { timeRange: [[5, 6], [7, 1]] }, weekend: { timeRange: [5, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
@@ -2223,6 +2240,10 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '西谷',   name: 'Nishiya', ja: '西谷方面',   color: '#4a90d8', services: ['Express'],
         schedule: { weekday: { timeRange: [[8, 11], [17, 18]] }, weekend: { timeRange: [8, 10] } } },
+      // a weekday 8:46 各停 from 新宿三丁目 (Fukutoshin) runs on as 急行 and ends at 大和 (ODPT 2026-03);
+      // chainFrom: it starts on the Metro, nothing from Seibu / Tobu
+      { until: '大和',   name: 'Yamato',  ja: '大和方面',   color: '#003087', services: ['Express'], chainFrom: ['Tokyo Metro Fukutoshin Line'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
       { until: '海老名', name: 'Ebina',   ja: '海老名方面', color: '#003087', services: ['Express'],
         schedule: { weekday: { timeRange: [[5, 6], [23, 1]] }, weekend: { timeRange: [[6, 8], [16, 17], [18, 20], [21, 24]] } } },
     ],

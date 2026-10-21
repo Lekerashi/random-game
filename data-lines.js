@@ -1070,23 +1070,27 @@ const LINE_DESTINATIONS = {
       { until: '池袋',   name: 'Ikebukuro', ja: '池袋方面',   color: '#e60012' },
     ],
   },
-  // The last trains from 北千住 end at 南千住 (depot) (ODPT 2026-03); toward 北千住 the
-  // 広尾 short turn is a lineDest on the Tobu connection
+  // The last trains from 北千住 end at 南千住 (depot); 3 weekday-morning ones (北千住 7:43–8:26) at
+  // 六本木 (ODPT 2026-03); toward 北千住 the 広尾 short turn is a lineDest on the Tobu connection
   'Tokyo Metro Hibiya Line': {
     direction: 'end',  // toward Naka-Meguro
     destinations: [
       { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#b5b5ac',
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [0, 1] } } },
+      { until: '六本木', name: 'Roppongi',     ja: '六本木方面', color: '#b5b5ac',
+        schedule: { weekday: { timeRange: [7, 11] }, weekend: { stops: [] } } },
       { until: '中目黒', name: 'Naka-Meguro',  ja: '中目黒方面', color: '#b5b5ac' },
     ],
   },
-  // The last trains from 西船橋 end at 東陽町 (ODPT 2026-03)
+  // The last trains from 西船橋 end at 東陽町; a weekday 8:06 各停 from 妙典 at 九段下 (ODPT 2026-03)
   'Tokyo Metro Tozai Line': {
     direction: 'start',  // toward Nakano
     destinations: [
-      { until: '東陽町', name: 'Toyocho', ja: '東陽町方面', color: '#009bbf',
+      { until: '東陽町', name: 'Toyocho',    ja: '東陽町方面', color: '#009bbf',
         schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [23, 1] } } },
-      { until: '中野',   name: 'Nakano',  ja: '中野方面',   color: '#009bbf' },
+      { until: '九段下', name: 'Kudanshita', ja: '九段下方面', color: '#009bbf', services: ['Local'], localFrom: '妙典',
+        schedule: { weekday: { timeRange: [8, 10] }, weekend: { stops: [] } } },
+      { until: '中野',   name: 'Nakano',     ja: '中野方面',   color: '#009bbf' },
     ],
   },
   // A late train from 和光市 ends at 池袋 (ODPT 2026-03)
