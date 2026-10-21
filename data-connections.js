@@ -107,6 +107,9 @@ const ASAKUSA_DOWN = [...ASAKUSA_UP].reverse();
 const ASAKUSA_SOUTH = ['高輪台', '五反田', '戸越', '中延', '馬込', '西馬込']; // 泉岳寺 → 西馬込
 const OSHIAGE_DOWN = ['京成高砂', '青砥', '京成立石', '四ツ木', '八広', '京成曳舟', '押上(スカイツリー前)']; // 京成高砂 → 押上
 // Tokaido Main Line 熱海 → 東京, every station (the morning ラビット / アーバン through trains call at all of them)
+// The 4 Ito → Tokaido 普通 a day board at 伊東–来宮: hours there for a chained destination (boardSchedule)
+const ITO_BOARD = (weekday, weekend) => Object.fromEntries(['伊東', '宇佐美', '網代', '伊豆多賀', '来宮']
+  .map(s => [s, { weekday: weekday ? { timeRange: weekday } : { stops: [] }, weekend: weekend ? { timeRange: weekend } : { stops: [] } }]));
 const TOKAIDO_ALL_UP = ['熱海', '湯河原', '真鶴', '根府川', '早川', '小田原', '鴨宮', '国府津', '二宮', '大磯', '平塚', '茅ケ崎', '辻堂', '藤沢', '大船', '戸塚', '横浜', '川崎', '品川', '新橋', '東京'];
 
 const LINE_CONNECTIONS = [
@@ -505,10 +508,13 @@ const LINE_CONNECTIONS = [
     displayName: 'Ueno Tokyo Line',
     toUntil: '宇都宮',
     destinations: [
-      { until: '古河',   name: 'Koga',       ja: '古河方面',   color: '#6ebc5e', services: ['Local'],
+      // (chainFrom: chained only from the Ito Line, at its trains' hours: boardSchedule; ODPT 2026-03, + the trailing hour)
+      { until: '古河',   name: 'Koga',       ja: '古河方面',   color: '#6ebc5e', services: ['Local'], chainFrom: [],
         schedule: { weekday: { timeRange: [7, 20] }, weekend: { timeRange: [9, 21] } } },
-      { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e', services: ['Local'] },
-      { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848' },
+      { until: '小金井', name: 'Koganei', ja: '小金井方面', color: '#5ebc6e', services: ['Local'], chainFrom: ['JR Ito Line'],
+        boardSchedule: ITO_BOARD([20, 22], [20, 22]) },
+      { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848', chainFrom: ['JR Ito Line'],
+        boardSchedule: ITO_BOARD([17, 20], [[6, 9], [17, 20]]) },
     ],
     // ラビット through trains: 2 a morning from 小田原/熱海/国府津, every Tokaido station, typed 快速
     // on the Tokaido (ODPT) and 快速ラビット from 上野 on (toName); the evening ラビット start at 上野,
@@ -526,8 +532,10 @@ const LINE_CONNECTIONS = [
     name: 'Takasaki', ja: '高崎線', color: '#424d6d',
     displayName: 'Ueno Tokyo Line',
     destinations: [
-      { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d', services: ['Local'] },
-      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d' },
+      { until: '籠原', name: 'Kagohara', ja: '籠原方面', color: '#6a7a9d', services: ['Local'], chainFrom: ['JR Ito Line'],
+        boardSchedule: ITO_BOARD([18, 21], null) },
+      { until: '高崎', name: 'Takasaki', ja: '高崎方面', color: '#424d6d', chainFrom: ['JR Ito Line'],
+        boardSchedule: ITO_BOARD(null, [18, 21]) },
     ],
     // アーバン through trains: 2 a morning from 小田原/国府津, every Tokaido station, typed 快速 on the
     // Tokaido (ODPT) and 快速アーバン from 上野 on (toName); the evening アーバン start at 上野, so the
@@ -544,12 +552,13 @@ const LINE_CONNECTIONS = [
     via:  ['上野'],
     name: 'Joban', ja: '常磐線', color: '#009BBF',
     displayName: 'Ueno Tokyo Line',
+    chainFrom: [], // the Ito Line's through 普通 run on to the Utsunomiya / Takasaki Lines only
     // On the rapid tracks every train calls at every station: 快速 to 取手, 普通 (中距離) beyond
     destinations: [
-      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF', services: ['Local'] },
-      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0', services: ['Local', 'Special Rapid'] },
-      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080', services: ['Local'] },
-      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860', services: ['Local'] },
+      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF', services: ['Local'], chainFrom: [] },
+      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0', services: ['Local', 'Special Rapid'], chainFrom: [] },
+      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080', services: ['Local'], chainFrom: [] },
+      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860', services: ['Local'], chainFrom: [] },
     ],
     express: [
       // The 普通 run through in the rushes (6–9h, 20–22h weekdays; 5–10h, 17–22h Sat/hol), by day the Joban
@@ -828,8 +837,7 @@ const LINE_CONNECTIONS = [
     ] },
 
   // ── Tokaido → Ito at Atami ──────────────────────────────────────────
-  // 4 普通 a day from 東京 run on from 熱海 to 伊東 (16h, 18–19h, 23h at 熱海; ODPT 2026-03). The 4
-  // Ito → Tokaido 普通 end at 上野, 宇都宮, 小金井 or 籠原, one each: left to the Ito platform.
+  // 4 普通 a day from 東京 run on from 熱海 to 伊東 (16h, 18–19h, 23h at 熱海; ODPT 2026-03).
   { from: 'JR Tokaido Main Line', fromStation: '熱海', fromDir: 'end',
     to:   'JR Ito Line',          toEnd: '熱海',
     name: 'Ito', ja: '伊東方面', color: '#F7A600',
@@ -839,6 +847,19 @@ const LINE_CONNECTIONS = [
     ],
     express: [{ stops: null, name: 'Local', ja: '普通',
       schedule: { weekday: { timeRange: [[15, 20], [21, 23]] }, weekend: { timeRange: [[15, 20], [21, 23]] } } }] },
+  // ...and back: 4 普通 a day from 伊東 run through 熱海 and the Ueno-Tokyo Line (JR TrainTimetable 2026-03: 伊東 6:44 →
+  // 上野 wd / 宇都宮 Sat/hol, 17:45 → 宇都宮, 18:44 → 籠原 wd / 高崎 Sat/hol, 20:05 → 小金井); the chained
+  // destinations carry their hours (chainFrom + boardSchedule)
+  { from: 'JR Ito Line', fromEnd: '熱海',
+    to:   'JR Tokaido Main Line', toStation: '熱海', toDir: 'start',
+    name: 'Ueno Tokyo Line', ja: '上野東京ライン', color: '#F7A600',
+    lineDests: [
+      { until: '熱海', name: 'Atami', ja: '熱海方面', color: '#F7A600' },
+    ],
+    destinations: [],
+    // (not the weekday 6:44 to 上野: no destination there, and with no picker choice the plain ride would run on)
+    express: [{ stops: null, name: 'Local', ja: '普通',
+      schedule: { weekday: { timeRange: [17, 22] }, weekend: { timeRange: [[6, 9], [17, 22]] } } }] },
 
   // ── Yokosuka ↔ Sobu Rapid at Tokyo (横須賀・総武快速線) ──────────────
   // Nearly all Yokosuka trains continue onto Sobu Rapid at Tokyo and vice versa.
@@ -3961,9 +3982,8 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: ['成田空港（第１旅客ターミナル）', '空港第２ビル（第２旅客ターミナル）', '成田', '酒々井', '佐倉'] },
     ] },
 
-  // ── Narita → Kashima at Sawara ───────────────────────────────────────
+  // ── Narita ↔ Kashima at Sawara ───────────────────────────────────────
   // 3 普通 a day (from 成田 / 佐倉) run on from 佐原 to 鹿島神宮 (6h, 20–21h at 佐原; ODPT 2026-03).
-  // The 2 Kashima → Narita trains end at 成田 and 大船, one each: left to the Kashima platform.
   { from: 'JR Narita Line',  fromStation: '佐原', fromDir: 'end',
     to:   'JR Kashima Line', toEnd: '佐原',
     chainFrom: [], // the Sobu 快速 end at 成田, none runs on to 鹿島神宮
@@ -3974,6 +3994,18 @@ const LINE_CONNECTIONS = [
     ],
     express: [{ stops: null, name: 'Local', ja: '普通',
       schedule: { weekday: { timeRange: [[5, 7], [19, 22]] }, weekend: { timeRange: [[5, 7], [19, 22]] } } }] },
+  // ...and back: the 普通 of 8:12 from 鹿島神宮 runs on to 成田 (JR TrainTimetable 2026-03, both calendars; + the trailing
+  // hour). The 6:02 to 大船 (快速 on the Sobu side) isn't modelled: 6h only gates the Local, no destination runs then
+  { from: 'JR Kashima Line', fromEnd: '佐原',
+    to:   'JR Narita Line',  toStation: '佐原', toDir: 'start',
+    toUntil: '成田',
+    name: 'Narita', ja: '成田方面', color: '#00b261',
+    destinations: [
+      { until: '成田', name: 'Narita', ja: '成田方面', color: '#00b261', services: ['Local'],
+        schedule: { weekday: { timeRange: [8, 10] }, weekend: { timeRange: [8, 10] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '普通',
+      schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [6, 10] } } }] },
 
   // ── Shibayama Railway ↔ Keisei Higashi-Narita Line at Higashi-Narita ──
   // All-day through service Shibayama-Chiyoda ↔ Keisei-Narita. toUntil keeps the
