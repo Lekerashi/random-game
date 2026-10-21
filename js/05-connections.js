@@ -574,6 +574,8 @@ function resolveConnectionExpress(connExInfo, platform, line) {
             add.forEach(x => s.add(normalize(x)));
             let m = max;
             const until2 = until || nextEx.until || null, ui2 = untilIdxOn(nextConn.toLineIdx, until2);
+            // (a train ending where it enters the line, over via stations, rides those: 熱海 → 上野)
+            if (ui2 >= 0 && ui2 === nextConn.toJunctionIdx) m += nextConn.viaStations?.length || 0;
             if (nextLine) {
               const step = dirStep(nextConn.toDir);
               for (let k = nextConn.toJunctionIdx + step; k >= 0 && k < nextLine.stations.length; k += step) {
