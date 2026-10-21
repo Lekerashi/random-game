@@ -1263,6 +1263,9 @@ const LINE_DESTINATIONS = {
     { direction: 'end',  // only when heading toward end (west)
     destinations: [
       { until: '武蔵小金井', name: 'Musashi-Koganei', ja: '武蔵小金井方面', color: '#8bc34a' },
+      // a Sat/hol 快速 (東京 22:55) ends at 国分寺 (ODPT 2026-03)
+      { until: '国分寺',     name: 'Kokubunji',       ja: '国分寺方面',     color: '#8bc34a', services: ['Rapid'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [22, 1] } } },
       { until: '立川',       name: 'Tachikawa',       ja: '立川方面',       color: '#4caf50' },
       { until: '豊田',       name: 'Toyoda',           ja: '豊田方面',       color: '#009688' },
       { until: '八王子',     name: 'Hachioji',         ja: '八王子方面',     color: '#00796b' },
@@ -1809,8 +1812,19 @@ const LINE_DESTINATIONS = {
       { until: '青梅', name: 'Ome',     ja: '青梅方面', color: '#6a5020' },
     ],
   },
-  // (No Sagami Line destinations: every train toward 茅ケ崎 runs the whole way, ODPT 2026-03)
-  // Hachiko north segment: 6 a day each way turn back at 小川町 / 児玉 (ODPT 2026-03)
+  // Toward 橋本 3 trains a day from 茅ケ崎 end at 海老名 (wd 8:52 and 16:09, Sat/hol 16:09); every
+  // train toward 茅ケ崎 runs the whole way (ODPT 2026-03)
+  'JR Sagami Line': {
+    direction: 'end',  // toward Hashimoto
+    destinations: [
+      { until: '海老名', name: 'Ebina',     ja: '海老名方面', color: '#1a9fa0',
+        schedule: { weekday: { timeRange: [[8, 11], [16, 18]] }, weekend: { timeRange: [16, 18] } } },
+      { until: '橋本',   name: 'Hashimoto', ja: '橋本方面',   color: '#008a8a' },
+    ],
+  },
+  // Hachiko north segment: 6 a day each way turn back at 小川町 / 児玉, one each way at 群馬藤岡
+  // (高崎 6:55) and 小川町 (高崎 22:37); on the south segment (same name, same `start` config) the
+  // Kawagoe Line through trains of 高麗川 6:15 (wd) and 23:06 end at 拝島 (ODPT 2026-03)
   'JR Hachiko Line': [
     { direction: 'end',  // toward Takasaki
       destinations: [
@@ -1818,11 +1832,19 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[7, 9], [10, 11], [14, 17], [20, 23]] }, weekend: { timeRange: [[7, 9], [10, 11], [14, 17], [20, 23]] } } },
         { until: '高崎',   name: 'Takasaki',   ja: '高崎方面',   color: '#996633' },
       ] },
-    { direction: 'start',  // toward Komagawa
+    { direction: 'start',  // toward Komagawa (north segment) / toward Hachioji (south segment)
       destinations: [
+        { until: '群馬藤岡', name: 'Gumma-Fujioka', ja: '群馬藤岡方面', color: '#996633',
+          schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [6, 9] } } },
         { until: '児玉',   name: 'Kodama',     ja: '児玉方面',   color: '#996633',
           schedule: { weekday: { timeRange: [[7, 12], [14, 18], [21, 23]] }, weekend: { timeRange: [[7, 12], [14, 18], [21, 23]] } } },
+        { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#996633',
+          schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [22, 1] } } },
         { until: '高麗川', name: 'Komagawa',   ja: '高麗川方面', color: '#996633' },
+        // (south segment: the table steps aside by day, only 八王子 is left)
+        { until: '拝島',   name: 'Haijima',    ja: '拝島方面',   color: '#996633',
+          schedule: { weekday: { timeRange: [[6, 8], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+        { until: '八王子', name: 'Hachioji',   ja: '八王子方面', color: '#996633' },
       ] },
   ],
   // Most trains from 木更津 turn back at 久留里; 3 a day start there toward 木更津 (ODPT 2026-03)
@@ -1874,10 +1896,13 @@ const LINE_DESTINATIONS = {
         { until: '東京',     name: 'Tokyo',           ja: '東京方面',     color: '#C9252B' },
       ] },
   ],
-  // 東所沢 short turns both ways: mornings, evenings and the last trains (ODPT 2026-03)
+  // 東所沢 short turns both ways: mornings, evenings and the last trains; a weekday 19:06 from
+  // 西船橋 ends at 吉川美南 (ODPT 2026-03)
   'JR Musashino Line': {
     direction: 'start',  // toward Fuchu-Hommachi
     destinations: [
+      { until: '吉川美南', name: 'Yoshikawa-Minami',   ja: '吉川美南方面', color: '#F77321',
+        schedule: { weekday: { timeRange: [19, 21] }, weekend: { stops: [] } } },
       { until: '東所沢',   name: 'Higashi-Tokorozawa', ja: '東所沢方面',   color: '#F77321',
         schedule: { weekday: { timeRange: [[7, 11], [20, 22], [23, 1]] }, weekend: { timeRange: [[8, 11], [22, 1]] } } },
       { until: '府中本町', name: 'Fuchu-Hommachi',     ja: '府中本町方面', color: '#F77321' },

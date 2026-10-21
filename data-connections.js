@@ -2710,6 +2710,11 @@ const LINE_CONNECTIONS = [
       { until: '立川', name: 'Tachikawa', ja: '立川方面', color: '#b8a060' },
     ],
     destinations: [
+      // 2 weekday 快速 from 青梅 (22:32, 22:42) end at 武蔵小金井 / 三鷹 (ODPT 2026-03)
+      { until: '武蔵小金井', name: 'Musashi-Koganei', ja: '武蔵小金井方面', color: '#8bc34a', services: ['Rapid'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { stops: [] } } },
+      { until: '三鷹',       name: 'Mitaka',          ja: '三鷹方面',       color: '#8bc34a', services: ['Rapid'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { stops: [] } } },
       { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#f15a22' },
     ],
     express: [
