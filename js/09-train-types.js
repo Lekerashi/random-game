@@ -2,6 +2,9 @@
 
 // ── Train types ───────────────────────────────────────────────────────────
 
+// Button colour for a type whose entry, line and Local name none (resolveTrainTypes)
+const TYPE_COLOR_FALLBACK = '#8a8f98';
+
 // Build getEffectiveStops options from a train type descriptor.
 // Maps the routing fields set by resolveConnectionExpress into the opts shape
 // that getEffectiveStops expects (ei, _connTargetLineIdx, _terminatesAtJunction, _connTotalMax).
@@ -160,6 +163,17 @@ function resolveTrainTypes(p) {
       }
       trainTypes.push(entry);
     }
+  }
+  // Every type has a colour: an entry without one (a connection's Local, a through entry) takes the
+  // same-name type's on the source line (else the target line's), else the source line's Local
+  // colour, else a neutral grey
+  if (trainTypes.some(t => !t.color)) {
+    const tgtDefs = conn ? EXPRESS_SERVICES[conn.to] || [] : [];
+    const srcDefs = EXPRESS_SERVICES[p.lineName] || [];
+    const sameName = (defs, t) => defs.find(d => d.color && normalize(d.name) === normalize(t.name))?.color;
+    const localColor = srcDefs.find(d => d.stops === null && d.color)?.color;
+    trainTypes = trainTypes.map(t => t.color ? t
+      : { ...t, color: sameName(srcDefs, t) || sameName(tgtDefs, t) || (t.stops === null && p.lineColor) || localColor || TYPE_COLOR_FALLBACK });
   }
   // A lone express-class type still applies when the lists declare no Local and
   // hours/direction/stops hid the others (a Rapid while its Special Rapid is
