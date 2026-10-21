@@ -3518,6 +3518,9 @@ const LINE_CONNECTIONS = [
     name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a',
     // 京王八王子 comes from LINE_DESTINATIONS["Keio Line"], which merges this one
     destinations: [
+      // one evening 各停 from 新宿 ends at 高尾 (wd 20:02, Sat/hol 19:21; ODPT 2026-08)
+      { until: '高尾',     name: 'Takao',         ja: '高尾方面',     color: '#5aa85a', services: ['Local'],
+        schedule: { weekday: { timeRange: [20, 23] }, weekend: { timeRange: [19, 22] } } },
       { until: '高尾山口', name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a',
         services: ['Local', 'Ltd. Express'] },
     ],
@@ -3536,6 +3539,14 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '高幡不動', name: 'Takahatafudo', ja: '高幡不動方面', color: '#a060c0', services: ['Local'],
         schedule: { weekday: { timeRange: [[6, 7], [9, 11], [15, 17], [23, 24]] }, weekend: { timeRange: [[18, 20], [23, 24]] } } },
+      // a weekday 7:28 各停 from 高尾山口 ends at 調布; the 18:38 and 23:07 ones at 桜上水, as does the
+      // Sat/hol 23:10 from 高尾 (ODPT 2026-08)
+      { until: '調布',     name: 'Chofu',        ja: '調布方面',     color: '#a060c0', services: ['Local'],
+        schedule: { weekday: { timeRange: [7, 9] }, weekend: { stops: [] } } },
+      { until: '桜上水',   name: 'Sakurajosui',  ja: '桜上水方面',   color: '#b080d0', services: ['Local'],
+        schedule: { weekday: { timeRange: [[18, 20], [23, 1]] }, weekend: { stops: [] } } },
+      { until: '桜上水',   name: 'Sakurajosui',  ja: '桜上水方面',   color: '#b080d0', services: ['Local'], localFrom: '高尾',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } },
       { until: '新宿',     name: 'Shinjuku',     ja: '新宿方面',     color: '#800080' },
     ],
     express: [

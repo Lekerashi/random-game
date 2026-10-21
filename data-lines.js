@@ -1447,6 +1447,14 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0', services: ['Local'],
           schedule: { weekday: { timeRange: [[6, 11], [0, 1]] }, weekend: { timeRange: [0, 1] } } },
+        // the first train of the day (桜上水 4:37) and a weekday 9:26 各停 from 新宿 end at つつじヶ丘; a weekday
+        // 6:37 各停 from 新宿 at 調布 (ODPT 2026-08)
+        { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Local'], localFrom: '桜上水',
+          schedule: { weekday: { timeRange: [4, 6] }, weekend: { timeRange: [4, 6] } } },
+        { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } },
+        { until: '調布',       name: 'Chofu',         ja: '調布方面',       color: '#a060c0', services: ['Local'],
+          schedule: { weekday: { timeRange: [6, 9] }, weekend: { stops: [] } } },
         { until: '高幡不動',   name: 'Takahatafudo',  ja: '高幡不動方面',   color: '#a060c0', services: ['Local', 'Express', 'Ltd. Express'],
           schedule: { weekday: { timeRange: [[5, 7], [8, 12], [13, 17], [20, 1]] }, weekend: { timeRange: [[6, 7], [20, 1]] } } },
         { until: '京王八王子', name: 'Keio-Hachioji', ja: '京王八王子方面', color: '#800080' },
@@ -1455,6 +1463,9 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '高幡不動',   name: 'Takahatafudo',  ja: '高幡不動方面',   color: '#a060c0', services: ['Local'],
           schedule: { weekday: { timeRange: [[4, 7], [9, 11], [16, 18], [21, 1]] }, weekend: { timeRange: [[4, 6], [19, 20], [21, 1]] } } },
+        // a weekday 各停 from 高尾山口 (北野 7:43) ends at 調布 (ODPT 2026-08)
+        { until: '調布',       name: 'Chofu',         ja: '調布方面',       color: '#a060c0', services: ['Local'], localFrom: '北野',
+          schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
         // the Sagamihara 区間急行 ending here (boardable at 調布 only)
         { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Sub-Exp'],
           schedule: { weekday: { timeRange: [[18, 21], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
@@ -1486,6 +1497,10 @@ const LINE_DESTINATIONS = {
   'Keio Sagamihara line': {
     direction: 'end',  // toward Hashimoto
     destinations: [
+      // 若葉台 (depot) short turns from 調布: weekday 9:26 区間急行 and 9:35 各停 from 新宿, 16:08 and 0:50 from
+      // 本八幡; Sat/hol 8:29, 23:08 and 0:49 from 本八幡 (ODPT 2026-08)
+      { until: '若葉台',           name: 'Wakabadai',        ja: '若葉台方面',           color: '#e070b8',
+        schedule: { weekday: { timeRange: [[9, 11], [16, 18], [0, 2]] }, weekend: { timeRange: [[8, 10], [23, 2]] } } },
       { until: '京王多摩センター', name: 'Keio-Tama-Center', ja: '京王多摩センター方面', color: '#e070b8' },
       { until: '橋本',             name: 'Hashimoto',        ja: '橋本方面',             color: '#dd44aa' },
     ],
