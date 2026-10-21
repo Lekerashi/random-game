@@ -1382,6 +1382,13 @@ const LINE_CONNECTIONS = [
                 '東日本橋','浅草','押上(スカイツリー前)',
                 '青砥','京成高砂'],
         schedule: { weekday: { timeRange: [[10, 16], [20, 23]] }, weekend: { timeRange: [10, 20] } } },
+      // the weekday 22:40 エアポート快特 from Haneda runs on as a Keisei 快速 to 宗吾参道 (押上 23:01; ODPT 2025-12);
+      // on the Asakusa Line it boards at 22h only, so the type button stays as it was at 23h
+      { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', toName: 'Rapid', toJa: '快速', until: '宗吾参道',
+        stops: ['泉岳寺','三田','大門','新橋','日本橋',
+                '東日本橋','浅草','押上(スカイツリー前)',
+                '青砥','京成高砂'],
+        schedule: { weekday: { timeRange: [22, 23] }, weekend: { stops: [] } } },
       // アクセス特急 from Haneda / 西馬込 call at every Asakusa Line station on their way to the Sky
       // Access (13 a day: mornings, late afternoon and evening; ODPT 2026-03)
       { name: 'Access Express', ja: 'アクセス特急', color: '#f08300',
@@ -2155,6 +2162,11 @@ const LINE_CONNECTIONS = [
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ],
     destinations: [
+      // 2 weekday-morning Mita Line trains end at 大和: a 急行 (西高島平 6:45, 目黒 7:38) and a 各停 (8:55 / 9:49)
+      // (ODPT 2026-03); chainFrom: none from the Namboku. No `services`: from the Mita boards the 急行 is the
+      // Meguro Line's own type, which a chained destination's services can't name yet (typeNameForDest)
+      { until: '大和', name: 'Yamato', ja: '大和方面', color: '#003087', chainFrom: ['Toei Mita Line'],
+        schedule: { weekday: { timeRange: [6, 12] }, weekend: { stops: [] } } },
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087' },
     ],
     // Meguro 急行 mostly run on as Sotetsu 各停 (Sotetsu 快速 never run through)
@@ -2442,12 +2454,13 @@ const LINE_CONNECTIONS = [
         '本八幡','船堀','大島','森下','馬喰横山','神保町','市ヶ谷','新宿',
         '笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布'],
         schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
-      // Keio 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター; weekdays by day only
+      // Keio 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター / 若葉台; weekdays by day and the
+      // last one (本八幡 23:33, on Toei past midnight)
       { name: 'Local', ja: '各停', color: '#00a0a0', toName: 'Rapid', toJa: '快速', stops: [
         '本八幡','篠崎','瑞江','一之江','船堀','東大島','大島','西大島','住吉','菊川','森下',
         '浜町','馬喰横山','岩本町','小川町','神保町','九段下','市ヶ谷','曙橋','新宿三丁目','新宿',
         '笹塚','明大前','下高井戸','桜上水','八幡山','千歳烏山','仙川','つつじヶ丘','調布'],
-        schedule: { weekday: { timeRange: [[10, 18], [23, 24]] } } },
+        schedule: { weekday: { timeRange: [[10, 18], [23, 2]] } } },
     ] },
   { from: 'Keio Line',          fromStation: '笹塚', fromDir: 'start',
     to:   'Toei Shinjuku Line', toEnd:   '新宿',
@@ -3237,6 +3250,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [17, 24] }, weekend: { stops: [] } } },
       { until: '京成成田', name: 'Keisei Narita', ja: '京成成田方面', color: '#0a4890', services: ['Rapid', 'Ltd. Express'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [[17, 20], [21, 23]] } } },
+      // the weekday 22:40 エアポート快特 from Haneda (押上 23:01 快速) ends at 宗吾参道 (ODPT 2025-12)
+      { until: '宗吾参道', name: 'Sogo-sando', ja: '宗吾参道方面', color: '#005aa0', services: ['Rapid'],
+        schedule: { weekday: { timeRange: [22, 24] }, weekend: { stops: [] } } },
       // 快速 (Haneda / 西馬込), 特急 (西馬込), 快速特急 (the Keikyu 快特) and 通勤特急; no 普通 runs through
       { until: '成田空港（第１旅客ターミナル）', name: 'Narita Airport (Main Line)', ja: '成田空港方面（本線経由）', color: '#003878',
         services: ['Rapid', 'Ltd. Express', 'Rapid Ltd', 'Commuter Ltd. Exp'] },
@@ -3399,6 +3415,12 @@ const LINE_CONNECTIONS = [
         services: ['Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
       { until: '橋本', name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa',
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
+      // 若葉台 (depot) short turns: Toei through 快速 (wd 本八幡 14:57 and 23:33 = 笹塚 15:46, 0:25; Sat/hol 7:19,
+      // 21:48, 23:33) and 2 weekday-morning trains from 新宿 (快速 8:58, 区間急行 9:02) (ODPT 2025-03 / 2026-08);
+      // hours are the boarding hours on each line plus the trailing one; chainFrom: the lines the Toei trains board on
+      { until: '若葉台', name: 'Wakabadai', ja: '若葉台方面', color: '#e070b8', chainFrom: ['Toei Shinjuku Line', 'Keio new line'],
+        services: ['Rapid', { name: 'Sub-Exp', schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [[8, 11], [14, 17], [23, 2]] }, weekend: { timeRange: [[7, 10], [21, 2]] } } },
     ],
     // 特急/急行 share the Sagamihara stops; 区間急行/快速 call everywhere past 調布
     // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through weekdays
