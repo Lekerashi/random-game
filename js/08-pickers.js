@@ -148,10 +148,16 @@ function handleConnectionRouting(p) {
   if (conns.length === 0) return { pickerShown: false };
   const onLineStops = p._onLineStops || 0;
   const rollableMax = capStops(p.maxStops);
+  // Chained short turns (a chained destination flagged `shortTurn`: the last Seibu 各停 to 元住吉)
+  // of connections without destinations of their own, running now: extra choices, so the board
+  // gets a picker only at their hours
+  const chainShort = conns.filter(c => !c.destinations).flatMap(c =>
+    (c.fromJunctionIdx - p.fromIdx) * dirStep(p.direction) < 0 ? []
+      : chainDestChoices(p, c, stopsBeforeJunction(p, c, onLineStops)).filter(d => d._shortTurn && d.effectiveMax > 0));
 
   // If we can't even reach the junction, no connection matters
   // (but still show picker when connections have destinations — e.g. mid-line Y-junctions)
-  if (rollableMax <= onLineStops && !conns.some(c => c.destinations || c.lineDests)) {
+  if (rollableMax <= onLineStops && !chainShort.length && !conns.some(c => c.destinations || c.lineDests)) {
     state.selectedConnection = conns[0];
     return { pickerShown: false };
   }
@@ -162,7 +168,7 @@ function handleConnectionRouting(p) {
   }
 
   // Single connection without destinations — auto-select
-  if (conns.length === 1) {
+  if (conns.length === 1 && !chainShort.length) {
     state.selectedConnection = conns[0];
     return { pickerShown: false };
   }
@@ -181,7 +187,7 @@ function handleConnectionRouting(p) {
       return via + '|' + targetStops.map(s => s.ja).join(',');
     };
     const firstRoute = getConnRoute(conns[0]);
-    if (conns.every(c => getConnRoute(c) === firstRoute)) {
+    if (!chainShort.length && conns.every(c => getConnRoute(c) === firstRoute)) {
       state.selectedConnection = conns[0];
       return { pickerShown: false };
     }
@@ -264,7 +270,22 @@ function handleConnectionRouting(p) {
   const seenLd = new Set();
   const shortTurns = conns.flatMap(c => (c.lineDests || []).map(d => lineDestChoice(p, c, d)))
     .filter(c => c && !c._plain && c.effectiveMax > 0 && !seenLd.has(c.name) && seenLd.add(c.name));
-  const ranged = [...applyServiceRanges(p, shortTurns), ...choices.map((c, i) => conns[i].destinations ? c : serviceRange(p, c))];
+  let plainConns = choices.map((c, i) => conns[i].destinations ? c : serviceRange(p, c));
+  // With chained short turns, a mid-line connection without destinations stands for no ride of
+  // its own: the plain ride to the line's end takes its place (石神井公園: 池袋 or 元住吉)
+  if (chainShort.length) {
+    const line = state.lines[p.lineIdx], end = dirEnd(N, p.direction), toEnd = (end - p.fromIdx) * dirStep(p.direction);
+    const midNoDest = (c, i) => !conns[i].destinations && conns[i].fromJunctionIdx !== end;
+    if (choices.some(midNoDest) && toEnd > 0) {
+      plainConns = plainConns.filter((c, i) => !midNoDest(c, i));
+      plainConns.unshift({ name: line.stations[end].name, ja: line.stations[end].ja, color: p.lineColor,
+        effectiveMax: capStops(Math.min(toEnd, p.maxStops)), _fullMax: toEnd, _plain: true, _isLineDest: true,
+        _outOfWards: outOfWards(line, end), _connRef: null,
+        onSelect: () => { state.selectedDestination = { totalMax: toEnd, untilIdx: end, name: null, ja: null,
+          stopAt: { lineIdx: p.lineIdx, idx: end, dir: p.direction } }; } });
+    }
+  }
+  const ranged = [...applyServiceRanges(p, shortTurns), ...plainConns, ...applyServiceRanges(p, chainShort)];
   if (choicesRideAlike(p, ranged)) return { pickerShown: furthestChoice(ranged).onSelect() === 'subpicker' };
   showBranchPickerUI(p, ranged, false, 'connectionBranch');
   return { pickerShown: true };
@@ -517,8 +538,9 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // (e.g. Odakyu 準急/急行 to Joban), so none when no conn destination is served here. A hop
   // with express entries names its through trains itself: the chain decides what reaches.
   // One with its own `services` only needs them to run (firstHopRunsNow).
-  const served = servedDests(conn, p);
-  const chainBlocked = served.length === 0 && conn.destinations.some(d => d.services);
+  // (a connection without destinations of its own: its chained ones only, for chained short turns)
+  const served = conn.destinations ? servedDests(conn, p) : [];
+  const chainBlocked = served.length === 0 && !!conn.destinations?.some(d => d.services);
   const inheritedServices = !conn.express && served.length && served.every(d => d.services)
     ? [...new Set(served.flatMap(d => d.services))] : null;
   // A chained destination's `services` must be boardable here: one of them calls at this
@@ -569,6 +591,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
         _services: d.services || null,
         _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
         _sourceConn: conn, // first hop: the one that leaves the boarding line
+        _shortTurn: !!d.shortTurn,
         onSelect: () => {
           state.selectedConnection = conn;
           state.selectedDestination = { totalMax: cappedMax, services: d.services || null, servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,

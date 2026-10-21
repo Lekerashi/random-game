@@ -30,8 +30,9 @@
 //     displayName       — override platform pill label (e.g. "Ueno Tokyo Line")
 //
 //   SERVICES:
-//     destinations      — [{ until (JA), name, ja, color?, services?, localFrom?, chainFrom? }] train terminus picker
+//     destinations      — [{ until (JA), name, ja, color?, services?, localFrom?, chainFrom?, shortTurn? }] train terminus picker
 //                         chainFrom (per destination): boarding lines whose chained pickers may offer it
+//                         shortTurn: also offered (chained, while it runs) on boards whose connections have no destinations
 //                         localFrom (JA, source line): with `services`, local-class services only
 //                         feed this destination from that station onward toward the junction —
 //                         the destination is hidden at earlier stations no allowed service calls at
