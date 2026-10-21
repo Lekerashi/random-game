@@ -1328,17 +1328,22 @@ const LINE_DESTINATIONS = {
       { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860' },
     ],
   },
-  // 快速 from Tokyo mostly end at 津田沼/千葉, some 佐倉/成東; 普通 east of 千葉 run to 佐倉/成東/銚子
+  // 快速 from Tokyo mostly end at 津田沼/千葉, some 佐倉/成東; 普通 east of 千葉 run to 佐倉/成東/銚子;
+  // 3 evening 普通 from 千葉 end at 四街道 (17:44–19:57) and the 21:57 at 横芝 (ODPT 2026-03)
   'JR Sobu Line': {
     direction: 'end',  // away from Tokyo
     destinations: [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
+      { until: '四街道', name: 'Yotsukaido', ja: '四街道方面', color: '#d87828', services: ['Local'], localFrom: '千葉',
+        schedule: { weekday: { timeRange: [17, 22] }, weekend: { timeRange: [17, 22] } } },
       { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20' },
       // a late 普通 from 千葉 ends at 八街 (ODPT 2026-03)
       { until: '八街',   name: 'Yachimata', ja: '八街方面',   color: '#b06420',
         schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
       { until: '成東',   name: 'Naruto',    ja: '成東方面',   color: '#a05a20' },
+      { until: '横芝',   name: 'Yokoshiba', ja: '横芝方面',   color: '#905020', services: ['Local'], localFrom: '千葉',
+        schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [21, 24] } } },
       { until: '銚子',   name: 'Choshi (Sobu Line)', ja: '銚子方面（総武本線）', color: '#804818' },
     ],
   },
@@ -1408,14 +1413,30 @@ const LINE_DESTINATIONS = {
       { until: '千葉',       name: 'Chiba',             ja: '千葉方面',       color: '#e8503a' },
     ],
   },
-  // Toward 千葉 half the Uchibo 普通 from the south turn back at 木更津 (ODPT 2026-03); toward 安房鴨川
+  // Toward 千葉 half the Uchibo 普通 from the south turn back at 木更津; one early train each ends at
+  // 館山 (安房鴨川 6:18), 上総湊 (安房鴨川 7:18) and 君津 (館山 6:20) (ODPT 2026-03); toward 安房鴨川
   // the short turns are lineDests on the Uchibo → Sotobo connection
   'JR Uchibo Line': {
     direction: 'start',  // toward Chiba
     destinations: [
+      { until: '館山',   name: 'Tateyama',      ja: '館山方面',   color: '#005080', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 8] }, weekend: { timeRange: [6, 8] } } },
+      { until: '上総湊', name: 'Kazusa-Minato', ja: '上総湊方面', color: '#0070a0', services: ['Local'],
+        schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [7, 10] } } },
+      { until: '君津',   name: 'Kimitsu',       ja: '君津方面',   color: '#0090c0', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [6, 9] } } },
       { until: '木更津', name: 'Kisarazu', ja: '木更津方面', color: '#00b2e5', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[5, 7], [8, 23]] } } },
       { until: '千葉',   name: 'Chiba',    ja: '千葉方面',   color: '#00b2e5' },
+    ],
+  },
+  // Toward 成東 the 21:59 (through from 千葉) and 23:10 from 大網 end at 東金 (ODPT 2026-03)
+  'JR Togane Line': {
+    direction: 'end',  // toward Naruto
+    destinations: [
+      { until: '東金', name: 'Togane', ja: '東金方面', color: '#8a6ad0',
+        schedule: { weekday: { timeRange: [21, 1] }, weekend: { timeRange: [21, 1] } } },
+      { until: '成東', name: 'Naruto', ja: '成東方面', color: '#7467f0' },
     ],
   },
   // Keio Line short turns (ODPT 2026-08): 桜上水 (各停, both ways), 高幡不動 (特急/急行/各停 down,
