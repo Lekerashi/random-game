@@ -49,7 +49,12 @@ function resolveTrainTypes(p) {
   // Skip when a lineDest was selected (ride stays on source line, connection express is irrelevant)
   const isLineDest = state.selectedDestination?.untilIdx != null;
   const allConnExpress = [];
-  if (conn?.express && !isLineDest) allConnExpress.push({ express: conn.express, targetLineIdx: conn.toLineIdx, targetLine: connTargetLine, connObj: conn });
+  // A mid-line connection the ride doesn't take (none picked with a destination) runs no local
+  // entry that ends short (`until`): that train is boarded by its destination (the 23h 各停 to
+  // 元住吉 from 石神井公園 only when 元住吉 is picked)
+  const srcN = state.lines[p.lineIdx].stations.length;
+  const exOf = c => c.fromJunctionIdx !== dirEnd(srcN, p.direction) && !state.selectedDestination ? c.express.filter(e => !(isLocalEntry(e) && e.until)) : c.express;
+  if (conn?.express && !isLineDest) allConnExpress.push({ express: exOf(conn), targetLineIdx: conn.toLineIdx, targetLine: connTargetLine, connObj: conn });
   // Only add mid-line connection express when no branch connection or line destination is selected
   // (if user picked Yokohama branch, don't add Shinagawa branch's express)
   // (if user picked a line destination like Takao, don't add Ome connection express)
@@ -57,7 +62,7 @@ function resolveTrainTypes(p) {
   if (!conn && !hasLineDest && p._connections) {
     for (const c of p._connections) {
       if (!c.express) continue;
-      allConnExpress.push({ express: c.express, targetLineIdx: c.toLineIdx, targetLine: state.lines[c.toLineIdx], connObj: c });
+      allConnExpress.push({ express: exOf(c), targetLineIdx: c.toLineIdx, targetLine: state.lines[c.toLineIdx], connObj: c });
     }
   }
   const hasConnExpress = allConnExpress.length > 0;
