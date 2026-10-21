@@ -49,7 +49,7 @@
 //                         become 普通. noBoard (JA source stations it calls at): riders don't board
 //                         it there, the board shows another name (Keikyu's 品川 board for the Haneda 急行).
 //                         until (JA): the entry's trains end there (its target line or one further on):
-//                         the chain takes no hop off that line and the ride stops at it.
+//                         the chain takes no hop off that line, at a fork only those toward it, and the ride stops there.
 //                         schedule as in EXPRESS_SERVICES (connections are already
 //                         one-way); same-name entries with different stops give per-segment hours
 //     destinations / lineDests entries and LINE_BRANCHES / LINE_DESTINATIONS entries take
