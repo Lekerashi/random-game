@@ -1655,8 +1655,8 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '京急久里浜', name: 'Keikyu Kurihama', ja: '京急久里浜方面', color: '#00539f',
         schedule: { weekend: { timeRange: [[7, 13], [15, 1]] } } },
-      // the last 特急 end at 三浦海岸
-      { until: '三浦海岸',   name: 'Miura-Kaigan',    ja: '三浦海岸方面',   color: '#c02060', services: ['Ltd. Express'],
+      // the last 特急 end at 三浦海岸 (no services: the line's own platforms have no train types)
+      { until: '三浦海岸',   name: 'Miura-Kaigan',    ja: '三浦海岸方面',   color: '#c02060',
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '三崎口',     name: 'Misakiguchi',     ja: '三崎口方面',     color: '#e83080' },
     ],

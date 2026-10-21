@@ -992,9 +992,11 @@ const LINE_CONNECTIONS = [
       // Through trains are 急行/準急 only: hidden at stations they skip (小菅, 牛田, …)
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#8F76D6',
         services: ['Semi-Exp', 'Express'] },
-      // Nikko Line riders' weekday 23:06 準急 ends at 押上 (chained from Nikko → Isesaki)
+      // Nikko Line riders' weekday 22:59 準急 from 南栗橋 ends at 押上 (chained from Nikko → Isesaki; 東武動物公園
+      // 23:12, so this line's own boards see it at 23h as the 準急)
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6',
-        services: ['Semi-Exp (Oshiage)'], schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
+        services: ['Semi-Exp (Oshiage)', { name: 'Semi-Exp', schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [22, 24] }, weekend: { stops: [] } } },
     ],
     // Types by the Tobu side, renamed at 押上 (toName): the Hanzomon names them by the DET type they
     // become. ODPT 2026-03: 急行 → 普通 51 wd / 57 Sat/hol, → 急行 21 / 17, → 準急 6 / 1; 準急 → 普通 26 / 21
@@ -1044,7 +1046,7 @@ const LINE_CONNECTIONS = [
       { stops: null, name: 'Local (Kita-Senju)', ja: '普通（北千住行き）', color: '#00a0e8',
         schedule: { weekday: { timeRange: [22, 23] }, weekend: { stops: [] } } },
       { stops: null, name: 'Local (Minami-Senju)', ja: '普通（南千住行き）', color: '#00a0e8',
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [22, 24] } } }, // 南栗橋 22:59
       { name: 'Sec. Semi-Exp (Kita-Senju)', ja: '区間準急（北千住行き）', color: '#7fbf3f',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
                 'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住'],
@@ -1052,7 +1054,7 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp (Oshiage)', ja: '準急（押上行き）', color: '#00b900',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
                 'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住','曳舟'],
-        schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
+        schedule: { weekday: { timeRange: [22, 24] }, weekend: { stops: [] } } }, // 南栗橋 22:59
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','春日部','せんげん台','越谷','新越谷',
                 '草加','西新井','北千住','牛田','堀切','鐘ヶ淵','東向島','曳舟','とうきょうスカイツリー','浅草'],
@@ -1186,9 +1188,16 @@ const LINE_CONNECTIONS = [
       // Hibiya through trains are all 普通 (THライナー is paid-seat)
       { until: '中目黒', name: 'Naka-meguro', ja: '中目黒方面', color: '#9B7A00',
         services: ['Local'] },
-      // Nikko Line riders' weekend 23:06 普通 ends at 南千住 (chained from Nikko → Isesaki)
+      // Nikko Line riders' Sat/hol 22:59 普通 from 南栗橋 ends at 南千住 (chained from Nikko → Isesaki; no localFrom here:
+      // a chained rider's first-hop check reads it on the boarding line)
       { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00',
         services: ['Local (Minami-Senju)'] },
+      // ...and this line's own boards ride it from 東武動物公園 on (23:13), like the Sat/hol 23:51 and the weekday 23:57
+      // 普通 from 北越谷 (ODPT 2026-03)
+      { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00', localFrom: '東武動物公園', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } },
+      { until: '南千住', name: 'Minami-Senju', ja: '南千住方面', color: '#9B7A00', localFrom: '北越谷', services: ['Local'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { stops: [] } } },
     ] },
 
   // ── Asakusa ↔ Keikyu at Sengakuji (toward Haneda) ──────────────────────
@@ -1515,10 +1524,12 @@ const LINE_CONNECTIONS = [
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
     ],
     // Signboard termini; daytime 急行 also run on to 唐木田 (chained Odakyu → Tama hop).
-    // Through 各停 end at 成城学園前 (16 wd) and 向ヶ丘遊園 (5 wd) (ODPT 2026-03)
+    // Through 各停 end at 成城学園前 (16 wd) and 向ヶ丘遊園 (5 wd) (ODPT 2026-03); the 成城学園前 trains (各停 /
+    // 準急, 29 wd / 10 Sat/hol) leave 綾瀬 wd 7–9h and 15–22h, Sat/hol 8–10h and 17–19h
     destinations: [
       { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0',
-        services: ['Local', 'Semi-Exp'] },
+        services: ['Local', 'Semi-Exp'],
+        schedule: { weekday: { timeRange: [[7, 11], [15, 24]] }, weekend: { timeRange: [[8, 12], [17, 20]] } } },
       // one morning train from 北綾瀬 runs to 相模大野: a weekday 各停 (7:14), a Sat/hol 急行 (7:04) (ODPT 2026-03)
       { until: '相模大野', name: 'Sagami-Ono', ja: '相模大野方面', color: '#2a80d0', chainFrom: [],
         services: [{ name: 'Local', schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
@@ -3462,10 +3473,11 @@ const LINE_CONNECTIONS = [
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
       // 若葉台 (depot) short turns: Toei through 快速 (wd 本八幡 14:57 and 23:33 = 笹塚 15:46, 0:25; Sat/hol 7:19,
       // 21:48, 23:33) and 2 weekday-morning trains from 新宿 (快速 8:58, 区間急行 9:02) (ODPT 2025-03 / 2026-08);
-      // hours are the boarding hours on each line plus the trailing one; chainFrom: the lines the Toei trains board on
+      // hours are the boarding hours on each line plus the trailing one, within the hours the 快速 / 区間急行 types
+      // run (the 8:58 快速 has no type at 8h); chainFrom: the lines the Toei trains board on
       { until: '若葉台', name: 'Wakabadai', ja: '若葉台方面', color: '#e070b8', chainFrom: ['Toei Shinjuku Line', 'Keio new line'],
         services: ['Rapid', { name: 'Sub-Exp', schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } }],
-        schedule: { weekday: { timeRange: [[8, 11], [14, 17], [23, 2]] }, weekend: { timeRange: [[7, 10], [21, 2]] } } },
+        schedule: { weekday: { timeRange: [[9, 11], [14, 17], [23, 1]] }, weekend: { timeRange: [[7, 10], [21, 2]] } } },
     ],
     // 特急/急行 share the Sagamihara stops; 区間急行/快速 call everywhere past 調布
     // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through weekdays
