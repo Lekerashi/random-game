@@ -556,18 +556,26 @@ const LINE_CONNECTIONS = [
     name: 'Joban', ja: '常磐線', color: '#009BBF',
     displayName: 'Ueno Tokyo Line',
     chainFrom: [], // the Ito Line's through 普通 run on to the Utsunomiya / Takasaki Lines only
-    // On the rapid tracks every train calls at every station: 快速 to 取手, 普通 (中距離) beyond
+    // Every Joban train on the Ueno-Tokyo Line starts at 品川 (none from further south; ODPT 2026-03): the
+    // through locals board at 品川 / 新橋 / 東京 only. On the rapid tracks every train calls at every station:
+    // 快速 to 取手 (7 a day, 17–22h), 普通 (中距離) beyond: 土浦 22–23 a day all day, 水戸 3 (14h, 15h, 18h),
+    // 勝田 9 (6:35, 14:17, 17–19h, 22h); the 2 afternoon 特別快速 (14:55, 15:55) to 土浦
     destinations: [
-      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF', services: ['Local'], chainFrom: [] },
-      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0', services: ['Local', 'Special Rapid'], chainFrom: [] },
-      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080', services: ['Local'], chainFrom: [] },
-      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860', services: ['Local'], chainFrom: [] },
+      { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF', services: ['Local'], chainFrom: [],
+        schedule: { weekday: { timeRange: [17, 24] }, weekend: { timeRange: [17, 24] } } },
+      { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0', services: ['Local', 'Special Rapid'], chainFrom: [],
+        schedule: { weekday: { timeRange: [7, 1] }, weekend: { timeRange: [7, 1] } } },
+      { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080', services: ['Local'], chainFrom: [],
+        schedule: { weekday: { timeRange: [[13, 16], [17, 19]] }, weekend: { timeRange: [[13, 16], [17, 19]] } } },
+      { until: '勝田', name: 'Katsuta',   ja: '勝田方面', color: '#064860', services: ['Local'], chainFrom: [],
+        schedule: { weekday: { timeRange: [[6, 8], [14, 24]] }, weekend: { timeRange: [[6, 8], [14, 24]] } } },
     ],
     express: [
-      // The 普通 run through in the rushes (6–9h, 20–22h weekdays; 5–10h, 17–22h Sat/hol), by day the Joban
-      // through trains are the 特別快速 (ODPT 2026-03)
-      { stops: null, name: 'Local', ja: '普通',
-        schedule: { weekday: { timeRange: [[6, 10], [20, 23]] }, weekend: { timeRange: [[5, 11], [17, 23]] } } },
+      // The through 普通 (first 品川 6:35, last 22:56) call at every station; the stops list says where they board
+      { name: 'Local', ja: '普通', stops: ['品川','新橋','東京','上野','日暮里','三河島','南千住','北千住','松戸','柏','我孫子',
+                '天王台','取手','藤代','龍ケ崎市','牛久','ひたち野うしく','荒川沖','土浦','神立','高浜','石岡','羽鳥','岩間',
+                '友部','内原','赤塚','水戸','勝田'],
+        schedule: { weekday: { timeRange: [6, 1] }, weekend: { timeRange: [6, 1] } } },
       // Only 2 down trains a day since 2022 (品川 14:55, 15:55 → 土浦; 15–17h on the Joban side)
       { name: 'Special Rapid', ja: '特別快速', color: '#e85050',
         stops: ['品川','新橋','東京','上野','日暮里','北千住','松戸','柏','取手',
@@ -732,13 +740,14 @@ const LINE_CONNECTIONS = [
       { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848',
         services: ['Local', 'Rapid (Utsunomiya–Yokosuka)'] },
     ],
-    // Utsunomiya-Yokosuka system 快速 all day: skips 土呂/白岡/新白岡/東鷲宮/栗橋/野木/間々田; most
-    // skip 西大井 / 新川崎, the daytime ones (a quarter) call there (ODPT 2026-03); 普通 run through too
+    // Utsunomiya-Yokosuka system 快速 by day (8–17h; the rush-hour trains are 普通): skips 土呂/白岡/新白岡/東鷲宮/
+    // 栗橋/野木/間々田; most skip 西大井 / 新川崎, the daytime ones (a quarter) call there (ODPT 2026-03); 普通 run through too
     express: [
       { stops: null, name: 'Local', ja: '普通' },
       { name: 'Rapid (Utsunomiya–Yokosuka)', ja: '快速（宇都宮・横須賀線系統）', color: '#40a060',
         stops: ['大船','戸塚','東戸塚','保土ケ谷','横浜','武蔵小杉','大崎','恵比寿','渋谷','新宿','池袋','赤羽','浦和','大宮',
-                '東大宮','蓮田','久喜','古河','小山','小金井','自治医大','石橋','雀宮','宇都宮'] },
+                '東大宮','蓮田','久喜','古河','小山','小金井','自治医大','石橋','雀宮','宇都宮'],
+        schedule: { weekday: { timeRange: [8, 18] }, weekend: { timeRange: [8, 18] } } },
       { name: 'Rapid (Utsunomiya–Yokosuka)', ja: '快速（宇都宮・横須賀線系統）', color: '#40a060',
         stops: ['大船','戸塚','東戸塚','保土ケ谷','横浜','新川崎','武蔵小杉','西大井','大崎','恵比寿','渋谷','新宿','池袋','赤羽','浦和','大宮',
                 '東大宮','蓮田','久喜','古河','小山','小金井','自治医大','石橋','雀宮','宇都宮'],
