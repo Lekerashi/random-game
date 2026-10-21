@@ -121,7 +121,7 @@ function resolveConnections() {
       : conn.name ? 'named'
       : express ? 'express-only'
       : 'transparent';
-    state.connections.push({
+    const entry = {
       from: conn.from, fromLineIdx, fromJunctionIdx, fromDir,
       to: conn.to, toLineIdx, toJunctionIdx, toDir,
       viaStations, _type,
@@ -132,7 +132,16 @@ function resolveConnections() {
       impliedLines: conn.impliedLines || null,
       chainFrom: conn.chainFrom || null,
       boardAtJunction: !!conn.boardAtJunction,
-    });
+    };
+    // `shortTurnsOnly`: the destinations (and so a picker) exist only while one of its scheduled entries (the short
+    // turns) runs; otherwise the hop is as without them (Sotetsu SY → Main: 大和 by day, the plain ride to 海老名 else)
+    if (conn.shortTurnsOnly && destinations) {
+      const all = destinations;
+      entry._allDestinations = all; // (every one, for the dev tools)
+      Object.defineProperty(entry, 'destinations', { enumerable: true,
+        get: () => (all.some(d => d.schedule && scheduleActive(d.schedule)) ? all : null) });
+    }
+    state.connections.push(entry);
     } // end toMatch loop
     } // end fromMatch loop
   }
