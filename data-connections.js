@@ -1378,9 +1378,13 @@ const LINE_CONNECTIONS = [
     // (10 wd, 9–15h), 急行 (5 wd) or 普通 to 西馬込 (7 wd); the Asakusa → Keikyu entries continue them by name
     express: [
       { stops: null, name: 'Local', ja: '各停' },
-      // (chainFrom: the 特急 start at 青砥 / 京成高砂, the 急行 there or on the Hokuso Line; a Keisei Main 普通 is neither)
+      // (chainFrom: the 特急 start at 青砥 / 京成高砂, the 急行 there or on the Hokuso Line; a Keisei Main 普通 is neither).
+      // The 特急 from 青砥 / 押上 / 京成高砂 go to 三崎口 / 久里浜 / 三浦海岸 (until 三崎口), except wd 10–11h and Sat/hol 9h,
+      // when 3 / 1 of them go to Haneda (Toei TrainTimetable 2026-03, + the trailing hour)
+      { name: 'Local', ja: '各停', color: '#e84040', toName: 'Ltd. Express', toJa: '特急', chainFrom: [], until: '三崎口', stops: [...OSHIAGE_DOWN, ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[7, 10], [12, 20], [22, 24]] }, weekend: { timeRange: [[7, 9], [10, 23]] } } },
       { name: 'Local', ja: '各停', color: '#e84040', toName: 'Ltd. Express', toJa: '特急', chainFrom: [], stops: [...OSHIAGE_DOWN, ...ASAKUSA_DOWN.slice(1)],
-        schedule: { weekday: { timeRange: [[7, 20], [22, 24]] }, weekend: { timeRange: [7, 23] } } },
+        schedule: { weekday: { timeRange: [10, 12] }, weekend: { timeRange: [9, 10] } } },
       { name: 'Local', ja: '各停', color: '#e83030', toName: 'Express', toJa: '急行', chainFrom: ['Hokuso Railway Hokuso Line'], stops: [...OSHIAGE_DOWN, ...ASAKUSA_DOWN.slice(1)],
         schedule: { weekday: { timeRange: [[5, 11], [16, 23]] }, weekend: { timeRange: [[5, 9], [19, 23]] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '普通',
@@ -1390,15 +1394,24 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00a0e8', toName: 'Local', toJa: '普通',
         stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1), ...ASAKUSA_SOUTH],
         schedule: { weekday: { timeRange: [[6, 10], [16, 21], [22, 23]] }, weekend: { timeRange: [[6, 10], [16, 18], [19, 21], [22, 23]] } } },
-      { name: 'Rapid', ja: '快速', color: '#e84040', toName: 'Ltd. Express', toJa: '特急',
+      // (the Keisei 快速 that run on as 特急 all go to Haneda: 成田空港 / 京成佐倉 / 芝山千代田 → 羽田空港, Toei 2026-03)
+      { name: 'Rapid', ja: '快速', color: '#e84040', toName: 'Ltd. Express', toJa: '特急', until: '羽田空港第1・第2ターミナル',
         stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
         schedule: { weekday: { timeRange: [10, 15] }, weekend: { timeRange: [[7, 8], [9, 19]] } } },
       { name: 'Rapid', ja: '快速', color: '#e83030', toName: 'Express', toJa: '急行',
         stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
         schedule: { weekday: { timeRange: [[5, 8], [15, 16], [17, 23]] }, weekend: { timeRange: [[5, 9], [18, 24]] } } },
-      { name: 'Rapid Ltd', ja: '快速特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特',
+      // 快速特急 → 快特 go to Haneda (from the Keisei Main and 京成高砂 / 青砥), except wd 15h (one from 京成高砂 to 三崎口)
+      // and the evening ones from 青砥 / 京成高砂 to 久里浜 / 三崎口 (wd 19h, 21h) (Toei 2026-03, + the trailing hour)
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特', until: '羽田空港第1・第2ターミナル',
         stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
         schedule: { weekday: { timeRange: [[5, 6], [11, 16]] }, weekend: { timeRange: [[5, 6], [9, 19]] } } }, // (one 7h train left out: the 芝山 快特 below)
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特', chainFrom: [],
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [15, 16] }, weekend: { stops: [] } } },
+      { name: 'Rapid Ltd', ja: '快速特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特', chainFrom: [], until: '三崎口',
+        stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1)],
+        schedule: { weekday: { timeRange: [[19, 20], [21, 23]] }, weekend: { stops: [] } } },
       // the weekday 快特 from 芝山千代田 (7:07; 押上 8:25) runs on as 普通 to 西馬込
       { name: 'Rapid Ltd', ja: '快速特急', color: '#00a0e8', toName: 'Local', toJa: '普通',
         stops: ['京成高砂','青砥','押上(スカイツリー前)', ...ASAKUSA_DOWN.slice(1), ...ASAKUSA_SOUTH],
