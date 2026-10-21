@@ -20,6 +20,17 @@ function trainTypeOpts(g) {
 // Services a chained destination inherits from the first hop are first-hop names.
 function typeNameForDest(tt, sd, p = state.selectedPlatform) {
   if (!sd?.chain?.length || sd.servicesFirstHop) return tt.name;
+  // A target line's own type (the Meguro 急行 boarded on the Mita Line): it keeps its name over hops
+  // without express and rides on over one that names it (Meguro → Sotetsu 急行 to 大和)
+  if (!tt._hopConns && tt.expressIndices && tt._connTargetLineIdx != null) {
+    let lineIdx = tt._connTargetLineIdx;
+    for (const h of sd.chain) {
+      const c = state.connections.find(x => x.fromLineIdx === lineIdx && x.to === h.to && x.toDir === h.toDir);
+      if (!c || (c.express && !namesTrain(c, tt.name))) return null;
+      lineIdx = c.toLineIdx;
+    }
+    return tt.name;
+  }
   // A line's own type: an express never rides a chain; a Local does where the first hop's
   // entries (if any) include a Local calling here
   if (!tt._hopConns) return tt.expressIndices || (state.selectedConnection && !localRunsThrough(state.selectedConnection, p && platformStation(p))) ? null : tt.name;
