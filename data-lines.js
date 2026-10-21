@@ -1139,13 +1139,24 @@ const LINE_DESTINATIONS = {
       { until: '新木場',         name: 'Shin-Kiba',      ja: '新木場方面',         color: '#0065a6' },
     ],
   },
-  // A late train from 多摩センター ends at 立川北 (ODPT 2023-03)
+  // A late train from 多摩センター ends at 立川北; 2 weekday-morning ones (8:34, 9:02) at 高松 (ODPT 2023-03)
   'Tama Monorail': {
     direction: 'end',  // toward Kamikitadai
     destinations: [
       { until: '立川北', name: 'Tachikawa-Kita', ja: '立川北方面', color: '#e46574',
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+      { until: '高松',   name: 'Takamatsu',      ja: '高松方面',   color: '#e46574',
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
       { until: '上北台', name: 'Kamikitadai',    ja: '上北台方面', color: '#e46574' },
+    ],
+  },
+  // A Sat/hol evening train from 日吉 (21:13) ends at センター北 (ODPT 2025-11)
+  'Green line': {
+    direction: 'start',  // toward Nakayama
+    destinations: [
+      { until: 'センター北', name: 'Center Kita', ja: 'センター北方面', color: '#6ed751',
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [21, 23] } } },
+      { until: '中山',       name: 'Nakayama',    ja: '中山方面',       color: '#6ed751' },
     ],
   },
   // Short turns both ways: 上永谷 (rushes and the last ones), 踊場 by day toward 湘南台,
