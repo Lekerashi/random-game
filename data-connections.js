@@ -1228,6 +1228,10 @@ const LINE_CONNECTIONS = [
       { name: 'Ltd. Express', ja: '特急', color: '#00b900', toName: 'Rapid', toJa: '快速', chainFrom: ['Keikyu Airport Line'], noBoard: ['品川'], until: '京成成田',
         stops: ['京急蒲田','平和島','青物横丁','品川', ...ASAKUSA_UP],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 20] } } },
+      // Haneda 特急 to the Hokuso Line / 青砥 are 普通 from 品川 (ODPT Keikyu: wd 15:06, 15:26; Sat/hol 19:55–21:37, 6 a day)
+      { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '普通', chainFrom: ['Keikyu Airport Line'], noBoard: ['品川'],
+        stops: ['京急蒲田','平和島','青物横丁','品川', ...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [15, 17] }, weekend: { timeRange: [19, 23] } } },
       // 4 Sat/hol Haneda 特急 run on as 快特 (Haneda 17:26, 18:06, 18:46, 19:35; Keikyu's 品川 board and Toei: 快特;
       // Keisei 快速特急 to 成田空港): Sat/hol 17–19h + the trailing hour
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', toName: 'Rapid Ltd. Exp', toJa: '快特', chainFrom: ['Keikyu Airport Line'], noBoard: ['品川'],
