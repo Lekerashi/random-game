@@ -434,7 +434,14 @@ function destServesStation(conn, d, p) {
 // stays on the source line: sets selectedDestination but NOT selectedConnection.
 // `services` (as on connection destinations) names the types that end there.
 function lineDestChoice(p, conn, d) {
-  if (!scheduleActive(d.schedule) || !destServesStation(conn, d, p)) return null;
+  // A lineDest ride stays on the source line: a service whose connection entry of that name is
+  // hidden by its hours now (the Sotobo → Uchibo 普通 off-peak) is served by the source line's own
+  // type of that name instead (the late Sotobo 普通 to 大網 / 勝浦)
+  const tgt = state.lines[conn.toLineIdx];
+  const hiddenNow = n => (conn.express || []).some(e => normalize(e.name) === normalize(n) && e.stops === null
+    && resolveServiceStops(e, tgt, p.direction)?.length === 0);
+  const viaSource = () => { const hid = (svcNames(d.services) || []).filter(hiddenNow); return hid.length > 0 && destServesStation({}, { ...d, services: hid }, p); };
+  if (!scheduleActive(d.schedule) || !(destServesStation(conn, d, p) || viaSource())) return null;
   const line = state.lines[p.lineIdx];
   const untilIdx = line.stations.findIndex(s => s.ja === d.until);
   if (untilIdx === -1) return null;
