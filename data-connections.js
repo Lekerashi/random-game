@@ -579,9 +579,11 @@ const LINE_CONNECTIONS = [
     toUntil: '上野',
     name: 'Ueno', ja: '上野方面', color: '#E78B54',
     displayName: 'Ueno Tokyo Line',
-    // the last trains from 熱海 / 小田原 end at 国府津 / 品川 (ODPT 2026-03): offered beside the
-    // through choices while they run
+    // the last trains from 熱海 / 小田原 end at 国府津 / 品川, the 8:51 普通 from 沼津 at 小田原 (ODPT
+    // 2026-03): offered beside the through choices while they run
     lineDests: [
+      { until: '小田原', name: 'Odawara',   ja: '小田原方面', color: '#e87830', services: ['Local'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [8, 11] } } },
       { until: '国府津', name: 'Kozu',      ja: '国府津方面', color: '#1a8fe8',
         schedule: { weekday: { timeRange: [23, 24] }, weekend: { timeRange: [23, 24] } } },
       { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#009BBF',
@@ -597,8 +599,13 @@ const LINE_CONNECTIONS = [
     via:  ['東京'],
     displayName: 'Ueno Tokyo Line',
     lineDests: [
+      // the 8:16 普通 from 黒磯 ends at 小金井, the 22:42 from 宇都宮 at 大宮 (ODPT 2026-03)
+      { until: '小金井', name: 'Koganei',    ja: '小金井方面', color: '#5ebc6e', services: ['Local'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [8, 11] } } },
       { until: '宇都宮', name: 'Utsunomiya', ja: '宇都宮方面', color: '#2a8848', services: ['Local'],
         schedule: { weekday: { timeRange: [5, 23] }, weekend: { timeRange: [5, 23] } } },
+      { until: '大宮',   name: 'Omiya',      ja: '大宮方面',   color: '#E9003F', services: ['Local'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [22, 1] } } },
       { until: '上野',   name: 'Ueno',       ja: '上野方面',   color: '#F7A600' },
     ],
     destinations: [
@@ -637,6 +644,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '水戸', name: 'Mito', ja: '水戸方面', color: '#086080', services: ['Local'],
         schedule: { weekday: { timeRange: [5, 24] }, weekend: { timeRange: [5, 24] } } },
+      // the 22:32 普通 from 勝田 ends at 我孫子 (ODPT 2026-03)
+      { until: '我孫子', name: 'Abiko', ja: '我孫子方面', color: '#1aa260', services: ['Local'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [22, 1] } } },
       // the last 快速 from 取手 end at 松戸 (ODPT 2026-03)
       { until: '松戸', name: 'Matsudo', ja: '松戸方面', color: '#009BBF', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
@@ -870,6 +880,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '逗子', name: 'Zushi', ja: '逗子方面', color: '#0068B7',
         schedule: { weekday: { timeRange: [8, 18] }, weekend: { timeRange: [8, 18] } } },
+      // a 22:44 (wd) / 22:46 (Sat/hol) from 逗子 ends at 大船 (ODPT 2026-03)
+      { until: '大船', name: 'Ofuna', ja: '大船方面', color: '#0068B7', services: ['Local'],
+        schedule: { weekday: { timeRange: [22, 24] }, weekend: { timeRange: [22, 24] } } },
       // late trains from 久里浜 / 逗子 end at 品川 (ODPT 2026-03)
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#0068B7', services: ['Local'],
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
@@ -878,6 +891,10 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948' },
       { until: '千葉',   name: 'Chiba',     ja: '千葉方面',   color: '#E85830' },
+      // evening trains from 横須賀 / 逗子 (wd 2: 19:45, 20:52; Sat/hol 4 from 久里浜 / 横須賀 / 大船, 19–22h)
+      // run on to 佐倉 (ODPT 2026-03)
+      { until: '佐倉',   name: 'Sakura',    ja: '佐倉方面',   color: '#c86a20',
+        schedule: { weekday: { timeRange: [19, 23] }, weekend: { timeRange: [19, 24] } } },
     ],
     // Every Yokosuka 普通 runs on as a Sobu 快速 (97 wd / 84 Sat/hol; toName at 東京, ODPT 2026-03)
     express: [
@@ -2865,6 +2882,9 @@ const LINE_CONNECTIONS = [
       // the first and last ones from 我孫子 / 松戸 run on one stop to 北千住
       { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#00BB85',
         schedule: { weekday: { timeRange: [[4, 5], [23, 1]] }, weekend: { timeRange: [[4, 5], [23, 1]] } } },
+      // 2 weekday early trains from 我孫子 (6:27, 6:40) and the Sat/hol 23:33 end at 霞ケ関 (ODPT 2026-03)
+      { until: '霞ケ関', name: 'Kasumigaseki', ja: '霞ケ関方面', color: '#00BB85',
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [23, 2] } } },
       { until: '代々木上原', name: 'Yoyogi-Uehara', ja: '代々木上原方面', color: '#00BB85' },
     ],
     // Every through train is a 普通 on the JR; the Chiyoda names a third of them by the Odakyu type

@@ -1313,10 +1313,15 @@ const LINE_DESTINATIONS = {
       { until: '下館',   name: 'Shimodate',  ja: '下館方面',   color: '#1a5a88' },
     ],
   },
-  // 快速 run to 取手; 中距離 普通 mostly to 土浦, some to 水戸/勝田
+  // 快速 run to 取手; 中距離 普通 mostly to 土浦, some to 水戸/勝田. 3 快速 a day from 上野 end at 松戸
+  // (10:20 and the last two, 0:23 / 0:33) and 1–2 at 我孫子 (0:12, Sat/hol 10:23 too) (ODPT 2026-03)
   'JR Joban Line': {
     direction: 'end',  // away from Ueno
     destinations: [
+      { until: '松戸',   name: 'Matsudo', ja: '松戸方面',   color: '#3ab070', services: ['Local'],
+        schedule: { weekday: { timeRange: [[10, 12], [0, 2]] }, weekend: { timeRange: [[10, 12], [0, 2]] } } },
+      { until: '我孫子', name: 'Abiko',   ja: '我孫子方面', color: '#1aa260', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [[10, 12], [0, 2]] } } },
       { until: '取手', name: 'Toride',    ja: '取手方面', color: '#009BBF' },
       { until: '土浦', name: 'Tsuchiura', ja: '土浦方面', color: '#0a7fa0' },
       { until: '水戸', name: 'Mito',      ja: '水戸方面', color: '#086080' },
