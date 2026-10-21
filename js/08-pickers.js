@@ -574,7 +574,9 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // Destination choices of a chained hop reached after `base` stops (through its via).
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
   const pushChainDests = (nextConn, base, path, midLine) => {
-    for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule))) {
+    // (boardSchedule: hours per boarding station, the chained boarding line's included: 伊東 → 宇都宮)
+    for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule)
+        && scheduleActive(d.boardSchedule?.[platformStation(p).ja]))) {
       if (chainBlocked && !d0.services) continue;
       // Inherited services are first-hop names already (servicesFirstHop: typeNameForDest reads them so)
       const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices, _firstHop: true };
@@ -657,23 +659,24 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   return choices;
 }
 
+// Whether picking choice c leaves a train type boarded here that reaches it
+function typeReaches(p, c) {
+  const saved = [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType];
+  try {
+    state.selectedTrainType = null;
+    c.onSelect();
+    const r = resolveTrainTypes(p);
+    if (r?.none) return false;
+    if (r?.types) return r.types.length > 0;
+    return getEffectiveStops(p, r?.autoSelect ? trainTypeOpts(r.autoSelect) : undefined).reachesDest !== false;
+  } finally {
+    [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType] = saved;
+  }
+}
 // The `shortTurn` destinations chained beyond conn that run now and that a train boarded here
 // reaches (its range, by the types riding it, is > 0); in-ward ones only in 23-wards mode
 function chainedShortTurns(p, conn, onLine) {
-  const reaches = c => {
-    const saved = [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType];
-    try {
-      state.selectedTrainType = null;
-      c.onSelect();
-      const r = resolveTrainTypes(p);
-      if (r?.none) return false;
-      if (r?.types) return r.types.length > 0;
-      return getEffectiveStops(p, r?.autoSelect ? trainTypeOpts(r.autoSelect) : undefined).reachesDest !== false;
-    } finally {
-      [state.selectedBranch, state.selectedConnection, state.selectedDestination, state.selectedTrainType] = saved;
-    }
-  };
-  return applyServiceRanges(p, chainDestChoices(p, conn, onLine).filter(d => d._shortTurn && !d._outOfWards && d.effectiveMax > 0 && reaches(d)))
+  return applyServiceRanges(p, chainDestChoices(p, conn, onLine).filter(d => d._shortTurn && !d._outOfWards && d.effectiveMax > 0 && typeReaches(p, d)))
     .filter(d => d.effectiveMax > 0);
 }
 

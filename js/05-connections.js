@@ -163,6 +163,10 @@ function chainRunsNow(conn, lineIdx, direction, fromIdx) {
   // No chained destination, but a plain onward hop (no destinations) carries the full ride,
   // unless conn's own destinations declare `services` (then nothing undeclared is offered)
   if (conn.destinations.some(d => d.services)) return false;
+  // ...and only while a through train runs from here (a connection with express entries: one of them runs now and
+  // calls here; 伊東's four through 普通)
+  const here = state.lines[lineIdx].stations[fromIdx], tgt = state.lines[conn.toLineIdx];
+  if (conn.express && !conn.express.some(e => { const st = resolveServiceStops(e, tgt, direction); return st === null || (st.length > 0 && (stopSetHas(new Set(st.map(normalize)), here) || !state.lines[lineIdx].stations.some((x, i) => i !== conn.fromJunctionIdx && stopSetHas(new Set(st.map(normalize)), x)))); })) return false;
   const plainHop = (c, visited) => getOnwardConnections(c).some(n => !visited.has(n.to)
     && (!n.chainFrom || n.chainFrom.includes(p.lineName))
     && (!n.destinations?.length || plainHop(n, new Set([...visited, n.to]))));
