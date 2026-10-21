@@ -24,6 +24,8 @@
 //     destinations[].boardSchedule — { JA source station: schedule }: at a listed station the
 //                         destination is offered only while that schedule runs (Musashino
 //                         trains leave 海浜幕張 only mornings/evenings); other stations: always
+//     shortTurnsOnly    — the destinations (and their picker) exist only while one of their scheduled
+//                         entries runs; otherwise the hop is as without them (Sotetsu SY → Main: 大和 by day)
 //
 //   DISPLAY:
 //     name, ja, color   — button label for branch picker (when multiple conns from same platform)
@@ -2359,6 +2361,15 @@ const LINE_CONNECTIONS = [
   // 二俣川 / 大和 / 海老名: the Tokyu → Sotetsu entries above name them)
   { from: 'Sotetsu Shin-Yokohama Line',  fromEnd: '西谷',
     to:   'Sotetsu Main Line',           toStation: '西谷', toDir: 'end',
+    // 3 weekday-morning 各停 from the Tokyu side (新横浜 8:08, 9:25, 10:21) end at 大和 (ODPT 2026-03); chainFrom: the
+    // Tokyu Shin-Yokohama boards ride them too, the Toyoko / Meguro boards have their own 大和 on the Hiyoshi connections.
+    // shortTurnsOnly: off those hours the hop is the plain ride to 海老名 (no picker, no chained 湘南台)
+    shortTurnsOnly: true,
+    destinations: [
+      { until: '大和',   name: 'Yamato', ja: '大和方面',   color: '#2a70c0', services: ['Local'], chainFrom: ['Tokyu Shin-Yokohama Line'],
+        schedule: { weekday: { timeRange: [8, 12] }, weekend: { stops: [] } } },
+      { until: '海老名', name: 'Ebina',  ja: '海老名方面', color: '#003087', chainFrom: [] },
+    ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: ['新横浜','羽沢横浜国大','西谷','二俣川','大和','海老名'] },
