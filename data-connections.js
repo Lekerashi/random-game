@@ -154,6 +154,11 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '長津田', name: 'Nagatsuta', ja: '長津田方面', color: '#30a890', services: ['Local'],
         schedule: { weekday: { timeRange: [21, 1] }, weekend: { timeRange: [[17, 18], [21, 1]] } } },
+      // a weekday 8h 急行 and the 0:13 各停 from 中央林間 end at 鷺沼 (ODPT 2026-03)
+      { until: '鷺沼', name: 'Saginuma', ja: '鷺沼方面', color: '#50b8a0',
+        services: [{ name: 'Express', schedule: { weekday: { timeRange: [8, 10] }, weekend: { stops: [] } } },
+                   { name: 'Local', schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } }],
+        schedule: { weekday: { timeRange: [[8, 10], [0, 2]] }, weekend: { timeRange: [0, 2] } } },
       // the last 各停 from 中央林間 end at 二子玉川 (ODPT 2026-03)
       { until: '二子玉川', name: 'Futako-tamagawa', ja: '二子玉川方面', color: '#30a890', services: ['Local'],
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
@@ -166,6 +171,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } },
       { until: '永田町', name: 'Nagatacho', ja: '永田町方面', color: '#8F76D6', services: ['Local'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 24] } } },
+      // a weekday 各停 from 長津田 (6:18) ends at 半蔵門 (ODPT 2026-03)
+      { until: '半蔵門', name: 'Hanzomon', ja: '半蔵門方面', color: '#8F76D6', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { stops: [] } } },
       { until: '清澄白河', name: 'Kiyosumi-shirakawa', ja: '清澄白河方面', color: '#8F76D6',
         schedule: { weekday: { timeRange: [[6, 11], [22, 1]] }, weekend: { timeRange: [20, 24] } } },
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6' },
@@ -2105,7 +2113,9 @@ const LINE_CONNECTIONS = [
     to:   'Tokyo Metro Namboku Line', toEnd:   '目黒',
     name: 'Akabane-Iwabuchi', ja: '赤羽岩淵方面', color: '#00AC9B',
     lineDests: [
-      // the last 各停 from 日吉 end at 奥沢 (depot) (ODPT 2026-03)
+      // the late 各停 from 日吉 end at 武蔵小杉 (wd 22–23h, Sat/hol 21–23h) and 奥沢 (depot) (ODPT 2026-03)
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
       { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
@@ -2162,6 +2172,8 @@ const LINE_CONNECTIONS = [
     to:   'Toei Mita Line',   toEnd:   '目黒',
     name: 'Nishi-Takashimadaira', ja: '西高島平方面', color: '#2B50A1',
     lineDests: [
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
       { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#6CBB5A', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '目黒', name: 'Meguro', ja: '目黒方面', color: '#6CBB5A' },
@@ -2350,6 +2362,7 @@ const LINE_CONNECTIONS = [
   // (60 wd / 56 Sat/hol) or 特急 (20 / 11), 各停 as 各停 (11 / 8) or 特急 (5 / 3)
   { from: 'Tokyu Shin-Yokohama Line',   fromEnd: '新横浜',
     to:   'Sotetsu Shin-Yokohama Line',  toEnd:   '新横浜',
+    name: 'Ebina', ja: '海老名方面', color: '#003087',  // the plain ride's label beside the chained 大和
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Express', ja: '急行', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOKYU_SY_UP].reverse().concat([...SOTETSU_SY_UP].reverse().slice(1)) },
@@ -2386,7 +2399,8 @@ const LINE_CONNECTIONS = [
     // shortTurnsOnly: off those hours the hop is the plain ride to 海老名 (no picker, no chained 湘南台)
     shortTurnsOnly: true,
     destinations: [
-      { until: '大和',   name: 'Yamato', ja: '大和方面',   color: '#2a70c0', services: ['Local'], chainFrom: ['Tokyu Shin-Yokohama Line'],
+      // shortTurn: the Tokyu Shin-Yokohama boards (日吉 8:00, 9:15, 10:14) have no picker of their own
+      { until: '大和',   name: 'Yamato', ja: '大和方面',   color: '#2a70c0', services: ['Local'], chainFrom: ['Tokyu Shin-Yokohama Line'], shortTurn: true,
         schedule: { weekday: { timeRange: [8, 12] }, weekend: { stops: [] } } },
       { until: '海老名', name: 'Ebina',  ja: '海老名方面', color: '#003087', chainFrom: [] },
     ],
