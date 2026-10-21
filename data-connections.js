@@ -994,7 +994,7 @@ const LINE_CONNECTIONS = [
         services: ['Semi-Exp', 'Express'] },
       // Nikko Line riders' weekday 22:59 準急 from 南栗橋 ends at 押上 (chained from Nikko → Isesaki; 東武動物公園
       // 23:12, so this line's own boards see it at 23h as the 準急)
-      { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6',
+      { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#8F76D6', chainFrom: ['Tobu Nikko Line'],
         services: ['Semi-Exp (Oshiage)', { name: 'Semi-Exp', schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } }],
         schedule: { weekday: { timeRange: [22, 24] }, weekend: { stops: [] } } },
     ],
@@ -3472,12 +3472,16 @@ const LINE_CONNECTIONS = [
       { until: '橋本', name: 'Hashimoto', ja: '橋本方面', color: '#dd44aa',
         services: ['Local', 'Ltd. Express', 'Express', 'Sub-Exp', 'Rapid'] },
       // 若葉台 (depot) short turns: Toei through 快速 (wd 本八幡 14:57 and 23:33 = 笹塚 15:46, 0:25; Sat/hol 7:19,
-      // 21:48, 23:33) and 2 weekday-morning trains from 新宿 (快速 8:58, 区間急行 9:02) (ODPT 2025-03 / 2026-08);
-      // hours are the boarding hours on each line plus the trailing one, within the hours the 快速 / 区間急行 types
-      // run (the 8:58 快速 has no type at 8h); chainFrom: the lines the Toei trains board on
+      // 21:48, 23:33) and 2 weekday-morning trains from Keio 新宿 (各停 8:58, which ODPT files as 快速 like every
+      // all-stations Keio Line train, and 区間急行 9:02) (ODPT 2025-03 / 2026-08); hours are the boarding hours on each
+      // line plus the trailing one; chainFrom: the lines the Toei trains board on, none for the Keio 新宿 ones
       { until: '若葉台', name: 'Wakabadai', ja: '若葉台方面', color: '#e070b8', chainFrom: ['Toei Shinjuku Line', 'Keio new line'],
-        services: ['Rapid', { name: 'Sub-Exp', schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } }],
-        schedule: { weekday: { timeRange: [[9, 11], [14, 17], [23, 1]] }, weekend: { timeRange: [[7, 10], [21, 2]] } } },
+        services: ['Rapid'],
+        schedule: { weekday: { timeRange: [[14, 17], [23, 1]] }, weekend: { timeRange: [[7, 10], [21, 2]] } } },
+      { until: '若葉台', name: 'Wakabadai', ja: '若葉台方面', color: '#e070b8', chainFrom: [],
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
+                   { name: 'Sub-Exp', schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
     ],
     // 特急/急行 share the Sagamihara stops; 区間急行/快速 call everywhere past 調布
     // (快速 and most 区間急行 are Toei through trains — see Toei → Keio); 各停 run through weekdays
