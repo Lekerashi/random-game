@@ -142,10 +142,12 @@ function handleConnectionRouting(p) {
   if (!p._connections || p._connections.length === 0 || state.selectedConnection || state.selectedDestination) return { pickerShown: false };
 
   // A mid-line connection none of whose destinations is served from here right now
-  // (off-hours, or its services don't call here) isn't a choice (Oimachi 急行 from 江田)
+  // (off-hours, or its services don't call here) isn't a choice (Oimachi 急行 from 江田); nor is a
+  // terminus one none of whose express entries boards here (the Ueno-Tokyo Line's Joban trains
+  // start at 品川: no Joban choice at 横浜) unless a short turn or a served destination is
   const N = state.lines[p.lineIdx].stations.length;
-  const conns = p._connections.filter(c => c.fromJunctionIdx === dirEnd(N, p.direction) || c.lineDests
-    || !c.destinations?.length || c.destinations.some(d => scheduleActive(d.schedule) && destServesStation(c, d, p)));
+  const conns = p._connections.filter(c => (c.fromJunctionIdx === dirEnd(N, p.direction) && throughRunsHere(c, p.lineIdx, p.direction, p.fromIdx))
+    || c.lineDests || !c.destinations?.length || c.destinations.some(d => scheduleActive(d.schedule) && destServesStation(c, d, p)));
   if (conns.length === 0) return { pickerShown: false };
   const onLineStops = p._onLineStops || 0;
   const rollableMax = capStops(p.maxStops);
