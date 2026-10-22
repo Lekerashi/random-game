@@ -1670,7 +1670,7 @@ const LINE_DESTINATIONS = {
         { until: '海老名',     name: 'Ebina',           ja: '海老名方面',     color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express',
-            { name: 'Semi-Exp', schedule: { weekday: { at: '代々木上原', timeRange: ['20:50', '21:10'] }, weekend: { stops: [] } } }] },
+            { name: 'Semi-Exp', schedule: { weekday: { timeRange: [21, 23] }, weekend: { stops: [] } } }] },
         { until: '伊勢原',     name: 'Isehara',         ja: '伊勢原方面',     color: '#005090', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[4, 10], [18, 24]] } } },
         // one 各停 a day from 新宿 ends at 秦野 (wd 6:43, Sat/hol 21:25; ODPT 2026-03)
