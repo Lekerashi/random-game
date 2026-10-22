@@ -3196,6 +3196,9 @@ const LINE_CONNECTIONS = [
   { from: 'Seibu Haijima Line',  fromEnd: '小平',
     to:   'Seibu Shinjuku Line', toStation: '小平', toDir: 'start',
     lineDests: [
+      // 2 Sat/hol 各停 from 拝島 (15:59, 17:20) end at 玉川上水 (depot) (ODPT 2026-03)
+      { until: '玉川上水', name: 'Tamagawa-josui', ja: '玉川上水方面', color: '#5ab8e8', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [15, 19] } } },
       { until: '小平', name: 'Kodaira', ja: '小平方面', color: '#36a9e1' },
     ],
     destinations: [
