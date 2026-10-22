@@ -657,9 +657,9 @@ const EXPRESS_SERVICES = {
   // train is a Main Line through service, connection express) (ODPT 2025-12)
   "Keikyu Airport Line": [
     { name: "Airport Local", ja: "空港各停", color: "#00a0e8", direction: "start", stops: null,
-      schedule: { weekday: { timeRange: [[6, 7], [8, 9], [23, 1]] }, weekend: { timeRange: [[5, 7], [23, 1]] } } },
+      schedule: { weekday: { at: '羽田空港第1・第2ターミナル', timeRange: [['06:10', '08:20'], ['23:50', '24:20']] }, weekend: { at: '羽田空港第1・第2ターミナル', timeRange: [['05:40', '06:40'], ['23:50', '24:00']] } } },
     { name: "Airport Local", ja: "空港各停", color: "#00a0e8", direction: "end", stops: null,
-      schedule: { weekday: { timeRange: [[5, 6], [7, 10], [16, 17], [22, 1]] }, weekend: { timeRange: [[5, 8], [21, 24]] } } },
+      schedule: { weekday: { at: '京急蒲田', timeRange: [['05:20', '09:40'], ['16:30', '16:40'], ['22:30', '24:00']] }, weekend: { at: '京急蒲田', timeRange: [['05:20', '07:00'], ['21:30', '23:50']] } } },
   ],
   // ラビット: toward 宇都宮 only, 2 morning (through from the Tokaido Line, 6–9h on this line; ODPT files
   // them under the Tokaido railway, so the checker sees only the evening pair) + 2 evening from 上野
