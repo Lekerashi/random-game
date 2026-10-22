@@ -144,9 +144,9 @@ const LINE_CONNECTIONS = [
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [...HANZOMON_DOWN, ...[...DET_EXP_UP].reverse().slice(1)],
-        schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
+        schedule: { weekday: { at: '押上(スカイツリー前)', timeRange: [['06:00', '06:40'], ['08:30', '23:00']] }, weekend: { at: '押上(スカイツリー前)', timeRange: ['06:10', '22:20'] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900', stops: [...HANZOMON_DOWN, ...[...DET_SEMI_UP].reverse().slice(1)],
-        schedule: { weekday: { timeRange: [[6, 20], [23, 1]] }, weekend: { timeRange: [[8, 17], [22, 24]] } } },
+        schedule: { weekday: { at: '押上(スカイツリー前)', timeRange: [['06:40', '08:40'], ['10:50', '15:40'], ['17:40', '19:00'], ['23:00', '23:40']] }, weekend: { at: '押上(スカイツリー前)', timeRange: [['08:50', '15:40'], ['22:40', '23:40']] } } },
     ] },
   // Toward 渋谷 the late 各停 from 中央林間 turn at 長津田, a few at 渋谷; through trains end at
   // 押上 (161 wd), 清澄白河 (17 wd, mornings and the last ones) or on Tobu (chained: 久喜,
@@ -1082,7 +1082,7 @@ const LINE_CONNECTIONS = [
                 '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
                 '曳舟','北千住','西新井','草加','新越谷','越谷','北越谷','大袋','せんげん台',
                 '武里','一ノ割','春日部','北春日部','姫宮','東武動物公園','和戸','久喜'],
-        schedule: { weekday: { timeRange: [19, 9] }, weekend: { timeRange: [19, 10] } } },
+        schedule: { weekday: { at: '渋谷', timeRange: [['04:40', '08:30'], ['19:40', '23:50']] }, weekend: { at: '渋谷', timeRange: [['04:40', '09:20'], ['19:20', '23:50']] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['渋谷','表参道','青山一丁目','永田町','半蔵門','九段下','神保町','大手町',
                 '三越前','水天宮前','清澄白河','住吉','錦糸町','押上(スカイツリー前)',
@@ -1670,7 +1670,7 @@ const LINE_CONNECTIONS = [
     express: [
       // Through 各停 to 成城学園前 / 向ヶ丘遊園: weekday mornings and 15h, one weekend train at 19h (ODPT 2026-03)
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8',
-        schedule: { weekday: { timeRange: [[6, 11], [15, 17]] }, weekend: { timeRange: [19, 20] } } },
+        schedule: { weekday: { at: '北綾瀬', timeRange: [['06:30', '09:40'], ['15:30', '16:00']] }, weekend: { at: '綾瀬', timeRange: ['19:00', '19:10'] } } },
       // 準急 end at 向ヶ丘遊園 / 成城学園前 (one late train to 本厚木 ignored);
       // mornings and evenings only since daytime 準急 became 急行 in 2022
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
@@ -1681,7 +1681,7 @@ const LINE_CONNECTIONS = [
                 '下北沢','経堂','千歳船橋','祖師ヶ谷大蔵',
                 '成城学園前','喜多見','狛江','和泉多摩川','登戸',
                 '向ヶ丘遊園'],
-        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[8, 12], [15, 19]] } } },
+        schedule: { weekday: { at: '北綾瀬', timeRange: [['05:50', '10:00'], ['15:20', '22:50']] }, weekend: { at: '北綾瀬', timeRange: [['08:00', '10:30'], ['15:20', '18:20']] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['北綾瀬','綾瀬','北千住','町屋','西日暮里','千駄木',
                 '根津','湯島','新御茶ノ水','大手町','二重橋前','日比谷',
@@ -1691,7 +1691,7 @@ const LINE_CONNECTIONS = [
                 '新百合ヶ丘','町田','相模大野','海老名','本厚木',
                 '愛甲石田','伊勢原'],
         // None weekday 5–8h (各停/準急) or 16h (準急); windows include the trailing hour (ODPT 2026-03)
-        schedule: { weekday: { timeRange: [[9, 16], [17, 23]] }, weekend: { timeRange: [[6, 16], [18, 23]] } } },
+        schedule: { weekday: { at: '北綾瀬', timeRange: [['09:20', '15:10'], ['17:20', '22:20']] }, weekend: { at: '北綾瀬', timeRange: [['06:40', '15:10'], ['18:10', '22:20']] } } },
     ] },
   { from: 'Odakyu Line',              fromStation: '代々木上原', fromDir: 'start',
     to:   'Tokyo Metro Chiyoda Line', toEnd:   '代々木上原',
@@ -1802,11 +1802,11 @@ const LINE_CONNECTIONS = [
     // weekday rushes only, like the 津田沼 destination
     express: [
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { timeRange: [[6, 9], [16, 20]] }, weekend: { stops: [] } } },
+        schedule: { weekday: { at: '中野', timeRange: [['06:20', '07:30'], ['16:30', '18:30']] }, weekend: { stops: [] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['中野','落合','高田馬場','早稲田','神楽坂','飯田橋','九段下','竹橋','大手町','日本橋','茅場町','門前仲町','木場','東陽町','浦安','西船橋',
                 '船橋','東船橋','津田沼'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [17, 19]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '中野', timeRange: [['07:10', '07:20'], ['17:20', '18:10']] } } },
     ] },
   { from: 'JR Chuo-Sobu Line',      fromStation: '西船橋', fromDir: 'start',
     to:   'Tokyo Metro Tozai Line', toEnd: '西船橋',
@@ -1917,19 +1917,19 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
                 '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
-        schedule: { weekday: { timeRange: [[6, 11], [22, 23]] }, weekend: { timeRange: [[8, 11], [14, 16], [19, 20]] } } },
+        schedule: { weekday: { at: '新木場', timeRange: [['06:40', '09:50'], ['22:00', '22:20']] }, weekend: { at: '新木場', timeRange: [['08:30', '09:40'], ['14:30', '14:40'], ['19:10', '19:20']] } } },
       // 3 Seibu 快速 a day from 新木場 (wd B2236M 22:53 to 小手指; Sat/hol B1814M 18:10 / B1824M 18:45 to 飯能; ODPT
       // 2026-03), on the Seibu side by the 練馬 hop's 快速 entries
       { name: 'Rapid', ja: '快速', color: '#f07000',
         stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
                 '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
-        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [18, 21] } } },
+        schedule: { weekday: { at: '新木場', timeRange: ['22:50', '23:00'] }, weekend: { at: '新木場', timeRange: ['18:00', '18:50'] } } },
       // 2 weekday-morning Seibu 快速急行 from 新木場 to 小手指 (B826M 8:32, B920M 9:01; ODPT 2026-03), on the
       // Seibu side by the 練馬 hop's 快速急行 entry
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
                 '護国寺','東池袋','池袋','要町','千川','小竹向原','練馬'],
-        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
+        schedule: { weekday: { at: '新木場', timeRange: ['08:30', '09:10'] }, weekend: { stops: [] } } },
     ] },
 
   // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
@@ -2904,7 +2904,7 @@ const LINE_CONNECTIONS = [
         stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市',
                 '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市','霞ヶ関','鶴ヶ島','若葉',
                 '坂戸','北坂戸','高坂','東松山','森林公園'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [18, 19], [21, 24]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '渋谷', timeRange: [['06:10', '10:00'], ['18:20', '18:30'], ['21:10', '23:30']] } } },
     ] },
   // Yurakucho through-trains are local only (no express on Tojo); 5 weekday trains end
   // at 志木, 5 at 池袋 (mornings and the last ones) (ODPT 2026-03)

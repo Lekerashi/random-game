@@ -114,16 +114,16 @@ const EXPRESS_SERVICES = {
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "和光市","小竹向原","池袋","新宿三丁目",
       "明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekday: { timeRange: [[8, 11], [16, 17]] }, weekend: { timeRange: [[6, 11], [16, 24]] } } },
+    ], schedule: { weekday: { at: '渋谷', timeRange: [['08:40', '10:50'], ['16:40', '16:50']] }, weekend: { at: '渋谷', timeRange: [['06:10', '10:50'], ['16:40', '22:50']] } } },
     // Weekday mornings and evenings: 急行 plus every station 和光市–小竹向原
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "end", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
       "新宿三丁目","明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [16, 23]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '和光市', timeRange: [['06:20', '09:50'], ['16:20', '22:40']] } } },
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","池袋",
       "新宿三丁目","明治神宮前〈原宿〉","渋谷",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [17, 24]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '渋谷', timeRange: [['06:10', '10:20'], ['17:10', '23:30']] } } },
   ],
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -359,7 +359,7 @@ const EXPRESS_SERVICES = {
       "中野","落合","高田馬場","早稲田","神楽坂","飯田橋","九段下","竹橋",
       "大手町","日本橋","茅場町","門前仲町","木場","東陽町","南砂町","西葛西",
       "葛西","浦安","西船橋",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 10] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '西船橋', timeRange: ['06:30', '09:20'] } } },
   ],
   "Tokyu Den-en-toshi Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
