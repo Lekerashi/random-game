@@ -2553,7 +2553,7 @@ const LINE_CONNECTIONS = [
       { name: 'Ltd. Express', ja: '特急', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)],
         schedule: { weekday: { timeRange: [[6, 8], [22, 24]] }, weekend: { stops: [] } } },
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#e83030', toName: 'Express', toJa: '急行', stops: [...SOTETSU_SY_UP, ...TOKYU_SY_UP.slice(1)],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '西谷', timeRange: ['07:00', '09:10'] } } },
     ] },
 
   // ── Sotetsu Shin-Yokohama ↔ Sotetsu Main at Nishiya ──────────────────
@@ -2608,11 +2608,11 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         '横浜','星川','西谷','鶴ヶ峰','二俣川',
         '南万騎が原','緑園都市','弥生台','いずみ野','いずみ中央','ゆめが丘','湘南台'],
-        schedule: { weekday: { timeRange: [[6, 11], [14, 20]] } } },
+        schedule: { weekday: { at: '横浜', timeRange: [['06:00', '10:00'], ['14:50', '19:40']] } } },
       // Izumino 特急 all run through from Tokyu via 西谷, none from 横浜 (10 wd, 1 Sat/hol)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '西谷','二俣川','いずみ野','湘南台'],
-        schedule: { weekday: { timeRange: [[5, 9], [18, 21]] }, weekend: { timeRange: [7, 8] } } },
+        schedule: { weekday: { at: '西谷', timeRange: [['05:40', '08:30'], ['18:00', '20:10']] }, weekend: { at: '西谷', timeRange: ['07:50', '08:00'] } } },
     ] },
   // (No 海老名-side → Izumino connection, nor Izumino → 海老名: the junction faces
   // 横浜, so those trains would have to reverse; at 二俣川 each line is its own platform)
@@ -2633,12 +2633,12 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900', stops: [
         '湘南台','ゆめが丘','いずみ中央','いずみ野','弥生台','緑園都市','南万騎が原',
         '二俣川','鶴ヶ峰','西谷','星川','横浜'],
-        schedule: { weekday: { timeRange: [[8, 11], [15, 20], [23, 24]] }, weekend: { timeRange: [[6, 11], [13, 15], [17, 19], [22, 24]] } } },
+        schedule: { weekday: { at: '湘南台', timeRange: [['08:10', '10:40'], ['15:30', '19:50'], ['22:50', '23:10']] }, weekend: { at: '湘南台', timeRange: [['06:40', '10:40'], ['13:30', '14:40'], ['17:20', '18:20'], ['22:10', '23:10']] } } },
       // Weekday mornings (湘南台 6:26–7:47); Izumino 特急/通勤特急 run to Tokyu, not 横浜
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', stops: [
         '湘南台','ゆめが丘','いずみ中央','いずみ野','弥生台','緑園都市','南万騎が原',
         '二俣川','鶴ヶ峰','西谷','横浜'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '湘南台', timeRange: ['06:20', '07:50'] } } },
     ] },
   // Izumino trains through-running to Tokyu via 羽沢横浜国大 (各停, evening 特急,
   // weekday-morning 通勤特急), mirroring Tokyu → Izumino
@@ -2654,10 +2654,10 @@ const LINE_CONNECTIONS = [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '湘南台','いずみ野','二俣川','西谷','羽沢横浜国大','新横浜'],
-        schedule: { weekday: { timeRange: [18, 22] }, weekend: { timeRange: [[8, 9], [21, 22]] } } },
+        schedule: { weekday: { at: '湘南台', timeRange: ['18:10', '21:40'] }, weekend: { at: '湘南台', timeRange: [['08:30', '08:40'], ['21:40', '21:50']] } } },
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [
         '湘南台','いずみ野','二俣川','西谷','羽沢横浜国大','新横浜'], // also calls at 鶴ヶ峰 (via)
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '湘南台', timeRange: ['06:40', '09:00'] } } },
     ] },
 
   // ── Toei Shinjuku ↔ Keio at Shinjuku ──────────────────────────────────
@@ -3278,7 +3278,7 @@ const LINE_CONNECTIONS = [
         '海老名','大和','二俣川','西谷','大崎','恵比寿','渋谷','新宿','池袋','板橋','十条','赤羽','北赤羽','浮間舟渡','戸田公園','戸田','北戸田','武蔵浦和','中浦和','南与野','与野本町','北与野','大宮'],
         // Up hours of the JR-bound 特急 (wd 5–8h, 15–20h, 22h; Sat/hol 5–10h, 18h, 21–22h; the Tokyu-bound
         // ones are the 新横浜 connection's; ODPT 2026-03)
-        schedule: { weekday: { timeRange: [[5, 9], [15, 21], [22, 23]] }, weekend: { timeRange: [[5, 11], [18, 19], [21, 23]] } } },
+        schedule: { weekday: { at: '海老名', timeRange: [['05:10', '08:00'], ['15:40', '20:10'], ['22:10', '22:20']] }, weekend: { at: '海老名', timeRange: [['05:20', '10:40'], ['18:00', '18:30'], ['21:30', '22:20']] } } },
     ] },
   // Boardable segment (injected in buildIndex): Osaki–Hazawa Yokohama-Kokudai
   { from: 'Sotetsu-JR Direct Line', fromEnd: '大崎',
@@ -3313,10 +3313,10 @@ const LINE_CONNECTIONS = [
     // The 特急 are 各停 on the JR side (toName at 羽沢横浜国大)
     express: [
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { timeRange: [7, 22] }, weekend: { timeRange: [6, 22] } } },
+        schedule: { weekday: { at: '西谷', timeRange: ['07:20', '22:00'] }, weekend: { at: '西谷', timeRange: ['06:30', '21:30'] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', toName: 'Local', toJa: '各停',
         stops: ['西谷','羽沢横浜国大','武蔵小杉','西大井','大崎'],
-        schedule: { weekday: { timeRange: [[5, 9], [16, 18], [19, 21], [22, 23]] }, weekend: { timeRange: [[5, 11], [18, 19], [21, 23]] } } },
+        schedule: { weekday: { at: '西谷', timeRange: [['05:40', '08:20'], ['16:00', '20:30'], ['22:20', '22:30']] }, weekend: { at: '西谷', timeRange: [['05:40', '11:00'], ['18:20', '18:50'], ['21:50', '22:30']] } } },
     ] },
 
   // ── Saikyo ↔ Kawagoe Line at Omiya ────────────────────────────────────

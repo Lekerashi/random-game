@@ -982,12 +982,12 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
-    ], schedule: { weekday: { timeRange: [[5, 7], [8, 24]] } } },
+    ], schedule: { weekday: { at: '海老名', timeRange: [['04:50', '06:10'], ['08:10', '23:20']] } } },
     // Weekday mornings toward 横浜 only: 快速 minus 星川
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "横浜","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '海老名', timeRange: ['06:00', '08:20'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "横浜","星川","西谷","鶴ヶ峰","二俣川","希望ヶ丘","三ツ境","瀬谷",
       "大和","相模大塚","さがみ野","かしわ台","海老名",
@@ -1006,7 +1006,7 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
       "二俣川","いずみ野","湘南台",
-    ], schedule: { weekday: { timeRange: [[5, 9], [18, 21]] }, weekend: { timeRange: [8, 9] } } },
+    ], schedule: { weekday: { at: '二俣川', timeRange: [['05:50', '08:40'], ['18:00', '20:20']] }, weekend: { at: '二俣川', timeRange: ['08:00', '08:10'] } } },
   ],
 };
 
