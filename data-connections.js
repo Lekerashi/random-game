@@ -295,6 +295,11 @@ const LINE_CONNECTIONS = [
       { until: '京急蒲田', name: 'Keikyu Kamata', ja: '京急蒲田方面', color: '#e57053' },
     ],
     destinations: [
+      // a weekday 急行 (Haneda 10:43) ends at 京急川崎, 2 Sat/hol ones (6:06, 9:36) at 神奈川新町 (ODPT 2025-12)
+      { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Express'],
+        schedule: { weekday: { timeRange: [10, 12] }, weekend: { stops: [] } } },
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Express'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 8], [9, 11]] } } },
       { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Express'],
         schedule: { weekday: { timeRange: [[7, 9], [10, 11], [12, 15], [19, 20], [22, 24]] }, weekend: { timeRange: [22, 24] } } },
     ],
@@ -323,6 +328,10 @@ const LINE_CONNECTIONS = [
     // Main Line short turns toward 浦賀: 神奈川新町 (各停, 17 wd) and 金沢文庫 (各停 / 急行, 21 wd);
     // no train ends at 京急蒲田 or 横浜 (ODPT 2025-12)
     lineDests: [
+      // the last 普通 from 品川 (0:06) ends at 京急川崎 (ODPT 2025-12; the weekday 10:56 急行 from 京急蒲田 is the
+      // Haneda train, a destination on the Airport connection)
+      { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Local'],
+        schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } },
       { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 6], [7, 11], [12, 15], [20, 21], [23, 1]] }, weekend: { timeRange: [[5, 6], [7, 12], [15, 16], [21, 1]] } } },
       { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local', 'Express'],
@@ -366,6 +375,9 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[8, 11], [14, 16], [17, 1]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 1]] } } },
       { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Local'],
         schedule: { weekday: { timeRange: [[6, 10], [22, 1]] }, weekend: { stops: [] } } },
+      // 2 weekday 普通 from 浦賀 (15:52, 0:10) end at 堀ノ内 (ODPT 2025-12)
+      { until: '堀ノ内',     name: 'Horinouchi',         ja: '堀ノ内方面',     color: '#8a2020', services: ['Local'],
+        schedule: { weekday: { timeRange: [[15, 17], [0, 2]] }, weekend: { stops: [] } } },
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
     ],
     destinations: [
