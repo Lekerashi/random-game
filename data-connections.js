@@ -1914,6 +1914,12 @@ const LINE_CONNECTIONS = [
         stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
                 '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
         schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [18, 21] } } },
+      // 2 weekday-morning Seibu 快速急行 from 新木場 to 小手指 (B826M 8:32, B920M 9:01; ODPT 2026-03), on the
+      // Seibu side by the 練馬 hop's 快速急行 entry
+      { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
+        stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
+                '護国寺','東池袋','池袋','要町','千川','小竹向原','練馬'],
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { stops: [] } } },
     ] },
 
   // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
@@ -3372,7 +3378,9 @@ const LINE_CONNECTIONS = [
       { until: '小平', name: 'Kodaira', ja: '小平方面', color: '#36a9e1' },
     ],
     destinations: [
-      { until: '西武新宿', name: 'Seibu-Shinjuku', ja: '西武新宿方面', color: '#00a0e8' },
+      // (boardSchedule: the Tama Lake Line boards of the weekday 6:55 from 多摩湖, chained over 萩山)
+      { until: '西武新宿', name: 'Seibu-Shinjuku', ja: '西武新宿方面', color: '#00a0e8', chainFrom: ['Seibu Tama Lake Line'],
+        boardSchedule: { ...BOARD_AT(['多摩湖', '武蔵大和'])([6, 8], null), ...BOARD_AT(['八坂'])([7, 9], null) } },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
@@ -3385,6 +3393,42 @@ const LINE_CONNECTIONS = [
                 '花小金井','田無','西武柳沢','東伏見','武蔵関','上石神井','鷺ノ宮','高田馬場','西武新宿'],
         schedule: { weekday: { timeRange: [[5, 6], [7, 9], [16, 21]] }, weekend: { timeRange: [[5, 6], [7, 9], [16, 19], [21, 22]] } } },
     ] },
+  // ── Seibu Haijima ↔ Seibu Tama Lake at Hagiyama ─────────────────────
+  // A weekday 6:40 各停 from 小平 runs on from 萩山 to 多摩湖, and the 6:55 from 多摩湖 runs from 萩山 over the
+  // Haijima Line to 小平 and on to 西武新宿 (ODPT 2026-03); otherwise each line is its own platform at 萩山
+  { from: 'Seibu Haijima Line',   fromStation: '萩山', fromDir: 'end',
+    to:   'Seibu Tama Lake Line', toStation: '萩山', toDir: 'end',
+    chainFrom: [],
+    name: 'Tamako', ja: '多摩湖方面', color: '#ED772D',
+    destinations: [
+      { until: '多摩湖', name: 'Tamako', ja: '多摩湖方面', color: '#ED772D', services: ['Local'],
+        schedule: { weekday: { timeRange: [6, 8] }, weekend: { stops: [] } } },
+    ] },
+  { from: 'Seibu Tama Lake Line', fromStation: '萩山', fromDir: 'start',
+    to:   'Seibu Haijima Line',   toStation: '萩山', toDir: 'start',
+    name: 'Seibu-Shinjuku', ja: '西武新宿方面', color: '#00a0e8',
+    destinations: [] }, // the chained 西武新宿 (Haijima → Shinjuku at 小平), at this train's boards
+  // ── Seibu Chichibu → Chichibu Railway at Yokoze ─────────────────────
+  // Sat/hol the 8:56 各停 from 飯能 runs over the link from 横瀬 to 御花畑 and divides: one part to 三峰口, one
+  // to 長瀞 (+ a 10:51 from 横瀬 to 長瀞) (ODPT 2026-03); 御花畑 is the junction (via)
+  { from: 'Seibu Chichibu Line',            fromStation: '横瀬', fromDir: 'end',
+    to:   'Chichibu Railway Chichibu Line', toStation: '御花畑', toDir: 'end',
+    via:  ['御花畑'],
+    name: 'Mitsumineguchi', ja: '三峰口方面', color: '#d89a40',
+    destinations: [
+      { until: '三峰口', name: 'Mitsumineguchi', ja: '三峰口方面', color: '#d89a40', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [8, 11] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
+  { from: 'Seibu Chichibu Line',            fromStation: '横瀬', fromDir: 'end',
+    to:   'Chichibu Railway Chichibu Line', toStation: '御花畑', toDir: 'start',
+    via:  ['御花畑'],
+    name: 'Nagatoro', ja: '長瀞方面', color: '#c08030',
+    destinations: [
+      { until: '長瀞', name: 'Nagatoro', ja: '長瀞方面', color: '#c08030', services: ['Local'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [8, 11] } } },
+    ],
+    express: [{ stops: null, name: 'Local', ja: '各停' }] },
 
   // ── Sobu ↔ Uchibo at Chiba ──────────────────────────────────────────
   // Hourly Sobu rapids run 東京 ↔ 君津 (the regular timetable: 姉ケ崎–長浦 is suspended

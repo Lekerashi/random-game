@@ -127,6 +127,10 @@ const EXPRESS_SERVICES = {
   ],
   "Seibu Ikebukuro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
+    // one weekday 通勤準急 (小手指 7h → 池袋), 準急 stops but passing 石神井公園–椎名町 (ODPT 2026-03)
+    { name: "Commuter Semi-Exp", ja: "通勤準急", color: "#3aa0c8", direction: "start", stops: [
+      "池袋","練馬","大泉学園","保谷","ひばりヶ丘","東久留米","清瀬","秋津","所沢","西所沢","小手指",
+    ], schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "池袋","練馬","石神井公園","大泉学園","保谷","ひばりヶ丘",
       "東久留米","清瀬","秋津","所沢",
