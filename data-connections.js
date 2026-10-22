@@ -940,7 +940,9 @@ const LINE_CONNECTIONS = [
       // the 19:10 普通 from 銚子 ends at 旭 (ODPT 2026-03)
       { until: '旭', name: 'Asahi', ja: '旭方面', color: '#804818', services: ['Local'],
         schedule: { weekday: { timeRange: [19, 21] }, weekend: { timeRange: [19, 21] } } },
-      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830', services: ['Local'] },
+      // + the last 快速 from 成田空港 (5364F, 佐倉 0:07) (ODPT 2026-03)
+      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830', services: ['Local',
+          { name: 'Rapid', schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } }] },
       // the last 快速 from 千葉 end at 津田沼 (ODPT 2026-03)
       { until: '津田沼', name: 'Tsudanuma', ja: '津田沼方面', color: '#F7C948', services: ['Rapid'],
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
@@ -1420,12 +1422,18 @@ const LINE_CONNECTIONS = [
     ],
     destinations: [
       // Asakusa 普通 end at 青砥 (the Keikyu 特急 / 急行 are 普通 on the Asakusa Line: ODPT 2026-03)
-      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local'] },
+      // + a Sat/hol 快特 from Haneda (1867K, 泉岳寺 19:02) (ODPT 2025-12)
+      { until: '青砥', name: 'Aoto', ja: '青砥方面', color: '#0073CF', services: ['Local',
+          { name: 'Rapid Ltd. Exp', schedule: { weekday: { stops: [] }, weekend: { timeRange: [19, 21] } } }] },
+      // + a weekday 特急 from 三崎口 (1423H, 泉岳寺 15:37) (ODPT 2025-12)
       { until: '京成高砂', name: 'Keisei Takasago', ja: '京成高砂方面', color: '#0073CF',
-        services: ['Local', 'Rapid', 'Rapid Ltd. Exp'] },
+        services: ['Local', 'Rapid', 'Rapid Ltd. Exp', { name: 'Ltd. Express', schedule: { weekday: { timeRange: [15, 17] }, weekend: { stops: [] } } }] },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
+      // the weekday 特急 from 三崎口 that stays 特急 on the Asakusa Line (1423H, 泉岳寺 15:37 → 京成高砂)
+      { name: 'Ltd. Express', ja: '特急', color: '#e83030', until: '京成高砂', stops: [...ASAKUSA_UP, '青砥', '京成高砂'],
+        schedule: { weekday: { timeRange: [15, 17] }, weekend: { stops: [] } } },
       // Keisei 快速 (from 西馬込, and the Haneda 特急 / 急行 renamed at 泉岳寺): Haneda ↔ Narita via the Main Line
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
@@ -2747,7 +2755,8 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '志木', name: 'Shiki', ja: '志木方面', color: '#5aa0d8', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 8], [9, 10], [14, 23]] }, weekend: { timeRange: [[7, 9], [15, 17], [19, 21]] } } },
-      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Commuter Exp'] },
+      { until: '川越市', name: 'Kawagoeshi', ja: '川越市方面', color: '#4890c8', services: ['Local', 'Commuter Exp',
+          { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 18] } } }] },
       { until: '森林公園', name: 'Shinrin-Koen', ja: '森林公園方面', color: '#0068B7', services: ['Local', 'Express', 'Commuter Exp'] },
       { until: '小川町', name: 'Ogawamachi', ja: '小川町方面', color: '#003878', services: ['Express'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 9] } } },
@@ -2765,6 +2774,11 @@ const LINE_CONNECTIONS = [
                 '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市','霞ヶ関','鶴ヶ島','若葉',
                 '坂戸','北坂戸','高坂','東松山','森林公園'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [[9, 12], [18, 20], [21, 23]] } } },
+      // a Sat/hol 急行 (渋谷 16:40, B1633S) ends at 川越市 as a Tojo 普通 (ODPT 2026-03)
+      { name: 'Express', ja: '急行', color: '#e83030', toName: 'Local', toJa: '各停', until: '川越市',
+        stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','和光市',
+                '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 18] } } },
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Local', toJa: '各停',
         stops: ['渋谷',"明治神宮前〈原宿〉",'新宿三丁目','池袋','小竹向原','氷川台','平和台','地下鉄赤塚','地下鉄成増','和光市',
                 '朝霞','朝霞台','志木','柳瀬川','みずほ台','鶴瀬','ふじみ野','上福岡','新河岸','川越','川越市','霞ヶ関','鶴ヶ島','若葉',
@@ -3101,13 +3115,18 @@ const LINE_CONNECTIONS = [
     impliedLines: ['Sotetsu-JR Direct Line', 'Sotetsu Shin-Yokohama Line'], // 羽沢横浜国大–西谷 is Sotetsu Shin-Yokohama Line track
     name: 'Ebina', ja: '海老名方面', color: '#003087',
     destinations: [
+      // + a Sat/hol 快速 from 川越 (4702F, 大宮 7:29) (ODPT 2026-03)
       { until: '海老名', name: 'Ebina', ja: '海老名方面', color: '#003087',
-        services: ['Local'] },
+        services: ['Local', { name: 'Rapid', schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 10] } } }] },
     ],
     // JR-direct trains are 各停 on the JR side; a third become Sotetsu 特急 (toName at 羽沢横浜国大:
     // 13 wd / 12 Sat/hol, ODPT 2026-03)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
+      // the Sat/hol 快速 from 川越 (4702F) runs on as a Sotetsu 各停 to 海老名
+      { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停', until: '海老名', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','戸田公園','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
+        '西谷','鶴ヶ峰','二俣川','希望ヶ丘','三ツ境','瀬谷','大和','相模大塚','さがみ野','かしわ台','海老名'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 10] } } },
       // 特急: mornings and evenings (各停 only by day)
       // (hours at 西谷, ODPT 2026-03: boarding on the Saikyo is earlier)
       { name: 'Local', ja: '各停', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','北戸田','戸田','戸田公園','浮間舟渡','北赤羽','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
@@ -3345,8 +3364,11 @@ const LINE_CONNECTIONS = [
       { until: '佐倉', name: 'Sakura', ja: '佐倉方面', color: '#00b261' },
     ],
     destinations: [
-      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830', services: ['Local'],
-        schedule: { weekday: { timeRange: [4, 1] }, weekend: { timeRange: [4, 1] } } },
+      // + the last 快速 from 成田空港 (5364F, 成田 23:54) (ODPT 2026-03)
+      { until: '千葉', name: 'Chiba', ja: '千葉方面', color: '#E85830',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [4, 1] }, weekend: { timeRange: [4, 1] } } },
+                   { name: 'Rapid', schedule: { weekday: { timeRange: [23, 2] }, weekend: { timeRange: [23, 2] } } }],
+        schedule: { weekday: { timeRange: [4, 2] }, weekend: { timeRange: [4, 2] } } },
       { until: '東京', name: 'Tokyo', ja: '東京方面', color: '#0068B7', services: ['Rapid'],
         schedule: { weekday: { timeRange: [[7, 8], [19, 22], [23, 24]] }, weekend: { timeRange: [[7, 8], [10, 11], [16, 17], [18, 19], [23, 24]] } } },
     ],
@@ -4082,10 +4104,11 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '桜木町', name: 'Sakuragicho', ja: '桜木町方面', color: '#d477d1',
         services: ['Local', 'Rapid'] },
+      // + one Sat/hol 快速 each from 八王子 (4744K 17:29 to 磯子, 3840K 8:56 to 大船) (ODPT 2026-03)
       { until: '磯子',   name: 'Isogo',       ja: '磯子方面',   color: '#b050b0',
-        services: ['Local'] },
+        services: ['Local', { name: 'Rapid', schedule: { weekday: { stops: [] }, weekend: { timeRange: [17, 20] } } }] },
       { until: '大船',   name: 'Ofuna',       ja: '大船方面',   color: '#904090',
-        services: ['Local'] },
+        services: ['Local', { name: 'Rapid', schedule: { weekday: { stops: [] }, weekend: { timeRange: [8, 11] } } }] },
     ],
     express: [
       { name: 'Local', ja: '各停', color: '#00a0e8', stops: null },
@@ -4095,6 +4118,15 @@ const LINE_CONNECTIONS = [
                 '相原','八王子みなみ野','片倉','八王子',
                 '横浜','桜木町'],
         schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [8, 19] } } },
+      // the Sat/hol 快速 to 磯子 (八王子 17:29) and 大船 (8:56), every Negishi station past 桜木町
+      { name: 'Rapid', ja: '快速', color: '#00b900', until: '磯子',
+        stops: ['東神奈川','菊名','新横浜','鴨居','中山','長津田','町田','相模原','橋本','相原','八王子みなみ野','片倉','八王子',
+                '横浜','桜木町','関内','石川町','山手','根岸','磯子'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [17, 20] } } },
+      { name: 'Rapid', ja: '快速', color: '#00b900', until: '大船',
+        stops: ['東神奈川','菊名','新横浜','鴨居','中山','長津田','町田','相模原','橋本','相原','八王子みなみ野','片倉','八王子',
+                '横浜','桜木町','関内','石川町','山手','根岸','磯子','新杉田','洋光台','港南台','本郷台','大船'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [8, 11] } } },
     ] },
   // 10 a day end at 橋本 (mornings and evenings, 各停) (ODPT 2026-03)
   { from: 'JR Negishi Line',  fromEnd: '横浜',

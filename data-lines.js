@@ -174,6 +174,10 @@ const EXPRESS_SERVICES = {
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
       "つつじヶ丘","調布",
     ], schedule: { weekday: { timeRange: [[18, 21], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
+    // ...and a weekday one from 橋本 ends at 桜上水 (調布 23:58) (ODPT 2026-08)
+    { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
+      "桜上水","千歳烏山","仙川","つつじヶ丘","調布",
+    ], schedule: { weekday: { timeRange: [23, 2] }, weekend: { stops: [] } } },
     // ...and the ones to Keio 新宿 run 調布–新宿 (weekday 5h and 8h, Sat/hol mornings and 21–22h)
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山","仙川","つつじヶ丘","調布",
@@ -1475,8 +1479,11 @@ const LINE_DESTINATIONS = {
         // the Sagamihara 区間急行 ending here (boardable at 調布 only)
         { until: 'つつじヶ丘', name: 'Tsutsujigaoka', ja: 'つつじヶ丘方面', color: '#a060c0', services: ['Sub-Exp'],
           schedule: { weekday: { timeRange: [[18, 21], [23, 1]] }, weekend: { timeRange: [23, 1] } } },
-        { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0', services: ['Local'],
-          schedule: { weekday: { timeRange: [[18, 20], [23, 1]] }, weekend: { timeRange: [22, 1] } } },
+        // + a weekday 区間急行 from 橋本 (4710, 調布 23:58) (ODPT 2026-08)
+        { until: '桜上水',     name: 'Sakurajosui',   ja: '桜上水方面',     color: '#b080d0',
+          services: [{ name: 'Local', schedule: { weekday: { timeRange: [[18, 20], [23, 1]] }, weekend: { timeRange: [22, 1] } } },
+                     { name: 'Sub-Exp', schedule: { weekday: { timeRange: [23, 2] }, weekend: { stops: [] } } }],
+          schedule: { weekday: { timeRange: [[18, 20], [23, 2]] }, weekend: { timeRange: [22, 1] } } },
         { until: '新宿',       name: 'Shinjuku',      ja: '新宿方面',       color: '#800080' },
       ] },
   ],
@@ -1781,8 +1788,12 @@ const LINE_DESTINATIONS = {
         // 普通 from 館林 ending at 東武動物公園: weekday 21:44, Sat/hol 9:25, 20:54 and 21:44 (ODPT 2026-03)
         { until: '東武動物公園', name: 'Tobu-Dobutsu-Koen', ja: '東武動物公園方面', color: '#003878', services: ['Local'],
           schedule: { weekday: { timeRange: [21, 24] }, weekend: { timeRange: [[9, 11], [20, 24]] } } },
-        { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#5a8ad0', services: ['Local', 'Sec. Semi-Exp'],
-          schedule: { weekday: { timeRange: [[9, 10], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
+        // + a weekday 区間急行 from 東武動物公園 (2702, 9:13) (ODPT 2026-03)
+        { until: '北千住', name: 'Kita-Senju', ja: '北千住方面', color: '#5a8ad0',
+          services: [{ name: 'Local', schedule: { weekday: { timeRange: [[9, 10], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
+                     { name: 'Sec. Semi-Exp', schedule: { weekday: { timeRange: [[9, 10], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
+                     { name: 'Sub-Exp', schedule: { weekday: { timeRange: [9, 11] }, weekend: { stops: [] } } }],
+          schedule: { weekday: { timeRange: [[9, 11], [22, 1]] }, weekend: { timeRange: [22, 1] } } },
         { until: '浅草',   name: 'Asakusa',    ja: '浅草方面',   color: '#003087' },
       ] },
   ],
