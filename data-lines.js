@@ -17,14 +17,14 @@ const EXPRESS_SERVICES = {
       "花小金井","小平","久米川","東村山",
       "所沢","航空公園","新所沢","入曽",
       "狭山市","新狭山","南大塚","本川越",
-    ], schedule: { weekday: { timeRange: [[5, 6], [7, 10], [16, 1]] }, weekend: { timeRange: [[5, 6], [7, 11], [17, 21], [23, 1]] } } },
+    ], schedule: { weekday: { at: '西武新宿', timeRange: [['05:40', '09:30'], ['16:30', '24:20']] }, weekend: { at: '西武新宿', timeRange: [['05:40', '05:50'], ['07:50', '10:20'], ['17:20', '20:10'], ['23:00', '24:20']] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "start", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井",
       "武蔵関","東伏見","西武柳沢","田無",
       "花小金井","小平","久米川","東村山",
       "所沢","航空公園","新所沢","入曽",
       "狭山市","新狭山","南大塚","本川越",
-    ], schedule: { weekday: { timeRange: [15, 10] }, weekend: { timeRange: [[16, 20], [21, 9]] } } },
+    ], schedule: { weekday: { at: '本川越', timeRange: [['04:20', '08:40'], ['15:30', '23:10']] }, weekend: { at: '本川越', timeRange: [['04:20', '05:10'], ['07:10', '07:50'], ['16:00', '18:50'], ['20:50', '23:10']] } } },
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井",
       "田無","花小金井","小平","久米川",
@@ -36,11 +36,11 @@ const EXPRESS_SERVICES = {
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "西武新宿","高田馬場","田無","東村山","所沢",
       "新所沢","入曽","狭山市","新狭山","南大塚","本川越",
-    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 10] } } },
+    ], schedule: { weekday: { stops: [] }, weekend: { at: '西武新宿', timeRange: ['09:00', '09:10'] } } },
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "西武新宿","高田馬場","鷺ノ宮","上石神井","田無",
       "東村山","所沢","新所沢","狭山市","本川越",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 8] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '本川越', timeRange: ['07:00', '07:20'] } } },
   ],
   "JR Chuo Line": [
     { name: "Rapid", ja: "快速", color: "#00b900", stops: null,
@@ -130,7 +130,7 @@ const EXPRESS_SERVICES = {
     // one weekday 通勤準急 (小手指 7h → 池袋), 準急 stops but passing 石神井公園–椎名町 (ODPT 2026-03)
     { name: "Commuter Semi-Exp", ja: "通勤準急", color: "#3aa0c8", direction: "start", stops: [
       "池袋","練馬","大泉学園","保谷","ひばりヶ丘","東久留米","清瀬","秋津","所沢","西所沢","小手指",
-    ], schedule: { weekday: { timeRange: [7, 10] }, weekend: { stops: [] } } },
+    ], schedule: { weekday: { at: '小手指', timeRange: ['07:40', '08:00'] }, weekend: { stops: [] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", stops: [
       "池袋","練馬","石神井公園","大泉学園","保谷","ひばりヶ丘",
       "東久留米","清瀬","秋津","所沢",
@@ -147,18 +147,18 @@ const EXPRESS_SERVICES = {
       "池袋","練馬","石神井公園","ひばりヶ丘","東久留米","清瀬","秋津","所沢",
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
-    ], schedule: { weekday: { timeRange: [[7, 10], [17, 24]] }, weekend: { timeRange: [[6, 9], [10, 12], [15, 1]] } } },
+    ], schedule: { weekday: { at: '池袋', timeRange: [['07:10', '09:20'], ['17:10', '23:40']] }, weekend: { at: '池袋', timeRange: [['06:10', '08:30'], ['10:50', '11:00'], ['15:30', '24:00']] } } },
     { name: "Rapid", ja: "快速", color: "#f07000", direction: "start", stops: [
       "池袋","練馬","石神井公園","ひばりヶ丘","東久留米","清瀬","秋津","所沢",
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
-    ], schedule: { weekday: { timeRange: [[5, 11], [16, 24]] }, weekend: { timeRange: [[5, 11], [18, 24]] } } },
+    ], schedule: { weekday: { at: '飯能', timeRange: [['04:50', '09:30'], ['16:10', '22:30']] }, weekend: { at: '飯能', timeRange: [['04:50', '09:30'], ['18:20', '23:00']] } } },
     // Weekday mornings toward 池袋 only: all stations to 所沢, skips ひばりヶ丘
     { name: "Commuter Exp", ja: "通勤急行", color: "#3a6fd8", direction: "start", stops: [
       "池袋","石神井公園","大泉学園","保谷","東久留米","所沢",
       "西所沢","小手指","狭山ヶ丘","武蔵藤沢",
       "稲荷山公園","入間市","仏子","元加治","飯能",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '飯能', timeRange: ['06:30', '07:50'] } } },
     // 快速急行 from the subway via 練馬 (the F-Liners, 10–17h, and 4 weekday-morning ones): weekdays to
     // 小手指 only, Sat/hol on to 飯能; toward 池袋 2 weekday trains from 飯能 (7h, 16h), the rest leave
     // at 練馬 for the subway (connection express); none from 池袋 (ODPT 2026-03)
@@ -170,7 +170,7 @@ const EXPRESS_SERVICES = {
     ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 18] } } },
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
       "池袋","練馬","石神井公園","ひばりヶ丘","所沢","小手指","入間市","飯能",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 8], [16, 17]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '飯能', timeRange: [['07:00', '07:10'], ['16:00', '16:20']] } } },
   ],
   "Keio Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },

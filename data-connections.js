@@ -1859,11 +1859,11 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00a0e8', toName: 'Local', toJa: '各停',
         stops: ['練馬','新桜台','小竹向原','千川','要町','池袋','雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',
                 "明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [19, 21] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '練馬', timeRange: ['19:40', '19:50'] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', toName: 'Express', toJa: '急行',
         stops: ['小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } }, // daytime only
+        schedule: { weekday: { at: '練馬', timeRange: ['10:40', '16:50'] }, weekend: { at: '練馬', timeRange: ['08:40', '18:20'] } } }, // daytime only
     ] },
   // All-day Seibu Ikebukuro through trains also run onto the Yurakucho Line: 各停 (57 wd / 50
   // Sat/hol) and the rush-hour 準急 (11 wd), all 普通 on the Metro (ODPT 2026-03)
@@ -1875,7 +1875,7 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['練馬','新桜台','小竹向原','千川','要町','池袋','東池袋','護国寺','江戸川橋','飯田橋','市ケ谷','麹町','永田町',
                 '桜田門','有楽町','銀座一丁目','新富町','月島','豊洲','辰巳','新木場'],
-        schedule: { weekday: { timeRange: [[7, 9], [17, 23]] }, weekend: { timeRange: [[7, 8], [17, 18]] } } },
+        schedule: { weekday: { at: '練馬', timeRange: [['07:30', '08:50'], ['17:20', '22:10']] }, weekend: { at: '練馬', timeRange: [['07:10', '07:20'], ['17:50', '18:00']] } } },
     ] },
   // ── Fukutoshin / Yurakucho → Seibu Yurakucho at Kotake-mukaihara ──────
   // Toward 和光市, 70 Fukutoshin and 74 wd / 61 Sat/hol Yurakucho trains a day leave at 小竹向原 for
@@ -1969,7 +1969,7 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['小竹向原','新桜台','練馬','石神井公園','大泉学園','保谷','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
                 '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
-        schedule: { weekday: { timeRange: [[7, 17], [22, 23]] }, weekend: { timeRange: [[7, 8], [9, 16], [17, 22]] } } },
+        schedule: { weekday: { at: '小竹向原', timeRange: [['07:30', '17:00'], ['22:40', '23:00']] }, weekend: { at: '小竹向原', timeRange: ['07:00', '21:40'] } } },
       { name: 'Rapid', ja: '快速', color: '#f07000',
         stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
                 '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
@@ -2004,13 +2004,13 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['飯能','入間市','小手指','所沢',
                 'ひばりヶ丘','石神井公園','練馬','小竹向原'],
-        schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [8, 19] } } },
+        schedule: { weekday: { at: '小手指', timeRange: ['10:20', '16:30'] }, weekend: { at: '飯能', timeRange: ['08:00', '17:50'] } } },
       // the last 各停 from 小手指 runs on to 元住吉 (ODPT Seibu: 小手指 23:09 wd / 23:14 Sat/hol, 中村橋 23:42 / 23:44),
       // + the trailing hour; offered by the 元住吉 short turn (shortTurn) on the Fukutoshin → Toyoko hop
       { name: 'Local', ja: '各停', color: '#00a0e8', until: '元住吉',
         stops: ['小手指','西所沢','所沢','秋津','清瀬','東久留米','ひばりヶ丘','保谷','大泉学園','石神井公園',
                 '練馬高野台','富士見台','中村橋','練馬','新桜台','小竹向原'],
-        schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
+        schedule: { weekday: { at: '小手指', timeRange: ['23:00', '23:20'] }, weekend: { at: '小手指', timeRange: ['23:10', '23:20'] } } },
     ] },
 
   // ── Seibu Toshima / Sayama → Seibu Ikebukuro toward 池袋 ──────────────
@@ -2033,10 +2033,10 @@ const LINE_CONNECTIONS = [
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 24] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '西武球場前', timeRange: ['18:00', '23:10'] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['西武球場前','下山口','西所沢','所沢','秋津','清瀬','東久留米','ひばりヶ丘','保谷','大泉学園','石神井公園','練馬','池袋'],
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [[16, 18], [20, 21]] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '西武球場前', timeRange: [['16:30', '17:40'], ['20:00', '20:10']] } } },
     ] },
 
   // ── Seibu Ikebukuro → Toshima at Nerima / → Sayama at Nishi-Tokorozawa ──
@@ -2063,7 +2063,7 @@ const LINE_CONNECTIONS = [
                    { name: 'Semi-Exp', schedule: { weekday: { stops: [] }, weekend: { timeRange: [20, 23] } } }],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } },
     ],
-    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } }] },
+    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekday: { stops: [] }, weekend: { at: '池袋', timeRange: ['16:20', '22:00'] } } }] },
 
   // ── Fukutoshin ↔ Tokyu Toyoko at Shibuya ──────────────────────────────
   // Through-running to Toyoko (chains with Seibu Yurakucho above)
@@ -3378,7 +3378,7 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['西武新宿','高田馬場','鷺ノ宮','上石神井','武蔵関','東伏見','西武柳沢','田無','花小金井','小平',
                 '萩山','小川','東大和市','玉川上水','武蔵砂川','西武立川','拝島'],
-        schedule: { weekday: { timeRange: [[7, 10], [16, 23]] }, weekend: { timeRange: [[7, 9], [10, 11], [17, 19], [23, 24]] } } },
+        schedule: { weekday: { at: '西武新宿', timeRange: [['07:40', '09:20'], ['16:30', '22:10']] }, weekend: { at: '西武新宿', timeRange: [['07:50', '10:10'], ['17:50', '18:00'], ['23:00', '23:10']] } } },
     ] },
   { from: 'Seibu Haijima Line',  fromEnd: '小平',
     to:   'Seibu Shinjuku Line', toStation: '小平', toDir: 'start',
@@ -3402,7 +3402,7 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['拝島','西武立川','武蔵砂川','玉川上水','東大和市','小川','萩山','小平',
                 '花小金井','田無','西武柳沢','東伏見','武蔵関','上石神井','鷺ノ宮','高田馬場','西武新宿'],
-        schedule: { weekday: { timeRange: [[5, 6], [7, 9], [16, 21]] }, weekend: { timeRange: [[5, 6], [7, 9], [16, 19], [21, 22]] } } },
+        schedule: { weekday: { at: '拝島', timeRange: [['05:10', '08:20'], ['16:50', '19:50']] }, weekend: { at: '拝島', timeRange: [['05:10', '05:20'], ['07:20', '08:10'], ['16:10', '18:40'], ['21:30', '21:40']] } } },
     ] },
   // ── Seibu Haijima ↔ Seibu Tama Lake at Hagiyama ─────────────────────
   // A weekday 6:40 各停 from 小平 runs on from 萩山 to 多摩湖, and the 6:55 from 多摩湖 runs from 萩山 over the
