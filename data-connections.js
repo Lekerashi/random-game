@@ -1377,6 +1377,9 @@ const LINE_CONNECTIONS = [
     // 快特 (then Keisei 快速特急); 快速 and アクセス特急 leave 品川 under their Keisei names (18–29 and 9–11 a
     // day), calling at every Asakusa Line station (the ones that skip are Toei's エアポート快特)
     express: [
+      // one weekday 通勤特急 leaves 品川 at 21:21 for 成田空港 (2089K; Keikyu's board names it so)
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', chainFrom: [], stops: ['品川', ...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [21, 23] }, weekend: { stops: [] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['品川','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)'],
         schedule: { weekday: { timeRange: [[7, 8], [10, 16], [19, 21], [22, 23]] }, weekend: { timeRange: [8, 20] } } },
@@ -1511,6 +1514,9 @@ const LINE_CONNECTIONS = [
       // the weekday 特急 from 三崎口 that stays 特急 on the Asakusa Line (1423H, 泉岳寺 15:37 → 京成高砂)
       { name: 'Ltd. Express', ja: '特急', color: '#e83030', until: '京成高砂', stops: [...ASAKUSA_UP, '青砥', '京成高砂'],
         schedule: { weekday: { timeRange: [15, 17] }, weekend: { stops: [] } } },
+      // the weekday 通勤特急 2089K (品川 21:21, 泉岳寺 21:24 → 成田空港; ODPT 2025-12 / 2026-03)
+      { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [...ASAKUSA_UP],
+        schedule: { weekday: { timeRange: [21, 23] }, weekend: { stops: [] } } },
       // Keisei 快速 (from 西馬込, and the Haneda 特急 / 急行 renamed at 泉岳寺): Haneda ↔ Narita via the Main Line
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
