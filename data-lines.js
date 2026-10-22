@@ -226,6 +226,12 @@ const EXPRESS_SERVICES = {
       "代々木上原","下北沢","経堂","千歳船橋","祖師ヶ谷大蔵","成城学園前",
       "喜多見","狛江","和泉多摩川","登戸","向ヶ丘遊園",
     ], schedule: { weekday: { timeRange: [[6, 8], [9, 11], [16, 24]] }, weekend: { timeRange: [[8, 12], [16, 20]] } } },
+    // one weekday 準急 runs on to 本厚木, all stations past 向ヶ丘遊園 (代々木上原 21:00; ODPT 2026-03)
+    { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
+      "代々木上原","下北沢","経堂","千歳船橋","祖師ヶ谷大蔵","成城学園前",
+      "喜多見","狛江","和泉多摩川","登戸","向ヶ丘遊園","生田","読売ランド前","百合ヶ丘","新百合ヶ丘","柿生","鶴川",
+      "玉川学園前","町田","相模大野","小田急相模原","相武台前","座間","海老名","厚木","本厚木",
+    ], schedule: { weekday: { timeRange: [21, 24] }, weekend: { stops: [] } } },
     // 急行 run all day both ways (ODPT 2026-03)
     { name: "Express", ja: "急行", color: "#e83030", stops: [
       "新宿","代々木上原","下北沢","経堂","成城学園前",
@@ -1607,7 +1613,8 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[8, 9], [21, 1]] }, weekend: { timeRange: [[7, 9], [16, 20], [21, 1]] } } },
         { until: '海老名',     name: 'Ebina',           ja: '海老名方面',     color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-        { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express'] },
+        { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express',
+            { name: 'Semi-Exp', schedule: { weekday: { timeRange: [21, 24] }, weekend: { stops: [] } } }] },
         { until: '伊勢原',     name: 'Isehara',         ja: '伊勢原方面',     color: '#005090', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[4, 10], [18, 24]] } } },
         // one 各停 a day from 新宿 ends at 秦野 (wd 6:43, Sat/hol 21:25; ODPT 2026-03)
@@ -1621,8 +1628,11 @@ const LINE_DESTINATIONS = {
       destinations: [
         { until: '新松田',   name: 'Shin-Matsuda', ja: '新松田方面',   color: '#004080', services: ['Local'],
           schedule: { weekday: { timeRange: [[4, 10], [16, 24]] }, weekend: { timeRange: [[4, 10], [21, 24]] } } },
-        { until: '本厚木',   name: 'Hon-Atsugi',   ja: '本厚木方面',   color: '#0070c0', services: ['Local'],
-          schedule: { weekday: { timeRange: [[7, 9], [21, 1]] }, weekend: { timeRange: [[5, 7], [19, 1]] } } },
+        // + 2 Sat/hol 急行 from 小田原 (5:43, 21:33; ODPT 2026-03)
+        { until: '本厚木',   name: 'Hon-Atsugi',   ja: '本厚木方面',   color: '#0070c0',
+          services: [{ name: 'Local', schedule: { weekday: { timeRange: [[7, 9], [21, 1]] }, weekend: { timeRange: [[5, 7], [19, 1]] } } },
+                     { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [[5, 8], [21, 24]] } } }],
+          schedule: { weekday: { timeRange: [[7, 9], [21, 1]] }, weekend: { timeRange: [[5, 8], [19, 1]] } } },
         { until: '相模大野', name: 'Sagami-Ono',   ja: '相模大野方面', color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[5, 10], [15, 18], [21, 22], [0, 1]] }, weekend: { timeRange: [[7, 9], [16, 19], [0, 1]] } } },
         { until: '町田',     name: 'Machida',      ja: '町田方面',     color: '#1a8fe8', services: ['Local', 'Express'],

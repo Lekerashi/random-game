@@ -1754,7 +1754,17 @@ const LINE_CONNECTIONS = [
       { name: 'Semi-Exp', ja: '準急', color: '#00b900', toName: 'Express', toJa: '急行',
         stops: ['練馬','新桜台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [[9, 10], [18, 22]] } } },
+        schedule: { weekday: { timeRange: [8, 11] }, weekend: { timeRange: [18, 22] } } },
+      // the Sat/hol 9h 準急 (練馬 9:38) runs on as a Metro 普通 (A907K; ODPT 2026-03)
+      { name: 'Semi-Exp', ja: '準急', color: '#00a0e8', toName: 'Local', toJa: '各停',
+        stops: ['練馬','新桜台','小竹向原','千川','要町','池袋','雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',
+                "明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 11] } } },
+      // a Sat/hol 快速 from 飯能 runs on as a Metro 普通 (A1807K, 練馬 19:47; ODPT 2026-03)
+      { name: 'Rapid', ja: '快速', color: '#00a0e8', toName: 'Local', toJa: '各停',
+        stops: ['練馬','新桜台','小竹向原','千川','要町','池袋','雑司が谷','西早稲田','東新宿','新宿三丁目','北参道',
+                "明治神宮前〈原宿〉",'渋谷'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [19, 21] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', toName: 'Express', toJa: '急行',
         stops: ['小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷'],
@@ -1806,13 +1816,19 @@ const LINE_CONNECTIONS = [
     to:   'Seibu Yurakucho Line',       toEnd: '小竹向原',
     name: 'Kotesashi', ja: '小手指方面', color: '#e97c20',
     destinations: [],
-    // (the Yurakucho boards show the Seibu 準急 as 準急: no rename)
+    // (the Yurakucho boards show the Seibu 準急 / 快速 as 準急 / 快速: no rename)
     express: [
       { stops: null, name: 'Local', ja: '各停' },
       { name: 'Semi-Exp', ja: '準急', color: '#00b900',
         stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
                 '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
         schedule: { weekday: { timeRange: [[6, 11], [22, 23]] }, weekend: { timeRange: [[8, 11], [14, 16], [19, 20]] } } },
+      // 3 Seibu 快速 a day from 新木場 (wd B2236M 22:53 to 小手指; Sat/hol B1814M 18:10 / B1824M 18:45 to 飯能; ODPT
+      // 2026-03), on the Seibu side by the 練馬 hop's 快速 entries
+      { name: 'Rapid', ja: '快速', color: '#f07000',
+        stops: ['新木場','辰巳','豊洲','月島','新富町','銀座一丁目','有楽町','桜田門','永田町','麹町','市ケ谷','飯田橋','江戸川橋',
+                '護国寺','東池袋','池袋','要町','千川','小竹向原','新桜台','練馬'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [18, 21] } } },
     ] },
 
   // ── Seibu Yurakucho → Seibu Ikebukuro at Nerima (terminus through-running) ──
@@ -1831,7 +1847,8 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[6, 10], [17, 24]] }, weekend: { timeRange: [[6, 10], [14, 17], [19, 22], [23, 24]] } } },
       { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
         schedule: { weekday: { timeRange: [[7, 8], [9, 11], [16, 19], [20, 21]] }, weekend: { timeRange: [[7, 9], [16, 19], [20, 22]] } } },
-      { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp'],
+      { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp',
+          { name: 'Rapid', schedule: { weekday: { timeRange: [22, 1] }, weekend: { stops: [] } } }],
         schedule: { weekday: { timeRange: [[5, 18], [19, 1]] }, weekend: { timeRange: [6, 1] } } },
       { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210', services: ['Semi-Exp', 'Rapid', 'Rapid Exp'],
         schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
@@ -1846,7 +1863,19 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#f07000',
         stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
                 '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
-        schedule: { weekday: { timeRange: [[9, 10], [17, 21], [23, 24]] }, weekend: { timeRange: [16, 20] } } },
+        schedule: { weekday: { timeRange: [[9, 10], [17, 21]] }, weekend: { timeRange: [16, 20] } } },
+      // the weekday 23h one is the Metro Yurakucho 快速 to 小手指 (小竹向原 23:34)
+      { name: 'Rapid', ja: '快速', color: '#f07000', chainFrom: [], until: '小手指',
+        stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢','西所沢','小手指'],
+        schedule: { weekday: { timeRange: [23, 1] }, weekend: { stops: [] } } },
+      // the Metro Yurakucho 快速 above run on at their own boarding hours (wd to 小手指, Sat/hol to 飯能)
+      { name: 'Rapid', ja: '快速', color: '#f07000', chainFrom: ['Tokyo Metro Yurakucho Line'], noBoard: ['小竹向原', '新桜台'],
+        until: '小手指', stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢','西所沢','小手指'],
+        schedule: { weekday: { timeRange: [22, 1] }, weekend: { stops: [] } } },
+      { name: 'Rapid', ja: '快速', color: '#f07000', chainFrom: ['Tokyo Metro Yurakucho Line'], noBoard: ['小竹向原', '新桜台'],
+        stops: ['小竹向原','新桜台','練馬','石神井公園','ひばりヶ丘','東久留米','清瀬','秋津','所沢',
+                '西所沢','小手指','狭山ヶ丘','武蔵藤沢','稲荷山公園','入間市','仏子','元加治','飯能'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [18, 21] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000',
         stops: ['小竹向原','練馬','石神井公園','ひばりヶ丘','所沢','小手指'],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [8, 17] } } },
@@ -1918,7 +1947,10 @@ const LINE_CONNECTIONS = [
     chainFrom: [],
     name: 'Seibukyujo-mae', ja: '西武球場前方面', color: '#009944',
     destinations: [
-      { until: '西武球場前', name: 'Seibukyujo-mae', ja: '西武球場前方面', color: '#009944', services: ['Local'],
+      // + a Sat/hol 快速 (池袋 17:33) and 2 準急 (池袋 20:35, 21:10) (ODPT 2026-03)
+      { until: '西武球場前', name: 'Seibukyujo-mae', ja: '西武球場前方面', color: '#009944',
+        services: ['Local', { name: 'Rapid', schedule: { weekday: { stops: [] }, weekend: { timeRange: [17, 19] } } },
+                   { name: 'Semi-Exp', schedule: { weekday: { stops: [] }, weekend: { timeRange: [20, 23] } } }],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekday: { stops: [] }, weekend: { timeRange: [16, 23] } } }] },
