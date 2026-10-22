@@ -285,10 +285,10 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "相模大野","中央林間","南林間","大和","長後","湘南台","藤沢",
-    ], schedule: { weekday: { timeRange: [5, 9] }, weekend: { timeRange: [5, 8] } } },
+    ], schedule: { weekday: { at: '相模大野', timeRange: ['05:20', '08:40'] }, weekend: { at: '相模大野', timeRange: ['05:20', '07:50'] } } },
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "相模大野","中央林間","大和","湘南台","藤沢",
-    ], schedule: { weekday: { timeRange: [8, 24] }, weekend: { timeRange: [7, 24] } } },
+    ], schedule: { weekday: { at: '相模大野', timeRange: ['08:40', '23:30'] }, weekend: { at: '相模大野', timeRange: ['07:50', '23:30'] } } },
   ],
   // Every Sayama Line train is a 各停; the Sat/hol evening ones to 池袋 are connection express
   "Seibu Sayama Line": [
@@ -300,7 +300,7 @@ const EXPRESS_SERVICES = {
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "新百合ヶ丘","栗平","小田急永山","小田急多摩センター","唐木田",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [22, 23]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '新百合ヶ丘', timeRange: [['07:40', '09:10'], ['22:30', '22:40']] } } },
   ],
   "Tokyu Toyoko Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
