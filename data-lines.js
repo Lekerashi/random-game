@@ -91,6 +91,13 @@ const EXPRESS_SERVICES = {
     { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "end", stops: [
       "青梅","二俣尾","御嶽","奥多摩",
     ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 11] } } },
+    // one-offs (ODPT 2026-03): the 8:46 from 青梅 passes 二俣尾, the 9:38 also calls at 古里
+    { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "end", stops: [
+      "青梅","御嶽","奥多摩",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [8, 10] } } },
+    { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "end", stops: [
+      "青梅","二俣尾","御嶽","古里","奥多摩",
+    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 11] } } },
     { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "start", stops: [
       "青梅","御嶽","奥多摩",
     ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [15, 18] } } },
@@ -894,6 +901,11 @@ const EXPRESS_SERVICES = {
       "東京","新日本橋","馬喰町","錦糸町","新小岩","市川","船橋","津田沼","稲毛","千葉",
       "都賀","四街道","物井","佐倉","南酒々井","榎戸","八街","日向","成東",
     ]},
+    // the 7:05 快速 from 成東 passes 日向, 榎戸 and 南酒々井 (ODPT 2026-03)
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "東京","新日本橋","馬喰町","錦糸町","新小岩","市川","船橋","津田沼","稲毛","千葉",
+      "都賀","四街道","物井","佐倉","八街","成東",
+    ], schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [7, 10] } } },
   ],
   // Sotobo 快速 run 千葉 ↔ 上総一ノ宮: the ones through from the Sobu rapid tracks pass 永田, 本納,
   // 新茂原 and 八積, the Keiyo ones (by day) call everywhere; hours per direction (ODPT 2026-03)
@@ -920,6 +932,11 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "千葉","本千葉","蘇我","浜野","八幡宿","五井","姉ケ崎","長浦","袖ケ浦","木更津","君津",
     ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [6, 23] } } },
+    // the 6:12 from 君津 and the 6:56 from 上総湊 (every station to 君津) also call at 巌根; both
+    // leave at 蘇我 for the Keiyo Line (ODPT 2026-03)
+    { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
+      "蘇我","浜野","八幡宿","五井","姉ケ崎","長浦","袖ケ浦","巌根","木更津","君津","青堀","大貫","佐貫町","上総湊",
+    ], schedule: { weekday: { timeRange: [6, 9] }, weekend: { timeRange: [6, 9] } } },
   ],
   // Yokohama Municipal Subway 快速 (every 30 min, both ways)
   "Blue Line": [

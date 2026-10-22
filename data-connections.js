@@ -111,8 +111,10 @@ const ASAKUSA_SOUTH = ['高輪台', '五反田', '戸越', '中延', '馬込', '
 const OSHIAGE_DOWN = ['京成高砂', '青砥', '京成立石', '四ツ木', '八広', '京成曳舟', '押上(スカイツリー前)']; // 京成高砂 → 押上
 // Tokaido Main Line 熱海 → 東京, every station (the morning ラビット / アーバン through trains call at all of them)
 // The 4 Ito → Tokaido 普通 a day board at 伊東–来宮: hours there for a chained destination (boardSchedule)
-const ITO_BOARD = (weekday, weekend) => Object.fromEntries(['伊東', '宇佐美', '網代', '伊豆多賀', '来宮']
+// boardSchedule for a list of boarding stations (JA): weekday / weekend timeRange, null = none that day
+const BOARD_AT = stations => (weekday, weekend) => Object.fromEntries(stations
   .map(s => [s, { weekday: weekday ? { timeRange: weekday } : { stops: [] }, weekend: weekend ? { timeRange: weekend } : { stops: [] } }]));
+const ITO_BOARD = BOARD_AT(['伊東', '宇佐美', '網代', '伊豆多賀', '来宮']);
 const TOKAIDO_ALL_UP = ['熱海', '湯河原', '真鶴', '根府川', '早川', '小田原', '鴨宮', '国府津', '二宮', '大磯', '平塚', '茅ケ崎', '辻堂', '藤沢', '大船', '戸塚', '横浜', '川崎', '品川', '新橋', '東京'];
 
 const LINE_CONNECTIONS = [
@@ -830,6 +832,46 @@ const LINE_CONNECTIONS = [
                 '上尾','桶川','北本','鴻巣','熊谷','籠原','深谷','岡部','本庄','神保原',
                 '新町','倉賀野','高崎'],
         schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [9, 18] } } },
+    ] },
+  // ── Takasaki → Ryomo at Takasaki ──────────────────────────────────────
+  // Three evening trains a day run on from 高崎 to 前橋 (every station): wd the SS 快速 2856Y / 2860Y from
+  // 平塚 / 国府津 and the 1940E 普通 from 国府津 over the Ueno-Tokyo Line; Sat/hol 2858Y, 1928E (from 熱海), 1944E;
+  // and the Sat/hol 1840E 普通 from 小田原 (8:58 at 東京) to 新前橋. Hours: their departures on the Tokaido, SS and
+  // Takasaki legs + the trailing hour (ODPT 2026-03)
+  { from: 'JR Takasaki Line', fromEnd: '高崎',
+    to:   'JR Ryomo Line',    toEnd:   '高崎',
+    toUntil: '前橋',
+    name: 'Maebashi', ja: '前橋方面', color: '#76d5c2',
+    destinations: [
+      { until: '新前橋', name: 'Shim-Maebashi', ja: '新前橋方面', color: '#76d5c2', services: ['Local'],
+        chainFrom: ['JR Tokaido Main Line'], schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 12] } },
+        boardSchedule: {
+          ...BOARD_AT(['小田原', '鴨宮', '国府津', '二宮', '大磯', '平塚', '茅ケ崎'])(null, [7, 9]),
+          ...BOARD_AT(['辻堂', '藤沢', '大船', '戸塚', '横浜', '川崎', '品川', '新橋', '東京'])(null, [8, 10]),
+          ...BOARD_AT(['上野', '尾久', '赤羽', '浦和', 'さいたま新都心', '大宮', '宮原', '上尾', '北上尾', '桶川', '北本', '鴻巣'])(null, [9, 11]),
+          ...BOARD_AT(['北鴻巣', '吹上', '行田', '熊谷', '籠原', '深谷', '岡部', '本庄', '神保原', '新町', '倉賀野'])(null, [10, 12]) } },
+      { until: '前橋',   name: 'Maebashi',      ja: '前橋方面',   color: '#5ab8a8', services: ['Local', 'Rapid'],
+        chainFrom: ['JR Tokaido Main Line', 'JR Shonan Shinjuku Line'],
+        schedule: { weekday: { timeRange: [18, 1] }, weekend: { timeRange: [17, 1] } },
+        // each boarding station at its own departure hours of these trains + the trailing hour
+        boardSchedule: {
+          ...BOARD_AT(['熱海', '湯河原'])(null, [17, 19]),
+          ...BOARD_AT(['真鶴', '根府川', '早川', '小田原', '鴨宮'])(null, [18, 20]),
+          ...BOARD_AT(['国府津'])([19, 22], [18, 22]),
+          ...BOARD_AT(['二宮', '大磯', '大船'])([19, 23], [18, 23]),
+          ...BOARD_AT(['平塚', '茅ケ崎', '辻堂', '藤沢'])([18, 23], [18, 23]),
+          ...BOARD_AT(['戸塚', '横浜'])([19, 23], [19, 23]),
+          ...BOARD_AT(['川崎'])([21, 23], [19, 23]),
+          ...BOARD_AT(['品川'])([22, 24], [19, 23]),
+          ...BOARD_AT(['新橋', '東京', '上野', '尾久'])([22, 24], [[19, 21], [22, 24]]),
+          ...BOARD_AT(['武蔵小杉', '大崎', '恵比寿', '渋谷', '新宿'])([19, 22], [20, 22]),
+          ...BOARD_AT(['池袋'])([20, 23], [20, 22]),
+          ...BOARD_AT(['赤羽'])([20, 24], [19, 24]),
+          ...BOARD_AT(['浦和', '大宮', '宮原', '上尾', '北上尾', '桶川'])([20, 24], [20, 24]),
+          ...BOARD_AT(['さいたま新都心'])([22, 24], [20, 24]),
+          ...BOARD_AT(['北本', '鴻巣', '北鴻巣', '吹上'])([20, 1], [20, 1]),
+          ...BOARD_AT(['行田', '熊谷'])([21, 1], [20, 1]),
+          ...BOARD_AT(['籠原', '深谷', '岡部', '本庄', '神保原', '新町', '倉賀野'])([21, 1], [21, 1]) } },
     ] },
   // Utsunomiya-Yokosuka system trains run on from the Utsunomiya Line at 大宮
   { from: 'Utsunomiya Line',         fromStation: '大宮', fromDir: 'start',
@@ -3146,9 +3188,10 @@ const LINE_CONNECTIONS = [
       { until: '新木場', name: 'Shin-Kiba', ja: '新木場方面', color: '#767c78' },
     ],
     // Every through train calls at every Rinkai station: 快速 (21 wd / 48 Sat/hol) and 通勤快速 (28 wd)
-    // become 各停 at 大崎 (toName; ODPT 2026-03)
+    // become 各停 at 大崎 (toName; ODPT 2026-03); the through 各停 run mornings and evenings only
+    // (Saikyo departures 6–10h, 16–23h both calendars)
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [[6, 12], [16, 1]] }, weekend: { timeRange: [[6, 12], [16, 1]] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','戸田公園','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
                 '大井町','品川シーサイド','天王洲アイル','東京テレポート','国際展示場','東雲','新木場'],
@@ -4466,6 +4509,10 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: [...KEIYO_RAPID, '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '木更津', '君津'],
         schedule: { weekday: { timeRange: [20, 21] }, weekend: { timeRange: [20, 21] } } },
+      // (the other one, 蘇我 20:54, also calls at 巌根)
+      { name: 'Rapid', ja: '快速', color: '#00b900',
+        stops: [...KEIYO_RAPID, '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '巌根', '木更津', '君津'],
+        schedule: { weekday: { timeRange: [20, 22] }, weekend: { timeRange: [20, 22] } } },
     ] },
 
   // ── Sotobo ↔ Uchibo at Awa-Kamogawa ──────────────────────────────────
