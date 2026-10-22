@@ -226,7 +226,7 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '大井町','旗の台','大岡山','自由が丘','二子玉川','溝の口',
         '鷺沼','たまプラーザ','あざみ野','青葉台','長津田','南町田グランベリーパーク','中央林間',
-      ], schedule: { weekday: { timeRange: [[11, 16], [17, 24]] }, weekend: { timeRange: [9, 22] } } },
+      ], schedule: { weekday: { at: '大井町', timeRange: ['11:20', '23:10'] }, weekend: { at: '大井町', timeRange: ['09:40', '21:30'] } } },
     ] },
 
   // ...and back: by day some Oimachi 急行 start at 長津田/中央林間 (jawiki 東急大井町線)
@@ -242,11 +242,11 @@ const LINE_CONNECTIONS = [
       { name: 'Local (G)', ja: '各停（緑）', color: '#00a870', stops: [
         '鷺沼','宮前平','宮崎台','梶が谷','溝の口','高津','二子新地','二子玉川','上野毛','等々力','尾山台',
         '九品仏','自由が丘','緑が丘','大岡山','北千束','旗の台','荏原町','中延','戸越公園','下神明','大井町',
-      ], schedule: { weekday: { timeRange: [5, 6] }, weekend: { timeRange: [5, 9] } } },
+      ], schedule: { weekday: { at: '鷺沼', timeRange: ['04:50', '05:50'] }, weekend: { at: '鷺沼', timeRange: ['04:50', '08:30'] } } },
       { name: 'Oimachi Line Express', ja: '大井町線 急行', color: '#f18c43', stops: [
         '中央林間','南町田グランベリーパーク','長津田','青葉台','あざみ野','たまプラーザ','鷺沼',
         '溝の口','二子玉川','自由が丘','大岡山','旗の台','大井町',
-      ], schedule: { weekday: { timeRange: [[6, 7], [11, 17]] }, weekend: { timeRange: [9, 17] } } },
+      ], schedule: { weekday: { at: '中央林間', timeRange: [['06:00', '06:10'], ['11:20', '16:00']] }, weekend: { at: '中央林間', timeRange: ['09:40', '16:30'] } } },
     ] },
 
   // ── Keikyu Airport Line Y-junction at Keikyu Kamata ─────────────────────
@@ -2219,12 +2219,12 @@ const LINE_CONNECTIONS = [
       // 特急 incl. the daytime F-Liners (Fukutoshin 急行 renamed at 渋谷)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','菊名','横浜',
-        'みなとみらい','元町・中華街'], schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [6, 24] } } },
+        'みなとみらい','元町・中華街'], schedule: { weekday: { at: '渋谷', timeRange: ['09:00', '16:50'] }, weekend: { at: '渋谷', timeRange: ['06:00', '23:00'] } } },
       // 通勤特急 pass only 新高島; Fukutoshin 通勤急行 continue as these (toName at 渋谷)
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [
         '渋谷','中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜',
         'みなとみらい','馬車道','日本大通り','元町・中華街'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [17, 24]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '渋谷', timeRange: [['07:40', '09:00'], ['17:00', '23:20']] } } },
     ] },
   // Hours follow the Toyoko toward 渋谷 (EXPRESS_SERVICES["Tokyu Toyoko Line"] / conn 57)
   { from: 'Minato Mirai Line',  fromEnd: '横浜',

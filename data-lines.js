@@ -313,20 +313,20 @@ const EXPRESS_SERVICES = {
     { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "start", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉",
       "菊名","横浜",
-    ], schedule: { weekday: { timeRange: [[6, 7], [9, 11], [16, 18]] }, weekend: { timeRange: [[6, 11], [15, 1]] } } },
+    ], schedule: { weekday: { at: '横浜', timeRange: [['06:20', '06:30'], ['09:20', '10:20'], ['16:10', '17:00']] }, weekend: { at: '横浜', timeRange: [['06:10', '10:20'], ['15:20', '23:40']] } } },
     { name: "Ltd. Express", ja: "特急", color: "#e83080", direction: "end", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉",
       "菊名","横浜",
-    ], schedule: { weekday: { timeRange: [[9, 12], [16, 17]] }, weekend: { timeRange: [[6, 12], [18, 24]] } } },
+    ], schedule: { weekday: { at: '渋谷', timeRange: [['09:00', '11:30'], ['16:20', '16:40']] }, weekend: { at: '渋谷', timeRange: [['06:00', '11:00'], ['18:00', '23:30']] } } },
     // Weekdays only: 特急 plus 日吉
     { name: "Commuter Ltd. Exp", ja: "通勤特急", color: "#3a6fd8", direction: "start", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉","日吉",
       "菊名","横浜",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [17, 1]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '横浜', timeRange: [['06:40', '09:20'], ['17:00', '24:00']] } } },
     { name: "Commuter Ltd. Exp", ja: "通勤特急", color: "#3a6fd8", direction: "end", stops: [
       "渋谷","中目黒","自由が丘","武蔵小杉","日吉",
       "菊名","横浜",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 10], [17, 24]] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '渋谷', timeRange: [['07:40', '09:00'], ['17:00', '23:20']] } } },
   ],
   "Tokyu Meguro Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -370,24 +370,24 @@ const EXPRESS_SERVICES = {
       "桜新町","用賀","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","つくし野","すずかけ台",
       "南町田グランベリーパーク","つきみ野","中央林間",
-    ], schedule: { weekend: { timeRange: [[5, 7], [9, 18]] } } },
+    ], schedule: { weekend: { at: '中央林間', timeRange: [['04:50', '05:40'], ['09:30', '16:40']] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
       "渋谷","池尻大橋","三軒茶屋","駒沢大学",
       "桜新町","用賀","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","つくし野","すずかけ台",
       "南町田グランベリーパーク","つきみ野","中央林間",
-    ], schedule: { weekend: { timeRange: [[9, 17], [23, 1]] } } },
+    ], schedule: { weekend: { at: '渋谷', timeRange: [['09:20', '16:10'], ['23:10', '24:10']] } } },
     // 急行 run all day both ways (ODPT 2026-03; Sat/hol 11–12h toward 渋谷 are 準急)
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
       "中央林間",
-    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [[6, 11], [13, 24]] } } },
+    ], schedule: { weekday: { at: '中央林間', timeRange: ['06:00', '22:00'] }, weekend: { at: '中央林間', timeRange: [['06:00', '09:50'], ['13:10', '22:50']] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "渋谷","三軒茶屋","二子玉川","溝の口","鷺沼",
       "たまプラーザ","あざみ野","青葉台","長津田","南町田グランベリーパーク",
       "中央林間",
-    ], schedule: { weekday: { timeRange: [[6, 8], [9, 1]] }, weekend: { timeRange: [6, 24] } } },
+    ], schedule: { weekday: { at: '渋谷', timeRange: ['06:30', '23:30'] }, weekend: { at: '渋谷', timeRange: ['06:00', '23:00'] } } },
   ],
   "Tobu Tojo Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -849,10 +849,10 @@ const EXPRESS_SERVICES = {
     // Weekdays 6–22h (rush hours too), weekends 8–20h only (an hour later toward 溝の口)
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
-    ], schedule: { weekday: { timeRange: [6, 23] }, weekend: { timeRange: [8, 21] } } },
+    ], schedule: { weekday: { at: '溝の口', timeRange: ['06:00', '22:40'] }, weekend: { at: '溝の口', timeRange: ['08:10', '20:50'] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "大井町","旗の台","大岡山","自由が丘","二子玉川","溝の口",
-    ], schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [8, 22] } } },
+    ], schedule: { weekday: { at: '大井町', timeRange: ['06:20', '23:10'] }, weekend: { at: '大井町', timeRange: ['08:50', '21:30'] } } },
   ],
   // 快速 run by day, both ways (御徒町 weekends only); 9–16h on weekdays, to 17–18h on
   // weekends (ODPT 2026-03). The Negishi through-running version is connection express.
