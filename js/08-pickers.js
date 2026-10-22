@@ -225,7 +225,7 @@ function handleConnectionRouting(p) {
     const viaCount = effectiveViaCount(conn, platformStation(p).name);
     let targetMax = getConnectionMaxStops(conn);
     // Include chain extensions from onward connections (e.g. Keikyu→Asakusa→Keisei)
-    const chainExtra = computeConnectionExtra(getOnwardConnections(conn), '', new Set([conn.to]));
+    const chainExtra = computeConnectionExtra(getOnwardConnections(conn, { lineName: p.lineName }), '', new Set([conn.to]), p.lineName);
     // If connection has express but no local (no stops:null entry),
     // cap targetMax to the express service with the most stops
     if (conn.express && !conn.express.some(e => e.stops === null)) {
@@ -641,7 +641,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   const followFar = (hop, base, path, visited, midLine) => {
     let chainConn = hop, chainBase = base;
     while (chainConn) {
-      const onward = getOnwardConnections(chainConn).filter(c => !visited.has(c.to) && chainAllowed(c));
+      const onward = getOnwardConnections(chainConn, { lineName: p.lineName }).filter(c => !visited.has(c.to) && chainAllowed(c));
       let nextChain = null;
       // Plain hops (no destinations) other than the one the chain follows on: followed too (練馬 →
       // Seibu Yurakucho → Fukutoshin beside → Yurakucho)

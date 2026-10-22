@@ -358,7 +358,7 @@ function getLinearPlatforms(line, entry, si, N, backPrev) {
     const midLineConns = conns.filter(c => c.fromJunctionIdx !== tidx);
     let connExtra = 0;
     if (terminusConns.length > 0 && !branchConfig) {
-      connExtra = computeConnectionExtra(terminusConns, line.stations[si].name);
+      connExtra = computeConnectionExtra(terminusConns, line.stations[si].name, undefined, line.name);
       maxStops += connExtra;
     }
 

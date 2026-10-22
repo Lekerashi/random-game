@@ -140,7 +140,7 @@ function routeConnectionExtension(platform, stops, result, tt, conn, ei) {
   const ua = tt?._untilAt;
   const endsOn = c => !!ua && c.toLineIdx === ua.lineIdx;
   const boundOn = (c, n) => endsOn(c) ? ua.idx : chainBoundIdx(c, n);
-  const onwardFor = c => { if (endsOn(c)) return null; const n = nextChainConn(c, visitedLines, tt); return localClass && n && !localRunsThrough(n, enteredAt(c)) ? null : n; };
+  const onwardFor = c => { if (endsOn(c)) return null; const n = nextChainConn(c, visitedLines, tt, platform.lineName); return localClass && n && !localRunsThrough(n, enteredAt(c)) ? null : n; };
   visitedLines.add(currentConn.to);
   let next = onwardFor(currentConn);
 

@@ -180,7 +180,7 @@ function getEffectiveArrival(p) {
     if (toLine && toLine.stations.some(s => s.name === dest.name)) {
       return { lineName: effConn.to, direction: effConn.toDir };
     }
-    effConn = nextChainConn(effConn, visited);
+    effConn = nextChainConn(effConn, visited, undefined, p.lineName);
   }
   return fallback;
 }

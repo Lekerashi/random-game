@@ -190,7 +190,7 @@ function chainRunsNow(conn, lineIdx, direction, fromIdx) {
   if (conn.destinations.some(d => d.services)) return false;
   // ...and only while a through train runs from here (伊東's four through 普通)
   if (!throughRunsHere(conn, lineIdx, direction, fromIdx)) return false;
-  const plainHop = (c, visited) => getOnwardConnections(c).some(n => !visited.has(n.to)
+  const plainHop = (c, visited) => getOnwardConnections(c, { lineName: p.lineName }).some(n => !visited.has(n.to)
     && (!n.chainFrom || n.chainFrom.includes(p.lineName))
     && (!n.destinations?.length || plainHop(n, new Set([...visited, n.to]))));
   return plainHop(conn, new Set([conn.from, conn.to]));
@@ -286,6 +286,7 @@ function effectiveViaCount(conn, startStationName) {
 // A far-terminus hop carries no through train now when it has destinations, none of whose
 // `schedule` runs now, and nothing runs on its own chain either (getConnections' rule for
 // the connection boarded): rides don't run on over it (no 前橋 ride from the SS by day).
+// opts.lineName: the boarding line, which a destination's `chainFrom` must allow to count.
 // opts.all: every far-terminus hop, running or not (the debug tools' static view).
 function getOnwardConnections(conn, opts) {
   const toLine = state.lines[conn.toLineIdx];
@@ -294,7 +295,7 @@ function getOnwardConnections(conn, opts) {
   const mid = hops ? getMidLineOnward(conn).filter(c => chainNames(hops, c)) : [];
   if (conn.toUntilIdx >= 0) return mid;
   const far = farOnward(conn);
-  return [...(opts?.all ? far : far.filter(c => hopRunsNow(c, new Set([conn.from, conn.to])))), ...mid];
+  return [...(opts?.all ? far : far.filter(c => hopRunsNow(c, new Set([conn.from, conn.to]), opts?.lineName))), ...mid];
 }
 function farOnward(conn) {
   const toLine = state.lines[conn.toLineIdx];
@@ -302,10 +303,11 @@ function farOnward(conn) {
   const farIdx = dirEnd(toLine.stations.length, conn.toDir);
   return state.connections.filter(c => c.fromLineIdx === conn.toLineIdx && c.fromJunctionIdx === farIdx);
 }
-function hopRunsNow(c, visited) {
-  if (!c.destinations || c.destinations.some(d => scheduleActive(d.schedule))) return true;
+function hopRunsNow(c, visited, lineName) {
+  if (!c.destinations || c.destinations.some(d => scheduleActive(d.schedule)
+      && (!lineName || !d.chainFrom || d.chainFrom.includes(lineName)))) return true;
   const seen = new Set([...visited, c.to]);
-  return farOnward(c).some(n => !seen.has(n.to) && hopRunsNow(n, seen));
+  return farOnward(c).some(n => !seen.has(n.to) && hopRunsNow(n, seen, lineName));
 }
 
 const chainNames = (hops, c) => hops.some(h => h.to === c.to && h.toDir === c.toDir);
@@ -337,15 +339,15 @@ function chainBoundIdx(conn, next) {
 // like Meguro → Hiyoshi → Shonandai), else the hop a chain express runs on
 // (tt._chainHops, e.g. Airport Rapid onto Sky Access), else the first
 // onward connection.
-function nextChainConn(conn, visited, tt = state.selectedTrainType) {
-  const onward = getOnwardConnections(conn).filter(c => !visited.has(c.to));
+function nextChainConn(conn, visited, tt = state.selectedTrainType, lineName) {
+  const onward = getOnwardConnections(conn, { lineName }).filter(c => !visited.has(c.to));
   const hops = state.selectedDestination?.chain || tt?._chainHops;
   return (hops && onward.find(c => chainNames(hops, c))) || onward[0] || null;
 }
 
 // Compute max additional stops available through terminus connections.
 // Follows chained connections recursively (with cycle detection).
-function computeConnectionExtra(connections, stationName, visited) {
+function computeConnectionExtra(connections, stationName, visited, lineName) {
   if (!visited) visited = new Set();
   let extra = 0;
   for (const conn of connections) {
@@ -355,9 +357,9 @@ function computeConnectionExtra(connections, stationName, visited) {
     let chainExtra = 0;
     const nextVisited = new Set(visited);
     nextVisited.add(conn.to);
-    const onward = getOnwardConnections(conn);
+    const onward = getOnwardConnections(conn, { lineName });
     if (onward.length > 0) {
-      chainExtra = computeConnectionExtra(onward, '', nextVisited);
+      chainExtra = computeConnectionExtra(onward, '', nextVisited, lineName);
     }
     extra = Math.max(extra, via + target + chainExtra);
   }
@@ -505,7 +507,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
         ? Math.abs(connObj.fromJunctionIdx - platform.fromIdx) + effectiveViaCount(connObj, currentName) + getConnectionMaxStops(connObj)
         : platform.maxStops;
       // Include chain extensions from onward connections
-      if (connObj) localMax += computeConnectionExtra(getOnwardConnections(connObj), '', new Set([connObj.to]));
+      if (connObj) localMax += computeConnectionExtra(getOnwardConnections(connObj, { lineName: platform.lineName }), '', new Set([connObj.to]), platform.lineName);
       results.push({ ...ex, expressIndices: null, _connTargetLineIdx: targetLineIdx, _connTotalMax: localMax, _connIdx: state.connections.indexOf(connObj) });
       continue;
     }
@@ -570,7 +572,7 @@ function resolveConnectionExpress(connExInfo, platform, line) {
             untilAt: { lineIdx: chainConn.toLineIdx, idx: ui } });
           return;
         }
-        const onward = getOnwardConnections(chainConn).filter(c => !visited.has(c.to));
+        const onward = getOnwardConnections(chainConn, { lineName: platform.lineName }).filter(c => !visited.has(c.to));
         // Prefer the hop a picked chained destination names (as nextChainConn does)
         const destHops = state.selectedDestination?.chain;
         const ordered0 = destHops ? [...onward.filter(c => chainNames(destHops, c)), ...onward.filter(c => !chainNames(destHops, c))] : onward;

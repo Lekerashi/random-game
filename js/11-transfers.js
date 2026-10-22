@@ -258,7 +258,7 @@ function rideLineNames(platform) {
     names.add(chainConn.to);
     for (const l of (chainConn.impliedLines || [])) names.add(l);
     chainVisited.add(chainConn.to);
-    chainConn = nextChainConn(chainConn, chainVisited);
+    chainConn = nextChainConn(chainConn, chainVisited, undefined, platform.lineName);
   }
   return names;
 }
