@@ -83,7 +83,7 @@ function resolveTrainTypes(p) {
   if (!hasLineExpress && !hasConnExpress && !hasTargetExpress) return null;
 
   const line = state.lines[p.lineIdx];
-  let trainTypes = getTrainTypes(p.lineName, platformStation(p).name, line, p.direction) || [];
+  let trainTypes = getTrainTypes(p.lineName, platformStation(p).name, line, p.direction, platformCtx(p)) || [];
   // On a picked branch only express types calling somewhere ahead on it run
   // (no Nambu Rapid toward Hama-Kawasaki)
   const bi = state.selectedBranch?.branchIndices, biPos = bi ? bi.indexOf(p.fromIdx) : -1;
@@ -118,7 +118,7 @@ function resolveTrainTypes(p) {
     const terminus = a.connObj.fromJunctionIdx === dirEnd(line.stations.length, p.direction);
     if (e.stops && noBoardAt(e, here) && (a.connObj === conn || terminus)) { connExpNames.add(normalize(e.name)); continue; }
     if (a.connObj !== conn || !ridden || !e.stops) continue;
-    const stops = resolveServiceStops(e, a.targetLine, p.direction);
+    const stops = resolveServiceStops(e, a.targetLine, p.direction, platformCtx(p, a.connObj));
     if (stops.length === 0) { connExpNames.add(normalize(e.name)); continue; }
     const names = new Set(stops.map(s => normalize(s)));
     const anchoredOnSource = line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(names, s));
@@ -145,7 +145,10 @@ function resolveTrainTypes(p) {
   const connAlreadyCovered = isLineDest || allConnExpress.some(a => a.targetLineIdx === conn?.toLineIdx);
   if (hasTargetExpress && connTargetLine && !connAlreadyCovered) {
     const junctionStn = connTargetLine.stations[conn.toJunctionIdx];
-    const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine, conn.toDir) || [];
+    // (an `at` window on the target line: the ride from here to its junction comes before it)
+    const toJunction = runMinutes(line, p.fromIdx, conn.fromJunctionIdx, p.direction, null);
+    const targetCtx = { line: connTargetLine, stationIdx: conn.toJunctionIdx, dir: conn.toDir, extra: toJunction == null ? 0 : -(toJunction + viaMinutes(conn, line)) };
+    const targetTypes = getTrainTypes(conn.to, junctionStn.name, connTargetLine, conn.toDir, targetCtx) || [];
     declared.push(...EXPRESS_SERVICES[conn.to]);
     // A mid-line connection with no destination picked (auto-selected) is only
     // ridden by the target's own types: the source local stays on its line
@@ -191,7 +194,7 @@ function resolveTrainTypes(p) {
   // off-hours, or the Nikko → Isesaki 急行 while the through 普通 is). A single
   // declared type without a Local still runs local.
   const loneApplies = trainTypes.length === 1 && trainTypes[0].expressIndices
-    && declared.length >= 2 && !declared.some(t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0);
+    && declared.length >= 2 && !declared.some(t => t.stops === null && resolveServiceStops(t, line, p.direction, platformCtx(p))?.length !== 0);
   if (trainTypes.length === 0 || (trainTypes.length === 1 && !loneApplies)) return null;
 
   // Group services with identical stop patterns (e.g. Yamabiko+Tsubasa, Hayabusa+Komachi).

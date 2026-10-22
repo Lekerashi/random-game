@@ -589,8 +589,8 @@ function hasTransferLines(stationName, currentLineNames) {
     const line = state.lines[e.lineIdx];
     if (!LINE_SCHEDULES[line.name]) return true;
     const ja = line.stations[e.stationIdx].ja, N = line.stations.length;
-    return (line.circular || e.stationIdx > 0) && lineScheduleActive(line.name, ja, 'start')
-      || (line.circular || e.stationIdx < N - 1) && lineScheduleActive(line.name, ja, 'end');
+    return (line.circular || e.stationIdx > 0) && lineScheduleActive(line.name, ja, 'start', line)
+      || (line.circular || e.stationIdx < N - 1) && lineScheduleActive(line.name, ja, 'end', line);
   };
   // currentLineNames can be a string or a Set of line names
   const other = typeof currentLineNames === 'string'

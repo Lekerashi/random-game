@@ -159,16 +159,18 @@ function connFirstStop(c) {
 // Destination d runs now for riders boarding at station ja (schedule + boardSchedule)
 // A destination's `services`: names, or { name, schedule } for a type that ends there only at some hours (one
 // 急行 a day to 本厚木); the names allowed now (null: no list, every type)
-const svcNames = services => services ? services.filter(s => typeof s === 'string' || scheduleActive(s.schedule)).map(s => typeof s === 'string' ? s : s.name) : null;
-const destRunsAt = (d, ja) => scheduleActive(d.schedule) && scheduleActive(d.boardSchedule?.[ja]);
+// ctx (optional, both): the boarding context an `at` window is shifted for (platformCtx)
+const svcNames = (services, ctx) => services ? services.filter(s => typeof s === 'string' || scheduleActive(s.schedule, ctx)).map(s => typeof s === 'string' ? s : s.name) : null;
+const destRunsAt = (d, ja, ctx) => scheduleActive(d.schedule, ctx) && scheduleActive(d.boardSchedule?.[ja], ctx);
 
 // A connection with express entries runs through from station fromIdx only while one of them runs now and calls
 // there (an entry naming no source-line stop but the junction describes the target line: it boards everywhere)
 function throughRunsHere(conn, lineIdx, direction, fromIdx) {
   if (!conn.express) return true;
   const src = state.lines[lineIdx], here = src.stations[fromIdx], tgt = state.lines[conn.toLineIdx];
+  const ctx = { line: src, stationIdx: fromIdx, dir: direction, conn };
   return conn.express.some(e => {
-    const st = resolveServiceStops(e, tgt, direction);
+    const st = resolveServiceStops(e, tgt, direction, ctx);
     if (st === null) return true;
     const ss = new Set(st.map(normalize));
     return st.length > 0 && !noBoardAt(e, here) && (stopSetHas(ss, here) || !src.stations.some((x, i) => i !== conn.fromJunctionIdx && stopSetHas(ss, x)));
@@ -218,8 +220,9 @@ function getConnections(lineName, lineIdx, direction, fromIdx) {
     // and nothing on its onward chain runs either (Fukutoshin → Toyoko trains end on the
     // Minato Mirai / Sotetsu chain, not on the Toyoko itself); a chained-only connection
     // (destinations: []) is offered only while its chain runs
-    if (c.destinations && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja))
-        && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule))
+    const ctx = { line, stationIdx: fromIdx, dir: direction, conn: c };
+    if (c.destinations && c.destinations.every(d => !destRunsAt(d, line.stations[fromIdx]?.ja, ctx))
+        && (c.lineDests || []).every(ld => ld.until === line.stations[terminusIdx].ja || !scheduleActive(ld.schedule, ctx))
         && !chainRunsNow(c, lineIdx, direction, fromIdx)) return false;
     // Terminus junction: must be at the end of the line in our direction
     if (c.fromJunctionIdx === terminusIdx) return true;
@@ -380,7 +383,11 @@ function localRunsThrough(conn, station) {
   if (!conn.express) return true;
   const locals = conn.express.filter(isLocalEntry);
   if (!station) return locals.length > 0;
-  return locals.some(e => scheduleActive(e.schedule) && (e.stops === null || stopSetHas(new Set(e.stops.map(normalize)), station)));
+  const src = state.lines[conn.fromLineIdx];
+  const stationIdx = src ? src.stations.findIndex(s => s === station || s.ja === station.ja) : -1;
+  const dir = conn.fromDir || (conn.fromJunctionIdx === 0 ? 'start' : 'end');
+  const ctx = stationIdx >= 0 ? { line: src, stationIdx, dir, conn } : null;
+  return locals.some(e => scheduleActive(e.schedule, ctx) && (e.stops === null || stopSetHas(new Set(e.stops.map(normalize)), station)));
 }
 // The station a ride over `conn` comes onto its target line at
 const enteredAt = conn => state.lines[conn.toLineIdx]?.stations[conn.toJunctionIdx];
@@ -496,10 +503,11 @@ function resolveConnectionExpress(connExInfo, platform, line) {
   // The platform's own station (differs from currentStation on alias platforms)
   const here = line.stations[platform.fromIdx];
   const currentName = here.name;
+  const ctx = connObj ? { line, stationIdx: platform.fromIdx, dir: platform.direction, conn: connObj } : null;
 
   for (const ex of express) {
     // Resolve schedule/direction-aware stops ([] = hidden now; e.g. KT Rapid skips Okachimachi on weekdays)
-    const resolvedStops = resolveServiceStops(ex, targetLine, platform.direction);
+    const resolvedStops = resolveServiceStops(ex, targetLine, platform.direction, ctx);
     if (resolvedStops?.length === 0) continue;
     if (ex.stops === null) {
       // Local service — all stations, no express filtering on target line

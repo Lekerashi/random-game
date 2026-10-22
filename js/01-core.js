@@ -4,7 +4,7 @@
 const DATA_URL  = './data-tokyo.json'; // pre-built — see .claude/build-data.js
 const CACHE_KEY = 'random_game_v16';
 const ODPT_DATA_DATE = '2026-10-16'; // last ODPT fetch used to check the train data; shown under How to Play › Advanced › License
-const APP_VERSION = 'rg-v198'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
+const APP_VERSION = 'rg-v199'; // = sw.js CACHE_NAME; the pre-commit hook keeps them equal. Shown under How to Play › Advanced
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // HERE Maps API key (developer.here.com) for the Bars & Cafes panels
@@ -34,6 +34,24 @@ const UNDO_TRANSFER_TIMEOUT = 3000;  // ms to show undo button before auto-dismi
 const FEEDBACK_RESET_DELAY  = 2000;  // ms before resetting copy/feedback button text
 const NORMALIZE_CACHE_MAX = 20000;   // normalize() memo entries before it starts over
 const LEG_SAME_STATION_M = 400;      // two names this close are one station (新線新宿 / Toei 新宿)
+// Schedule windows that follow the train (`at` on a schedule entry, 03-schedule-services.js): at the player's station
+// the window is shifted by the estimated run time from `at` and widened by these margins
+const SCHEDULE_LEAD_MIN = 10;        // minutes a type shows before its window reaches the station (a train due shortly)
+const SCHEDULE_DELAY_GRACE_MIN = 15; // minutes it stays after the window has passed (a late-running last train)
+// Run-time estimate between stations (runMinutes): straight-line km/h per line class (track curvature inside) and
+// minutes lost per stop (braking, dwell, starting). Calibrated against ODPT run times with
+// node .claude/odpt-check.js --runtimes (2026-10-22: median error ≤ 1.7 min, p95 ≤ 6.3 on every class but rural)
+const RUN_SPEED_KMH = { tram: 20, agt: 28, subway: 78, jr: 73, fast: 106, private: 75, rural: 85 };
+const RUN_STOP_MIN = { tram: 0.75, agt: 0.2, subway: 1.4, jr: 1.3, fast: 1.55, private: 1.45, rural: 2.25 };
+// Lines whose name doesn't tell their class (runLineClass): single-track country lines, where trains wait at passing
+// loops the estimate can't see (no `at` windows there: validateSchedule), and wide-spacing fast lines
+const RUN_LINE_CLASS = {
+  'JR Uchibo Line': 'rural', 'JR Sotobo Line': 'rural', 'JR Kururi Line': 'rural', 'JR Narita Line': 'rural', 'JR Narita Line (Abiko)': 'rural',
+  'JR Narita Line (Airport)': 'rural', 'JR Kashima Line': 'rural', 'JR Togane Line': 'rural', 'JR Sagami Line': 'rural', 'JR Hachiko Line': 'rural',
+  'JR Ito Line': 'rural', 'Tobu Nikko Line (Nikko)': 'rural', 'Tobu Isesaki Line (Isesaki)': 'rural', 'Tobu Sano Line': 'rural', 'Tobu Kiryu Line': 'rural',
+  'JR Musashino Line': 'fast', 'Tsukuba Express': 'fast', 'JR Keiyo Line': 'fast',
+  'Utsunomiya Line': 'jr',
+};
 const LANG_KEY           = 'random_game_lang';
 const SESSION_KEY        = 'random_game_session';
 const SESSION_TTL        = 24 * 60 * 60 * 1000; // 24 hours

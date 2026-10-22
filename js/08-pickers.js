@@ -66,9 +66,10 @@ function handleLineDestinations(p) {
 
   const line = state.lines[p.lineIdx];
   const endIdx = dirEnd(line.stations.length, p.direction);
+  const ctx = platformCtx(p);
   const dests = lineDest.destinations
     .map(d => {
-      if (!scheduleActive(d.schedule)) return null;
+      if (!scheduleActive(d.schedule, ctx)) return null;
       // `plain: true`: the plain ride to the line's own end (for an end `until` can't name,
       // the Oedo loop's second 都庁前). It picks no station, so the ride keeps its normal
       // cap and only carries the "towards" label
@@ -86,10 +87,10 @@ function handleLineDestinations(p) {
       const stopsToEnd = (untilIdx - p.fromIdx) * dirStep(lineDest.direction);
       if (stopsToEnd <= 0) return null;
       const effectiveMax = capStops(Math.min(stopsToEnd, p.maxStops));
-      return { ...d, untilIdx, effectiveMax, _services: svcNames(d.services),
+      return { ...d, untilIdx, effectiveMax, _services: svcNames(d.services, ctx),
         _outOfWards: outOfWards(line, untilIdx), _connRef: null, _isLineDest: true, _plain: untilIdx === endIdx,
         onSelect: () => { state.selectedDestination = { totalMax: effectiveMax, untilIdx, name: d.name, ja: d.ja,
-          services: svcNames(d.services), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
+          services: svcNames(d.services, ctx), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
   // Same-`until` entries offered at once (one with its own hours or localFrom beside another) are one
@@ -157,7 +158,7 @@ function handleConnectionRouting(p) {
   // start at 品川: no Joban choice at 横浜) unless a short turn or a served destination is
   const N = state.lines[p.lineIdx].stations.length;
   const conns = p._connections.filter(c => (c.fromJunctionIdx === dirEnd(N, p.direction) && throughRunsHere(c, p.lineIdx, p.direction, p.fromIdx))
-    || c.lineDests || !c.destinations?.length || c.destinations.some(d => scheduleActive(d.schedule) && destServesStation(c, d, p)));
+    || c.lineDests || !c.destinations?.length || c.destinations.some(d => scheduleActive(d.schedule, platformCtx(p, c)) && destServesStation(c, d, p)));
   if (conns.length === 0) return { pickerShown: false };
   const onLineStops = p._onLineStops || 0;
   const rollableMax = capStops(p.maxStops);
@@ -410,7 +411,8 @@ function destServesStation(conn, d, p) {
   const curKeys = new Set([normalize(platformStation(p).name),
                            normalize(platformStation(p).ja || '')]);
   const lineDefs = EXPRESS_SERVICES[p.lineName] || [];
-  for (const svc of svcNames(d.services)) {
+  const ctx = platformCtx(p, conn);
+  for (const svc of svcNames(d.services, ctx)) {
     const n = normalize(svc);
     // The connection's own entry wins over a same-name source-line type (Odakyu 急行
     // runs at 18h, but not through to the Chiyoda Line)
@@ -420,12 +422,12 @@ function destServesStation(conn, d, p) {
     // Express-class: allowed service stops at the current station (today's schedule). A terminus
     // connection's entry naming no source station besides the junction describes the target line
     // only, so every source station feeds it (as resolveConnectionExpress)
-    const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction) : t.stops;
+    const stopsOf = t => t.stops ? resolveServiceStops(t, line, p.direction, ctx) : t.stops;
     const targetOnly = (t, stops) => connMatches.includes(t) && conn.fromJunctionIdx === dirEnd(line.stations.length, p.direction)
       && !line.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(new Set(stops.map(normalize)), s));
     if (matches.some(t => { const st = stopsOf(t); return st?.length && !noBoardAt(t, platformStation(p)) && (st.some(s => curKeys.has(normalize(s))) || targetOnly(t, st)); })) return true;
     // Local-class: stops:null def, or an undefined "Local" name (implicit local)
-    const runsLocal = t => t.stops === null && resolveServiceStops(t, line, p.direction)?.length !== 0; // [] = hidden now
+    const runsLocal = t => t.stops === null && resolveServiceStops(t, line, p.direction, ctx)?.length !== 0; // [] = hidden now
     const isLocalClass = matches.length ? matches.some(runsLocal) : n === 'local';
     if (isLocalClass) {
       if (!d.localFrom) return true;
@@ -450,10 +452,11 @@ function lineDestChoice(p, conn, d) {
   // hidden by its hours now (the Sotobo → Uchibo 普通 off-peak) is served by the source line's own
   // type of that name instead (the late Sotobo 普通 to 大網 / 勝浦)
   const tgt = state.lines[conn.toLineIdx];
+  const ctx = platformCtx(p, conn);
   const hiddenNow = n => (conn.express || []).some(e => normalize(e.name) === normalize(n) && e.stops === null
-    && resolveServiceStops(e, tgt, p.direction)?.length === 0);
-  const viaSource = () => { const hid = (svcNames(d.services) || []).filter(hiddenNow); return hid.length > 0 && destServesStation({}, { ...d, services: hid }, p); };
-  if (!scheduleActive(d.schedule) || !(destServesStation(conn, d, p) || viaSource())) return null;
+    && resolveServiceStops(e, tgt, p.direction, ctx)?.length === 0);
+  const viaSource = () => { const hid = (svcNames(d.services, ctx) || []).filter(hiddenNow); return hid.length > 0 && destServesStation({}, { ...d, services: hid }, p); };
+  if (!scheduleActive(d.schedule, ctx) || !(destServesStation(conn, d, p) || viaSource())) return null;
   const line = state.lines[p.lineIdx];
   const untilIdx = line.stations.findIndex(s => s.ja === d.until);
   if (untilIdx === -1) return null;
@@ -462,11 +465,11 @@ function lineDestChoice(p, conn, d) {
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: capStops(Math.min(stopsToEnd, p.maxStops)), _fullMax: stopsToEnd,
-    _services: svcNames(d.services),
+    _services: svcNames(d.services, ctx),
     _outOfWards: outOfWards(line, untilIdx), _connRef: conn, _isLineDest: true,
     _plain: untilIdx === dirEnd(line.stations.length, p.direction), // the line's own end
     onSelect: () => { state.selectedDestination = { totalMax: stopsToEnd, untilIdx, name: d.name, ja: d.ja,
-      services: svcNames(d.services), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
+      services: svcNames(d.services, ctx), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; },
   };
 }
 
@@ -487,14 +490,15 @@ function connDestChoice(p, conn, d, onLine) {
     : d.untilIdx - conn.toJunctionIdx;
   const cappedMax = Math.min(onLine + via + Math.max(0, stopsOnTarget),
                              onLine + via + getConnectionMaxStops(conn));
+  const ctx = platformCtx(p, conn);
   return {
     name: d.name, ja: d.ja, color: d.color || p.lineColor,
     effectiveMax: destRollCap(p, conn, cappedMax), _fullMax: cappedMax,
-    _services: svcNames(d.services),
+    _services: svcNames(d.services, ctx),
     _outOfWards: outOfWards(state.lines[conn.toLineIdx], d.untilIdx), _connRef: conn,
     onSelect: () => {
       state.selectedConnection = conn;
-      state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services), name: d.name, ja: d.ja,
+      state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services, ctx), name: d.name, ja: d.ja,
         stopAt: { lineIdx: conn.toLineIdx, idx: d.untilIdx, dir: conn.toDir } };
     },
   };
@@ -531,8 +535,9 @@ function applyServiceRanges(p, choices) {
 // Destinations of conn that resolved and whose trains serve this station now
 // (boardSchedule: per-boarding-station hours)
 function servedDests(conn, p) {
-  return conn.destinations.filter(d => d.untilIdx !== -1 && scheduleActive(d.schedule)
-    && scheduleActive(d.boardSchedule?.[platformStation(p).ja]) && destServesStation(conn, d, p));
+  const ctx = platformCtx(p, conn);
+  return conn.destinations.filter(d => d.untilIdx !== -1 && scheduleActive(d.schedule, ctx)
+    && scheduleActive(d.boardSchedule?.[platformStation(p).ja], ctx) && destServesStation(conn, d, p));
 }
 
 // Source-line stops ridden before conn's junction (mid-line junctions use
@@ -559,10 +564,11 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // with express entries names its through trains itself: the chain decides what reaches.
   // One with its own `services` only needs them to run (firstHopRunsNow).
   // (a connection without destinations of its own: its chained ones only, for chained short turns)
+  const ctx = platformCtx(p, conn);
   const served = conn.destinations ? servedDests(conn, p) : [];
   const chainBlocked = served.length === 0 && !!conn.destinations?.some(d => d.services);
   const inheritedServices = !conn.express && served.length && served.every(d => d.services)
-    ? [...new Set(served.flatMap(d => svcNames(d.services)))] : null;
+    ? [...new Set(served.flatMap(d => svcNames(d.services, ctx)))] : null;
   // A chained destination's `services` must be boardable here: one of them calls at this
   // station now on the first hop (Haneda → Sky Access needs an エアポート快特, which skips
   // 穴守稲荷 and runs by day only); a Local the hop doesn't declare still runs through (Toyoko →
@@ -571,7 +577,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // The services name types by the destination's own hop; the first hop's entries calling here
   // now whose names reach it as one of them stand for them (namesAlongHops; the entry itself
   // must call here: the Haneda 特急 that run on as 快速 don't make a 浦賀 特急 one)
-  const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(svcNames(d.services), hops) }, p);
+  const firstHopServes = (d, hops) => !conn.express || destServesStation(conn, { ...d, services: firstHopServices(svcNames(d.services, ctx), hops) }, p);
   const firstHopServices = (services, hops) => {
     const allowed = new Set(services.map(normalize));
     const names = new Set(services.filter(n => normalize(n) === 'local' || conn.express.some(e => e.stops === null && normalize(e.name) === normalize(n))));
@@ -581,7 +587,7 @@ function chainDestChoices(p, conn, effectiveOnLine) {
     const terminus = conn.fromJunctionIdx === dirEnd(srcLine.stations.length, p.direction);
     for (const e of conn.express) {
       if (!e.stops) continue;
-      const stops = resolveServiceStops(e, targetLine, p.direction);
+      const stops = resolveServiceStops(e, targetLine, p.direction, ctx);
       if (!stops.length) continue;
       const ss = new Set(stops.map(normalize));
       const anchored = srcLine.stations.some((s, i) => i !== conn.fromJunctionIdx && stopSetHas(ss, s));
@@ -594,8 +600,8 @@ function chainDestChoices(p, conn, effectiveOnLine) {
   // Mid-line hops (midLine) aren't in p.maxStops, so only the ward cap clamps them.
   const pushChainDests = (nextConn, base, path, midLine) => {
     // (boardSchedule: hours per boarding station, the chained boarding line's included: 伊東 → 宇都宮)
-    for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule)
-        && scheduleActive(d.boardSchedule?.[platformStation(p).ja]))) {
+    for (const d0 of nextConn.destinations.filter(d => d.untilIdx !== -1 && chainAllowed(d) && scheduleActive(d.schedule, ctx)
+        && scheduleActive(d.boardSchedule?.[platformStation(p).ja], ctx))) {
       if (chainBlocked && !d0.services) continue;
       // Inherited services are first-hop names already (servicesFirstHop: typeNameForDest reads them so)
       const d = d0.services || !inheritedServices ? d0 : { ...d0, services: inheritedServices, _firstHop: true };
@@ -610,13 +616,13 @@ function chainDestChoices(p, conn, effectiveOnLine) {
       choices.push({
         name: d.name, ja: d.ja, color: d.color || p.lineColor,
         effectiveMax: capStops(cappedMax), _fullMax: totalMax,
-        _services: svcNames(d.services),
+        _services: svcNames(d.services, ctx),
         _outOfWards: outOfWards(state.lines[nextConn.toLineIdx], d.untilIdx), _connRef: nextConn,
         _sourceConn: conn, // first hop: the one that leaves the boarding line
         _shortTurn: !!d.shortTurn,
         onSelect: () => {
           state.selectedConnection = conn;
-          state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services), servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,
+          state.selectedDestination = { totalMax: cappedMax, services: svcNames(d.services, ctx), servicesFirstHop: !!d._firstHop, name: d.name, ja: d.ja, chain,
             stopAt: { lineIdx: nextConn.toLineIdx, idx: d.untilIdx, dir: nextConn.toDir } };
         },
       });

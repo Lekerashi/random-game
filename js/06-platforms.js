@@ -322,7 +322,7 @@ function getLinearPlatforms(line, entry, si, N, backPrev) {
 
   for (const dir of ['start', 'end']) {
     const atTerminus = si === dirEnd(N, dir);
-    if (!lineScheduleActive(line.name, stnJa, dir)) continue;
+    if (!lineScheduleActive(line.name, stnJa, dir, line)) continue;
 
     const step = dirStep(dir);
     let maxStops = atTerminus ? 0 : (state.wards23Only
