@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rg-v188';
+const CACHE_NAME = 'rg-v189';
 // Leaflet: the page loads it on first map use (ensureLeaflet, same URLs);
 // precached on install so maps open offline
 const CDN_ASSETS = [

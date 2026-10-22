@@ -92,6 +92,16 @@ function handleLineDestinations(p) {
           services: svcNames(d.services), stopAt: { lineIdx: p.lineIdx, idx: untilIdx, dir: p.direction } }; } };
     })
     .filter(d => d && d.effectiveMax > 0);
+  // Same-`until` entries offered at once (one with its own hours or localFrom beside another) are one
+  // signboard: one choice with their services together
+  for (let i = 0; i < dests.length; i++) for (let j = dests.length - 1; j > i; j--) {
+    const a = dests[i], b = dests[j];
+    if (a._plainEnd || b._plainEnd || a.untilIdx !== b.untilIdx || a.name !== b.name) continue;
+    const services = a._services && b._services ? [...new Set([...a._services, ...b._services])] : null;
+    const pick = a.onSelect;
+    dests[i] = { ...a, _services: services, onSelect: () => { pick(); state.selectedDestination.services = services; } };
+    dests.splice(j, 1);
+  }
   // No line destination ahead (a segment the table's stations aren't on, e.g. the southern JR
   // Hachiko Line): the connection picker handles the platform
   if (dests.length === 0) return { pickerShown: false };
