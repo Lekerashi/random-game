@@ -1539,7 +1539,9 @@ const LINE_DESTINATIONS = {
           schedule: { weekday: { timeRange: [[5, 6], [7, 10], [17, 24]] }, weekend: { timeRange: [[5, 10], [14, 22], [23, 1]] } } },
         { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
           schedule: { weekday: { timeRange: [7, 24] }, weekend: { timeRange: [7, 23] } } },
-        { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid', 'Rapid Exp'] },
+        // + a Sat/hol 急行 from 池袋 (23:05) (ODPT 2026-03)
+        { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid', 'Rapid Exp',
+            { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } }] },
         { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210' },
         { until: '吾野',       name: 'Agano',         ja: '吾野方面',       color: '#c85a00' },
       ] },
@@ -1554,7 +1556,10 @@ const LINE_DESTINATIONS = {
     destinations: [
       { until: '上石神井', name: 'Kami-Shakujii',  ja: '上石神井方面', color: '#60c0f0', services: ['Local'],
         schedule: { weekday: { timeRange: [[5, 9], [15, 22], [23, 1]] }, weekend: { timeRange: [[6, 9], [22, 1]] } } },
-      { until: '田無',     name: 'Tanashi',        ja: '田無方面',     color: '#40b0e8', services: ['Local'],
+      // + a Sat/hol 急行 (西武新宿 21:01) and a weekday 準急 (8:42) (ODPT 2026-03)
+      { until: '田無',     name: 'Tanashi',        ja: '田無方面',     color: '#40b0e8', services: ['Local',
+          { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [21, 23] } } },
+          { name: 'Semi-Exp', schedule: { weekday: { timeRange: [8, 10] }, weekend: { stops: [] } } }],
         schedule: { weekday: { timeRange: [[5, 7], [8, 23]] }, weekend: { timeRange: [[6, 7], [8, 24]] } } },
       { until: '新所沢',   name: 'Shin-Tokorozawa', ja: '新所沢方面',  color: '#20a0e0', services: ['Local', 'Semi-Exp', 'Express'],
         schedule: { weekday: { timeRange: [[5, 11], [14, 1]] }, weekend: { timeRange: [[5, 6], [8, 11], [12, 1]] } } },
@@ -1610,13 +1615,19 @@ const LINE_DESTINATIONS = {
         // the last trains from 新宿 end at 経堂 / 新百合ヶ丘 / 海老名 (ODPT 2026-03)
         { until: '経堂',       name: 'Kyodo',           ja: '経堂方面',       color: '#3aa0e0', services: ['Local'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-        { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0', services: ['Local', 'Semi-Exp'],
-          schedule: { weekday: { timeRange: [[7, 11], [16, 22], [23, 1]] }, weekend: { timeRange: [[8, 12], [17, 21], [22, 1]] } } },
+        // + the last 急行 from 新宿 (0:32) (ODPT 2026-03)
+        { until: '成城学園前', name: 'Seijogakuen-mae', ja: '成城学園前方面', color: '#3aa0e0',
+          services: [{ name: 'Local', schedule: { weekday: { timeRange: [[7, 11], [16, 22], [23, 1]] }, weekend: { timeRange: [[8, 12], [17, 21], [22, 1]] } } },
+                     { name: 'Semi-Exp', schedule: { weekday: { timeRange: [[7, 11], [16, 22], [23, 1]] }, weekend: { timeRange: [[8, 12], [17, 21], [22, 1]] } } },
+                     { name: 'Express', schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } }],
+          schedule: { weekday: { timeRange: [[7, 11], [16, 22], [23, 2]] }, weekend: { timeRange: [[8, 12], [17, 21], [22, 2]] } } },
         { until: '向ヶ丘遊園', name: 'Mukogaoka-Yuen',  ja: '向ヶ丘遊園方面', color: '#1a8fe8', services: ['Local', 'Semi-Exp', 'Express'],
           schedule: { weekday: { timeRange: [[6, 11], [16, 23], [0, 1]] }, weekend: { timeRange: [[6, 12], [16, 22], [23, 1]] } } },
         { until: '新百合ヶ丘', name: 'Shin-Yurigaoka',  ja: '新百合ヶ丘方面', color: '#1a8fe8', services: ['Local'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-        { until: '相模大野',   name: 'Sagami-Ono',      ja: '相模大野方面',   color: '#2a80d0', services: ['Local', 'Express'],
+        // + a Sat/hol 快速急行 from 新宿 (22:10) (ODPT 2026-03)
+        { until: '相模大野',   name: 'Sagami-Ono',      ja: '相模大野方面',   color: '#2a80d0', services: ['Local', 'Express',
+            { name: 'Rapid Exp', schedule: { weekday: { stops: [] }, weekend: { timeRange: [22, 24] } } }],
           schedule: { weekday: { timeRange: [[8, 9], [21, 1]] }, weekend: { timeRange: [[7, 9], [16, 20], [21, 1]] } } },
         { until: '海老名',     name: 'Ebina',           ja: '海老名方面',     color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
@@ -1627,6 +1638,9 @@ const LINE_DESTINATIONS = {
         // one 各停 a day from 新宿 ends at 秦野 (wd 6:43, Sat/hol 21:25; ODPT 2026-03)
         { until: '秦野',       name: 'Hadano',          ja: '秦野方面',       color: '#004890', services: ['Local'],
           schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [21, 1] } } },
+        // a weekday 各停 from 本厚木 (5:40) (ODPT 2026-03): its own entry, offered from 本厚木 on (localFrom)
+        { until: '新松田',     name: 'Shin-Matsuda',    ja: '新松田方面',     color: '#004080', localFrom: '本厚木', services: ['Local'],
+          schedule: { weekday: { timeRange: [5, 8] }, weekend: { stops: [] } } },
         { until: '新松田',     name: 'Shin-Matsuda',    ja: '新松田方面',     color: '#004080', services: ['Express', 'Rapid Exp'],
           schedule: { weekday: { timeRange: [[5, 8], [15, 22]] }, weekend: { timeRange: [[5, 8], [20, 22]] } } },
         { until: '小田原',     name: 'Odawara',         ja: '小田原方面',     color: '#0099DD' },

@@ -262,8 +262,11 @@ const LINE_CONNECTIONS = [
       { until: '品川',   name: 'Shinagawa', ja: '品川方面',   color: '#0073CF',
         services: ['Airport Local', 'Express', 'Rapid Ltd. Exp'] },
       // 4–6 急行 a day end at 泉岳寺 (the rest run on to the Asakusa Line: chained)
-      { until: '泉岳寺', name: 'Sengakuji', ja: '泉岳寺方面', color: '#e85298', services: ['Express'],
-        schedule: { weekday: { timeRange: [[6, 7], [16, 17], [20, 23]] }, weekend: { timeRange: [[5, 8], [22, 24]] } } },
+      // + a weekday 特急 (Haneda 16:06) (ODPT 2025-12)
+      { until: '泉岳寺', name: 'Sengakuji', ja: '泉岳寺方面', color: '#e85298',
+        services: [{ name: 'Express', schedule: { weekday: { timeRange: [[6, 7], [16, 17], [20, 23]] }, weekend: { timeRange: [[5, 8], [22, 24]] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [16, 18] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [[6, 7], [16, 18], [20, 23]] }, weekend: { timeRange: [[5, 8], [22, 24]] } } },
     ],
     express: [
       { name: 'Express', ja: '急行', color: '#e83030',
@@ -300,8 +303,11 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [10, 12] }, weekend: { stops: [] } } },
       { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Express'],
         schedule: { weekday: { stops: [] }, weekend: { timeRange: [[6, 8], [9, 11]] } } },
-      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Express'],
-        schedule: { weekday: { timeRange: [[7, 9], [10, 11], [12, 15], [19, 20], [22, 24]] }, weekend: { timeRange: [22, 24] } } },
+      // + a 特急 (Haneda wd 22:42, Sat/hol 23:17) (ODPT 2025-12)
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030',
+        services: [{ name: 'Express', schedule: { weekday: { timeRange: [[7, 9], [10, 11], [12, 15], [19, 20], [22, 24]] }, weekend: { timeRange: [22, 24] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [22, 24] }, weekend: { timeRange: [23, 1] } } }],
+        schedule: { weekday: { timeRange: [[7, 9], [10, 11], [12, 15], [19, 20], [22, 24]] }, weekend: { timeRange: [22, 1] } } },
     ],
     express: [
       { name: 'Express', ja: '急行', color: '#e83030',
@@ -332,10 +338,17 @@ const LINE_CONNECTIONS = [
       // Haneda train, a destination on the Airport connection)
       { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 2] }, weekend: { timeRange: [0, 2] } } },
-      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Local'],
-        schedule: { weekday: { timeRange: [[5, 6], [7, 11], [12, 15], [20, 21], [23, 1]] }, weekend: { timeRange: [[5, 6], [7, 12], [15, 16], [21, 1]] } } },
-      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local', 'Express'],
-        schedule: { weekday: { timeRange: [[8, 10], [12, 14], [15, 16], [23, 1]] }, weekend: { timeRange: [[10, 11], [13, 15], [23, 1]] } } },
+      // + the last 特急 (泉岳寺 wd 23:50, 品川 Sat/hol 23:45) to 神奈川新町 and 金沢文庫 (泉岳寺 23:59 / 23:57; the Haneda
+      // ones leave 京急蒲田 at 22:54 / 23:29) (ODPT 2025-12)
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [[5, 6], [7, 11], [12, 15], [20, 21], [23, 1]] }, weekend: { timeRange: [[5, 6], [7, 12], [15, 16], [21, 1]] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [23, 2] }, weekend: { timeRange: [23, 1] } } }],
+        schedule: { weekday: { timeRange: [[5, 6], [7, 11], [12, 15], [20, 21], [23, 2]] }, weekend: { timeRange: [[5, 6], [7, 12], [15, 16], [21, 1]] } } },
+      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [[8, 10], [12, 14], [15, 16], [23, 1]] }, weekend: { timeRange: [[10, 11], [13, 15], [23, 1]] } } },
+                   { name: 'Express', schedule: { weekday: { timeRange: [[8, 10], [12, 14], [15, 16], [23, 1]] }, weekend: { timeRange: [[10, 11], [13, 15], [23, 1]] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [23, 2] }, weekend: { timeRange: [23, 2] } } }],
+        schedule: { weekday: { timeRange: [[8, 10], [12, 14], [15, 16], [23, 2]] }, weekend: { timeRange: [[10, 11], [13, 15], [23, 2]] } } },
     ],
     destinations: [
       // services: chained Asakusa / Sky Access riders board express-class trains only (the Sky
@@ -369,10 +382,15 @@ const LINE_CONNECTIONS = [
     to:   'Keikyu Airport Line',   toEnd: '京急蒲田',
     name: 'Airport', ja: '羽田空港方面', color: '#1a8fe8',
     lineDests: [
-      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local'],
+      // + a Sat/hol 特急 from 堀ノ内 (23:07) to 金沢文庫, and the last 特急 to 神奈川新町 (堀ノ内 wd 23:28, 金沢八景 Sat/hol
+      // 23:18) (ODPT 2025-12)
+      { until: '金沢文庫',   name: 'Kanazawa-bunko',     ja: '金沢文庫方面',   color: '#c83030', services: ['Local',
+          { name: 'Ltd. Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } }],
         schedule: { weekday: { timeRange: [[5, 17], [20, 1]] }, weekend: { timeRange: [9, 1] } } },
-      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053', services: ['Local'],
-        schedule: { weekday: { timeRange: [[8, 11], [14, 16], [17, 1]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 1]] } } },
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [[8, 11], [14, 16], [17, 1]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 1]] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [23, 2] }, weekend: { timeRange: [23, 1] } } }],
+        schedule: { weekday: { timeRange: [[8, 11], [14, 16], [17, 2]] }, weekend: { timeRange: [[7, 10], [17, 19], [20, 1]] } } },
       { until: '京急川崎',   name: 'Keikyu Kawasaki',    ja: '京急川崎方面',   color: '#d04040', services: ['Local'],
         schedule: { weekday: { timeRange: [[6, 10], [22, 1]] }, weekend: { stops: [] } } },
       // 2 weekday 普通 from 浦賀 (15:52, 0:10) end at 堀ノ内 (ODPT 2025-12)
@@ -476,17 +494,27 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [23, 1] } } },
       { until: '上大岡',   name: 'Kami-Ooka',      ja: '上大岡方面',   color: '#c83030', services: ['Local'],
         schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 1] } } },
-      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030', services: ['Local', 'Express'],
-        schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 1]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 1]] } } },
+      // + the 2 late 特急 (京急川崎 wd 22:59 / Sat/hol 23:33: the Haneda ones, and from 泉岳寺 23:59 / 23:57) (ODPT 2025-12)
+      { until: '金沢文庫', name: 'Kanazawa-bunko', ja: '金沢文庫方面', color: '#c83030',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 1]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 1]] } } },
+                   { name: 'Express', schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 1]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 1]] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [23, 2] } } }],
+        schedule: { weekday: { timeRange: [[7, 17], [19, 21], [22, 2]] }, weekend: { timeRange: [[10, 12], [13, 17], [22, 2]] } } },
     ],
     destinations: [
       // chainFrom: no Asakusa-line train ends here (ODPT 2025-12); the Haneda 急行 do (Airport Line
-      // boarders). 普通 to 逗子・葉山 start as far north as 品川
+      // boarders). 普通 to 逗子・葉山 start as far north as 品川; 2 late 特急 a day (wd 京急蒲田 22:24, the Haneda one, and
+      // 泉岳寺 23:41; Sat/hol 泉岳寺 22:07) run on to 逗子・葉山 too
       { until: '逗子・葉山', name: 'Zushi-Hayama', ja: '逗子・葉山方面', color: '#00a662',
-        services: ['Local', 'Express'], chainFrom: ['Keikyu Airport Line'] },
+        services: ['Local', 'Express', { name: 'Ltd. Express', schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [22, 24] } } }],
+        chainFrom: ['Keikyu Airport Line'] },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
+      { name: 'Ltd. Express', ja: '特急', color: '#e84040', until: '逗子・葉山',
+        stops: ['泉岳寺','品川','青物横丁','平和島','京急蒲田','京急川崎','神奈川新町','横浜','上大岡','金沢文庫','金沢八景',
+                '六浦','神武寺','逗子・葉山'],
+        schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [22, 24] } } },
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['京急蒲田','京急川崎','京急鶴見','神奈川新町',
                 '京急東神奈川','横浜','日ノ出町','井土ヶ谷','弘明寺',
@@ -507,6 +535,13 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[5, 9], [10, 16], [21, 1]] }, weekend: { timeRange: [9, 1] } } },
       { until: '品川',     name: 'Shinagawa',      ja: '品川方面',     color: '#0073CF', services: ['Local'],
         schedule: { weekday: { timeRange: [[6, 9], [10, 11], [19, 20]] }, weekend: { stops: [] } } },
+      // a 急行 a day (逗子・葉山 wd 9:54, Sat/hol 8:52), a Sat/hol 特急 (23:10) and 3 weekday 普通 (8:38, 20:58, 22:53) end
+      // at 神奈川新町 (ODPT 2025-12)
+      { until: '神奈川新町', name: 'Kanagawa-shimmachi', ja: '神奈川新町方面', color: '#e57053',
+        services: [{ name: 'Express', schedule: { weekday: { timeRange: [9, 11] }, weekend: { timeRange: [8, 10] } } },
+                   { name: 'Ltd. Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [23, 1] } } },
+                   { name: 'Local', schedule: { weekday: { timeRange: [[8, 10], [20, 24]] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [[8, 11], [20, 24]] }, weekend: { timeRange: [[8, 10], [23, 1]] } } },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停', color: '#00a0e8' },
@@ -1849,17 +1884,26 @@ const LINE_CONNECTIONS = [
     destinations: [
       { until: '石神井公園', name: 'Shakujii-koen', ja: '石神井公園方面', color: '#f5a060', services: ['Local', 'Semi-Exp'],
         schedule: { weekday: { timeRange: [6, 24] }, weekend: { timeRange: [6, 24] } } },
-      { until: '保谷',       name: 'Hoya',          ja: '保谷方面',       color: '#f29a50', services: ['Local'],
+      // + a 準急 (小竹向原 wd 16:24, Sat/hol 15:17) (ODPT 2026-03)
+      { until: '保谷',       name: 'Hoya',          ja: '保谷方面',       color: '#f29a50', services: ['Local',
+          { name: 'Semi-Exp', schedule: { weekday: { timeRange: [16, 18] }, weekend: { timeRange: [15, 17] } } }],
         schedule: { weekday: { timeRange: [[6, 7], [8, 17], [18, 20], [21, 22], [0, 1]] }, weekend: { timeRange: [[8, 17], [19, 21], [0, 1]] } } },
-      { until: '清瀬',       name: 'Kiyose',        ja: '清瀬方面',       color: '#ef9040', services: ['Local'],
+      // + a weekday 準急 (小竹向原 7:40) (ODPT 2026-03)
+      { until: '清瀬',       name: 'Kiyose',        ja: '清瀬方面',       color: '#ef9040', services: ['Local',
+          { name: 'Semi-Exp', schedule: { weekday: { timeRange: [7, 9] }, weekend: { stops: [] } } }],
         schedule: { weekday: { timeRange: [[6, 10], [17, 24]] }, weekend: { timeRange: [[6, 10], [14, 17], [19, 22], [23, 24]] } } },
       { until: '所沢',       name: 'Tokorozawa',    ja: '所沢方面',       color: '#ec8630', services: ['Local', 'Semi-Exp', 'Rapid'],
         schedule: { weekday: { timeRange: [[7, 8], [9, 11], [16, 19], [20, 21]] }, weekend: { timeRange: [[7, 9], [16, 19], [20, 22]] } } },
       { until: '小手指',     name: 'Kotesashi',     ja: '小手指方面',     color: '#e97c20', services: ['Local', 'Semi-Exp', 'Rapid Exp',
           { name: 'Rapid', schedule: { weekday: { timeRange: [22, 1] }, weekend: { stops: [] } } }],
         schedule: { weekday: { timeRange: [[5, 18], [19, 1]] }, weekend: { timeRange: [6, 1] } } },
-      { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210', services: ['Semi-Exp', 'Rapid', 'Rapid Exp'],
-        schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
+      // + 2 Sat/hol 各停 (小竹向原 5:48, 22:51) (ODPT 2026-03)
+      { until: '飯能',       name: 'Hanno',         ja: '飯能方面',       color: '#e67210',
+        services: [{ name: 'Semi-Exp', schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
+                   { name: 'Rapid', schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
+                   { name: 'Rapid Exp', schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 6], [7, 8], [9, 11], [17, 23]] } } },
+                   { name: 'Local', schedule: { weekday: { stops: [] }, weekend: { timeRange: [[5, 7], [22, 24]] } } }],
+        schedule: { weekday: { timeRange: [[17, 21], [22, 23]] }, weekend: { timeRange: [[5, 8], [9, 11], [17, 24]] } } },
     ],
     // 快速急行: the weekday-morning ones and the daytime F-Liners (to 小手指 weekdays, 飯能 Sat/hol)
     express: [
@@ -2026,9 +2070,12 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
       { until: '元住吉',   name: 'Motosumiyoshi',  ja: '元住吉方面',   color: '#da0442', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      // 10 late 各停/急行 from 横浜 turn at 武蔵小杉 (ODPT 2026-03)
-      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442', services: ['Local', 'Express'],
-        schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
+      // 10 late 各停/急行 from 横浜 turn at 武蔵小杉, and a weekday 通勤特急 (横浜 23:52) (ODPT 2026-03)
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#da0442',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
+                   { name: 'Express', schedule: { weekday: { timeRange: [22, 1] }, weekend: { timeRange: [21, 1] } } },
+                   { name: 'Commuter Ltd. Exp', schedule: { weekday: { timeRange: [23, 2] }, weekend: { stops: [] } } }],
+        schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [21, 1] } } },
       { until: '自由が丘', name: 'Jiyugaoka',      ja: '自由が丘方面', color: '#da0442', services: ['Local'],
         schedule: { weekday: { timeRange: [23, 24] }, weekend: { stops: [] } } },
       { until: '渋谷', name: 'Shibuya', ja: '渋谷方面', color: '#0066B3' },
@@ -2092,8 +2139,11 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[7, 12], [18, 19], [20, 1]] }, weekend: { timeRange: [[16, 18], [19, 22], [23, 1]] } } },
       { until: '元住吉',   name: 'Motosumiyoshi',  ja: '元住吉方面',   color: '#da0442', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '菊名',     name: 'Kikuna',         ja: '菊名方面',     color: '#c0304a', services: ['Local'],
-        schedule: { weekday: { timeRange: [[18, 19], [21, 1]] }, weekend: { timeRange: [[7, 8], [18, 22], [23, 1]] } } },
+      // + a Sat/hol 急行 from 渋谷 (7:06) (ODPT 2026-03)
+      { until: '菊名',     name: 'Kikuna',         ja: '菊名方面',     color: '#c0304a',
+        services: [{ name: 'Local', schedule: { weekday: { timeRange: [[18, 19], [21, 1]] }, weekend: { timeRange: [[7, 8], [18, 22], [23, 1]] } } },
+                   { name: 'Express', schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 9] } } }],
+        schedule: { weekday: { timeRange: [[18, 19], [21, 1]] }, weekend: { timeRange: [[7, 9], [18, 22], [23, 1]] } } },
       { until: '横浜', name: 'Yokohama', ja: '横浜方面', color: '#0066B3' },
     ],
     destinations: [
@@ -2254,7 +2304,9 @@ const LINE_CONNECTIONS = [
       // Hiyoshi connection so the merged picker keeps it whichever is shown
       { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+      // + 2 weekday 急行 from 目黒 (7:45, 8:06) and a Sat/hol one (23:22) (ODPT 2026-03)
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local',
+          { name: 'Express', schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [23, 1] } } }],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ],
@@ -2269,7 +2321,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+      // + 2 weekday 急行 from 目黒 (7:45, 8:06) and a Sat/hol one (23:22) (ODPT 2026-03)
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local',
+          { name: 'Express', schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [23, 1] } } }],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ],
@@ -2297,7 +2351,9 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '奥沢', name: 'Okusawa', ja: '奥沢方面', color: '#3a8fd0', services: ['Local'],
         schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
-      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local'],
+      // + 2 weekday 急行 from 目黒 (7:45, 8:06) and a Sat/hol one (23:22) (ODPT 2026-03)
+      { until: '武蔵小杉', name: 'Musashi-Kosugi', ja: '武蔵小杉方面', color: '#3a8fd0', services: ['Local',
+          { name: 'Express', schedule: { weekday: { timeRange: [7, 10] }, weekend: { timeRange: [23, 1] } } }],
         schedule: { weekday: { timeRange: [[7, 12], [17, 22], [23, 1]] }, weekend: { timeRange: [[5, 6], [8, 9], [20, 1]] } } },
       { until: '日吉', name: 'Hiyoshi', ja: '日吉方面', color: '#0066B3' },
     ],
@@ -3240,7 +3296,9 @@ const LINE_CONNECTIONS = [
     // (本川越 and the down short turns come from LINE_DESTINATIONS["Seibu Shinjuku Line"], which merges this)
     destinations: [
       // 12 weekday 各停 (rushes, 14–15h, evening) end at 玉川上水 (ODPT 2026-03)
-      { until: '玉川上水', name: 'Tamagawa-josui', ja: '玉川上水方面', color: '#5ab8e8', services: ['Local', 'Semi-Exp'],
+      // + one 急行 a day from 西武新宿 (wd 8:05, Sat/hol 8:58) (ODPT 2026-03)
+      { until: '玉川上水', name: 'Tamagawa-josui', ja: '玉川上水方面', color: '#5ab8e8', services: ['Local', 'Semi-Exp',
+          { name: 'Express', schedule: { weekday: { timeRange: [8, 10] }, weekend: { timeRange: [8, 11] } } }],
         schedule: { weekday: { timeRange: [[7, 11], [14, 16], [20, 23]] }, weekend: { timeRange: [[6, 11], [21, 23]] } } },
       { until: '拝島', name: 'Haijima', ja: '拝島方面', color: '#36a9e1',
         services: ['Local', 'Express', 'Semi-Exp'] }, // no 快速急行 to 拝島
