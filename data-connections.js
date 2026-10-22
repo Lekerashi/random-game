@@ -2701,11 +2701,10 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [8, 10] }, weekend: { stops: [] } } },
     ],
     express: [
-      // Through 各停 in the morning (6–9h; Sat/hol also one at 19–20h); by day the through trains are
-      // 区間急行 / 快速, the first and last all-stations trains end at 新線新宿 (the 笹塚 → Keio New
-      // connection) (ODPT 2026-08)
+      // Through 各停 in the morning (6–9h); by day the through trains are 区間急行 / 快速, the first and
+      // last all-stations trains end at 新線新宿 (the 笹塚 → Keio New connection) (ODPT 2026-08)
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [[6, 10], [19, 21]] } } },
+        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [6, 10] } } },
       // 区間急行 and 快速 are 普通 on Toei (toName; 56 / 44 and 28 / 42 a day, ODPT 2026-03)
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', toName: 'Local', toJa: '各停', stops: [
         '調布','つつじヶ丘','仙川','千歳烏山',
@@ -2724,6 +2723,13 @@ const LINE_CONNECTIONS = [
         '新宿','新宿三丁目','曙橋','市ヶ谷','九段下','神保町','小川町','岩本町','馬喰横山','浜町',
         '森下','菊川','住吉','西大島','大島','東大島','船堀','一之江','瑞江','篠崎','本八幡'],
         schedule: { weekday: { timeRange: [[5, 6], [9, 18], [21, 22], [23, 24]] } } },
+      // ...and a Sat/hol one from 高幡不動 (19:23, every station to 調布) (ODPT 2026-08)
+      { name: 'Rapid', ja: '快速', color: '#00a0a0', toName: 'Local', toJa: '各停', stops: [
+        '高幡不動','百草園','聖蹟桜ヶ丘','中河原','分倍河原','府中','東府中','多磨霊園','武蔵野台','飛田給','西調布',
+        '調布','つつじヶ丘','仙川','千歳烏山','八幡山','桜上水','下高井戸','明大前','笹塚',
+        '新宿','新宿三丁目','曙橋','市ヶ谷','九段下','神保町','小川町','岩本町','馬喰横山','浜町',
+        '森下','菊川','住吉','西大島','大島','東大島','船堀','一之江','瑞江','篠崎','本八幡'],
+        schedule: { weekday: { stops: [] }, weekend: { timeRange: [19, 22] } } },
     ] },
   // Keio New Line trains from 初台/幡ヶ谷 continue onto the Keio Line past 笹塚
   { from: 'Keio new line', fromEnd: '笹塚',
@@ -3745,10 +3751,16 @@ const LINE_CONNECTIONS = [
       { until: '高尾',     name: 'Takao',         ja: '高尾方面',     color: '#5aa85a', services: ['Local'],
         schedule: { weekday: { timeRange: [20, 23] }, weekend: { timeRange: [19, 22] } } },
       { until: '高尾山口', name: 'Takaosanguchi', ja: '高尾山口方面', color: '#3a8c3a',
-        services: ['Local', 'Ltd. Express'] },
+        services: ['Local', 'Ltd. Express', { name: 'Rapid', schedule: { weekday: { timeRange: [6, 12] }, weekend: { stops: [] } } }] },
     ],
     express: [
       { stops: null, name: 'Local', ja: '各停' },
+      // two weekday 快速 from 新宿 (6:18, 9:29) run on to 高尾山口, every Takao Line station (ODPT 2026-08)
+      { name: 'Rapid', ja: '快速', color: '#00a0a0', stops: [
+        '新宿','笹塚','明大前','下高井戸','桜上水','八幡山','千歳烏山','仙川','つつじヶ丘','調布','西調布','飛田給','武蔵野台',
+        '多磨霊園','東府中','府中','分倍河原','中河原','聖蹟桜ヶ丘','百草園','高幡不動','南平','平山城址公園','長沼','北野',
+        '京王片倉','山田','めじろ台','狭間','高尾','高尾山口'],
+        schedule: { weekday: { timeRange: [6, 12] }, weekend: { stops: [] } } },
       // 特急 to 高尾山口 by day on weekdays, all day Sat/hol (ODPT 2026-08)
       { name: 'Ltd. Express', ja: '特急', color: '#e83080', stops: [
         '新宿','笹塚','明大前','千歳烏山','調布','府中','分倍河原',
@@ -3779,6 +3791,16 @@ const LINE_CONNECTIONS = [
         '高幡不動','聖蹟桜ヶ丘','分倍河原','府中','調布','千歳烏山',
         '明大前','笹塚','新宿'],
         schedule: { weekday: { timeRange: [5, 17] } } },
+      // one weekday 急行 (高尾山口 7:50, passing 狭間 / 山田 / 京王片倉) and one 区間急行 (6:54, every Takao Line
+      // station) run to 新宿 (ODPT 2026-08)
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [
+        '高尾山口','高尾','めじろ台','北野','高幡不動','聖蹟桜ヶ丘','分倍河原','府中','東府中','調布',
+        'つつじヶ丘','千歳烏山','桜上水','明大前','笹塚','新宿'],
+        schedule: { weekday: { timeRange: [7, 9] }, weekend: { stops: [] } } },
+      { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000', stops: [
+        '高尾山口','高尾','狭間','めじろ台','山田','京王片倉','北野','長沼','平山城址公園','南平','高幡不動','百草園',
+        '聖蹟桜ヶ丘','中河原','分倍河原','府中','東府中','調布','つつじヶ丘','仙川','千歳烏山','桜上水','明大前','笹塚','新宿'],
+        schedule: { weekday: { timeRange: [6, 9] }, weekend: { stops: [] } } },
     ] },
 
   // ── Odakyu ↔ Odakyu Enoshima at Sagami-Ono ───────────────────────────
