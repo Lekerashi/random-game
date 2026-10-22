@@ -1167,7 +1167,7 @@ const LINE_CONNECTIONS = [
       { name: 'Sub-Exp', ja: '区間急行', color: '#f0c000',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','春日部','せんげん台','越谷','新越谷',
                 '草加','西新井','北千住','牛田','堀切','鐘ヶ淵','東向島','曳舟','とうきょうスカイツリー','浅草'],
-        schedule: { weekday: { timeRange: [7, 9] }, weekend: { timeRange: [6, 9] } } },
+        schedule: { weekday: { at: '南栗橋', timeRange: ['07:50', '08:30'] }, weekend: { at: '南栗橋', timeRange: ['06:30', '08:40'] } } },
       { name: 'Sec. Semi-Exp', ja: '区間準急', color: '#7fbf3f',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','姫宮','北春日部','春日部','一ノ割','武里',
                 'せんげん台','大袋','北越谷','越谷','新越谷','草加','西新井','北千住',
@@ -1181,7 +1181,7 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['南栗橋','幸手','杉戸高野台','東武動物公園','春日部','せんげん台','越谷','新越谷',
                 '草加','西新井','北千住','曳舟'],
-        schedule: { weekday: { timeRange: [[5, 8], [9, 22]] }, weekend: { timeRange: [5, 22] } } },
+        schedule: { weekday: { at: '南栗橋', timeRange: [['05:30', '07:40'], ['09:50', '21:40']] }, weekend: { at: '南栗橋', timeRange: ['05:30', '21:10'] } } },
     ] },
 
   // ── Tobu Utsunomiya → Nikko at Tochigi ─────────────────────────────────
@@ -1234,7 +1234,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[11, 16], [23, 24]] }, weekend: { timeRange: [[10, 11], [12, 16], [21, 22]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '各停',
-      schedule: { weekday: { timeRange: [[11, 16], [23, 24]] }, weekend: { timeRange: [[10, 11], [12, 16], [21, 22]] } } }] },
+      schedule: { weekday: { at: '森林公園', timeRange: [['11:10', '15:50'], ['23:30', '23:40']] }, weekend: { at: '森林公園', timeRange: [['10:20', '10:30'], ['12:30', '15:40'], ['21:00', '21:10']] } } }] },
   { from: 'Tobu Tojo Line (Yorii)', fromEnd: '小川町',
     to:   'Tobu Tojo Line',         toEnd:   '小川町',
     toUntil: '森林公園',
@@ -1247,7 +1247,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[11, 16], [22, 23], [0, 1]] }, weekend: { timeRange: [[9, 10], [11, 17], [0, 1]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '各停',
-      schedule: { weekday: { timeRange: [[11, 16], [22, 23], [0, 1]] }, weekend: { timeRange: [[9, 10], [11, 17], [0, 1]] } } }] },
+      schedule: { weekday: { at: '寄居', timeRange: [['11:00', '14:50'], ['22:30', '24:10']] }, weekend: { at: '寄居', timeRange: [['09:10', '09:20'], ['11:40', '16:00'], ['24:00', '24:10']] } } }] },
 
   // ── Hibiya → Tobu Skytree / Nikko at Kita-Senju ────────────────────────
   // Hibiya through-runs to Tobu Skytree Line (= Isesaki southern section).
@@ -2849,7 +2849,7 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', toName: 'Express', toJa: '急行',
         stops: ['小川町','武蔵嵐山','つきのわ','森林公園','東松山','高坂','北坂戸','坂戸','若葉','鶴ヶ島','霞ヶ関','川越市','川越','朝霞台','和光市',
                 '小竹向原','池袋','新宿三丁目',"明治神宮前〈原宿〉",'渋谷'],
-        schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [6, 18] } } },
+        schedule: { weekday: { at: '森林公園', timeRange: ['10:30', '14:50'] }, weekend: { at: '小川町', timeRange: [['05:40', '06:00'], ['07:50', '17:00']] } } },
     ] },
   { from: 'Tobu Tojo Line',             fromStation: '和光市', fromDir: 'start',
     to:   'Tokyo Metro Yurakucho Line',  toEnd: '和光市',

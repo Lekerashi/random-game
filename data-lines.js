@@ -412,24 +412,24 @@ const EXPRESS_SERVICES = {
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
-    ], schedule: { weekday: { timeRange: [[7, 9], [11, 18]] }, weekend: { timeRange: [6, 18] } } },
+    ], schedule: { weekday: { at: '池袋', timeRange: [['07:00', '08:00'], ['11:20', '16:30']] }, weekend: { at: '池袋', timeRange: ['05:50', '16:30'] } } },
     { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
       "池袋","和光市","朝霞台",
       "川越","川越市","霞ヶ関","鶴ヶ島","若葉",
       "坂戸","北坂戸","高坂","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
-    ], schedule: { weekday: { timeRange: [[9, 11], [22, 24]] }, weekend: { timeRange: [[6, 9], [20, 22]] } } },
+    ], schedule: { weekday: { at: '小川町', timeRange: [['09:10', '09:50'], ['22:30', '22:40']] }, weekend: { at: '小川町', timeRange: [['06:30', '07:50'], ['20:30', '20:50']] } } },
     // No-extra-fare 川越特急: up trains twice an hour from mid-afternoon, 2–3 down trains late morning
     { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", direction: "end", stops: [
       "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
     ],
-      schedule: { weekday: { timeRange: [10, 12] }, weekend: { timeRange: [10, 12] } } },
+      schedule: { weekday: { at: '池袋', timeRange: ['09:50', '11:10'] }, weekend: { at: '池袋', timeRange: ['09:50', '11:10'] } } },
     { name: "Kawagoe Ltd. Exp", ja: "川越特急", color: "#c8102e", direction: "start", stops: [
       "池袋","朝霞台","川越","川越市","坂戸","東松山","森林公園",
       "つきのわ","武蔵嵐山","小川町",
     ],
-      schedule: { weekday: { timeRange: [15, 24] }, weekend: { timeRange: [15, 22] } } },
+      schedule: { weekday: { at: '小川町', timeRange: ['15:40', '22:20'] }, weekend: { at: '小川町', timeRange: ['15:40', '20:20'] } } },
   ],
   "Tobu Isesaki Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -442,7 +442,7 @@ const EXPRESS_SERVICES = {
       "花崎","加須","南羽生","羽生","川俣","茂林寺前",
       "館林",
     ],
-      schedule: { weekday: { timeRange: [17, 10] }, weekend: { timeRange: [21, 11] } } },
+      schedule: { weekday: { at: '浅草', timeRange: [['04:50', '08:50'], ['17:50', '23:10']] }, weekend: { at: '浅草', timeRange: [['04:50', '10:00'], ['21:10', '23:10']] } } },
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
       "浅草","とうきょうスカイツリー","曳舟","東向島",
       "鐘ヶ淵","堀切","牛田","北千住","西新井","草加",
@@ -451,7 +451,7 @@ const EXPRESS_SERVICES = {
       "花崎","加須","南羽生","羽生","川俣","茂林寺前",
       "館林",
     ],
-      schedule: { weekday: { timeRange: [[4, 10], [22, 1]] }, weekend: { timeRange: [[4, 10], [22, 24]] } } },
+      schedule: { weekday: { at: '館林', timeRange: [['04:50', '08:50'], ['22:20', '22:40']] }, weekend: { at: '館林', timeRange: [['04:50', '08:30'], ['22:20', '22:40']] } } },
     // 区間準急: mornings and from the late afternoon, most to 久喜; a third run on to 館林
     // (same-name entries share one button; hours per direction, ODPT 2026-03)
     { name: "Sec. Semi-Exp", ja: "区間準急", color: "#7fbf3f", direction: "end", stops: [
@@ -496,7 +496,7 @@ const EXPRESS_SERVICES = {
       "新越谷","越谷","北越谷","大袋","せんげん台",
       "武里","一ノ割","春日部","北春日部","姫宮",
       "東武動物公園","和戸","久喜",
-    ], schedule: { weekday: { timeRange: [[5, 11], [20, 1]] }, weekend: { timeRange: [[5, 11], [19, 1]] } } },
+    ], schedule: { weekday: { at: '曳舟', timeRange: [['05:10', '09:20'], ['20:10', '24:20']] }, weekend: { at: '曳舟', timeRange: [['05:10', '10:00'], ['19:50', '24:20']] } } },
     { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "start", stops: [
       "曳舟","北千住","西新井","草加",
       "新越谷","越谷","北越谷","大袋","せんげん台",
@@ -526,11 +526,11 @@ const EXPRESS_SERVICES = {
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "start", stops: [
       "大宮","岩槻","春日部","藤の牛島","南桜井","川間","七光台","清水公園",
       "愛宕","野田市","梅郷","運河","江戸川台","初石","流山おおたかの森","豊四季","柏",
-    ], schedule: { weekday: { timeRange: [8, 10] }, weekend: { timeRange: [[6, 10], [17, 21]] } } },
+    ], schedule: { weekday: { at: '柏', timeRange: ['08:20', '09:00'] }, weekend: { at: '柏', timeRange: [['06:40', '09:10'], ['17:00', '20:10']] } } },
     { name: "Sub-Exp", ja: "区間急行", color: "#f0c000", direction: "end", stops: [
       "大宮","岩槻","春日部","藤の牛島","南桜井","川間","七光台","清水公園",
       "愛宕","野田市","梅郷","運河","江戸川台","初石","流山おおたかの森","豊四季","柏",
-    ], schedule: { weekday: { timeRange: [16, 18] }, weekend: { timeRange: [16, 22] } } },
+    ], schedule: { weekday: { at: '大宮', timeRange: ['16:10', '16:50'] }, weekend: { at: '大宮', timeRange: ['16:40', '20:50'] } } },
   ],
   // North of 南栗橋 every train is a 普通 except two morning 急行 to 東武日光 (ODPT 2026-03)
   "Tobu Nikko Line (Nikko)": [
