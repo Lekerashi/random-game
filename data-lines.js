@@ -201,13 +201,13 @@ const EXPRESS_SERVICES = {
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [[5, 11], [20, 23]] }, weekend: { timeRange: [5, 7] } } },
+    ], schedule: { weekday: { at: '新宿', timeRange: [['05:40', '09:30'], ['20:00', '21:50']] }, weekend: { at: '新宿', timeRange: ['05:40', '05:50'] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "新宿","笹塚","明大前","桜上水","千歳烏山",
       "つつじヶ丘","調布","東府中","府中",
       "分倍河原","聖蹟桜ヶ丘","高幡不動",
       "北野","京王八王子",
-    ], schedule: { weekday: { timeRange: [[6, 10], [16, 24]] }, weekend: { timeRange: [[6, 10], [21, 24]] } } },
+    ], schedule: { weekday: { at: '京王八王子', timeRange: [['06:50', '08:30'], ['16:10', '23:20']] }, weekend: { at: '京王八王子', timeRange: [['06:10', '09:20'], ['21:20', '23:20']] } } },
     // 特急 all day both ways (ODPT 2026-08)
     { name: "Ltd. Express", ja: "特急", color: "#e83080", stops: [
       "新宿","笹塚","明大前","千歳烏山",
@@ -226,11 +226,11 @@ const EXPRESS_SERVICES = {
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "渋谷","下北沢","明大前","永福町","久我山",
       "吉祥寺",
-    ], schedule: { weekday: { timeRange: [6, 24] } } },
+    ], schedule: { weekday: { at: '吉祥寺', timeRange: ['06:00', '23:50'] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "渋谷","下北沢","明大前","永福町","久我山",
       "吉祥寺",
-    ], schedule: { weekday: { timeRange: [[7, 8], [9, 1]] } } },
+    ], schedule: { weekday: { at: '渋谷', timeRange: [['07:00', '07:20'], ['09:10', '24:20']] } } },
   ],
   "Odakyu Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
