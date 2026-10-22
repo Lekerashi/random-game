@@ -283,15 +283,29 @@ function effectiveViaCount(conn, startStationName) {
 // (chain stops there). Mid-line hops on the target line join only when the
 // picked destination's chain names them (e.g. Keio Sagamihara → Keio Line →
 // Toei Shinjuku at Sasazuka).
-function getOnwardConnections(conn) {
+// A far-terminus hop carries no through train now when it has destinations, none of whose
+// `schedule` runs now, and nothing runs on its own chain either (getConnections' rule for
+// the connection boarded): rides don't run on over it (no 前橋 ride from the SS by day).
+// opts.all: every far-terminus hop, running or not (the debug tools' static view).
+function getOnwardConnections(conn, opts) {
   const toLine = state.lines[conn.toLineIdx];
   if (!toLine) return [];
   const hops = state.selectedDestination?.chain;
   const mid = hops ? getMidLineOnward(conn).filter(c => chainNames(hops, c)) : [];
   if (conn.toUntilIdx >= 0) return mid;
+  const far = farOnward(conn);
+  return [...(opts?.all ? far : far.filter(c => hopRunsNow(c, new Set([conn.from, conn.to])))), ...mid];
+}
+function farOnward(conn) {
+  const toLine = state.lines[conn.toLineIdx];
+  if (!toLine || conn.toUntilIdx >= 0) return [];
   const farIdx = dirEnd(toLine.stations.length, conn.toDir);
-  return [...state.connections.filter(c =>
-    c.fromLineIdx === conn.toLineIdx && c.fromJunctionIdx === farIdx), ...mid];
+  return state.connections.filter(c => c.fromLineIdx === conn.toLineIdx && c.fromJunctionIdx === farIdx);
+}
+function hopRunsNow(c, visited) {
+  if (!c.destinations || c.destinations.some(d => scheduleActive(d.schedule))) return true;
+  const seen = new Set([...visited, c.to]);
+  return farOnward(c).some(n => !seen.has(n.to) && hopRunsNow(n, seen));
 }
 
 const chainNames = (hops, c) => hops.some(h => h.to === c.to && h.toDir === c.toDir);
