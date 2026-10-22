@@ -237,30 +237,47 @@ const EXPRESS_SERVICES = {
     // 準急 toward 小田原 are Chiyoda Line through trains joining at 代々木上原 (to 向ヶ丘遊園 /
     // 成城学園前, mornings and evenings); toward 新宿 every 準急 runs onto the Chiyoda Line
     // (connection express) (ODPT 2026-03)
+    // Windows follow the train (`at`): the times trains leave 代々木上原 / 新宿 / 小田原 (ODPT 2026-03)
     { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
       "代々木上原","下北沢","経堂","千歳船橋","祖師ヶ谷大蔵","成城学園前",
       "喜多見","狛江","和泉多摩川","登戸","向ヶ丘遊園",
-    ], schedule: { weekday: { timeRange: [[6, 8], [9, 11], [16, 24]] }, weekend: { timeRange: [[8, 12], [16, 20]] } } },
+    ], schedule: { weekday: { at: '代々木上原', timeRange: [['06:30', '07:40'], ['09:30', '10:50'], ['16:00', '23:40']] },
+                 weekend: { at: '代々木上原', timeRange: [['08:40', '11:20'], ['16:00', '19:10']] } } },
     // one weekday 準急 runs on to 本厚木, all stations past 向ヶ丘遊園 (代々木上原 21:00; ODPT 2026-03)
     { name: "Semi-Exp", ja: "準急", color: "#00b900", direction: "end", stops: [
       "代々木上原","下北沢","経堂","千歳船橋","祖師ヶ谷大蔵","成城学園前",
       "喜多見","狛江","和泉多摩川","登戸","向ヶ丘遊園","生田","読売ランド前","百合ヶ丘","新百合ヶ丘","柿生","鶴川",
       "玉川学園前","町田","相模大野","小田急相模原","相武台前","座間","海老名","厚木","本厚木",
-    ], schedule: { weekday: { timeRange: [21, 24] }, weekend: { stops: [] } } },
-    // 急行 run all day both ways (ODPT 2026-03)
-    { name: "Express", ja: "急行", color: "#e83030", stops: [
+    ], schedule: { weekday: { at: '代々木上原', timeRange: ['20:50', '21:10'] }, weekend: { stops: [] } } },
+    // 急行 run all day both ways (ODPT 2026-03): from 新宿 5:0x–0:3x, toward 新宿 the first ones start mid-line
+    // (projected to 小田原 3:4x) and the last leaves 小田原 23:0x
+    { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "新宿","代々木上原","下北沢","経堂","成城学園前",
       "登戸","向ヶ丘遊園","新百合ヶ丘","町田","相模大野",
       "海老名","本厚木","愛甲石田","伊勢原","鶴巻温泉",
       "東海大学前","秦野","渋沢","新松田",
       "開成","栢山","富水","螢田","足柄","小田原",
-    ]},
-    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", stops: [
+    ], schedule: { weekday: { at: '新宿', timeRange: ['05:00', '24:40'] }, weekend: { at: '新宿', timeRange: ['04:50', '24:40'] } } },
+    { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
+      "新宿","代々木上原","下北沢","経堂","成城学園前",
+      "登戸","向ヶ丘遊園","新百合ヶ丘","町田","相模大野",
+      "海老名","本厚木","愛甲石田","伊勢原","鶴巻温泉",
+      "東海大学前","秦野","渋沢","新松田",
+      "開成","栢山","富水","螢田","足柄","小田原",
+    ], schedule: { weekday: { at: '小田原', timeRange: ['03:40', '23:10'] }, weekend: { at: '小田原', timeRange: ['03:40', '23:10'] } } },
+    // 快速急行 toward 小田原 from 7:2x (one early train, 新宿 4:1x projected), toward 新宿 until 20:4x / 21:1x from 小田原
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "end", stops: [
       "新宿","代々木上原","下北沢","登戸","新百合ヶ丘",
       "町田","相模大野","海老名","本厚木","愛甲石田","伊勢原",
       "鶴巻温泉","東海大学前","秦野","渋沢",
       "新松田","開成","栢山","富水","螢田","足柄","小田原", // all stations past 新松田 since 2022
-    ]},
+    ], schedule: { weekday: { at: '新宿', timeRange: [['04:10', '04:30'], ['07:20', '23:30']] }, weekend: { at: '新宿', timeRange: [['04:10', '04:30'], ['07:20', '23:30']] } } },
+    { name: "Rapid Exp", ja: "快速急行", color: "#f07000", direction: "start", stops: [
+      "新宿","代々木上原","下北沢","登戸","新百合ヶ丘",
+      "町田","相模大野","海老名","本厚木","愛甲石田","伊勢原",
+      "鶴巻温泉","東海大学前","秦野","渋沢",
+      "新松田","開成","栢山","富水","螢田","足柄","小田原",
+    ], schedule: { weekday: { at: '小田原', timeRange: ['04:30', '20:50'] }, weekend: { at: '小田原', timeRange: ['04:30', '21:20'] } } },
   ],
   // Toward 藤沢: 急行 in the early morning only, 快速急行 all day (both end at 藤沢); the
   // Odakyu Line through trains come as connection express (ODPT 2026-03)
@@ -1653,7 +1670,7 @@ const LINE_DESTINATIONS = {
         { until: '海老名',     name: 'Ebina',           ja: '海老名方面',     color: '#2a80d0', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [0, 1] }, weekend: { timeRange: [0, 1] } } },
         { until: '本厚木',     name: 'Hon-Atsugi',      ja: '本厚木方面',     color: '#0070c0', services: ['Local', 'Express',
-            { name: 'Semi-Exp', schedule: { weekday: { timeRange: [21, 24] }, weekend: { stops: [] } } }] },
+            { name: 'Semi-Exp', schedule: { weekday: { at: '代々木上原', timeRange: ['20:50', '21:10'] }, weekend: { stops: [] } } }] },
         { until: '伊勢原',     name: 'Isehara',         ja: '伊勢原方面',     color: '#005090', services: ['Local', 'Express'],
           schedule: { weekday: { timeRange: [[4, 10], [18, 24]] } } },
         // one 各停 a day from 新宿 ends at 秦野 (wd 6:43, Sat/hol 21:25; ODPT 2026-03)

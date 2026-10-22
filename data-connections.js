@@ -1117,7 +1117,8 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#00b900', toName: 'Semi-Exp', toJa: '準急', stops: [...TOBU_EXP_UP, ...HANZOMON_DOWN],
         schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 8], [18, 19], [22, 23]] } } },
       { name: 'Semi-Exp', ja: '準急', color: '#00a0e8', toName: 'Local', toJa: '各停', stops: [...TOBU_SEMI_UP, ...HANZOMON_DOWN],
-        schedule: { weekday: { timeRange: [[5, 12], [20, 24]] }, weekend: { timeRange: [[5, 12], [21, 24]] } } },
+        // times at 久喜 (trains from 南栗橋 projected there); the window follows the train toward 押上
+        schedule: { weekday: { at: '久喜', timeRange: [['04:40', '10:40'], ['20:20', '23:10']] }, weekend: { at: '久喜', timeRange: [['04:40', '10:20'], ['20:20', '22:50']] } } },
     ] },
 
   // ── Tobu Isesaki → Nikko at Tobu-Dobutsu-Koen ──────────────────────────
@@ -1364,11 +1365,12 @@ const LINE_CONNECTIONS = [
     lineDests: [
       { until: '品川', name: 'Shinagawa', ja: '品川方面', color: '#c83030' },
     ],
-    // Only 3 weekday trains end at 押上 (8–9h, 15–16h); the rest run on to 青砥 and beyond (chained)
+    // Only 3 weekday trains end at 押上 (8–9h, 15–16h; plus the 21:4x–21:5x 品川 trains ODPT lists with several
+    // termini); the rest run on to 青砥 and beyond (chained). Times at 品川; the window follows the train
     destinations: [
       { until: '押上(スカイツリー前)', name: 'Oshiage', ja: '押上方面', color: '#0073CF',
         services: ['Local', 'Express', 'Ltd. Express'],
-        schedule: { weekday: { timeRange: [[8, 10], [15, 17], [22, 23]] }, weekend: { stops: [] } } },
+        schedule: { weekday: { at: '品川', timeRange: [['08:50', '09:20'], ['16:50', '17:50'], ['21:40', '22:00']] }, weekend: { stops: [] } } },
     ],
     // Northbound the Asakusa Line names a train by its Keisei type (toName at 泉岳寺; ODPT 2026-03): the
     // 特急 from 三崎口 / 久里浜 / 逗子 become 普通 (to 青砥 / 京成高砂, 36 + 8 + 5 a day), the 特急 from
@@ -1531,7 +1533,8 @@ const LINE_CONNECTIONS = [
       // run as Keisei 快速特急 (押上, 青砥 only) to 京成高砂 / 成田空港 (toName at 押上)
       { name: 'Rapid Ltd. Exp', ja: '快特', color: '#f07000', toName: 'Rapid Ltd', toJa: '快速特急',
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋','東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋','押上(スカイツリー前)','青砥','京成高砂'],
-        schedule: { weekday: { timeRange: [[10, 20], [22, 24]] }, weekend: { timeRange: [10, 21] } } },
+        // times at 西馬込 (the Keikyu through trains join at 泉岳寺, 12 min on); the window follows the train
+        schedule: { weekday: { at: '西馬込', timeRange: [['10:00', '15:00'], ['16:40', '19:20'], ['22:50', '23:00']] }, weekend: { at: '西馬込', timeRange: ['10:00', '20:40'] } } },
       // Keisei calls the Haneda エアポート快特 アクセス特急 from 押上 on (toName); the Keikyu Airport →
       // Main → Asakusa hops carry it here by name
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080', toName: 'Access Express', toJa: 'アクセス特急',
@@ -1747,11 +1750,12 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['西船橋','浦安','東陽町','木場','門前仲町','茅場町','日本橋','大手町','竹橋','九段下','飯田橋','神楽坂','早稲田','高田馬場','落合','中野',
                 '高円寺','阿佐ケ谷','荻窪','西荻窪','吉祥寺','三鷹'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[10, 11], [16, 22]] } } },
+        // leave 西船橋 9:1x (one) and 15:3x–20:2x (ODPT 2026-03); the window follows the train down the line
+        schedule: { weekend: { stops: [] }, weekday: { at: '西船橋', timeRange: [['09:10', '09:30'], ['15:30', '20:30']] } } },
       { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030', toName: 'Local', toJa: '各停',
         stops: ['西船橋','浦安','葛西','西葛西','南砂町','東陽町','木場','門前仲町','茅場町','日本橋','大手町','竹橋','九段下','飯田橋','神楽坂','早稲田','高田馬場','落合','中野',
                 '高円寺','阿佐ケ谷','荻窪','西荻窪','吉祥寺','三鷹'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [7, 10] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '西船橋', timeRange: ['06:30', '08:50'] } } },
     ] },
   // Through trains from 三鷹 end at 西船橋 (43 wd / 39 Sat/hol), 東葉勝田台 (chained, 20 wd) or, in the
   // weekday morning rush, 妙典 (6) / 東陽町 (4); the Chuo-Sobu's own 各停 run on to 津田沼 or 千葉
@@ -2105,7 +2109,8 @@ const LINE_CONNECTIONS = [
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
                 '中目黒','自由が丘','武蔵小杉','日吉','菊名','横浜'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[7, 11], [16, 23]] } } },
+        // times the trains leave 武蔵小杉 on the Toyoko (an `at` past the junction: the Metro boards shift it back)
+        schedule: { weekend: { stops: [] }, weekday: { at: '武蔵小杉', timeRange: [['07:00', '10:30'], ['17:00', '23:20']] } } },
       { name: 'Commuter Exp', ja: '通勤急行', color: '#3a6fd8', toName: 'Express', toJa: '急行',
         stops: ['和光市','地下鉄成増','地下鉄赤塚','平和台','氷川台','小竹向原','池袋','新宿三丁目',
                 "明治神宮前〈原宿〉",'渋谷',
