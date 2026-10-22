@@ -3818,8 +3818,11 @@ const LINE_CONNECTIONS = [
       { until: '藤沢', name: 'Fujisawa', ja: '藤沢方面', color: '#c86020',
         services: ['Local', 'Express', 'Rapid Exp'], localFrom: '町田' },
     ],
+    // the through 各停 from 町田 run early, at 9h and in the evening on weekdays, every other hour or so
+    // on Sat/hol (ODPT 2026-03)
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停',
+        schedule: { weekday: { timeRange: [[5, 8], [9, 11], [21, 24]] }, weekend: { timeRange: [[5, 19], [20, 23]] } } },
       { name: 'Rapid Exp', ja: '快速急行', color: '#f07000', stops: [
         '新宿','代々木上原','下北沢','登戸','新百合ヶ丘','町田','相模大野',
         '中央林間','大和','湘南台','藤沢'] },
@@ -3855,6 +3858,11 @@ const LINE_CONNECTIONS = [
         '藤沢','湘南台','長後','大和','南林間','中央林間',
         '相模大野','町田','新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂','下北沢','代々木上原','新宿'],
         schedule: { weekday: { timeRange: [[5, 10], [21, 24]] }, weekend: { timeRange: [[5, 6], [20, 24]] } } },
+      // the first 急行 starts at 片瀬江ノ島 (5:09 wd / 5:11 Sat/hol, nonstop to 藤沢; ODPT 2026-03)
+      { name: 'Express', ja: '急行', color: '#e83030', stops: [
+        '片瀬江ノ島','藤沢','湘南台','長後','大和','南林間','中央林間',
+        '相模大野','町田','新百合ヶ丘','向ヶ丘遊園','登戸','成城学園前','経堂','下北沢','代々木上原','新宿'],
+        schedule: { weekday: { timeRange: [5, 7] }, weekend: { timeRange: [5, 7] } } },
     ] },
 
   // ── Odakyu ↔ Odakyu Tama at Shin-Yurigaoka ───────────────────────────
@@ -3869,8 +3877,9 @@ const LINE_CONNECTIONS = [
       { until: '唐木田', name: 'Karakida', ja: '唐木田方面', color: '#1a8fe8',
         services: ['Local', 'Express', 'Rapid Exp'] },
     ],
+    // through 各停 to 唐木田 only late (22–0h at the Odakyu Line stations; ODPT 2026-03)
     express: [
-      { stops: null, name: 'Local', ja: '各停' },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [22, 2] }, weekend: { timeRange: [22, 2] } } },
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '新宿','代々木上原','下北沢','経堂','成城学園前','登戸','向ヶ丘遊園','新百合ヶ丘','五月台','栗平','黒川','はるひ野','小田急永山','小田急多摩センター','唐木田'] },
       // 5 weekday 快速急行 (morning rush, 22h) pass 五月台 / 黒川 / はるひ野 (ODPT 2026-03)
