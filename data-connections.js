@@ -1340,13 +1340,13 @@ const LINE_CONNECTIONS = [
     // (the アクセス特急 from Narita, renamed at 押上) run on to Haneda via the Airport Line hop
     express: [
       // one 普通 a day runs through (23h); the other through trains are 急行 or better
-      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [23, 1] }, weekend: { timeRange: [23, 24] } } },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { at: '押上(スカイツリー前)', timeRange: ['23:50', '24:00'] }, weekend: { at: '押上(スカイツリー前)', timeRange: ['23:20', '23:30'] } } },
       // 急行 to Haneda: 54 weekday / 32 weekend trains, mornings and evenings; the Airport Line
       // stops come from the same-name entry on the Keikyu Main → Airport hop
       { name: 'Express', ja: '急行', color: '#e83030',
         stops: ['押上(スカイツリー前)','本所吾妻橋','浅草','蔵前','浅草橋','東日本橋','人形町','日本橋','宝町','東銀座','新橋','大門','三田','泉岳寺',
                 '品川','青物横丁','立会川','平和島','京急蒲田'],
-        schedule: { weekday: { timeRange: [[5, 11], [15, 24]] }, weekend: { timeRange: [[5, 10], [18, 24]] } } },
+        schedule: { weekday: { at: '押上(スカイツリー前)', timeRange: [['05:10', '10:10'], ['15:40', '22:40']] }, weekend: { at: '押上(スカイツリー前)', timeRange: [['05:10', '08:50'], ['18:30', '23:20']] } } },
       { name: 'Ltd. Express', ja: '特急', color: '#e84040',
         stops: ['押上(スカイツリー前)','本所吾妻橋','浅草','蔵前','浅草橋','東日本橋','人形町','日本橋','宝町','東銀座','新橋','大門','三田','泉岳寺',
                 '品川','青物横丁','平和島','京急蒲田','京急川崎','神奈川新町','横浜','上大岡','金沢文庫','金沢八景','追浜','汐入','横須賀中央','堀ノ内'] },
@@ -1355,7 +1355,7 @@ const LINE_CONNECTIONS = [
                 '品川','京急蒲田','京急川崎','横浜','上大岡','金沢文庫','金沢八景','横須賀中央','堀ノ内'] }, // 快特 never run to 浦賀
       { name: 'Airport Rapid', ja: 'エアポート快特', color: '#e83080',
         stops: ['押上(スカイツリー前)','浅草','東日本橋','日本橋','新橋','大門','三田','泉岳寺','品川'],
-        schedule: { weekday: { timeRange: [[6, 7], [9, 16]] }, weekend: { timeRange: [[6, 7], [9, 20]] } } }, // southbound hours at 押上
+        schedule: { weekday: { at: '押上(スカイツリー前)', timeRange: [['06:20', '06:30'], ['09:20', '15:50']] }, weekend: { at: '押上(スカイツリー前)', timeRange: [['06:20', '06:30'], ['09:30', '19:10']] } } }, // southbound hours at 押上
     ] },
   // Keikyu trains from Haneda arrive at Sengakuji → continue onto Asakusa toward Oshiage/Aoto (end)
   { from: 'Keikyu Main Line',  fromEnd: '泉岳寺',
@@ -1518,7 +1518,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [15, 17] }, weekend: { stops: [] } } },
       // the weekday 通勤特急 2089K (品川 21:21, 泉岳寺 21:24 → 成田空港; ODPT 2025-12 / 2026-03)
       { name: 'Commuter Ltd. Exp', ja: '通勤特急', color: '#3a6fd8', stops: [...ASAKUSA_UP],
-        schedule: { weekday: { timeRange: [21, 23] }, weekend: { stops: [] } } },
+        schedule: { weekday: { at: '泉岳寺', timeRange: ['21:20', '21:30'] }, weekend: { stops: [] } } },
       // Keisei 快速 (from 西馬込, and the Haneda 特急 / 急行 renamed at 泉岳寺): Haneda ↔ Narita via the Main Line
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
@@ -1555,7 +1555,7 @@ const LINE_CONNECTIONS = [
         stops: ['西馬込','馬込','中延','戸越','五反田','高輪台','泉岳寺','三田','大門','新橋',
                 '東銀座','宝町','日本橋','人形町','東日本橋','浅草橋','蔵前','浅草','本所吾妻橋',
                 '押上(スカイツリー前)','青砥','京成高砂'],
-        schedule: { weekday: { timeRange: [[5, 10], [16, 18], [21, 22]] }, weekend: { timeRange: [[5, 10], [19, 22]] } } },
+        schedule: { weekday: { at: '西馬込', timeRange: [['04:40', '09:10'], ['15:50', '17:20'], ['21:10', '21:20']] }, weekend: { at: '西馬込', timeRange: [['04:40', '09:00'], ['19:00', '21:20']] } } },
     ] },
   { from: 'Keisei Oshiage Line', fromEnd: '押上(スカイツリー前)',
     to:   'Toei Asakusa Line',  toEnd: '押上(スカイツリー前)',
@@ -2691,7 +2691,7 @@ const LINE_CONNECTIONS = [
       { name: 'Express', ja: '急行', color: '#e83030', stops: [
         '本八幡','船堀','大島','森下','馬喰横山','神保町','市ヶ谷','新宿',
         '笹塚','明大前','桜上水','千歳烏山','つつじヶ丘','調布'],
-        schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
+        schedule: { weekday: { at: '本八幡', timeRange: [['07:00', '09:50'], ['17:10', '17:20']] }, weekend: { at: '本八幡', timeRange: ['07:00', '10:20'] } } },
       // Keio 快速 (local on Toei): runs on toward 橋本 / 京王多摩センター / 若葉台; weekdays by day and the
       // last one (本八幡 23:33, on Toei past midnight)
       { name: 'Local', ja: '各停', color: '#00a0a0', toName: 'Rapid', toJa: '快速', stops: [

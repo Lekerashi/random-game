@@ -341,11 +341,11 @@ const EXPRESS_SERVICES = {
     { name: "Express", ja: "急行", color: "#e83030", direction: "end", stops: [
       "新宿","市ヶ谷","神保町","馬喰横山",
       "森下","大島","船堀","本八幡",
-    ], schedule: { weekday: { timeRange: [17, 20] }, weekend: { timeRange: [16, 19] } } },
+    ], schedule: { weekday: { at: '新宿', timeRange: ['17:30', '19:40'] }, weekend: { at: '新宿', timeRange: ['16:20', '18:40'] } } },
     { name: "Express", ja: "急行", color: "#e83030", direction: "start", stops: [
       "新宿","市ヶ谷","神保町","馬喰横山",
       "森下","大島","船堀","本八幡",
-    ], schedule: { weekday: { timeRange: [[7, 8], [9, 11], [17, 18]] }, weekend: { timeRange: [7, 11] } } },
+    ], schedule: { weekday: { at: '本八幡', timeRange: [['07:00', '09:50'], ['17:10', '17:20']] }, weekend: { at: '本八幡', timeRange: ['07:00', '10:20'] } } },
   ],
   // 快速 run all day both ways and continue as locals onto Toyo Rapid / Chuo-Sobu.
   "Tokyo Metro Tozai Line": [
@@ -809,16 +809,16 @@ const EXPRESS_SERVICES = {
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
       "南流山","流山おおたかの森","守谷","つくば",
-    ], schedule: { weekday: { timeRange: [[5, 18], [21, 23]] }, weekend: { timeRange: [5, 23] } } },
+    ], schedule: { weekday: { at: '秋葉原', timeRange: [['05:50', '06:30'], ['08:40', '17:10'], ['21:00', '22:10']] }, weekend: { at: '秋葉原', timeRange: ['05:50', '22:10'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","八潮",
       "南流山","流山おおたかの森","守谷","つくば",
-    ], schedule: { weekday: { timeRange: [[5, 7], [9, 22]] }, weekend: { timeRange: [5, 23] } } },
+    ], schedule: { weekday: { at: 'つくば', timeRange: [['05:20', '05:30'], ['09:10', '21:10']] }, weekend: { at: 'つくば', timeRange: ['05:20', '22:20'] } } },
     // Weekday evenings toward つくば only
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "秋葉原","新御徒町","浅草","南千住","北千住","六町","八潮",
       "南流山","流山おおたかの森","柏の葉キャンパス","守谷","研究学園","つくば",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [17, 22] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '秋葉原', timeRange: ['17:30', '20:40'] } } },
   ],
   // 空港快速 (non-stop 浜松町 ↔ 羽田空港第3ターミナル) alternate with 普通 by day; none in
   // the weekday morning rush. 区間快速: a few, mostly weekday evenings
@@ -968,13 +968,13 @@ const EXPRESS_SERVICES = {
       "横浜","桜木町","関内","上大岡","上永谷","戸塚",
       "踊場","中田","立場","下飯田","湘南台",
     ],
-      schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [[9, 22], [23, 1]] } } },
+      schedule: { weekday: { at: 'あざみ野', timeRange: ['09:50', '16:20'] }, weekend: { at: 'あざみ野', timeRange: [['09:00', '20:20'], ['23:20', '23:30']] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "あざみ野","中川","センター北","センター南","仲町台","新羽","新横浜",
       "横浜","桜木町","関内","上大岡","上永谷","戸塚",
       "踊場","中田","立場","下飯田","湘南台",
     ],
-      schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [9, 22] } } },
+      schedule: { weekday: { at: '湘南台', timeRange: ['10:00', '16:20'] }, weekend: { at: '湘南台', timeRange: ['09:00', '20:20'] } } },
   ],
   "Sotetsu Main Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
