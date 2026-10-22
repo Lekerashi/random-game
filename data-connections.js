@@ -584,7 +584,7 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#e85050', toName: 'Rapid Rabbit', toJa: '快速ラビット',
         stops: [...TOKAIDO_ALL_UP, '上野','赤羽','浦和','大宮','東大宮','蓮田','久喜','古河',
                 '小山','小金井','自治医大','石橋','雀宮','宇都宮'],
-        schedule: { weekday: { timeRange: [5, 8] }, weekend: { timeRange: [5, 8] } } },
+        schedule: { weekday: { at: '熱海', timeRange: ['04:50', '05:50'] }, weekend: { at: '小田原', timeRange: ['05:10', '06:40'] } } },
     ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Takasaki Line',     toEnd:   '上野',
@@ -605,7 +605,7 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#f07000', toName: 'Rapid Urban', toJa: '快速アーバン',
         stops: [...TOKAIDO_ALL_UP, '上野','赤羽','浦和','大宮','上尾','桶川','鴻巣','熊谷','籠原',
                 '深谷','岡部','本庄','神保原','新町','倉賀野','高崎'],
-        schedule: { weekday: { timeRange: [6, 10] }, weekend: { timeRange: [7, 10] } } },
+        schedule: { weekday: { at: '小田原', timeRange: ['06:50', '08:00'] }, weekend: { at: '小田原', timeRange: ['06:50', '08:00'] } } },
     ] },
   { from: 'JR Tokaido Main Line', fromEnd: '東京',
     to:   'JR Joban Line',        toEnd:   '上野',
@@ -727,7 +727,7 @@ const LINE_CONNECTIONS = [
       { stops: null, name: 'Local', ja: '普通' },
       { name: 'Special Rapid', ja: '特別快速', color: '#e85050',
         stops: ['土浦','荒川沖','ひたち野うしく','牛久','龍ケ崎市','藤代','取手','柏','松戸','北千住','日暮里','上野','東京','品川'],
-        schedule: { weekday: { timeRange: [9, 11] }, weekend: { timeRange: [9, 11] } } },
+        schedule: { weekday: { at: '土浦', timeRange: ['08:50', '10:10'] }, weekend: { at: '土浦', timeRange: ['08:50', '10:10'] } } },
     ] },
 
   // ── Shonan-Shinjuku Line southbound at Ofuna ─────────────────────────
@@ -776,7 +776,7 @@ const LINE_CONNECTIONS = [
       { name: 'Special Rapid', ja: '特別快速', color: '#e83080',
         stops: ['大宮','浦和','赤羽','池袋','新宿','渋谷','大崎','武蔵小杉','横浜','戸塚','大船',
                 '藤沢','茅ケ崎','平塚','国府津','小田原'],
-        schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [8, 18] } } },
+        schedule: { weekday: { at: '大宮', timeRange: ['10:20', '16:40'] }, weekend: { at: '大宮', timeRange: ['08:10', '16:40'] } } },
     ] },
 
   // ── Shonan-Shinjuku Line northbound at Omiya ───────────────────────────
@@ -831,7 +831,7 @@ const LINE_CONNECTIONS = [
         stops: ['大船','戸塚','横浜','武蔵小杉','大崎','渋谷','新宿','池袋','赤羽','浦和','大宮',
                 '上尾','桶川','北本','鴻巣','熊谷','籠原','深谷','岡部','本庄','神保原',
                 '新町','倉賀野','高崎'],
-        schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [9, 18] } } },
+        schedule: { weekday: { at: '大船', timeRange: ['09:10', '16:50'] }, weekend: { at: '大船', timeRange: ['09:20', '16:50'] } } },
     ] },
   // ── Takasaki → Ryomo at Takasaki ──────────────────────────────────────
   // Three evening trains a day run on from 高崎 to 前橋 (every station): wd the SS 快速 2856Y / 2860Y from
@@ -914,7 +914,7 @@ const LINE_CONNECTIONS = [
       { name: 'Special Rapid', ja: '特別快速', color: '#e83080',
         stops: ['高崎','倉賀野','新町','神保原','本庄','岡部','深谷','籠原','熊谷','鴻巣','北本','桶川','上尾',
                 '大宮','浦和','赤羽','池袋','新宿','渋谷','大崎','武蔵小杉','横浜','戸塚','大船'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [7, 17] } } }, // 高崎 9:15–15:14, later downstream
+        schedule: { weekday: { at: '高崎', timeRange: ['09:10', '15:20'] }, weekend: { at: '高崎', timeRange: ['07:00', '15:20'] } } }, // 高崎 9:15–15:14, later downstream
     ] },
 
   // ── Yokosuka / Tokaido → Shonan-Shinjuku at Ofuna ────────────────────
@@ -930,7 +930,7 @@ const LINE_CONNECTIONS = [
     destinations: [],
     express: [
       { stops: null, name: 'Local', ja: '普通',
-        schedule: { weekday: { timeRange: [[6, 8], [9, 22]] }, weekend: { timeRange: [[6, 8], [9, 22]] } } },
+        schedule: { weekday: { at: '逗子', timeRange: ['06:50', '21:20'] }, weekend: { at: '逗子', timeRange: [['06:50', '07:00'], ['09:40', '21:40']] } } },
       { name: 'Rapid (Utsunomiya–Yokosuka)', ja: '快速（宇都宮・横須賀線系統）', color: '#40a060',
         stops: ['逗子','鎌倉','北鎌倉','大船','戸塚','東戸塚','保土ケ谷','横浜','武蔵小杉','大崎','恵比寿','渋谷','新宿','池袋','赤羽','浦和','大宮'],
         schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 17] } } },
@@ -948,11 +948,11 @@ const LINE_CONNECTIONS = [
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: ['小田原','鴨宮','国府津','二宮','大磯','平塚','茅ケ崎','辻堂','藤沢','大船',
                 '戸塚','横浜','武蔵小杉','大崎','恵比寿','渋谷','新宿','池袋','赤羽','浦和','大宮'],
-        schedule: { weekday: { timeRange: [5, 23] }, weekend: { timeRange: [5, 23] } } },
+        schedule: { weekday: { at: '小田原', timeRange: ['05:20', '22:10'] }, weekend: { at: '小田原', timeRange: ['05:20', '22:10'] } } },
       { name: 'Special Rapid', ja: '特別快速', color: '#e83080',
         stops: ['小田原','国府津','平塚','茅ケ崎','藤沢','大船',
                 '戸塚','横浜','武蔵小杉','大崎','渋谷','新宿','池袋','赤羽','浦和','大宮'],
-        schedule: { weekday: { timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
+        schedule: { weekday: { at: '小田原', timeRange: ['08:40', '16:10'] }, weekend: { at: '小田原', timeRange: ['08:50', '16:10'] } } },
     ] },
 
   // ── Tokaido → Ito at Atami ──────────────────────────────────────────
@@ -965,7 +965,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[15, 20], [21, 23]] }, weekend: { timeRange: [[15, 20], [21, 23]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '普通',
-      schedule: { weekday: { timeRange: [[15, 20], [21, 23]] }, weekend: { timeRange: [[15, 20], [21, 23]] } } }] },
+      schedule: { weekday: { at: '東京', timeRange: [['15:00', '17:40'], ['21:00', '21:20']] }, weekend: { at: '東京', timeRange: [['15:00', '17:40'], ['21:00', '21:20']] } } }] },
   // ...and back: 4 普通 a day from 伊東 run through 熱海 and the Ueno-Tokyo Line (JR TrainTimetable 2026-03: 伊東 6:44 →
   // 上野 wd / 宇都宮 Sat/hol, 17:45 → 宇都宮, 18:44 → 籠原 wd / 高崎 Sat/hol, 20:05 → 小金井); the chained
   // destinations carry their hours (chainFrom + boardSchedule)
@@ -2941,13 +2941,13 @@ const LINE_CONNECTIONS = [
                 '西立川','東中神','中神','昭島',
                 '拝島','牛浜','福生','羽村','小作','河辺',
                 '東青梅','青梅'],
-        schedule: { weekday: { timeRange: [[10, 16], [22, 23]] }, weekend: { timeRange: [[7, 18], [20, 22]] } } },
+        schedule: { weekday: { at: '東京', timeRange: [['10:10', '14:40'], ['22:10', '22:30']] }, weekend: { at: '東京', timeRange: [['07:50', '17:20'], ['20:50', '21:00']] } } },
       // ホリデー快速おくたま: weekends, 東京 6:30, 7:29, 8:22 (the 奥多摩 extension runs on set days only)
       { name: 'Holiday Rapid Okutama', ja: 'ホリデー快速おくたま', color: '#2a8a4a',
         stops: ['東京','神田','御茶ノ水','四ツ谷','新宿',
                 '中野','三鷹','国分寺','立川',
                 '西立川','拝島','福生','青梅'],
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [6, 9] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '東京', timeRange: ['06:20', '08:30'] } } },
     ] },
 
   // ── Ome → Chuo at Tachikawa ─────────────────────────────────────────
@@ -2973,18 +2973,18 @@ const LINE_CONNECTIONS = [
         stops: ['青梅','東青梅','河辺','小作','羽村','福生','牛浜',
                 '拝島','昭島','中神','東中神','西立川','立川',
                 '国分寺','三鷹','中野','新宿','四ツ谷','御茶ノ水','神田','東京'],
-        schedule: { weekday: { timeRange: [[5, 7], [9, 16], [18, 19]] }, weekend: { timeRange: [[6, 16], [18, 19]] } } },
+        schedule: { weekday: { at: '青梅', timeRange: [['05:30', '05:50'], ['09:30', '15:00'], ['18:10', '18:20']] }, weekend: { at: '青梅', timeRange: [['06:20', '15:10'], ['18:00', '18:10']] } } },
       // 2 weekday-morning trains (青梅 6:35, 7:51): all stations to 立川, then 通勤特快
       // ホリデー快速おくたま: weekends, 青梅 15:42, 16:54, 17:27
       { name: 'Holiday Rapid Okutama', ja: 'ホリデー快速おくたま', color: '#2a8a4a',
         stops: ['青梅','福生','拝島','西立川','立川',
                 '国分寺','三鷹','中野','新宿','四ツ谷','御茶ノ水','神田','東京'],
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [15, 18] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '青梅', timeRange: ['15:40', '17:40'] } } },
       { name: 'Commuter Sp. Rapid', ja: '通勤特快', color: '#1a6fd8',
         stops: ['青梅','東青梅','河辺','小作','羽村','福生','牛浜',
                 '拝島','昭島','中神','東中神','西立川','立川',
                 '国分寺','新宿','四ツ谷','御茶ノ水','神田','東京'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [6, 9] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '青梅', timeRange: ['06:30', '08:00'] } } },
     ] },
 
   // ── Itsukaichi → Ome at Haijima ──────────────────────────────────────
@@ -3002,7 +3002,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[5, 10], [15, 22], [23, 24]] }, weekend: { timeRange: [[5, 9], [15, 18], [19, 21]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '普通',
-      schedule: { weekday: { timeRange: [[5, 10], [15, 22], [23, 24]] }, weekend: { timeRange: [[5, 9], [15, 18], [19, 21]] } } }] },
+      schedule: { weekday: { at: '武蔵五日市', timeRange: [['05:20', '09:40'], ['15:40', '21:40'], ['23:30', '23:50']] }, weekend: { at: '武蔵五日市', timeRange: [['05:20', '08:30'], ['15:30', '20:10']] } } }] },
 
   // ── Ome → Itsukaichi at Haijima ─────────────────────────────────────
   // 27 wd / 13 Sat/hol 普通 from 立川 run on from 拝島 to 武蔵五日市 in the rushes and late (none from
@@ -3016,7 +3016,7 @@ const LINE_CONNECTIONS = [
         schedule: { weekday: { timeRange: [[5, 11], [16, 23], [0, 1]] }, weekend: { timeRange: [[5, 10], [16, 20], [0, 1]] } } },
     ],
     express: [{ stops: null, name: 'Local', ja: '普通',
-      schedule: { weekday: { timeRange: [[5, 11], [16, 23], [0, 1]] }, weekend: { timeRange: [[5, 10], [16, 20], [0, 1]] } } }] },
+      schedule: { weekday: { at: '立川', timeRange: [['05:30', '10:00'], ['16:10', '24:10']] }, weekend: { at: '立川', timeRange: [['05:40', '09:20'], ['16:10', '19:50'], ['24:00', '24:10']] } } }] },
 
   // ── Chuo → Fuji Express at Otsuki ────────────────────────────────────
   // 2 evening trains through-run to Kawaguchiko: weekday Commuter Rapid, weekend
@@ -3214,15 +3214,15 @@ const LINE_CONNECTIONS = [
     // become 各停 at 大崎 (toName; ODPT 2026-03); the through 各停 run mornings and evenings only
     // (Saikyo departures 6–10h, 16–23h both calendars)
     express: [
-      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [[6, 12], [16, 1]] }, weekend: { timeRange: [[6, 12], [16, 1]] } } },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { at: '大宮', timeRange: [['06:10', '09:20'], ['16:00', '22:40']] }, weekend: { at: '大宮', timeRange: [['06:00', '09:20'], ['16:10', '19:30'], ['22:10', '22:40']] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停',
         stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','戸田公園','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
                 '大井町','品川シーサイド','天王洲アイル','東京テレポート','国際展示場','東雲','新木場'],
-        schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [6, 24] } } },
+        schedule: { weekday: { at: '大宮', timeRange: ['10:00', '17:00'] }, weekend: { at: '大宮', timeRange: ['06:00', '22:20'] } } },
       { name: 'Commuter Rapid', ja: '通勤快速', color: '#e83030', toName: 'Local', toJa: '各停',
         stops: ['大宮','武蔵浦和','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
                 '大井町','品川シーサイド','天王洲アイル','東京テレポート','国際展示場','東雲','新木場'],
-        schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [17, 23]] } } },
+        schedule: { weekend: { stops: [] }, weekday: { at: '大宮', timeRange: [['06:10', '10:00'], ['17:00', '22:00']] } } },
     ] },
 
   // ── Sotetsu–JR Direct (相鉄・JR直通線) at Osaki / Nishiya ─────────────
@@ -3248,7 +3248,7 @@ const LINE_CONNECTIONS = [
       // the Sat/hol 快速 from 川越 (4702F) runs on as a Sotetsu 各停 to 海老名
       { name: 'Rapid', ja: '快速', color: '#00b900', toName: 'Local', toJa: '各停', until: '海老名', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','戸田公園','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
         '西谷','鶴ヶ峰','二俣川','希望ヶ丘','三ツ境','瀬谷','大和','相模大塚','さがみ野','かしわ台','海老名'],
-        schedule: { weekday: { stops: [] }, weekend: { timeRange: [7, 10] } } },
+        schedule: { weekday: { stops: [] }, weekend: { at: '大宮', timeRange: ['07:20', '07:40'] } } },
       // 特急: mornings and evenings (各停 only by day)
       // (hours at 西谷, ODPT 2026-03: boarding on the Saikyo is earlier)
       { name: 'Local', ja: '各停', color: '#e83080', toName: 'Ltd. Express', toJa: '特急', stops: ['大宮','北与野','与野本町','南与野','中浦和','武蔵浦和','北戸田','戸田','戸田公園','浮間舟渡','北赤羽','赤羽','十条','板橋','池袋','新宿','渋谷','恵比寿','大崎',
@@ -3482,7 +3482,7 @@ const LINE_CONNECTIONS = [
     express: [
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: [...SOBU_RAPID_WEST, '本千葉', '蘇我', '鎌取', '誉田', '土気', '大網', '茂原', '上総一ノ宮'],
-        schedule: { weekday: { timeRange: [[5, 6], [8, 11], [14, 22]] }, weekend: { timeRange: [[5, 6], [8, 11], [14, 22]] } } },
+        schedule: { weekday: { at: '東京', timeRange: [['04:30', '04:50'], ['08:40', '09:50'], ['14:30', '21:10']] }, weekend: { at: '東京', timeRange: [['04:30', '04:50'], ['08:40', '09:50'], ['14:30', '21:20']] } } },
     ] },
   { from: 'JR Sotobo Line', fromEnd: '千葉',
     to:   'JR Sobu Line',   toStation: '千葉', toDir: 'start',
@@ -4055,7 +4055,7 @@ const LINE_CONNECTIONS = [
           '海浜幕張': { weekday: { timeRange: [[6, 10], [16, 22]] }, weekend: { timeRange: [[6, 10], [16, 21]] } },
         } },
     ],
-    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekend: { timeRange: [[5, 10], [16, 22]] } } }] },
+    express: [{ stops: null, name: 'Local', ja: '各停', schedule: { weekend: { at: '海浜幕張', timeRange: [['05:00', '10:00'], ['16:50', '21:20']] } } }] },
 
   // ── むさしの号 / しもうさ号 (named 普通 over the Musashino freight curves) ──
   // むさしの号: 八王子/府中本町 ↔ 大宮 over the 国立支線 (国立–新小平, no stations) and the
@@ -4180,7 +4180,7 @@ const LINE_CONNECTIONS = [
     express: [
       // the Musashino Line has no types: two-typed so services pick the named one (same hours)
       { stops: null, name: 'Local', ja: '各停',
-        schedule: { weekday: { timeRange: [[7, 9], [16, 17], [19, 21]] }, weekend: { timeRange: [[6, 8], [16, 17], [19, 21]] } } },
+        schedule: { weekday: { at: '西船橋', timeRange: [['07:20', '07:30'], ['16:00', '16:10'], ['19:30', '19:40']] }, weekend: { at: '西船橋', timeRange: [['06:20', '06:30'], ['16:00', '16:20'], ['19:10', '19:30']] } } },
       { name: 'Shimousa', ja: 'しもうさ号', color: '#F77321',
         stops: ['西船橋', '船橋法典', '市川大野', '東松戸', '新八柱', '新松戸', '南流山', '三郷', '新三郷', '吉川美南',
                 '吉川', '越谷レイクタウン', '南越谷', '東川口', '東浦和', '南浦和', '武蔵浦和', '大宮'],
@@ -4336,7 +4336,7 @@ const LINE_CONNECTIONS = [
         stops: ['桜木町','横浜','東神奈川','菊名','新横浜','鴨居','中山',
                 '長津田','町田','相模原','橋本',
                 '相原','八王子みなみ野','片倉','八王子'],
-        schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [9, 18] } } },
+        schedule: { weekday: { at: '桜木町', timeRange: ['10:00', '15:30'] }, weekend: { at: '桜木町', timeRange: ['09:00', '17:30'] } } },
     ] },
 
   // ── Keihin-Tohoku → Yokohama Line at Higashi-Kanagawa ────────────────
@@ -4358,7 +4358,7 @@ const LINE_CONNECTIONS = [
         stops: ['横浜','東神奈川','菊名','新横浜','鴨居','中山',
                 '長津田','町田','相模原','橋本',
                 '相原','八王子みなみ野','片倉','八王子'],
-        schedule: { weekday: { timeRange: [10, 16] }, weekend: { timeRange: [9, 18] } } },
+        schedule: { weekday: { at: '横浜', timeRange: ['10:00', '15:30'] }, weekend: { at: '横浜', timeRange: ['09:10', '17:30'] } } },
     ] },
 
   // ── Narita Line → airport branch at Narita ───────────────────────────
@@ -4575,10 +4575,10 @@ const LINE_CONNECTIONS = [
     ],
     // 快速 by day and around 20h, 各停 in the evening
     express: [
-      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [17, 23] }, weekend: { timeRange: [18, 23] } } },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { at: '東京', timeRange: ['17:30', '21:30'] }, weekend: { at: '東京', timeRange: ['18:00', '21:30'] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: [...KEIYO_RAPID, '鎌取', '誉田', '土気', '大網', '永田', '本納', '新茂原', '茂原', '八積', '上総一ノ宮'],
-        schedule: { weekday: { timeRange: [[9, 15], [20, 22]] }, weekend: { timeRange: [[9, 15], [20, 22]] } } },
+        schedule: { weekday: { at: '東京', timeRange: [['09:00', '14:10'], ['20:30', '20:50']] }, weekend: { at: '東京', timeRange: [['09:00', '14:10'], ['20:30', '20:50']] } } },
     ] },
   { from: 'JR Keiyo Line',  fromEnd: '蘇我',
     to:   'JR Uchibo Line', toStation: '蘇我', toDir: 'end',
@@ -4591,7 +4591,7 @@ const LINE_CONNECTIONS = [
     // 2 快速 a day at 20h; 各停 17–19h and 21–23h (the checker tells the Sotobo and Uchibo trains apart
     // by their destination since batch 5)
     express: [
-      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { timeRange: [[17, 20], [21, 24]] }, weekend: { timeRange: [[17, 20], [21, 24]] } } },
+      { stops: null, name: 'Local', ja: '各停', schedule: { weekday: { at: '東京', timeRange: [['17:40', '19:00'], ['21:00', '22:30']] }, weekend: { at: '東京', timeRange: [['17:40', '19:00'], ['21:00', '22:20']] } } },
       { name: 'Rapid', ja: '快速', color: '#00b900',
         stops: [...KEIYO_RAPID, '浜野', '八幡宿', '五井', '姉ケ崎', '長浦', '袖ケ浦', '木更津', '君津'],
         schedule: { weekday: { timeRange: [20, 21] }, weekend: { timeRange: [20, 21] } } },
@@ -4770,7 +4770,7 @@ const LINE_CONNECTIONS = [
         '新子安','東神奈川','横浜',
         '桜木町','関内','石川町','山手','根岸',
         '磯子','新杉田','洋光台','港南台','本郷台','大船'],
-        schedule: { weekday: { skip: ['御徒町'], timeRange: [9, 17] }, weekend: { timeRange: [9, 19] } } },
+        schedule: { weekday: { at: '大宮', timeRange: ['08:50', '15:00'], skip: ['御徒町'] }, weekend: { at: '大宮', timeRange: ['08:10', '17:00'] } } },
     ] },
   // Half the through trains end at 南浦和; 4 weekday-morning 各停 at 赤羽 (ODPT 2026-03)
   { from: 'JR Negishi Line',       fromEnd: '横浜',
@@ -4804,6 +4804,6 @@ const LINE_CONNECTIONS = [
         '田端','上中里','王子','東十条','赤羽',
         '川口','西川口','蕨','南浦和','浦和',
         '北浦和','与野','さいたま新都心','大宮'],
-        schedule: { weekday: { skip: ['御徒町'], timeRange: [9, 16] }, weekend: { timeRange: [9, 15] } } },
+        schedule: { weekday: { at: '大船', timeRange: ['09:10', '14:30'], skip: ['御徒町'] }, weekend: { at: '大船', timeRange: ['09:20', '14:30'] } } },
     ] },
 ];

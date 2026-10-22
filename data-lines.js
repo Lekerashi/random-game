@@ -55,7 +55,7 @@ const EXPRESS_SERVICES = {
       "鳥沢","猿橋","大月","初狩","笹子",
       "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
       "山梨市","春日居町","石和温泉","酒折","甲府",
-    ], schedule: { weekday: { timeRange: [[6, 8], [9, 18], [22, 1]] } } },
+    ], schedule: { weekday: { at: '東京', timeRange: [['06:10', '06:40'], ['09:30', '16:40'], ['22:00', '23:40']] } } },
     { name: "Chuo Sp. Rapid", ja: "中央特快", color: "#f07000", direction: "start", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
       "中野","三鷹","国分寺","立川",
@@ -64,7 +64,7 @@ const EXPRESS_SERVICES = {
       "鳥沢","猿橋","大月","初狩","笹子",
       "甲斐大和","勝沼ぶどう郷","塩山","東山梨",
       "山梨市","春日居町","石和温泉","酒折","甲府",
-    ], schedule: { weekday: { timeRange: [[5, 8], [9, 24]] } } },
+    ], schedule: { weekday: { at: '高尾', timeRange: [['05:50', '06:20'], ['09:10', '22:30']] } } },
     // Westbound only, weekday evenings; 5 a day run on to 大月 (all stations past 高尾)
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "東京","神田","御茶ノ水","四ツ谷","新宿",
@@ -72,7 +72,7 @@ const EXPRESS_SERVICES = {
       "日野","豊田","八王子","西八王子","高尾",
       "相模湖","藤野","上野原","四方津","梁川",
       "鳥沢","猿橋","大月",
-    ], schedule: { weekend: { stops: [] }, weekday: { timeRange: [16, 23] } } },
+    ], schedule: { weekend: { stops: [] }, weekday: { at: '東京', timeRange: ['16:50', '22:00'] } } },
     // Eastbound only, weekday mornings: passes 三鷹 and 中野. One from 大月 runs all
     // stations to 高尾 (the 青梅 ones are connection express)
     { name: "Commuter Sp. Rapid", ja: "通勤特快", color: "#1a6fd8", direction: "start", stops: [
@@ -100,7 +100,7 @@ const EXPRESS_SERVICES = {
     ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [9, 11] } } },
     { name: "Holiday Rapid Okutama", ja: "ホリデー快速おくたま", color: "#2a8a4a", direction: "start", stops: [
       "青梅","御嶽","奥多摩",
-    ], schedule: { weekday: { stops: [] }, weekend: { timeRange: [15, 18] } } },
+    ], schedule: { weekday: { stops: [] }, weekend: { at: '奥多摩', timeRange: ['15:10', '17:10'] } } },
   ],
   "Tokyo Metro Fukutoshin Line": [
     { name: "Local", ja: "各停", color: "#00a0e8", stops: null },
@@ -668,7 +668,7 @@ const EXPRESS_SERVICES = {
     { name: "Rapid Rabbit", ja: "快速ラビット", color: "#e85050", direction: "end", stops: [
       "上野","赤羽","浦和","大宮","東大宮","蓮田","久喜","古河",
       "小山","小金井","自治医大","石橋","雀宮","宇都宮",
-    ], schedule: { weekday: { timeRange: [[6, 10], [18, 21]] }, weekend: { timeRange: [[6, 10], [18, 21]] } } },
+    ], schedule: { weekday: { at: '上野', timeRange: [['06:30', '08:00'], ['18:10', '19:30']] }, weekend: { at: '上野', timeRange: [['06:30', '08:10'], ['18:20', '19:30']] } } },
   ],
   // Rapid tracks: every train calls at every station (快速 to 取手, 普通 beyond).
   // 特別快速 toward 上野: 2 morning trains from 土浦, running on to 品川 (the 2
@@ -678,7 +678,7 @@ const EXPRESS_SERVICES = {
     { name: "Special Rapid", ja: "特別快速", color: "#e85050", direction: "start", stops: [
       "上野","日暮里","北千住","松戸","柏","取手",
       "藤代","龍ケ崎市","牛久","ひたち野うしく","荒川沖","土浦",
-    ], schedule: { weekday: { timeRange: [9, 11] }, weekend: { timeRange: [9, 11] } } },
+    ], schedule: { weekday: { at: '土浦', timeRange: ['08:50', '10:10'] }, weekend: { at: '土浦', timeRange: ['08:50', '10:10'] } } },
   ],
   // アーバン: toward 高崎 only, 2 morning (through from the Tokaido Line, 8–11h on this line; ODPT files
   // them under the Tokaido railway) + 2 evening from 上野
@@ -687,7 +687,7 @@ const EXPRESS_SERVICES = {
     { name: "Rapid Urban", ja: "快速アーバン", color: "#f07000", direction: "end", stops: [
       "上野","赤羽","浦和","大宮","上尾","桶川","鴻巣","熊谷","籠原",
       "深谷","岡部","本庄","神保原","新町","倉賀野","高崎",
-    ], schedule: { weekday: { timeRange: [[8, 11], [18, 22]] }, weekend: { timeRange: [[8, 12], [18, 21]] } } },
+    ], schedule: { weekday: { at: '上野', timeRange: [['08:30', '09:40'], ['18:40', '19:50']] }, weekend: { at: '上野', timeRange: [['08:30', '09:40'], ['18:10', '19:30']] } } },
   ],
   "JR Shonan Shinjuku Line": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
@@ -699,11 +699,11 @@ const EXPRESS_SERVICES = {
     { name: "Special Rapid", ja: "特別快速", color: "#e83080", direction: "end", stops: [
       "大宮","浦和","赤羽","池袋","新宿","渋谷",
       "大崎","武蔵小杉","横浜","戸塚","大船",
-    ], schedule: { weekday: { timeRange: [10, 18] }, weekend: { timeRange: [8, 18] } } },
+    ], schedule: { weekday: { at: '大宮', timeRange: ['10:20', '16:40'] }, weekend: { at: '大宮', timeRange: ['08:10', '16:40'] } } },
     { name: "Special Rapid", ja: "特別快速", color: "#e83080", direction: "start", stops: [
       "大宮","浦和","赤羽","池袋","新宿","渋谷",
       "大崎","武蔵小杉","横浜","戸塚","大船",
-    ], schedule: { weekday: { timeRange: [9, 18] }, weekend: { timeRange: [9, 18] } } },
+    ], schedule: { weekday: { at: '大船', timeRange: ['09:10', '16:50'] }, weekend: { at: '大船', timeRange: ['09:20', '16:50'] } } },
   ],
   // Tokaido 特別快速 (Shonan-Shinjuku trains 小田原 → 新宿, daytime) pass 鴨宮, 二宮, 大磯 and 辻堂; at 大船
   // they leave for the Shonan-Shinjuku Line, which is its own platform there (ODPT 2026-03)
@@ -756,12 +756,12 @@ const EXPRESS_SERVICES = {
       "川崎","鹿島田","武蔵小杉","武蔵中原",
       "武蔵新城","武蔵溝ノ口","登戸","稲田堤",
       "稲城長沼","府中本町","分倍河原","立川",
-    ], schedule: { weekday: { timeRange: [10, 20] }, weekend: { timeRange: [9, 17] } } },
+    ], schedule: { weekday: { at: '川崎', timeRange: ['10:30', '19:20'] }, weekend: { at: '川崎', timeRange: ['09:50', '16:20'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "川崎","鹿島田","武蔵小杉","武蔵中原",
       "武蔵新城","武蔵溝ノ口","登戸","稲田堤",
       "稲城長沼","府中本町","分倍河原","立川",
-    ], schedule: { weekday: { timeRange: [[10, 17], [18, 20]] }, weekend: { timeRange: [9, 17] } } },
+    ], schedule: { weekday: { at: '立川', timeRange: ['10:20', '19:20'] }, weekend: { at: '立川', timeRange: ['09:10', '15:40'] } } },
   ],
   // Weekday rushes run 通勤快速 instead of 快速 (hours per direction, ODPT 2026-03)
   "JR Saikyo Line": [
@@ -770,22 +770,22 @@ const EXPRESS_SERVICES = {
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","戸田公園","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮",
     ],
-      schedule: { weekday: { timeRange: [6, 18] } } },
+      schedule: { weekday: { at: '大崎', timeRange: ['06:00', '16:30'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","戸田公園","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮",
     ],
-      schedule: { weekday: { timeRange: [10, 18] } } },
+      schedule: { weekday: { at: '大宮', timeRange: ['10:00', '17:00'] } } },
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "end", stops: [
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","武蔵浦和","大宮",
     ],
-      schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 10], [16, 24]] } } },
+      schedule: { weekend: { stops: [] }, weekday: { at: '大崎', timeRange: [['06:20', '09:20'], ['16:40', '22:40']] } } },
     { name: "Commuter Rapid", ja: "通勤快速", color: "#e83030", direction: "start", stops: [
       "大崎","恵比寿","渋谷","新宿","池袋","板橋","十条",
       "赤羽","武蔵浦和","大宮",
     ],
-      schedule: { weekend: { stops: [] }, weekday: { timeRange: [[6, 11], [17, 23]] } } },
+      schedule: { weekend: { stops: [] }, weekday: { at: '大宮', timeRange: [['06:10', '10:00'], ['17:00', '22:00']] } } },
   ],
   "Tsukuba Express": [
     { name: "Local", ja: "普通", color: "#00a0e8", stops: null },
@@ -867,7 +867,7 @@ const EXPRESS_SERVICES = {
       "大井町","大森","蒲田","川崎","鶴見",
       "新子安","東神奈川","横浜",
     ],
-      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 19] } } },
+      schedule: { weekday: { at: '大宮', timeRange: ['08:50', '15:00'], skip: ["御徒町"] }, weekend: { at: '大宮', timeRange: ['08:10', '17:00'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "大宮","さいたま新都心","与野","北浦和","浦和",
       "南浦和","蕨","西川口","川口","赤羽",
@@ -877,7 +877,7 @@ const EXPRESS_SERVICES = {
       "大井町","大森","蒲田","川崎","鶴見",
       "新子安","東神奈川","横浜",
     ],
-      schedule: { weekday: { skip: ["御徒町"], timeRange: [9, 17] }, weekend: { timeRange: [9, 17] } } },
+      schedule: { weekday: { at: '横浜', timeRange: ['09:50', '15:00'], skip: ["御徒町"] }, weekend: { at: '横浜', timeRange: ['09:50', '15:10'] } } },
   ],
   // 快速 (daytime, both ways) skip 大口/小机/十日市場/成瀬/古淵/淵野辺/矢部 (hours ODPT 2026-03)
   "JR Yokohama Line": [
@@ -887,13 +887,13 @@ const EXPRESS_SERVICES = {
       "長津田","町田","相模原","橋本",
       "相原","八王子みなみ野","片倉","八王子",
     ],
-      schedule: { weekday: { timeRange: [9, 16] }, weekend: { timeRange: [8, 19] } } },
+      schedule: { weekday: { at: '八王子', timeRange: ['09:20', '15:20'] }, weekend: { at: '八王子', timeRange: ['08:50', '17:40'] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "end", stops: [
       "東神奈川","菊名","新横浜","鴨居","中山",
       "長津田","町田","相模原","橋本",
       "相原","八王子みなみ野","片倉","八王子",
     ],
-      schedule: { weekday: { timeRange: [10, 17] }, weekend: { timeRange: [9, 19] } } },
+      schedule: { weekday: { at: '東神奈川', timeRange: ['10:00', '15:40'] }, weekend: { at: '東神奈川', timeRange: ['09:10', '17:30'] } } },
   ],
   // 通勤快速 abolished March 2024
   "JR Keiyo Line": [
@@ -903,12 +903,12 @@ const EXPRESS_SERVICES = {
       "東京","八丁堀","新木場","舞浜","新浦安","南船橋",
       "海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我",
     ],
-      schedule: { weekday: { timeRange: [[9, 17], [20, 22]] }, weekend: { timeRange: [[9, 18], [20, 22]] } } },
+      schedule: { weekday: { at: '東京', timeRange: [['09:00', '16:10'], ['20:00', '21:30']] }, weekend: { at: '東京', timeRange: [['09:00', '17:00'], ['20:00', '21:30']] } } },
     { name: "Rapid", ja: "快速", color: "#00b900", direction: "start", stops: [
       "東京","八丁堀","新木場","舞浜","新浦安","南船橋",
       "海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我",
     ],
-      schedule: { weekday: { timeRange: [6, 17] }, weekend: { timeRange: [6, 18] } } },
+      schedule: { weekday: { at: '蘇我', timeRange: ['06:40', '16:00'] }, weekend: { at: '蘇我', timeRange: ['06:40', '17:00'] } } },
   ],
   // West of 千葉 every train is a 快速 (the rapid tracks); east of it 普通 call everywhere and the
   // 快速 (to 佐倉 / 成東) pass 東千葉 only. The 普通 is a segment type: its list starts at 千葉, so
